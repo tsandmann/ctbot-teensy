@@ -32,7 +32,7 @@
 #include <inttypes.h>
 #include <Wire.h>
 
-#include "I2CIO.h"
+#include "i2cio.h"
 #include "LiquidCrystal_I2C.h"
 
 // CONSTANT  definitions
