@@ -75,38 +75,24 @@ void Encoder::update() {
 
     const auto now_us { Timer::get_us() };
     const auto dt { static_cast<int32_t>(now_us - last_update_) };
-    // FIXME: double check
-    // if (dt < 0) {
-    //     dt += Timer::ticks_to_us(65536UL);
-    // }
+
     if (diff_enc) {
         if (! direction_) {
             diff_enc = -diff_enc;
         }
         edges_ += diff_enc;
         last_idx_ = idx;
-
-        // uint16_t ticks { p_enc_data_[idx].ticks };
-        // if (ticks <= (now & 0xff)) {
-        //     ticks = (now & 0xff00) | ticks;
-        // } else {
-        //     ticks = ((now - 256) & 0xff00) | ticks;
-        // }
-
-        // std::cout << ticks << "\t" << static_cast<uint16_t>(diff_enc) << "\n";
-
         count_ += diff_enc;
 
         // std::cout << static_cast<int16_t>(count_) << "\n";
 
         const uint32_t current_time { p_enc_data_[idx] };
         const int32_t diff { static_cast<int32_t>(current_time - last_update_) };
-        // if (diff < 0) {
-        //     diff += Timer::ticks_to_us(65536UL);
-        // }
+
         if (diff == 0) {
             return;
         }
+
         speed_ = (WHEEL_PERIMETER / ENCODER_MARKS * 1000000.f) * count_ / diff;
         speed_avg_ = speed_avg_ * (1.f - AVG_FILTER_PARAM) + speed_ * AVG_FILTER_PARAM;
 

@@ -88,7 +88,7 @@ RemoteControl::RemoteControl(Rc5& rc5, uint8_t rc5_address) : rc5_(rc5), addr_(r
     register_cmd(0x10 /* Vol+ */, [] (uint8_t cmd) {
         /* Servo 1 to right */
         auto const p_ctbot { &CtBot::get_instance() };
-        auto pos { p_ctbot->get_servos()[0]->get() };
+        auto pos { p_ctbot->get_servos()[0]->get_position() };
         if (pos < 180) {
             pos += 5;
         }
@@ -99,7 +99,7 @@ RemoteControl::RemoteControl(Rc5& rc5, uint8_t rc5_address) : rc5_(rc5), addr_(r
     register_cmd(0x11 /* Vol- */, [] (uint8_t cmd) {
         /* Servo 1 to left */
         auto const p_ctbot { &CtBot::get_instance() };
-        auto pos { p_ctbot->get_servos()[0]->get() };
+        auto pos { p_ctbot->get_servos()[0]->get_position() };
         if (pos > 0) {
             pos -= 5;
         }

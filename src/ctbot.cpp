@@ -211,7 +211,10 @@ void CtBot::init_parser() {
         } else if (args == "motor") {
             p_this->serial_print(p_this->p_motors_[0]->get(), p_this->p_motors_[1]->get());
         } else if (args == "servo") {
-            p_this->serial_print(p_this->p_servos_[0]->get(), p_this->p_servos_[1]->get());
+            p_this->get_comm()->debug_print(p_this->p_servos_[0]->get_position(), PrintBase::DEC);
+            p_this->get_comm()->debug_print(p_this->p_servos_[0]->get_active() ? "[on] " : "[off] ");
+            p_this->get_comm()->debug_print(p_this->p_servos_[1]->get_position(), PrintBase::DEC);
+            p_this->get_comm()->debug_print(p_this->p_servos_[1]->get_active() ? "[on] " : "[off] ");
         } else if (args == "rc5") {
             p_this->serial_print(p_this->p_sensors_->get_rc5().get_addr(), p_this->p_sensors_->get_rc5().get_cmd(), p_this->p_sensors_->get_rc5().get_toggle());
         } else if (args == "trans") {
