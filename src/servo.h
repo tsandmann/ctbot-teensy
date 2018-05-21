@@ -20,6 +20,9 @@
  * @brief   Servo driver
  * @author  Timo Sandmann
  * @date    13.05.2018
+ * @note    Pulse width calculation based on "Hardware Servo Timer Library"
+ *          <http://arduiniana.org/libraries/pwmservo>
+ *          by Jim Studt, David A. Mellis, Mikal Hart, Paul Stoffregen
  */
 
 #ifndef SRC_SERVO_H_
@@ -47,28 +50,47 @@ public:
     Servo(const uint8_t pin, const uint8_t initial_pos = 90);
 
     /**
+     * @brief Create a servo instance for given servo number
+     * @param[in] pin: Pin used for the servo
+     * @param[in] min:
+     * @param[in] max:
+     * @param[in] initial_pos: Position to set at initialization
+     */
+    Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos = 90);
+
+    /**
      * @brief Set the servo to a position
      * @param[in] pos: Target position [0; 180] or POS_OFF to turn servo off
      */
     void set(const uint8_t pos);
 
     /**
+     * @brief Disable the servo (set the PWM signal low)
+     */
+    void disable();
+
+    /**
      * @brief Get the last set servo position
      * @return Position of servo or POS_OFF, if servo turned off
      */
-    auto get() const {
+    auto get_position() const {
         return position_;
     }
 
     /**
-     * @brief Disable the servo (set the PWM signal low)
+     * @brief Get the current servo status
+     * @return true, if servo is currently active (duty cylce > 0)
      */
-    void disable() const;
+    auto get_active() const {
+        return active_;
+    }
 
 protected:
     const uint8_t pin_; /**< Pin used for the servo */
-    PWMServo* p_impl_; /**< Pointer to underlying PWMServo instance to use */
+    const uint16_t min_; /**< Minimum pulse, 16 uS units (default is 34) */ // FIXME: improve resolution?
+    const uint16_t max_; /**< Maximum pulse, 16 uS units, 0-4 ms range (default is 150) */
     uint8_t position_; /**< Target position for servo */
+    bool active_; /**< Flag to indicate if servo is currently active (duty cylce > 0) */
 };
 
 } /* namespace ctbot */
