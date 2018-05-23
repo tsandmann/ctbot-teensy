@@ -24,8 +24,7 @@
 
 #include "scheduler.h"
 #include "timer.h"
-
-#include <iostream>
+#include "comm_interface.h"
 
 
 namespace ctbot {
@@ -36,10 +35,17 @@ Scheduler::Task::Task(const uint16_t id, const uint16_t period, task_func_t&& fu
 Scheduler::Task::Task(const uint16_t id, const uint16_t period, const uint32_t next_run, task_func_t&& func, task_func_data_t&& func_data)
     : id_ { id }, period_ { period }, next_runtime_ { next_run }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) } {}
 
-std::ostream& operator <<(std::ostream& os, const Scheduler::Task& v) {
-    os << std::hex << "0x" << v.id_ << "\t" << (v.active_ ? "  ACTIVE" : "INACTIVE") << "\t" << std::dec << v.period_ << " ms\n";
-    return os;
+
+void Scheduler::Task::print(CommInterface& comm) const {
+    comm.debug_print("0x");
+    comm.debug_print(id_, PrintBase::HEX);
+    comm.debug_print('\t');
+    comm.debug_print(active_ ? "  ACTIVE" : "INACTIVE");
+    comm.debug_print('\t');
+    comm.debug_print(period_, PrintBase::DEC);
+    comm.debug_print(" ms\n");
 }
+
 
 void Scheduler::run() {
     while (running_ && (! task_queue_.empty())) {
@@ -113,9 +119,12 @@ bool Scheduler::task_resume(const uint16_t id) {
     return res;
 }
 
-void Scheduler::print_task_list(std::ostream& os) const {
+void Scheduler::print_task_list(CommInterface& comm) const {
     for (uint16_t i { 0U }; i < next_id_; ++i) {
-        os << " \"" << task_names_[task_vector_[i].id_] << "\":\t" << task_vector_[i];
+        comm.debug_print(" \"");
+        comm.debug_print(task_names_[task_vector_[i].id_]);
+        comm.debug_print("\":\t");
+        task_vector_[i].print(comm);
     }
 }
 

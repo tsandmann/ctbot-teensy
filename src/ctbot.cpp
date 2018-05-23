@@ -36,7 +36,6 @@
 #include "cmd_parser.h"
 
 #include <cstdint>
-#include <iostream>
 
 
 namespace ctbot {
@@ -94,7 +93,7 @@ CtBot::~CtBot() {
 }
 
 void CtBot::start() {
-    p_scheduler_->print_task_list(std::cout);
+    p_scheduler_->print_task_list(*p_comm_);
 
     p_scheduler_->run();
 
@@ -225,7 +224,7 @@ void CtBot::init_parser() {
             p_this->p_comm_->debug_print("0x");
             p_this->serial_print_base(static_cast<uint8_t>(p_this->p_leds_->get()), PrintBase::HEX);
         } else if (args == "tasks") {
-            p_this->get_scheduler()->print_task_list(std::cout);
+            p_this->get_scheduler()->print_task_list(*p_this->p_comm_);
         } else {
             return false;
         }
@@ -299,8 +298,6 @@ void CtBot::init_parser() {
 }
 
 void CtBot::run() {
-    // std::cout << "CtBot::run(): now=" << Timer::get_ms() << " ms \n";
-
     p_sensors_->update();
 }
 
