@@ -45,7 +45,7 @@ namespace tests {
  *  class BlinkTest {
  *    +BlinkTest(CtBot& ctbot)
  *    +~BlinkTest()
- *    #run() : void
+ *    #run()
  *    #{static} TASK_PERIOD_MS : constexpr uint16_t
  *  }
  * @enduml
@@ -99,7 +99,7 @@ public:
  *  class LedTest {
  *    +LedTest(CtBot& ctbot)
  *    +~LedTest()
- *    #run() : void
+ *    #run()
  *    #{static} TASK_PERIOD_MS : constexpr uint16_t
  *  }
  * @enduml
@@ -163,7 +163,7 @@ public:
  *    +LcdTest(CtBot& ctbot)
  *    +~LcdTest()
  *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
+ *    #run()
  *  }
  * @enduml
  */
@@ -257,7 +257,7 @@ public:
  *    +EnaTest()
  *    +~EnaTest()
  *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
+ *    #run()
  *  }
  * @enduml
  */
@@ -317,7 +317,7 @@ public:
  *    +SensorLcdTest(CtBot& ctbot)
  *    +~SensorLcdTest()
  *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
+ *    #run()
  *  }
  * @enduml
  */

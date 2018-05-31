@@ -51,7 +51,7 @@ namespace ctbot {
 class CtBotConfig {
 public:
     /* test tasks */
-    static constexpr bool BLINK_TEST_AVAILABLE { true }; /**< Statically activate or deactivate LED blink test */
+    static constexpr bool BLINK_TEST_AVAILABLE { false }; /**< Statically activate or deactivate LED blink test */
     static constexpr bool LED_TEST_AVAILABLE { true }; /**< Statically activate or deactivate LED test */
     static constexpr bool ENA_TEST_AVAILABLE { false }; /**< Statically activate or deactivate ENA test */
     static constexpr bool LCD_TEST_AVAILABLE { false }; /**< Statically activate or deactivate LCD test */

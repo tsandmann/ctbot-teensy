@@ -23,6 +23,7 @@
  */
 
 #include "rc5_int.h"
+#include "scheduler.h"
 
 #include <rc5.h>
 #include <arduino_fixed.h>
@@ -36,6 +37,7 @@ std::remove_all_extents<decltype(Rc5::input_data_)>::type Rc5::input_data_[Rc5::
 decltype(Rc5::input_idx_) Rc5::input_idx_ { 0 };
 
 Rc5::Rc5(const uint8_t pin) :last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, rc5_toggle_ { false }, p_impl_ { new RC5() } {
+    Scheduler::enter_critical_section();
     arduino::pinMode(pin, INPUT_PULLUP);
 
     // FIXME: think about this...
@@ -50,6 +52,7 @@ Rc5::Rc5(const uint8_t pin) :last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, r
             }
         }, CHANGE
     );
+    Scheduler::exit_critical_section();
 
     reset();
 }

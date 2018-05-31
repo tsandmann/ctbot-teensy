@@ -37,8 +37,8 @@ namespace ctbot {
 namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
-    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, [] (void* p_data) { auto p_this(reinterpret_cast<BlinkTest*>(p_data)); return p_this->run(); }, this);
     arduino::pinMode(LED_BUILTIN, OUTPUT);
+    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 192UL, [] (void* p_data) { auto p_this(reinterpret_cast<BlinkTest*>(p_data)); return p_this->run(); }, this);
 }
 
 void BlinkTest::run() {
@@ -48,7 +48,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, [] (void* p_data) { auto p_this(reinterpret_cast<LedTest*>(p_data)); return p_this->run(); }, this);
+    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 192UL, [] (void* p_data) { auto p_this(reinterpret_cast<LedTest*>(p_data)); return p_this->run(); }, this);
 }
 
 void LedTest::run() {
@@ -96,7 +96,7 @@ void EnaTest::run() {
 
 
 SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, [] (void* p_data) { auto p_this(reinterpret_cast<SensorLcdTest*>(p_data)); return p_this->run(); }, this);
+    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1024UL, [] (void* p_data) { auto p_this(reinterpret_cast<SensorLcdTest*>(p_data)); return p_this->run(); }, this);
 }
 
 void SensorLcdTest::run() {

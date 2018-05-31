@@ -1,5 +1,4 @@
 /*
- * This file is part of the c't-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -41,6 +40,7 @@ namespace arduino {
 
     using ::delay;
     using ::delayMicroseconds;
+    using ::yield;
 
     using ::Serial;
 }

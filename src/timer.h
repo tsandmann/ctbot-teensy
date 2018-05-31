@@ -37,9 +37,10 @@ namespace ctbot {
  *
  * @startuml{Timer.png}
  *   class Timer {
- *     +{static} get_us(T&) : uint32_t
  *     +{static} get_us() : uint32_t
  *     +{static} get_ms() : uint32_t
+ *     +{static} delay_ms(uint32_t)
+ *     +{static} delay_us(uint32_t)
  *   }
  * @enduml
  */
@@ -70,16 +71,16 @@ public:
     /**
      * @brief Delay the execution by ms milliseconds
      * @param ms: Number of ms to wait
-     * @note Calls Arduinos delay()
+     * @note Calls FreeRTOS' vTaskDelay() to block the calling task
      */
-    static void delay(uint32_t ms);
+    static void delay_ms(const uint32_t ms);
 
     /**
      * @brief Delay the execution by us microseconds
      * @param us: Number of us to wait
-     * @note Calls Arduinos delayMicroseconds()
+     * @note Calls Arduinos delayMicroseconds(), does NOT block the task
      */
-    static void delay_us(uint32_t us);
+    static void delay_us(const uint32_t us);
 };
 
 } /* namespace ctbot */

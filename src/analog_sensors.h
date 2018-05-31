@@ -41,15 +41,11 @@ class AnalogSensors {
 protected:
     static constexpr auto ENA_MASK = EnaTypes::BORDER | EnaTypes::LINE; // | EnaTypes::DISTANCE;
 
-    union {
-        struct {
-            uint16_t distance[2];
-            uint16_t line[2];
-            uint16_t ldr[2];
-            uint16_t border[2];
-        } __attribute__((packed));
-        uint16_t raw[8];
-    } data_; // FIXME: not needed anymore
+    uint32_t last_dist_update_;
+    uint16_t distance_[2];
+    uint16_t line_[2];
+    uint16_t ldr_[2];
+    uint16_t border_[2];
 
     /**
      * @brief Read all the current ADC values
@@ -83,56 +79,56 @@ public:
      * @return The last value of left border sensor
      */
     auto get_border_l() const {
-        return data_.border[0];
+        return border_[0];
     }
 
     /**
      * @return The last value of right border sensor
      */
     auto get_border_r() const {
-         return data_.border[1];
+         return border_[1];
     }
 
     /**
      * @return The last value of left distance sensor
      */
     auto get_distance_l() const {
-        return data_.distance[0];
+        return distance_[0];
     }
 
     /**
      * @return The last value of right distance sensor
      */
     auto get_distance_r() const {
-        return data_.distance[1];
+        return distance_[1];
     }
 
     /**
      * @return The last value of left LDR sensor
      */
     auto get_ldr_l() const {
-        return data_.ldr[0];
+        return ldr_[0];
     }
 
     /**
      * @return The last value of right LDR sensor
      */
     auto get_ldr_r() const {
-        return data_.ldr[1];
+        return ldr_[1];
     }
 
     /**
      * @return The last value of left line sensor
      */
     auto get_line_l() const {
-        return data_.line[0];
+        return line_[0];
     }
 
     /**
      * @return The last value of right line sensor
      */
     auto get_line_r() const {
-        return data_.line[1];
+        return line_[1];
     }
 };
 

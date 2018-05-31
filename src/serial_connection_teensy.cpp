@@ -26,6 +26,9 @@
 #include "timer.h"
 
 #include <arduino_fixed.h>
+#include <FreeRTOS.h>
+#include <task.h>
+#include <semphr.h>
 #include <cstring>
 #include <cstddef>
 #include <streambuf>
@@ -51,7 +54,7 @@ struct streambuf_helper {
 decltype(SerialConnectionTeensy::wait_callback_) SerialConnectionTeensy::wait_callback_(nullptr);
 
 // FIXME: generalize for other serial ports
-SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port) : io_stream_ { serial_port == 0 ? arduino::Serial : arduino::Serial } {
+SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port) : mutex_ { xSemaphoreCreateMutex() }, io_stream_ { serial_port == 0 ? arduino::Serial : arduino::Serial } {
     io_stream_.begin(CtBotConfig::UART0_BAUDRATE);
 }
 
@@ -61,132 +64,165 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
         return size;
     }
 
-    const auto start(Timer::get_us());
+    const auto start(Timer::get_ms());
     auto now(start);
-    const auto timeout_us(static_cast<uint32_t>(timeout_ms) * 1000UL);
-    auto running_us(now - start);
+    auto running_ms(now - start);
 
-    while ((bytes_available < size) && ((! timeout_ms) || (running_us < timeout_us))) {
+    while ((bytes_available < size) && ((! timeout_ms) || (running_ms < timeout_ms))) {
         if (wait_callback_) {
             wait_callback_(this);
         }
+        vTaskDelay(1);
         bytes_available = available();
-        now = Timer::get_us();
-        running_us = now - start;
+        now = Timer::get_ms();
+        running_ms = now - start;
     }
 
     return std::min<uint16_t>(bytes_available, size);
 }
 
-std::size_t SerialConnectionTeensy::available() const {
+size_t SerialConnectionTeensy::available() const {
     return io_stream_.available();
 }
 
-std::size_t SerialConnectionTeensy::receive(void* data, const std::size_t size) {
+size_t SerialConnectionTeensy::receive(void* data, const size_t size) {
     if (! size) {
         return 0;
     }
 
-    return io_stream_.readBytes(static_cast<char*>(data), size);
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        const size_t ret { io_stream_.readBytes(static_cast<char*>(data), size) };
+        xSemaphoreGive(mutex_);
+        return ret;
+    }
+    return 0;
 }
 
-std::size_t SerialConnectionTeensy::receive(std::streambuf& buf, const std::size_t size) {
+size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
     if (! size) {
         return 0;
     }
 
-    uint16_t i;
-    for (i = 0U; i < size; ++i) {
-        buf.sputc(io_stream_.read());
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        uint16_t i;
+        for (i = 0U; i < size; ++i) {
+            buf.sputc(io_stream_.read());
+        }
+        xSemaphoreGive(mutex_);
+        return i;
     }
-    return i;
+    return 0;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char* ptr(reinterpret_cast<char*>(data));
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+            c = io_stream_.read();
+            xSemaphoreGive(mutex_);
+        } else {
+            return n;
+        }
         if (c >= 0) {
             *ptr = c;
             ++n;
         } else {
-// FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            vTaskDelay(1);
         }
     } while (*ptr++ != delim && n < size16);
 
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char* ptr(reinterpret_cast<char*>(data));
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+            c = io_stream_.read();
+            xSemaphoreGive(mutex_);
+        } else {
+            return n;
+        }
         if (c >= 0) {
             *ptr = c;
             ++ptr;
             ++n;
         } else {
-// FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            vTaskDelay(1);
         }
     } while (std::strncmp(reinterpret_cast<const char*>(data), delim.c_str(), n) && n < size16);
 
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char tmp;
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+            c = io_stream_.read();
+            xSemaphoreGive(mutex_);
+        } else {
+            return n;
+        }
         if (c >= 0) {
             tmp = c;
             buf.sputc(tmp);
             ++n;
         } else {
             tmp = 0;
-// FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            vTaskDelay(1);
         }
     } while (tmp != delim && n < size16);
 
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::string& delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize) {
     auto& buffer(reinterpret_cast<std::stringbuf&>(buf));
     const auto size16(static_cast<uint16_t>(maxsize));
 
     uint16_t n { 0 };
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+            c = io_stream_.read();
+            xSemaphoreGive(mutex_);
+        } else {
+            return n;
+        }
         if (c >= 0) {
             buf.sputc(c);
             ++n;
         } else {
-// FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            vTaskDelay(1);
         }
     } while (std::strncmp(streambuf_helper::get_data(buffer), delim.c_str(), n) && n < size16);
 
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_async(void* data, const std::size_t size, const uint32_t timeout_ms) {
+size_t SerialConnectionTeensy::receive_async(void* data, const size_t size, const uint32_t timeout_ms) {
     auto ptr(reinterpret_cast<uint8_t*>(data));
     const auto timeout(static_cast<uint16_t>(timeout_ms));
 
@@ -204,7 +240,7 @@ std::size_t SerialConnectionTeensy::receive_async(void* data, const std::size_t 
     return done;
 }
 
-std::size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const std::size_t size, const uint32_t timeout_ms) {
+size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms) {
     const auto timeout(static_cast<uint16_t>(timeout_ms));
 
     const auto avail(available());
@@ -220,24 +256,41 @@ std::size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const std
     return done;
 }
 
-std::size_t SerialConnectionTeensy::send(const void* data, const std::size_t size) {
-    return io_stream_.write(reinterpret_cast<const uint8_t*>(data), size);
+size_t SerialConnectionTeensy::send(const void* data, const size_t size) {
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        const size_t ret { io_stream_.write(reinterpret_cast<const uint8_t*>(data), size) };
+        xSemaphoreGive(mutex_);
+        return ret;
+    }
+    return 0;
 }
 
-std::size_t SerialConnectionTeensy::send(std::streambuf& buf, const std::size_t size) {
+size_t SerialConnectionTeensy::send(std::streambuf& buf, const size_t size) {
     const auto size16(static_cast<uint16_t>(size));
-    for (auto i(0U); i < size16; ++i) {
-        io_stream_.write(static_cast<uint8_t>(buf.sbumpc()));
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        for (auto i(0U); i < size16; ++i) {
+            io_stream_.write(static_cast<uint8_t>(buf.sbumpc()));
+        }
+        xSemaphoreGive(mutex_);
+        return size;
     }
-    return size;
+    return 0;
 }
 
 int SerialConnectionTeensy::peek() const {
-    return static_cast<int>(io_stream_.peek());
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        const int ret { io_stream_.peek() };
+        xSemaphoreGive(mutex_);
+        return ret;
+    }
+    return -1;
 }
 
 void SerialConnectionTeensy::flush() {
-    io_stream_.flush();
+    if (mutex_ && xSemaphoreTake(mutex_, portMAX_DELAY)) {
+        io_stream_.flush();
+        xSemaphoreGive(mutex_);
+    }
 }
 
 } /* namespace ctbot */

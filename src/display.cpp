@@ -23,6 +23,7 @@
  */
 
 #include "display.h"
+#include "scheduler.h"
 
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
@@ -31,17 +32,22 @@
 namespace ctbot {
 
 Display::Display() : p_impl_ { new LiquidCrystal_I2C(0x3f, 2, 1, 0, 4, 5, 6, 7) } { // FIXME: Parameter for i2c instance
+    Scheduler::enter_critical_section();
     Wire2.setSDA(3);
     Wire2.setSCL(4);
 
     p_impl_->begin(LINE_LENGTH, 4);
     p_impl_->setBacklightPin(3, POSITIVE);
     p_impl_->setBacklight(false);
+    Scheduler::exit_critical_section();
+
     clear();
 }
 
 void Display::clear() const {
+    Scheduler::enter_critical_section();
     p_impl_->clear();
+    Scheduler::exit_critical_section();
 }
 
 void Display::set_cursor(const uint8_t row, const uint8_t column) const {
@@ -49,19 +55,29 @@ void Display::set_cursor(const uint8_t row, const uint8_t column) const {
     if (c >= LINE_LENGTH) {
         return;
     }
+    Scheduler::enter_critical_section();
     p_impl_->setCursor(c, row - 1);
+    Scheduler::exit_critical_section();
 }
 
 void Display::set_backlight(const bool status) const {
+    Scheduler::enter_critical_section();
     p_impl_->setBacklight(status);
+    Scheduler::exit_critical_section();
 }
 
 uint8_t Display::print(const char c) const {
-    return p_impl_->print(c);
+    Scheduler::enter_critical_section();
+    const uint8_t ret { static_cast<uint8_t>(p_impl_->print(c)) };
+    Scheduler::exit_critical_section();
+    return ret;
 }
 
 uint8_t Display::print(const std::string& str) const {
-    return p_impl_->print(str.c_str()); // baeh
+    Scheduler::enter_critical_section();
+    const uint8_t ret { static_cast<uint8_t>(p_impl_->print(str.c_str())) }; // baeh
+    Scheduler::exit_critical_section();
+    return ret;
 }
 
 uint8_t Display::printf(const char* format, ...) {
@@ -79,9 +95,11 @@ uint8_t Display::printf(const char* format, ...) {
 
     /* send characters to display */
     const char* ptr(buffer_);
+    Scheduler::enter_critical_section();
     for (uint8_t i { 0U }; i < len; ++i) {
         p_impl_->print(*ptr++);
     }
+    Scheduler::exit_critical_section();
 
     return len;
 }

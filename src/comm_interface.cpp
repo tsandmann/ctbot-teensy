@@ -38,7 +38,7 @@
 namespace ctbot {
 
 CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo) : io_(io_connection), echo_(enable_echo), error_(0), p_input_(input_buffer_) {
-    CtBot::get_instance().get_scheduler()->task_add("comm", TASK_PERIOD_MS, [] (void* p_data) { auto p_this(reinterpret_cast<CommInterface*>(p_data)); return p_this->run(); }, this);
+    CtBot::get_instance().get_scheduler()->task_add("comm", TASK_PERIOD_MS, 768UL, [] (void* p_data) { auto p_this(reinterpret_cast<CommInterface*>(p_data)); return p_this->run(); }, this);
 }
 
 int16_t CommInterface::debug_print(const char c) const {

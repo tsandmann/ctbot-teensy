@@ -24,6 +24,7 @@
 
 #include "motor.h"
 #include "ctbot.h"
+#include "scheduler.h"
 
 #include <arduino_fixed.h>
 #include <cmath>
@@ -33,10 +34,11 @@
 namespace ctbot {
 
 Motor::Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert) : pwm_(0), pwm_pin_ (pin_pwm), dir_pin_(pin_dir), invert_dir_(invert), enc_(enc) {
+    Scheduler::enter_critical_section();
     arduino::pinMode(pin_pwm, OUTPUT);
     arduino::pinMode(pin_dir, OUTPUT);
-
     arduino::analogWriteFrequency(pin_pwm, PWM_FREQUENCY);
+    Scheduler::exit_critical_section();
 
     set(0);
 }
@@ -55,9 +57,11 @@ void Motor::set(int new_pwm) {
     }
     arduino::digitalWriteFast(dir_pin_, new_pwm >= 0);
 
-    const auto old_res { arduino::analogWriteResolution(PWM_RESOLUTION) };
+    Scheduler::enter_critical_section();
+    const uint32_t old_res { arduino::analogWriteResolution(PWM_RESOLUTION) };
     arduino::analogWrite(pwm_pin_, static_cast<int>(static_cast<float>(std::abs(pwm_)) / (CtBotConfig::MOT_PWM_MAX / static_cast<float>(1 << PWM_RESOLUTION) )));
     arduino::analogWriteResolution(old_res);
+    Scheduler::exit_critical_section();
 }
 
 } /* namespace ctbot */

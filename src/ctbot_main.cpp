@@ -23,13 +23,66 @@
  */
 
 #include "ctbot.h"
-#include "scheduler.h"
+#include "ctbot_config.h"
 #include "timer.h"
 #include "serial_connection_teensy.h"
-#include "ctbot_config.h"
-#include "leds.h"
 #include "tests.h"
 
+#include <arduino_fixed.h>
+#include <FreeRTOS.h>
+#include <task.h>
+#include <portable/teensy.h>
+
+
+/**
+ * @brief FreeRTOS task to initialize everything
+ * @note This task is suspended forever after initialization is done.
+ */
+static void init_task(void*) {
+    using namespace ctbot;
+
+    /* wait for USB device enumeration, terminal program connection, etc. */
+    Timer::delay_us(1500UL * 1000UL);
+
+    // serial_puts("init_task()");
+    // freertos::print_free_ram();
+
+    /* create CtBot singleton instance... */
+    // serial_puts("creating CtBot instance...");
+    CtBot& ctbot { CtBot::get_instance() };
+
+    /* initialize it... */
+    // serial_puts("calling ctbot.setup()...");
+    ctbot.setup();
+    // serial_puts("ctbot.setup() done.");
+
+    /* create test tasks if configured... */
+    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
+        new tests::BlinkTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
+        new tests::LedTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
+        new tests::LcdTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
+        new tests::EnaTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
+        new tests::SensorLcdTest(ctbot);
+    }
+
+    freertos::print_free_ram();
+
+    // serial_puts("suspending init task...");
+    vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
+    vTaskSuspend(nullptr);
+}
 
 extern "C" {
 /**
@@ -126,40 +179,21 @@ extern "C" {
  * @enduml
  */
 void setup() {
-    /* wait for USB device enumeration, terminal program connection, etc. */
-    ctbot::Timer::delay(1500U);
+    uint8_t top;
 
-    /* create CtBot singleton instance... */
-    auto& ctbot { ctbot::CtBot::get_instance() };
+    __disable_irq();
+    stack_top = &top; // necessary for _sbrk()
 
-    /* initialize it... */
-    ctbot.setup();
+    // delay_us(2000UL * 1000UL);
 
-    /* create test tasks if configured... */
-    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
-        new ctbot::tests::BlinkTest(ctbot);
+    // serial_puts("\n\nCreating init task...");
+    if (xTaskCreate(init_task, "init", 256UL, nullptr, configMAX_PRIORITIES - 1, nullptr) != pdPASS) {
+        freertos::error_blink(10);
     }
 
-    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
-        new ctbot::tests::LedTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
-        new ctbot::tests::LcdTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
-        new ctbot::tests::EnaTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
-        new ctbot::tests::SensorLcdTest(ctbot);
-    }
-
-    /* finally start CtBot instance */
-    ctbot.start();
-
-    // we should never get here
+    vTaskStartScheduler();
+    freertos::error_blink(11);
+    // we never ever get here
 }
 
 /**
@@ -175,13 +209,37 @@ void loop() {}
  * @note File handle paramter is ignored, any data is written to serial connection
  */
 int _write(int, char* ptr, int len) {
-    static auto& ctbot { ctbot::CtBot::get_instance() };
-    auto p_serial { ctbot.get_serial_conn() };
+    using namespace ctbot;
+
+    static CtBot& ctbot { CtBot::get_instance() };
+    SerialConnectionTeensy* p_serial { ctbot.get_serial_conn() };
 
     if (p_serial) {
         return p_serial->send(reinterpret_cast<uint8_t*>(ptr), len);
     }
     return -1;
+}
+
+
+/**
+ * @brief Hard fault - blink four short flash every two seconds
+ */
+void hard_fault_isr() {
+    freertos::error_blink(4);
+}
+
+/**
+ * @brief Bus fault - blink five short flashes every two seconds
+ */
+void bus_fault_isr() {
+    freertos::error_blink(5);
+}
+
+/**
+ * @brief Usage fault - blink six short flashes every two seconds
+ */
+void usage_fault_isr() {
+    freertos::error_blink(6);
 }
 
 } // extern C

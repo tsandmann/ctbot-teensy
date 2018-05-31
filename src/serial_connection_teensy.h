@@ -38,6 +38,7 @@ namespace ctbot {
 class SerialConnectionTeensy {
 // FIXME: maybe this class can be simplified a lot...
 protected:
+    void* mutex_;
     usb_serial_class& io_stream_;
 
     static void (*wait_callback_)(const void*);
@@ -80,7 +81,7 @@ public:
     /**
      * @return Number of bytes available in receive buffer
      */
-    std::size_t available() const;
+    size_t available() const;
 
     /**
      * @brief Read size bytes from connection into a plain buffer
@@ -88,7 +89,7 @@ public:
      * @param[in] size: Number of bytes to read
      * @return Number of bytes actually read
      */
-    std::size_t receive(void* data, const std::size_t size);
+    size_t receive(void* data, const size_t size);
 
     /**
      * @brief Read size bytes from connection into a streambuffer
@@ -96,7 +97,7 @@ public:
      * @param[in] size: Number of bytes to read
      * @return Number of bytes actually read
      */
-    std::size_t receive(std::streambuf& buf, const std::size_t size);
+    size_t receive(std::streambuf& buf, const size_t size);
 
     /**
      * @brief Read bytes from connection until a delimiter char into a plain buffer
@@ -105,7 +106,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    std::size_t receive_until(void* data, const char delim, const std::size_t maxsize);
+    size_t receive_until(void* data, const char delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter string into a plain buffer
@@ -114,7 +115,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    std::size_t receive_until(void* data, const std::string& delim, const std::size_t maxsize);
+    size_t receive_until(void* data, const std::string& delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter char into a streambuffer
@@ -123,7 +124,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    std::size_t receive_until(std::streambuf& buf, const char delim, const std::size_t maxsize);
+    size_t receive_until(std::streambuf& buf, const char delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter string into a streambuffer
@@ -132,7 +133,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    std::size_t receive_until(std::streambuf& buf, const std::string& delim, const std::size_t maxsize);
+    size_t receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize);
 
     /**
      * @brief Read size bytes from connection into a plain buffer with a timeout
@@ -141,7 +142,7 @@ public:
      * @param[in] timeout_ms: Timeout while waiting for data
      * @return Number of bytes actually read
      */
-    std::size_t receive_async(void* data, const std::size_t size, const uint32_t timeout_ms);
+    size_t receive_async(void* data, const size_t size, const uint32_t timeout_ms);
 
     /**
      * @brief Read size bytes from connection into a streambuffer with a timeout
@@ -150,7 +151,7 @@ public:
      * @param[in] timeout_ms: Timeout while waiting for data
      * @return Number of bytes actually read
      */
-    std::size_t receive_async(std::streambuf& buf, const std::size_t size, const uint32_t timeout_ms);
+    size_t receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms);
 
     /**
      * @brief Write size bytes to connection from a plain buffer
@@ -158,7 +159,7 @@ public:
      * @param[in] size: Number of bytes to write
      * @return Number of bytes actually written
      */
-    std::size_t send(const void* data, const std::size_t size);
+    size_t send(const void* data, const size_t size);
 
     /**
      * @brief Write size bytes to connection from a streambuffer
@@ -166,7 +167,7 @@ public:
      * @param[in] size: Number of bytes to write
      * @return Number of bytes actually written
      */
-    std::size_t send(std::streambuf& buf, const std::size_t size);
+    size_t send(std::streambuf& buf, const size_t size);
 
     /**
      * @brief Get the next byte received without removing it from the receive buffer

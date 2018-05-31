@@ -23,37 +23,49 @@
  */
 
 #include "analog_sensors.h"
+#include "scheduler.h"
+#include "timer.h"
 
 #include <arduino_fixed.h>
 
 
 namespace ctbot {
 
-AnalogSensors::AnalogSensors() {
-    arduino::pinMode(CtBotConfig::BORDER_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::BORDER_R_PIN, INPUT);
+AnalogSensors::AnalogSensors() : last_dist_update_ { Timer::get_ms() }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 } {
+    Scheduler::enter_critical_section();
     arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, INPUT);
     arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_R_PIN, INPUT);
     arduino::pinMode(CtBotConfig::LINE_L_PIN, INPUT);
     arduino::pinMode(CtBotConfig::LINE_R_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::LDR_L_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::LDR_R_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_L_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_R_PIN, INPUT);
+    Scheduler::exit_critical_section();
+
 }
 
 void AnalogSensors::update() {
-    data_.border[0] = analog_read(CtBotConfig::BORDER_L_PIN);
-    data_.border[1] = analog_read(CtBotConfig::BORDER_R_PIN);
-    data_.distance[0] = analog_read(CtBotConfig::DISTANCE_L_PIN, 8); // FIXME: every 50 ms
-    data_.distance[1] = analog_read(CtBotConfig::DISTANCE_R_PIN, 8); // FIXME: every 50 ms
-    data_.ldr[0] = analog_read(CtBotConfig::LDR_L_PIN, 4);
-    data_.ldr[1] = analog_read(CtBotConfig::LDR_R_PIN, 4);
-    data_.line[0] = analog_read(CtBotConfig::LINE_L_PIN);
-    data_.line[1] = analog_read(CtBotConfig::LINE_R_PIN);
+    const uint32_t now { Timer::get_ms() };
+    if (now >= last_dist_update_ + 50) {
+        distance_[0] = analog_read(CtBotConfig::DISTANCE_L_PIN, 8);
+        distance_[1] = analog_read(CtBotConfig::DISTANCE_R_PIN, 8);
+        last_dist_update_ = now;
+    }
+    line_[0] = analog_read(CtBotConfig::LINE_L_PIN);
+    line_[1] = analog_read(CtBotConfig::LINE_R_PIN);
+    ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 4);
+    ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 4);
+    border_[0] = analog_read(CtBotConfig::BORDER_L_PIN);
+    border_[1] = analog_read(CtBotConfig::BORDER_R_PIN);
 }
 
 int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t avg_num) const {
+    Scheduler::enter_critical_section();
     arduino::analogReadAveraging(avg_num);
-    return static_cast<int16_t>(arduino::analogRead(pin));
+    const int16_t ret { static_cast<int16_t>(arduino::analogRead(pin)) };
+    Scheduler::exit_critical_section();
+    return ret;
 }
 
 } /* namespace ctbot */

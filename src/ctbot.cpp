@@ -35,8 +35,6 @@
 #include "serial_connection_teensy.h"
 #include "cmd_parser.h"
 
-#include <cstdint>
-
 
 namespace ctbot {
 
@@ -72,6 +70,7 @@ const char CtBot::usage_text[] {
     "\tled\t\t\tprint current LED setting\n"
 
     "\ttasks\t\t\tprint task list\n"
+    "\tfree\t\t\tprint free RAM\n"
     "\n"
 
     "set (s)\n"
@@ -83,32 +82,22 @@ const char CtBot::usage_text[] {
     "\tlcdbl [0;1]\t\t\tswitch LCD backlight ON (1) or OFF (0)\n"
 };
 
-CtBot::CtBot() {
-    /* initialize debug and command serial line */
-    p_serial_ = new SerialConnectionTeensy(0);
+CtBot& CtBot::get_instance() {
+    static CtBot instance;
+    return instance;
 }
 
-CtBot::~CtBot() {
-    delete p_serial_;
-}
-
-void CtBot::start() {
-    p_scheduler_->print_task_list(*p_comm_);
-
-    p_scheduler_->run();
-
-    shutdown();
+CtBot::CtBot() : p_serial_ { new SerialConnectionTeensy(0) } {
+    // initializes serial connection for debug purpose
 }
 
 void CtBot::stop() {
-    if (p_scheduler_) {
-        p_scheduler_->stop();
-    }
+    shutdown();
 }
 
 void CtBot::setup() {
     p_scheduler_ = new Scheduler();
-    p_scheduler_->task_add("main", TASK_PERIOD_MS, [] (void* p_data) { auto p_this(reinterpret_cast<CtBot*>(p_data)); return p_this->run(); }, this);
+    p_scheduler_->task_add("main", TASK_PERIOD_MS, 512UL, [] (void* p_data) { auto p_this(reinterpret_cast<CtBot*>(p_data)); return p_this->run(); }, this);
 
     p_sensors_ = new Sensors();
 
@@ -225,6 +214,8 @@ void CtBot::init_parser() {
             p_this->serial_print_base(static_cast<uint8_t>(p_this->p_leds_->get()), PrintBase::HEX);
         } else if (args == "tasks") {
             p_this->get_scheduler()->print_task_list(*p_this->p_comm_);
+        } else if (args == "free") {
+            p_this->get_scheduler()->print_free_ram(*p_this->p_comm_);
         } else {
             return false;
         }
@@ -304,6 +295,7 @@ void CtBot::run() {
 void CtBot::shutdown() {
     p_comm_->debug_print("System shutting down...\n");
 
+    Scheduler::enter_critical_section();
     p_speedcontrols_[0]->set_speed(0.f);
     p_speedcontrols_[1]->set_speed(0.f);
     p_motors_[0]->set(0);
@@ -329,7 +321,7 @@ void CtBot::shutdown() {
     delete p_sensors_;
     delete p_scheduler_;
 
-    while (true) {} // FIXME: sleep
+    Scheduler::stop();
 }
 
 } /* namespace ctbot */

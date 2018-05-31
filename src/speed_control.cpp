@@ -46,7 +46,7 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor) : direction_ { true
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, &controller, nullptr);
+        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, 512UL, &controller, nullptr);
     }
 }
 

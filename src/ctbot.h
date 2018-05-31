@@ -50,7 +50,7 @@ class Scheduler;
 class CtBot {
 protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
-    static const char usage_text[]; /**< C-String containing the usage / help message */ // FIXME: std::string
+    static const char usage_text[]; /**< C-String containing the usage / help message */
 
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
@@ -161,16 +161,7 @@ public:
      * @brief Get the one and only instance of this class (singleton)
      * @return Reference to CtBot instance
      */
-    static CtBot& get_instance() {
-        static CtBot instance;
-        return instance;
-    }
-
-    /**
-     * @brief Destructor
-     * @note Destructor is never called in current setup
-     */
-    ~CtBot();
+    static CtBot& get_instance();
 
     /**
      * @brief Setup method responsible for initialization and creating of instances for all components (sensors, motors, etc.)
@@ -237,26 +228,6 @@ public:
      * @enduml
      */
     void setup();
-
-    /**
-     * @brief Start the scheduler
-     *
-     * @startuml{CtBot_start.png}
-     *  activate CtBot
-     *  CtBot -> Scheduler: run()
-     *  deactivate CtBot
-     *  activate Scheduler
-     *
-     *  ... run until shutdown ...
-     *
-     *  CtBot <-- Scheduler
-     *  deactivate Scheduler
-     *
-     *  activate CtBot
-     *  CtBot -> CtBot: shutdown()
-     * @enduml
-     */
-    void start();
 
     /**
      * @brief Stop the scheduler

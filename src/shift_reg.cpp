@@ -24,6 +24,7 @@
 
 #include "shift_reg.h"
 #include "ctbot_config.h"
+#include "scheduler.h"
 
 #include <arduino_fixed.h>
 
@@ -33,15 +34,18 @@ namespace ctbot {
 template <uint8_t SCK_PIN, uint8_t RCK_PIN>
 ShiftReg<SCK_PIN, RCK_PIN>::ShiftReg() {
     /* set pins to output mode */
+    Scheduler::enter_critical_section();
     arduino::pinMode(CtBotConfig::SHIFT_SDATA_PIN, OUTPUT);
     arduino::pinMode(RCK_PIN, OUTPUT);
     if (SCK_PIN != CtBotConfig::SHIFT_SDATA_PIN && SCK_PIN != RCK_PIN) {
         arduino::pinMode(SCK_PIN, OUTPUT);
     }
+    Scheduler::exit_critical_section();
 }
 
 template <uint8_t SCK_PIN, uint8_t RCK_PIN>
 void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t) const {
+    Scheduler::enter_critical_section();
     arduino::digitalWriteFast(RCK_PIN, false); // reset RCK
 
     for (uint8_t i { 0U }; i < 8; ++i) {
@@ -62,6 +66,7 @@ void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t)
     arduino::digitalWriteFast(CtBotConfig::SHIFT_SDATA_PIN, false);
     arduino::digitalWriteFast(RCK_PIN, true); // latch to output -> rising edge on RCK
     __enable_irq();
+    Scheduler::exit_critical_section();
 }
 
 /* explicit instantiation for shift regs used by c't-Bot */

@@ -25,6 +25,8 @@
 #include "timer.h"
 
 #include <arduino_fixed.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
 
 namespace ctbot {
@@ -37,13 +39,12 @@ uint32_t Timer::get_ms() {
     return millis();
 }
 
-void Timer::delay(uint32_t ms) {
-    arduino::delay(ms);
+void Timer::delay_ms(const uint32_t ms) {
+    ::vTaskDelay(ms * (configTICK_RATE_HZ / 1000UL));
 }
 
-void Timer::delay_us(uint32_t us) {
+void Timer::delay_us(const uint32_t us) {
     arduino::delayMicroseconds(us);
 }
-
 
 } /* namespace ctbot */
