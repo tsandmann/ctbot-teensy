@@ -31,11 +31,12 @@
 #include <queue>
 #include <vector>
 #include <string>
-#include <ostream>
 #include <type_traits>
 
 
 namespace ctbot {
+
+class CommInterface;
 
 /**
  * @brief Cooperative scheduler implementation for periodic tasks
@@ -84,6 +85,12 @@ protected:
         bool operator <(const Task& other) const {
             return next_runtime_ > other.next_runtime_; // lowest next_runtime will be executed first!
         }
+
+        /**
+         * @brief Print task information to a CommInterface
+         * @param[in] comm: Reference to CommInterface instance to print to
+         */
+        void print(CommInterface& comm) const;
     };
 
     volatile bool running_; /**< Flag indicating the current status of the scheduler (running, iff true) */
@@ -91,14 +98,6 @@ protected:
     std::priority_queue<Task> task_queue_; /**< Queue of all tasks, sorted ascending by next runtime */
     std::vector<Task>& task_vector_; /**< Reference to underlying container of task_queue_ */
     std::vector<std::string> task_names_; /**< Vector containing the tasks' names, ordering by task IDs */
-
-    /**
-     * @brief Stream operator to print task information to an output stream
-     * @param[out] os: Reference to output stream to print information to
-     * @param[in] v: Reference to task which information shall be printed
-     * @return Reference to used output stream
-     */
-    friend std::ostream& operator <<(std::ostream& os, const Task& v);
 
     /**
      * @brief Helper function to get access to the underlying container of a std::priority_queue
@@ -171,9 +170,9 @@ public:
 
     /**
      * @brief Print a list of all tasks and their current status
-     * @param[out] os: Reference to output stream, where the list will be printed to
+     * @param[in] comm: Reference to CommInterface instance used to print the list
      */
-    void print_task_list(std::ostream& os) const;
+    void print_task_list(CommInterface& comm) const;
 };
 
 } /* namespace ctbot */
