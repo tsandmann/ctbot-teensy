@@ -59,7 +59,8 @@ protected:
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     Leds* p_leds_; /**< Pointer to led instance */
     Display* p_lcd_; /**< Pointer to display instance */
-    SerialConnectionTeensy* p_serial_; /**< Pointer to serial connection abstraction layer instance */
+    SerialConnectionTeensy* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
+    SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
 
@@ -299,11 +300,11 @@ public:
     }
 
     /**
-     * @brief Get the serial connection instance
+     * @brief Get the serial connection instance of USB serial port
      * @return Pointer to serial connection instance
      */
-    auto get_serial_conn() const {
-        return p_serial_;
+    auto get_serial_usb_conn() const {
+        return p_serial_usb_;
     }
 };
 

@@ -28,7 +28,10 @@
 #include <streambuf>
 
 
-class usb_serial_class;
+class Stream;
+namespace arduino {
+using ::Stream;
+}
 
 namespace ctbot {
 
@@ -39,7 +42,7 @@ class SerialConnectionTeensy {
 // FIXME: maybe this class can be simplified a lot...
 protected:
     void* mutex_;
-    usb_serial_class& io_stream_;
+    arduino::Stream& io_stream_;
 
     static void (*wait_callback_)(const void*);
 
@@ -49,8 +52,18 @@ public:
     /**
      * @brief Construct a new SerialConnectionTeensy object
      * @param[in] serial_port: ID of underlying serial port to use; 0 for USB serial port emulation
+     * @param[in] baud_rate: Baud rate of serial port to use, if serial_port > 0
      */
-    SerialConnectionTeensy(const uint8_t serial_port);
+    SerialConnectionTeensy(const uint8_t serial_port, const uint32_t baud_rate) : SerialConnectionTeensy(serial_port, 255U, 255U, baud_rate) {}
+
+    /**
+     * @brief Construct a new SerialConnectionTeensy object
+     * @param[in] serial_port: ID of underlying serial port to use; 0 for USB serial port emulation
+     * @param[in] pin_rx: Number of pin to use for RX line
+     * @param[in] pin_tx: Number of pin to use for TX line
+     * @param[in] baud_rate: Baud rate of serial port to use, if serial_port > 0
+     */
+    SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate);
 
     /**
      * @brief Destroy the SerialConnectionTeensy object

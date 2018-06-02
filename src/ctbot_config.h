@@ -58,7 +58,10 @@ public:
     static constexpr bool SENS_LCD_TEST_AVAILABLE { true }; /**< Statically activate or deactivate sensor display test */
 
     /* uart */
-    static constexpr uint32_t UART0_BAUDRATE { 4000000UL }; /**< Baud rate used for Uart 0 */
+    static constexpr uint32_t UART0_BAUDRATE { 4000000UL }; /**< Baud rate used for Uart 0 (USB) */
+    static constexpr uint8_t UART5_PIN_RX { 34U }; /**< Number of pin to use for RX line for Uart 5 */
+    static constexpr uint8_t UART5_PIN_TX { 33U }; /**< Number of pin to use for TX line for Uart 5 */
+    static constexpr uint32_t UART5_BAUDRATE { 115200UL }; /**< Baud rate used for Uart 5 */
 
     /* shift */
     static constexpr uint8_t SHIFT_SDATA_PIN { 43 }; /**< Pin number of shift register SDATA signal */

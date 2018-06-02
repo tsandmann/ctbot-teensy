@@ -212,7 +212,7 @@ int _write(int, char* ptr, int len) {
     using namespace ctbot;
 
     static CtBot& ctbot { CtBot::get_instance() };
-    SerialConnectionTeensy* p_serial { ctbot.get_serial_conn() };
+    SerialConnectionTeensy* p_serial { ctbot.get_serial_usb_conn() };
 
     if (p_serial) {
         return p_serial->send(reinterpret_cast<uint8_t*>(ptr), len);

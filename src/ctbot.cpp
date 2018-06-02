@@ -87,7 +87,7 @@ CtBot& CtBot::get_instance() {
     return instance;
 }
 
-CtBot::CtBot() : p_serial_ { new SerialConnectionTeensy(0) } {
+CtBot::CtBot() : p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) } {
     // initializes serial connection for debug purpose
 }
 
@@ -114,7 +114,8 @@ void CtBot::setup() {
     p_lcd_ = new Display();
 
     p_parser_ = new CmdParser();
-    p_comm_ = new CommInterfaceCmdParser(*p_serial_, *p_parser_, true);
+    p_serial_wifi_ = new SerialConnectionTeensy(5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE);
+    p_comm_ = new CommInterfaceCmdParser(*p_serial_wifi_, *p_parser_, true);
 
     init_parser();
 
@@ -306,9 +307,11 @@ void CtBot::shutdown() {
     p_lcd_->set_backlight(false);
     p_leds_->set(LedTypes::NONE);
     p_sensors_->disable_all();
-    p_serial_->flush();
+    p_serial_wifi_->flush();
+    p_serial_usb_->flush();
 
     delete p_comm_;
+    delete p_serial_wifi_;
     delete p_parser_;
     delete p_lcd_;
     delete p_leds_;

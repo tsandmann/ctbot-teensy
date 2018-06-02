@@ -51,11 +51,45 @@ struct streambuf_helper {
     }
 };
 
+/**
+ * @brief Get the serial port object
+ * @param[in] serial_port: Number of serial port
+ * @return Reference to serial port driver
+ */
+static constexpr arduino::Stream& get_serial_port(const uint8_t serial_port) {
+    if (serial_port == 1) {
+        return arduino::Serial1;
+    } else if (serial_port == 2) {
+        return arduino::Serial2;
+    } else if (serial_port == 3) {
+        return arduino::Serial3;
+    } else if (serial_port == 4) {
+        return arduino::Serial4;
+    } else if (serial_port == 5) {
+        return arduino::Serial5;
+    } else if (serial_port == 6) {
+        return arduino::Serial6;
+    } else {
+        return arduino::Serial;
+    }
+}
+
 decltype(SerialConnectionTeensy::wait_callback_) SerialConnectionTeensy::wait_callback_(nullptr);
 
-// FIXME: generalize for other serial ports
-SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port) : mutex_ { xSemaphoreCreateMutex() }, io_stream_ { serial_port == 0 ? arduino::Serial : arduino::Serial } {
-    io_stream_.begin(CtBotConfig::UART0_BAUDRATE);
+SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate) :
+        mutex_ { xSemaphoreCreateMutex() }, io_stream_ { get_serial_port(serial_port) } {
+    if (serial_port > 0) {
+        arduino::HardwareSerial& hw_serial { reinterpret_cast<arduino::HardwareSerial&>(io_stream_) };
+        if (pin_rx < 255U) {
+            hw_serial.setRX(pin_rx);
+        }
+        if (pin_tx < 255U) {
+            hw_serial.setTX(pin_tx);
+        }
+        hw_serial.begin(baud_rate);
+    } else {
+        /* for the USB serial port there is no need to call begin() or initialize anything */
+    }
 }
 
 uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) noexcept {

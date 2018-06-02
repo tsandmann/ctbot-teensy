@@ -42,7 +42,15 @@ namespace arduino {
     using ::delayMicroseconds;
     using ::yield;
 
+    using ::Stream;
+    using ::HardwareSerial;
     using ::Serial;
+    using ::Serial1;
+    using ::Serial2;
+    using ::Serial3;
+    using ::Serial4;
+    using ::Serial5;
+    using ::Serial6;
 }
 
 /* get rid of these stupid macros... */
