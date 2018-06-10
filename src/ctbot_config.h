@@ -62,6 +62,7 @@ public:
     static constexpr uint8_t UART5_PIN_RX { 34U }; /**< Number of pin to use for RX line for Uart 5 */
     static constexpr uint8_t UART5_PIN_TX { 33U }; /**< Number of pin to use for TX line for Uart 5 */
     static constexpr uint32_t UART5_BAUDRATE { 115200UL }; /**< Baud rate used for Uart 5 */
+    static constexpr uint8_t UART_FOR_CMD { 5 }; /**< Number of UART to use for command line interface */
 
     /* shift */
     static constexpr uint8_t SHIFT_SDATA_PIN { 43 }; /**< Pin number of shift register SDATA signal */
