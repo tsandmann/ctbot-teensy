@@ -21,7 +21,9 @@
  * @date    10.06.2018
  */
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
+#include "Wire.h"
+
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -184,6 +186,8 @@ HardwareSerial Serial5;
 HardwareSerial Serial6;
 
 } // namespace arduino
+
+TwoWire Wire2;
 
 extern "C" void setup();
 

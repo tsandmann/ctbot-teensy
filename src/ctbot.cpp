@@ -119,7 +119,7 @@ void CtBot::setup() {
 
     init_parser();
 
-    p_comm_->debug_print("\n*** c't-Bot init done. ***\n\n");
+    p_comm_->debug_print("\n*** c't-Bot init done. ***\n\nType \"help\" to print help message\n\n");
 }
 
 void CtBot::init_parser() {
