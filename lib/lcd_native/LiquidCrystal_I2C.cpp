@@ -23,7 +23,7 @@
 
 #include "LiquidCrystal_I2C.h"
 
-#include <string>
+#include <cstring>
 #include <iostream>
 
 
