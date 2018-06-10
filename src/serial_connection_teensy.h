@@ -25,13 +25,9 @@
 #ifndef SRC_SERIAL_CONNECTION_TEENSY_H_
 #define SRC_SERIAL_CONNECTION_TEENSY_H_
 
+#include <arduino_fixed.h>
 #include <streambuf>
 
-
-class Stream;
-namespace arduino {
-using ::Stream;
-}
 
 namespace ctbot {
 

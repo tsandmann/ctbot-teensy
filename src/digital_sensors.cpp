@@ -38,8 +38,8 @@ DigitalSensors::DigitalSensors() : shutter_(false), transport_(false),
         enc_l_(enc_data_l_, &enc_l_idx_, CtBotConfig::ENC_L_PIN), enc_r_(enc_data_r_, &enc_r_idx_, CtBotConfig::ENC_R_PIN),
         rc5_(CtBotConfig::RC5_PIN), remote_control_(rc5_, CtBotConfig::RC5_ADDR) {
     Scheduler::enter_critical_section();
-    arduino::pinMode(CtBotConfig::SHUTTER_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::TRANSPORT_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::SHUTTER_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::TRANSPORT_PIN, arduino::INPUT);
     Scheduler::exit_critical_section();
 }
 

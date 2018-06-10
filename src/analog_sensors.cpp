@@ -33,14 +33,14 @@ namespace ctbot {
 
 AnalogSensors::AnalogSensors() : last_dist_update_ { Timer::get_ms() }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 } {
     Scheduler::enter_critical_section();
-    arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LINE_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LINE_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::BORDER_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::BORDER_R_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LINE_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
     Scheduler::exit_critical_section();
 
 }

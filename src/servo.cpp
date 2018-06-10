@@ -41,14 +41,14 @@ Servo::Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const ui
     if (pin >= 64U) {
         return;
     }
-    if (! digitalPinHasPWM(pin)) {
+    if (! arduino::digitalPinHasPWM(pin)) {
         return;
     }
 
     Scheduler::enter_critical_section();
     arduino::analogWriteFrequency(pin, 50.f);
     arduino::digitalWriteFast(pin, false);
-    arduino::pinMode(pin, OUTPUT);
+    arduino::pinMode(pin, arduino::OUTPUT);
     Scheduler::exit_critical_section();
 
     set(position_);

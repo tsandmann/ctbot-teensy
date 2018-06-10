@@ -324,6 +324,7 @@ void CtBot::shutdown() {
     delete p_sensors_;
     delete p_scheduler_;
 
+    Scheduler::exit_critical_section();
     Scheduler::stop();
 }
 

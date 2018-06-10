@@ -36,32 +36,32 @@ namespace ctbot {
 Encoder::Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const uint8_t pin) :
         edges_(0), last_idx_(0), speed_(0.f), speed_avg_(0.f), direction_(true), p_enc_data_(p_data), p_enc_idx_(p_idx), last_update_(0), count_(0) {
     Scheduler::enter_critical_section();
-    arduino::pinMode(pin, INPUT);
+    arduino::pinMode(pin, arduino::INPUT);
 
     // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
         arduino::attachInterrupt(
             pin, [] () {
                 static bool last { false };
-                const bool value { arduino::digitalReadFast(CtBotConfig::ENC_L_PIN) };
+                const bool value { static_cast<bool>(arduino::digitalReadFast(CtBotConfig::ENC_L_PIN)) };
 
                 if (value != last) {
                     last = value;
                     isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_);
                 }
-            }, CHANGE
+            }, arduino::CHANGE
         );
     } else if (pin == CtBotConfig::ENC_R_PIN) {
         arduino::attachInterrupt(
             pin, [] () {
                 static bool last { false };
-                const bool value { arduino::digitalReadFast(CtBotConfig::ENC_R_PIN) };
+                const bool value { static_cast<bool>(arduino::digitalReadFast(CtBotConfig::ENC_R_PIN)) };
 
                 if (value != last) {
                     last = value;
                     isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_);
                 }
-            }, CHANGE
+            }, arduino::CHANGE
         );
     }
     Scheduler::exit_critical_section();

@@ -35,10 +35,10 @@ template <uint8_t SCK_PIN, uint8_t RCK_PIN>
 ShiftReg<SCK_PIN, RCK_PIN>::ShiftReg() {
     /* set pins to output mode */
     Scheduler::enter_critical_section();
-    arduino::pinMode(CtBotConfig::SHIFT_SDATA_PIN, OUTPUT);
-    arduino::pinMode(RCK_PIN, OUTPUT);
+    arduino::pinMode(CtBotConfig::SHIFT_SDATA_PIN, arduino::OUTPUT);
+    arduino::pinMode(RCK_PIN, arduino::OUTPUT);
     if (SCK_PIN != CtBotConfig::SHIFT_SDATA_PIN && SCK_PIN != RCK_PIN) {
-        arduino::pinMode(SCK_PIN, OUTPUT);
+        arduino::pinMode(SCK_PIN, arduino::OUTPUT);
     }
     Scheduler::exit_critical_section();
 }

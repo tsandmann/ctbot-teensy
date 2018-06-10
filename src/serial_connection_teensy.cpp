@@ -25,7 +25,6 @@
 #include "serial_connection_teensy.h"
 #include "timer.h"
 
-#include <arduino_fixed.h>
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
@@ -92,7 +91,7 @@ SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const 
     }
 }
 
-uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) noexcept {
+uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) {
     uint16_t bytes_available { static_cast<uint16_t>(available()) };
     if (bytes_available >= size) {
         return size;

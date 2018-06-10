@@ -66,6 +66,14 @@ Scheduler::Scheduler() : next_id_ { 0 }, tast_vector_mutex_ { xSemaphoreCreateMu
     xTaskResumeAll();
 }
 
+Scheduler::~Scheduler() {
+    vTaskSuspendAll();
+    for (uint16_t i { 0 }; i < next_id_; ++i) {
+        task_suspend(i);
+    }
+    xTaskResumeAll();
+}
+
 void Scheduler::stop() {
     vTaskEndScheduler();
 }
