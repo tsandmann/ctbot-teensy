@@ -27,32 +27,6 @@
 #include <Arduino.h>
 #include <Print.h>
 
-namespace arduino {
-    using ::analogRead;
-    using ::analogReadAveraging;
-    using ::analogWrite;
-    using ::analogWriteFrequency;
-    using ::analogWriteResolution;
-    using ::attachInterrupt;
-    using ::digitalReadFast;
-    using ::digitalWriteFast;
-    using ::pinMode;
-
-    using ::delay;
-    using ::delayMicroseconds;
-    using ::yield;
-
-    using ::Stream;
-    using ::HardwareSerial;
-    using ::Serial;
-    using ::Serial1;
-    using ::Serial2;
-    using ::Serial3;
-    using ::Serial4;
-    using ::Serial5;
-    using ::Serial6;
-}
-
 /* get rid of these stupid macros... */
 #undef word
 #undef F
@@ -86,5 +60,67 @@ namespace arduino {
 #undef DEC
 #undef HEX
 #undef BYTE
+
+#undef HIGH
+#undef LOW
+#undef INPUT
+#undef OUTPUT
+#undef INPUT_PULLUP
+#undef INPUT_PULLDOWN
+#undef OUTPUT_OPENDRAIN
+#undef INPUT_DISABLE
+#undef LSBFIRST
+#undef MSBFIRST
+#undef _BV
+#undef CHANGE
+#undef FALLING
+#undef RISING
+#undef digitalPinHasPWM
+#undef LED_BUILTIN
+
+namespace arduino {
+    using ::analogRead;
+    using ::analogReadAveraging;
+    using ::analogWrite;
+    using ::analogWriteFrequency;
+    using ::analogWriteResolution;
+    using ::attachInterrupt;
+    using ::digitalReadFast;
+    using ::digitalWriteFast;
+    using ::pinMode;
+
+    using ::micros;
+    using ::millis;
+    using ::delay;
+    using ::delayMicroseconds;
+    using ::yield;
+
+    using ::Stream;
+    using ::HardwareSerial;
+    using ::Serial;
+    using ::Serial1;
+    using ::Serial2;
+    using ::Serial3;
+    using ::Serial4;
+    using ::Serial5;
+    using ::Serial6;
+
+    static constexpr uint8_t INPUT { 0 };
+    static constexpr uint8_t OUTPUT { 1 };
+    static constexpr uint8_t INPUT_PULLUP { 2 };
+    static constexpr uint8_t INPUT_PULLDOWN { 3 };
+    static constexpr uint8_t OUTPUT_OPENDRAIN { 4 };
+    static constexpr uint8_t INPUT_DISABLE { 5 };
+
+    static constexpr uint8_t LED_BUILTIN { 13 };
+
+    static constexpr uint8_t FALLING { 2 };
+    static constexpr uint8_t RISING { 3 };
+    static constexpr uint8_t CHANGE { 4 };
+
+    static constexpr bool digitalPinHasPWM(uint8_t p) {
+        return (((p) >= 2 && (p) <= 10) || (p) == 14 || ((p) >= 20 && (p) <= 23) || (p) == 29 || (p) == 30 || ((p) >= 35 && (p) <= 38));
+    }
+}
 
 #endif /* _ARDUINO_FIXED_H_ */

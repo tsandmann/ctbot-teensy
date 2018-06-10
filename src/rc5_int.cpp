@@ -38,19 +38,19 @@ decltype(Rc5::input_idx_) Rc5::input_idx_ { 0 };
 
 Rc5::Rc5(const uint8_t pin) :last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, rc5_toggle_ { false }, p_impl_ { new RC5() } {
     Scheduler::enter_critical_section();
-    arduino::pinMode(pin, INPUT_PULLUP);
+    arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
     // FIXME: think about this...
     arduino::attachInterrupt(
         pin, [] () {
             static bool last { false };
-            const bool value { arduino::digitalReadFast(CtBotConfig::RC5_PIN) };
+            const bool value { static_cast<bool>(arduino::digitalReadFast(CtBotConfig::RC5_PIN)) };
 
             if (value != last) {
                 last = value;
                 isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(value, input_data_, &input_idx_);
             }
-        }, CHANGE
+        }, arduino::CHANGE
     );
     Scheduler::exit_critical_section();
 

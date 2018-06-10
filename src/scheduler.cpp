@@ -66,6 +66,14 @@ Scheduler::Scheduler() : next_id_ { 0 }, tast_vector_mutex_ { xSemaphoreCreateMu
     xTaskResumeAll();
 }
 
+Scheduler::~Scheduler() {
+    vTaskSuspendAll();
+    for (uint16_t i { 0 }; i < next_id_; ++i) {
+        task_suspend(i);
+    }
+    xTaskResumeAll();
+}
+
 void Scheduler::stop() {
     vTaskEndScheduler();
 }
@@ -86,7 +94,9 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
 
             while (true) {
                 Timer::delay_ms(p_task->period_);
-                p_task->func_(p_task->func_data_);
+                if (p_task->active_) { // FIXME: optimize
+                    p_task->func_(p_task->func_data_);
+                }
             }
         },
         p_task->name_.c_str(), stack_size / sizeof(StackType_t), p_task, configMAX_PRIORITIES - 2, &p_task->freertos_handle_

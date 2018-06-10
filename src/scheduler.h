@@ -30,7 +30,6 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <type_traits>
 
 
 extern "C" {
@@ -105,6 +104,11 @@ public:
      * @brief Construct a new Scheduler object
      */
     Scheduler();
+
+    /**
+     * @brief Destroy the Scheduler object
+     */
+    ~Scheduler();
 
     /**
      * @brief Add a tasks to the run queue

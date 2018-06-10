@@ -187,7 +187,7 @@ void setup() {
     // delay_us(2000UL * 1000UL);
 
     // serial_puts("\n\nCreating init task...");
-    if (xTaskCreate(init_task, "init", 256UL, nullptr, configMAX_PRIORITIES - 1, nullptr) != pdPASS) {
+    if (! xTaskCreate(init_task, "init", 256UL, nullptr, configMAX_PRIORITIES - 1, nullptr)) {
         freertos::error_blink(10);
     }
 

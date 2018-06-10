@@ -37,12 +37,12 @@ namespace ctbot {
 namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
-    arduino::pinMode(LED_BUILTIN, OUTPUT);
+    arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
     ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 192UL, [] (void* p_data) { auto p_this(reinterpret_cast<BlinkTest*>(p_data)); return p_this->run(); }, this);
 }
 
 void BlinkTest::run() {
-    arduino::digitalWriteFast(LED_BUILTIN, state_);
+    arduino::digitalWriteFast(arduino::LED_BUILTIN, state_);
     state_ = ! state_;
 }
 

@@ -115,7 +115,7 @@ void CtBot::setup() {
 
     p_parser_ = new CmdParser();
     p_serial_wifi_ = new SerialConnectionTeensy(5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE);
-    p_comm_ = new CommInterfaceCmdParser(*p_serial_wifi_, *p_parser_, true);
+    p_comm_ = new CommInterfaceCmdParser(*p_serial_usb_, *p_parser_, true);
 
     init_parser();
 
@@ -324,6 +324,7 @@ void CtBot::shutdown() {
     delete p_sensors_;
     delete p_scheduler_;
 
+    Scheduler::exit_critical_section();
     Scheduler::stop();
 }
 
