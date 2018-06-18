@@ -65,6 +65,7 @@ Consider this as experimental code. **If it breaks, you get to keep both pieces.
 * to compile for a teensy board
     1. install a C++ compiler for the arm-none-eabi architecture, e.g. arm-none-eabi-g++ with newlib C standard library and libstdc++ C++ runtime library. The compiler has to be capable to compile at least C++14.
     1. download and compile [Teensy Core Libraries for Arduino](https://github.com/PaulStoffregen/cores/tree/master/teensy3) into a static library, e.g. `libFrameworkArduino.a`
+    1. download and compile [Teensy Wire Library](https://github.com/PaulStoffregen/Wire.git) into a static library, e.g. `libWire.a`
     1. compile the following files from these subdirectories of the project:
         * `src/*.cpp`
         * `lib/freertos/src/portable/*.c`
@@ -82,7 +83,7 @@ Consider this as experimental code. **If it breaks, you get to keep both pieces.
         * `lib/PCF8574/`
         * `lib/pid/`
         * `lib/rc5/`
-    1. additional linker flags (beside others): `-Wl,--wrap=_sbrk -Wl,--start-group libFrameworkArduino.a -lm -lstdc++ -Wl,--end-group`
+    1. additional linker flags (beside others): `-Wl,--wrap=_sbrk -Wl,--start-group libWire.a libFrameworkArduino.a -lm -lstdc++ -Wl,--end-group`
 * to compile for your native architecture (e.g. x86_64):
     1. install a C++ compiler for your native architecture, e.g. g++. The compiler has to be capable to compile at least C++14.
     1. compile the following files from these subdirectories of the project:
