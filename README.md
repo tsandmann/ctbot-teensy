@@ -14,6 +14,7 @@ Consider this as experimental code. **If it breaks, you get to keep both pieces.
 
 1. install PlatformIO core as described [here][PIOInstall]
     * can be skipped, if using VS Code IDE with [PlatformIO extension][PlatformIOVSC]
+    * if you don't want to use PlatformIO core, see [manual build](#manual-build) for setup
 1. clone this git repository: `git clone https://github.com/tsandmann/ctbot-teensy`
 1. change to cloned repo: `cd ctbot-teensy`
 1. initialize build system for...
@@ -57,6 +58,31 @@ Consider this as experimental code. **If it breaks, you get to keep both pieces.
     * every task's implementation (mainly its `run()` method) should be modeled by an UML sequence diagram, e.g. as for [CtBot::run()](doc/html/CtBot_run.png)
   * more to come soon
 * ...
+
+## Manual Build
+
+* this is currently untested
+* to compile for a teensy board
+    1. install a C++ compiler for the arm-none-eabi architecture, e.g. arm-none-eabi-g++ with newlib C standard library and libstdc++ C++ runtime library. The compiler has to be capable to compile at least C++14.
+    1. download and compile [Teensy Core Libraries for Arduino](https://github.com/PaulStoffregen/cores/tree/master/teensy3) into a static library, e.g. `libFrameworkArduino.a`
+    1. compile the following files from these subdirectories of the project:
+        * `src/*.cpp`
+        * `lib/freertos/src/portable/*.c`
+        * `lib/freertos/src/portable/*.cpp`
+        * `lib/freertos/src/*.c`
+        * `lib/lcd/*.cpp`
+        * `lib/PCF8574/*.cpp`
+        * `lib/pid/*.cpp`
+        * `lib/rc5/*.cpp`
+    1. add the following subdirectories to your compiler include path:
+        * `src/`
+        * `lib/arduino/`
+        * `lib/freertos/src/`
+        * `lib/lcd/`
+        * `lib/PCF8574/`
+        * `lib/pid/`
+        * `lib/rc5/`
+    1. additional linker flags (beside others): `-Wl,--wrap=_sbrk -Wl,--start-group libFrameworkArduino.a -lm -lstdc++ -Wl,--end-group`
 
 [ctBot]: https://www.heise.de/ct/artikel/c-t-Bot-und-c-t-Sim-284119.html
 [Teensy]: https://www.pjrc.com/teensy/index.html
