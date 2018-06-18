@@ -55,7 +55,7 @@ SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port) : io_s
     io_stream_.begin(CtBotConfig::UART0_BAUDRATE);
 }
 
-uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) noexcept {
+uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) {
     uint16_t bytes_available { static_cast<uint16_t>(available()) };
     if (bytes_available >= size) {
         return size;
