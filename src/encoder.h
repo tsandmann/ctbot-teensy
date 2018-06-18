@@ -99,7 +99,7 @@ public:
     static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx) {
         const auto now { Timer::get_us() };
 
-        uint8_t idx(*p_idx);
+        uint8_t idx { *p_idx };
         ++idx;
         idx %= ARRAY_SIZE;
         *p_idx = idx;

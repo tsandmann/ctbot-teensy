@@ -24,10 +24,15 @@
 #include "arduino_fixed.h"
 #include "Wire.h"
 
+#include <sim_connection.h>
+
 #include <chrono>
 #include <iostream>
 #include <vector>
 #include <string>
+#include <unistd.h>
+#include <termios.h>
+#include <poll.h>
 
 
 namespace arduino {
@@ -35,10 +40,12 @@ static auto g_start_time { std::chrono::high_resolution_clock::now() };
 static std::vector<bool> g_digital_pins(128);
 static std::vector<int16_t> g_analog_pins(128);
 
+uint32_t micros() __attribute__((weak));
 uint32_t micros() {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g_start_time).count();
 }
 
+uint32_t millis() __attribute__((weak));
 uint32_t millis() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g_start_time).count();
 }
@@ -68,8 +75,11 @@ void analogWrite(uint8_t pin, int val) {
 
 void analogWriteFrequency(uint8_t, float) {}
 
-uint32_t analogWriteResolution(uint32_t) {
-    return 0;
+uint32_t analogWriteResolution(uint32_t bits) {
+    static uint32_t res { 0 };
+    const uint32_t old { res };
+    res = bits;
+    return old;
 }
 
 void attachInterrupt(uint8_t, void (*)(void), int) {}
@@ -81,7 +91,7 @@ uint8_t digitalReadFast(uint8_t pin) {
         return g_digital_pins.at(pin);
     } catch (const std::exception& e) {
         std::cerr << "arduino::digitalReadFast(" << static_cast<uint16_t>(pin) << "): " << e.what() << "\n";
-        return 255;
+        return 0xff;
     }
 }
 
@@ -156,26 +166,34 @@ StdinWrapper::StdinWrapper() {
     recv_running_ = true;
     p_recv_thread_ = new std::thread { [this] () {
         while (recv_running_) {
-            std::string line;
-            std::getline(std::cin, line);
-            line += '\n';
-            {
-                std::lock_guard<std::mutex> lock { in_mutex_ };
-                std::copy(line.begin(), line.end(), std::inserter(in_buffer_, in_buffer_.end()));
+            if (key_pressed(100)) {
+                std::string line;
+                std::getline(std::cin, line);
+                line += '\n';
+                {
+                    std::lock_guard<std::mutex> lock { in_mutex_ };
+                    std::copy(line.begin(), line.end(), std::inserter(in_buffer_, in_buffer_.end()));
+                }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     } };
 }
 
 StdinWrapper::~StdinWrapper() {
     recv_running_ = false;
-    std::cin.putback('\n');
     if (p_recv_thread_->joinable()) {
         p_recv_thread_->join();
     }
     std::cout << "StdinWrapper::~StdinWrapper(): receiver thread finished.\n";
 }
+
+bool StdinWrapper::key_pressed(uint32_t timeout_ms) {
+    struct pollfd pls[1];
+    pls[0].fd = STDIN_FILENO;
+    pls[0].events = POLLIN | POLLPRI;
+    return ::poll(pls, 1, timeout_ms) > 0;
+}
+
 
 StdinWrapper Serial;
 HardwareSerial Serial1;
@@ -187,12 +205,13 @@ HardwareSerial Serial6;
 
 } // namespace arduino
 
-TwoWire Wire2;
+TwoWire Wire2; // FIXME: move to arduino
 
 extern "C" void setup();
 
 int main(int argc, char** argv) {
     std::cout << "c't-Bot Teensy framework starting...\n";
+    ctbot::SimConnection sim_conn { "localhost", "10001" };
     setup();
     std::cout << "exit.\n";
     return 0;

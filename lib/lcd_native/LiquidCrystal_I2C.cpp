@@ -24,10 +24,9 @@
 #include "LiquidCrystal_I2C.h"
 
 #include <cstring>
-#include <iostream>
 
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7) : p_lcd_out(nullptr) {
 }
 
 bool LiquidCrystal_I2C::begin(uint8_t cols, uint8_t lines) {
@@ -44,17 +43,29 @@ void LiquidCrystal_I2C::send(uint8_t value, uint8_t mode) {
 }
 
 void LiquidCrystal_I2C::clear() {
+    if (p_lcd_out) {
+        fprintf(p_lcd_out, "\033[2J");
+        fflush(p_lcd_out);
+    }
 }
 
 void LiquidCrystal_I2C::setCursor(uint8_t col, uint8_t row) {
+    if (p_lcd_out) {
+        fprintf(p_lcd_out, "\033[%d;%dH", row, col);
+        fflush(p_lcd_out);
+    }
 }
 
 size_t LiquidCrystal_I2C::print(char c) {
-    // std::cout << c;
+    if (p_lcd_out) {
+        fputc(c, p_lcd_out);
+    }
     return 1;
 }
 
 size_t LiquidCrystal_I2C::print(const char s[]) {
-    // std::cout << s << "\n";
+    if (p_lcd_out) {
+        fputs(s, p_lcd_out);
+    }
     return std::strlen(s);
 }

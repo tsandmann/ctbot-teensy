@@ -26,9 +26,13 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstdio>
 
 
 class LiquidCrystal_I2C {
+protected:
+    FILE* p_lcd_out;
+
 public:
     typedef enum { POSITIVE, NEGATIVE } t_backlighPol;
 
@@ -49,6 +53,10 @@ public:
     size_t print(char c);
 
     size_t print(const char s[]);
+
+    void set_output(FILE* fp) {
+        p_lcd_out = fp;
+    }
 };
 
 #endif /* LiquidCrystal_I2C_NATIVE_H */

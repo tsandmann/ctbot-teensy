@@ -141,8 +141,8 @@ void CtBot::init_parser() {
             CmdParser::split_args(args, v);
             p_this->p_comm_->set_echo(v);
         } else if (args.find("task") != args.npos) {
-            const auto s { args.find(" ") + 1 };
-            const auto e { args.find(" ", s) };
+            const size_t s { args.find(" ") + 1 };
+            const size_t e { args.find(" ", s) };
             const std::string taskname { args.substr(s, e - s) };
             const auto task_id { p_this->get_scheduler()->task_get(taskname) };
 
@@ -172,6 +172,11 @@ void CtBot::init_parser() {
             CmdParser::split_args(args, left, right);
             p_this->p_speedcontrols_[0]->set_parameters(p_this->p_speedcontrols_[0]->get_kp(), p_this->p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
             p_this->p_speedcontrols_[1]->set_parameters(p_this->p_speedcontrols_[1]->get_kp(), p_this->p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
+        } else if (args.find("lcdout") != args.npos) {
+            const size_t s { args.find(" ") + 1 };
+            const size_t e { args.find(" ", s) };
+            const std::string filename { args.substr(s, e - s) };
+            p_this->p_lcd_->set_output(filename);
         } else {
             return false;
         }

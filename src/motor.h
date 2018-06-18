@@ -38,7 +38,6 @@ namespace ctbot {
 class Motor {
 protected:
     static constexpr float PWM_FREQUENCY { 29296.f }; /**< Pwm frequency in Hz */
-    static constexpr uint8_t PWM_RESOLUTION { 11U }; /**< Pwm resolution in bits */
 
     int16_t pwm_;
     const uint8_t pwm_pin_;
@@ -47,6 +46,8 @@ protected:
     Encoder& enc_;
 
 public:
+    static constexpr uint8_t PWM_RESOLUTION { 11U }; /**< Pwm resolution in bits */
+
     /**
      * @brief Construct a new Motor object
      * @param[in] enc: Reference to encoder sensor of this motor (used to set direction)

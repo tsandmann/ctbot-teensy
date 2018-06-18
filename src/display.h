@@ -86,6 +86,13 @@ public:
      * @return Number of written chars
      */
     uint8_t printf(const char* format, ...);
+
+    /**
+     * @brief Enable display output to a file
+     * @param[in] out: Output file name
+     * @note Currently only stdout is implemented
+     */
+    void set_output(const std::string& out);
 };
 
 } /* namespace ctbot */

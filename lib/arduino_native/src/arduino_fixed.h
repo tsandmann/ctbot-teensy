@@ -94,6 +94,9 @@ public:
     StdinWrapper();
 
     ~StdinWrapper();
+
+protected:
+    bool key_pressed(uint32_t timeout_ms = 0);
 };
 
 class HardwareSerial : public Stream {

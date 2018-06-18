@@ -105,4 +105,12 @@ uint8_t Display::printf(const char* format, ...) {
     return len;
 }
 
+void Display::set_output(const std::string& out) {
+    if (out == "stdout") {
+        p_impl_->set_output(stdout);
+    } else {
+        p_impl_->set_output(nullptr);
+    }
+}
+
 } /* namespace ctbot */

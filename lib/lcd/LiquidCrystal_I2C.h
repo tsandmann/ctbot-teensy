@@ -143,6 +143,8 @@ public:
     */
     void setBacklight(uint8_t value);
 
+    void set_output(FILE*) {}
+
 private:
     /*!
     @method

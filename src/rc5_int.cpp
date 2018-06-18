@@ -103,4 +103,12 @@ bool Rc5::update() {
     return found;
 }
 
+void Rc5::set_rc5(const uint8_t addr, const uint8_t cmd) {
+    if (addr != rc5_addr_ || cmd != rc5_cmd_) {
+        rc5_toggle_ = ! rc5_toggle_;
+    }
+    rc5_addr_ = addr;
+    rc5_cmd_ = cmd;
+}
+
 } /* namespace ctbot */
