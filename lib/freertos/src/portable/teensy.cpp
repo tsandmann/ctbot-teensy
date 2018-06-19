@@ -155,6 +155,8 @@ extern uint8_t* stack_top;
 #endif
 #endif // STACK_MARGIN
 
+// asm(".global _printf_float"); /**< to have a printf supporting floating point values */
+
 void* _sbrk(ptrdiff_t);
 // override _sbrk() to make it thread-safe - you have to link with gcc option: "-Wl,--wrap=_sbrk"
 void* __wrap__sbrk(ptrdiff_t incr) {
