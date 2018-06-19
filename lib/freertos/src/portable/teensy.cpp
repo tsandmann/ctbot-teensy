@@ -78,17 +78,6 @@ void assert_blink(const char* file, int line, const char* func, const char* expr
 
     freertos::error_blink(1);
 }
-
-struct __sFILE_fake {
-    unsigned char* _p; /* current position in (some) buffer */
-    int _r; /* read space left for getc() */
-    int _w; /* write space left for putc() */
-    short _flags; /* flags, below; this FILE is free if 0 */
-    short _file; /* fileno, if Unix descriptor, else -1 */
-    struct __sbuf _bf; /* the buffer (at least 1 byte, if !NULL) */
-    int _lbfsize; /* 0 or -_bf._size, for inline putc */
-    struct _reent* _data;
-} __sf_fake_stdin, __sf_fake_stdout, __sf_fake_stderr; // FIXME: check this
 } // extern C
 
 
