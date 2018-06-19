@@ -35,7 +35,7 @@
 static std::recursive_mutex g_mutex;
 static std::vector<std::thread*> g_task_list;
 
-extern "C" uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
+uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
 
 uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const, unsigned short, void* pvParameters, uint32_t, void* pxCreatedTask) {
     auto p_thread { new std::thread(pvTaskCode, pvParameters) };
