@@ -143,5 +143,5 @@ void SensorLcdTest::run() {
     ctbot_.get_lcd()->printf("RC=0x%02x", static_cast<int16_t>(p_sens->get_rc5().get_cmd()));
 }
 
-} /* namespace tests */
-} /* namespace ctbot */
+} // namespace tests
+} // namespace ctbot

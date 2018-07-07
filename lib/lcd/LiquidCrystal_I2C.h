@@ -31,6 +31,7 @@
 #define LiquidCrystal_I2C_h
 #include <inttypes.h>
 #include <Print.h>
+#include <cstdio>
 
 #include "i2cio.h"
 #include "lcd.h"
@@ -65,8 +66,7 @@ public:
     */
     LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs);
     // Constructor with backlight control
-    LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs,
-                     uint8_t backlighPin, t_backlighPol pol);
+    LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t backlighPin, t_backlighPol pol);
 
     /*!
     @method
@@ -84,12 +84,10 @@ public:
     @param      d6[in] LCD data 2 pin map on IO extender module
     @param      d7[in] LCD data 3 pin map on IO extender module
     */
-    LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs,
-                      uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7 );
+    LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
     // Constructor with backlight control
-    LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs,
-                      uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
-                      uint8_t backlighPin, t_backlighPol pol);
+    LiquidCrystal_I2C(
+        uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlighPin, t_backlighPol pol);
     /*!
     @function
     @abstract   LCD initialization and associated HW.
@@ -151,7 +149,7 @@ private:
     @abstract   Initializes the LCD class
     @discussion Initializes the LCD class and IO expansion module.
     */
-   bool init();
+    bool init();
 
     /*!
     @function
@@ -168,8 +166,7 @@ private:
     @param      d6[in] LCD data 2 pin map on IO extender module
     @param      d7[in] LCD data 3 pin map on IO extender module
     */
-    void config(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs,
-                uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
+    void config(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
 
     /*!
     @method
@@ -190,14 +187,14 @@ private:
     void pulseEnable(uint8_t);
 
 
-   uint8_t _Addr;             // I2C Address of the IO expander
-   uint8_t _backlightPinMask; // Backlight IO pin mask
-   uint8_t _backlightStsMask; // Backlight status mask
-   I2CIO   _i2cio;            // I2CIO PCF8574* expansion module driver I2CLCDextraIO
-   uint8_t _En;               // LCD expander word for enable pin
-   uint8_t _Rw;               // LCD expander word for R/W pin
-   uint8_t _Rs;               // LCD expander word for Register Select pin
-   uint8_t _data_pins[4];     // LCD data lines
+    uint8_t _Addr; // I2C Address of the IO expander
+    uint8_t _backlightPinMask; // Backlight IO pin mask
+    uint8_t _backlightStsMask; // Backlight status mask
+    I2CIO _i2cio; // I2CIO PCF8574* expansion module driver I2CLCDextraIO
+    uint8_t _En; // LCD expander word for enable pin
+    uint8_t _Rw; // LCD expander word for R/W pin
+    uint8_t _Rs; // LCD expander word for Register Select pin
+    uint8_t _data_pins[4]; // LCD data lines
 };
 
 #endif /* LiquidCrystal_I2C_h */

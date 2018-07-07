@@ -137,7 +137,7 @@ void CtBot::init_parser() {
     });
 
     p_parser_->register_cmd("config", 'c', [](const std::string& args) {
-        auto const p_this { &CtBot::get_instance() };
+        CtBot* const p_this { &CtBot::get_instance() };
 
         if (args.find("echo") != args.npos) {
             uint8_t v;
@@ -147,7 +147,7 @@ void CtBot::init_parser() {
             const size_t s { args.find(" ") + 1 };
             const size_t e { args.find(" ", s) };
             const std::string taskname { args.substr(s, e - s) };
-            const auto task_id { p_this->get_scheduler()->task_get(taskname) };
+            const uint16_t task_id { p_this->get_scheduler()->task_get(taskname) };
 
             if (task_id < 0xffff) {
                 uint8_t v;
@@ -190,7 +190,7 @@ void CtBot::init_parser() {
     });
 
     p_parser_->register_cmd("get", 'g', [](const std::string& args) {
-        auto const p_this { &CtBot::get_instance() };
+        CtBot* const p_this { &CtBot::get_instance() };
 
         if (args == "dist") {
             p_this->serial_print(p_this->p_sensors_->get_distance_l(), p_this->p_sensors_->get_distance_r());
@@ -236,7 +236,7 @@ void CtBot::init_parser() {
     });
 
     p_parser_->register_cmd("set", 's', [](const std::string& args) {
-        auto const p_this { &CtBot::get_instance() };
+        CtBot* const p_this { &CtBot::get_instance() };
 
         if (args.find("speed") != args.npos) {
             int16_t left, right;
@@ -283,7 +283,7 @@ void CtBot::init_parser() {
             p_this->p_lcd_->set_backlight(v);
         } else if (args.find("lcd") != args.npos) {
             uint8_t line, column;
-            auto ptr { CmdParser::split_args(args, line, column) };
+            char* ptr { CmdParser::split_args(args, line, column) };
             if (!line && !column) {
                 p_this->p_lcd_->clear();
                 return true;
@@ -339,4 +339,4 @@ void CtBot::shutdown() {
     Scheduler::stop();
 }
 
-} /* namespace ctbot */
+} // namespace ctbot
