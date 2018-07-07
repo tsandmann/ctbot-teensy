@@ -30,14 +30,14 @@
 namespace ctbot {
 
 AnalogSensors::AnalogSensors() {
-    arduino::pinMode(CtBotConfig::BORDER_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::BORDER_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LDR_R_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LINE_L_PIN, INPUT);
-    arduino::pinMode(CtBotConfig::LINE_R_PIN, INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::LINE_R_PIN, arduino::INPUT);
 }
 
 void AnalogSensors::update() {
