@@ -123,6 +123,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_RC5_INT_H_ */

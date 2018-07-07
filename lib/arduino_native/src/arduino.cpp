@@ -87,7 +87,7 @@ void attachInterrupt(uint8_t, void (*)(void), int) {}
 void detachInterrupt(uint8_t) {}
 
 uint8_t digitalReadFast(uint8_t pin) {
-     try {
+    try {
         return g_digital_pins.at(pin);
     } catch (const std::exception& e) {
         std::cerr << "arduino::digitalReadFast(" << static_cast<uint16_t>(pin) << "): " << e.what() << "\n";
@@ -164,7 +164,7 @@ void Stream::flush() {
 
 StdinWrapper::StdinWrapper() {
     recv_running_ = true;
-    p_recv_thread_ = new std::thread { [this] () {
+    p_recv_thread_ = new std::thread { [this]() {
         while (recv_running_) {
             if (key_pressed(100)) {
                 std::string line;

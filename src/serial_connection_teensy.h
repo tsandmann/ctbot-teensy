@@ -35,7 +35,7 @@ namespace ctbot {
  * @brief Abstraction layer for serial communication on Teensy devices
  */
 class SerialConnectionTeensy {
-// FIXME: maybe this class can be simplified a lot...
+    // FIXME: maybe this class can be simplified a lot...
 protected:
     void* mutex_;
     arduino::Stream& io_stream_;
@@ -191,6 +191,6 @@ public:
     void flush();
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SERIAL_CONNECTION_TEENSY_H_ */

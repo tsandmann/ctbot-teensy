@@ -75,8 +75,8 @@ static constexpr arduino::Stream& get_serial_port(const uint8_t serial_port) {
 
 decltype(SerialConnectionTeensy::wait_callback_) SerialConnectionTeensy::wait_callback_(nullptr);
 
-SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate) :
-        mutex_ { xSemaphoreCreateMutex() }, io_stream_ { get_serial_port(serial_port) } {
+SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate)
+    : mutex_ { xSemaphoreCreateMutex() }, io_stream_ { get_serial_port(serial_port) } {
     if (serial_port > 0) {
         arduino::HardwareSerial& hw_serial { reinterpret_cast<arduino::HardwareSerial&>(io_stream_) };
         if (pin_rx < 255U) {
@@ -101,7 +101,7 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
     auto now(start);
     auto running_ms(now - start);
 
-    while ((bytes_available < size) && ((! timeout_ms) || (running_ms < timeout_ms))) {
+    while ((bytes_available < size) && ((!timeout_ms) || (running_ms < timeout_ms))) {
         if (wait_callback_) {
             wait_callback_(this);
         }
@@ -119,7 +119,7 @@ size_t SerialConnectionTeensy::available() const {
 }
 
 size_t SerialConnectionTeensy::receive(void* data, const size_t size) {
-    if (! size) {
+    if (!size) {
         return 0;
     }
 
@@ -132,7 +132,7 @@ size_t SerialConnectionTeensy::receive(void* data, const size_t size) {
 }
 
 size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
-    if (! size) {
+    if (!size) {
         return 0;
     }
 
@@ -326,4 +326,4 @@ void SerialConnectionTeensy::flush() {
     }
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

@@ -26,21 +26,18 @@
 #include <cstring>
 
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7) : p_lcd_out(nullptr) {
-}
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
+    : p_lcd_out(nullptr) {}
 
 bool LiquidCrystal_I2C::begin(uint8_t cols, uint8_t lines) {
-   return true;
+    return true;
 }
 
-void LiquidCrystal_I2C::setBacklight(uint8_t value) {
-}
+void LiquidCrystal_I2C::setBacklight(uint8_t value) {}
 
-void LiquidCrystal_I2C::setBacklightPin(uint8_t value, LiquidCrystal_I2C::t_backlighPol pol) {
-}
+void LiquidCrystal_I2C::setBacklightPin(uint8_t value, LiquidCrystal_I2C::t_backlighPol pol) {}
 
-void LiquidCrystal_I2C::send(uint8_t value, uint8_t mode) {
-}
+void LiquidCrystal_I2C::send(uint8_t value, uint8_t mode) {}
 
 void LiquidCrystal_I2C::clear() {
     if (p_lcd_out) {

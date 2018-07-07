@@ -69,6 +69,6 @@ public:
     void update();
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_REMOTE_CONTROL_H_ */

@@ -108,6 +108,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_DIGITAL_SENSORS_H_ */

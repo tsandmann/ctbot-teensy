@@ -41,7 +41,7 @@ class CommInterface;
  */
 class CmdParser {
 protected:
-    using func_t = std::function<bool(const std::string &)>;
+    using func_t = std::function<bool(const std::string&)>;
     static constexpr size_t MAX_CMD_LENGTH { 16 };
 
     bool echo_;
@@ -109,7 +109,7 @@ public:
      */
     template <typename T>
     static char* split_args(const std::string& args, T& x1, T& x2) {
-// FIXME: implement as a variadic template?
+        // FIXME: implement as a variadic template?
         const auto l { args.find(" ") + 1 };
         char* p_end;
         x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 10));
@@ -118,6 +118,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_CMD_PARSER_H_ */

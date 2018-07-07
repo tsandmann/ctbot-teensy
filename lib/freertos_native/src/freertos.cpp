@@ -52,11 +52,11 @@ void vTaskDelay(const uint32_t ticks) {
 }
 
 void vTaskSuspend(void* task_handle) {
-    //FIXME: how to implement this?
+    // FIXME: how to implement this?
 }
 
 void vTaskResume(void* task_hanlde) {
-    //FIXME: how to implement this?
+    // FIXME: how to implement this?
 }
 
 void vTaskSuspendAll() {
@@ -101,7 +101,7 @@ void* xSemaphoreCreateMutex() {
 }
 
 long xSemaphoreTake(void* mutex, uint32_t max_delay) {
-    //FIXME: implement timeout
+    // FIXME: implement timeout
     if (mutex) {
         std::recursive_mutex* p_mtx { reinterpret_cast<std::recursive_mutex*>(mutex) };
         p_mtx->lock();

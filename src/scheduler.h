@@ -61,7 +61,7 @@ protected:
         bool active_; /**< Flag indicating if task is runnable (true) or blocked (false) */
         task_func_t func_; /**< Function pointer to the task's implementation */
         task_func_data_t func_data_; /**< Pointer to additional data for the task */
-        void* freertos_handle_; /**< FreeRTOS task handle */
+        void* handle_; /**< FreeRTOS task handle */
         std::string name_;
 
         /**
@@ -174,6 +174,6 @@ public:
     void print_free_ram(CommInterface& comm) const;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SCHEDULER_H_ */

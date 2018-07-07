@@ -37,7 +37,7 @@
 namespace ctbot {
 
 Scheduler::Task::Task(const uint16_t id, const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data)
-    : id_ { id }, period_ { period }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) }, freertos_handle_ { nullptr }, name_{ name } {}
+    : id_ { id }, period_ { period }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) }, handle_ { nullptr }, name_ { name } {}
 
 void Scheduler::Task::print(CommInterface& comm) const {
     comm.debug_print(" \"");
@@ -53,13 +53,13 @@ void Scheduler::Task::print(CommInterface& comm) const {
         comm.debug_print(" ms");
     }
     comm.debug_print("\tstack free: ");
-    comm.debug_print(uxTaskGetStackHighWaterMark(freertos_handle_) * sizeof(StackType_t), PrintBase::DEC);
+    comm.debug_print(uxTaskGetStackHighWaterMark(handle_) * sizeof(StackType_t), PrintBase::DEC);
     comm.debug_print(" byte\n");
 }
 
 Scheduler::Scheduler() : next_id_ { 0 }, tast_vector_mutex_ { xSemaphoreCreateMutex() } {
     Task* p_task { new Task(next_id_++, configIDLE_TASK_NAME, 0, nullptr, nullptr) };
-    p_task->freertos_handle_ = xTaskGetIdleTaskHandle();
+    p_task->handle_ = xTaskGetIdleTaskHandle();
 
     vTaskSuspendAll();
     task_vector_.push_back(p_task);
@@ -89,7 +89,7 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
     }
 
     xTaskCreate(
-        [] (void* p_data) {
+        [](void* p_data) {
             Task* p_task { reinterpret_cast<Task*>(p_data) };
 
             while (true) {
@@ -99,8 +99,7 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
                 }
             }
         },
-        p_task->name_.c_str(), stack_size / sizeof(StackType_t), p_task, configMAX_PRIORITIES - 2, &p_task->freertos_handle_
-    );
+        p_task->name_.c_str(), stack_size / sizeof(StackType_t), p_task, configMAX_PRIORITIES - 2, &p_task->handle_);
 
     return next_id_++;
 }
@@ -126,7 +125,7 @@ bool Scheduler::task_suspend(const uint16_t id) {
 
     auto& task { *task_vector_[id] };
     task.active_ = false;
-    vTaskSuspend(task.freertos_handle_);
+    vTaskSuspend(task.handle_);
 
     return true;
 }
@@ -138,7 +137,7 @@ bool Scheduler::task_resume(const uint16_t id) {
 
     auto& task { *task_vector_[id] };
     task.active_ = true;
-    vTaskResume(task.freertos_handle_);
+    vTaskResume(task.handle_);
 
     return true;
 }
@@ -155,4 +154,4 @@ void Scheduler::print_free_ram(CommInterface& comm) const {
     comm.debug_print(" KB");
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

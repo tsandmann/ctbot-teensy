@@ -46,7 +46,7 @@ void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const
 }
 
 bool CmdParser::execute_cmd(const std::string& cmd) {
-    if (! cmd.length()) {
+    if (!cmd.length()) {
         return false;
     }
 
@@ -77,6 +77,7 @@ bool CmdParser::execute_cmd(const std::string& cmd) {
 }
 
 bool CmdParser::parse(const char* in, CommInterface& comm) {
+    // FIXME: store CommInterface as member?
     static std::string last_line;
 
     if (*in) {
@@ -96,4 +97,4 @@ bool CmdParser::parse(const char* in, CommInterface& comm) {
     return true;
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

@@ -95,6 +95,6 @@ public:
     void set_output(const std::string& out);
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_DISPLAY_H_ */

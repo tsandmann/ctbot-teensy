@@ -113,6 +113,6 @@ public:
     static constexpr uint8_t SERVO_2_PIN { 6 }; /**< Pin number of servo 2 pwm signal */
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_CTBOT_CONFIG_H_ */

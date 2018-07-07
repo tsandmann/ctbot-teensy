@@ -42,7 +42,6 @@ AnalogSensors::AnalogSensors() : last_dist_update_ { Timer::get_ms() }, distance
     arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
     Scheduler::exit_critical_section();
-
 }
 
 void AnalogSensors::update() {
@@ -68,4 +67,4 @@ int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t avg_num) con
     return ret;
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

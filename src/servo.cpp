@@ -35,13 +35,12 @@ namespace ctbot {
 
 Servo::Servo(const uint8_t pin, const uint8_t initial_pos) : Servo(pin, 544U, 2400U, initial_pos) {}
 
-Servo::Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos) :
-        pin_ { pin }, min_ { static_cast<uint16_t>(min >> 4U) }, max_ { static_cast<uint16_t>(max >> 4U) }, position_ { initial_pos }, active_ { true } {
-
+Servo::Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos)
+    : pin_ { pin }, min_ { static_cast<uint16_t>(min >> 4U) }, max_ { static_cast<uint16_t>(max >> 4U) }, position_ { initial_pos }, active_ { true } {
     if (pin >= 64U) {
         return;
     }
-    if (! arduino::digitalPinHasPWM(pin)) {
+    if (!arduino::digitalPinHasPWM(pin)) {
         return;
     }
 
@@ -86,4 +85,4 @@ void Servo::disable() {
     active_ = false;
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

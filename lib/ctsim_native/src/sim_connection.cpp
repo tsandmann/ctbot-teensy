@@ -30,13 +30,12 @@ uint32_t micros() {
 uint32_t millis() {
     return g_time_ms;
 }
-}
+} // namespace arduino
 
 namespace ctbot {
 
-SimConnection::SimConnection(const std::string& hostname, const std::string& port) :
-        sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 } {
-
+SimConnection::SimConnection(const std::string& hostname, const std::string& port)
+    : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 } {
     boost::asio::ip::tcp::resolver r { io_service_ };
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
     boost::asio::ip::tcp::resolver::iterator it { r.resolve(q) };
@@ -150,64 +149,53 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         return true;
     });
 
-    register_cmd(CommandCodes::CMD_SENS_ERROR, [](const CommandBase&) {
-        return true;
-    });
-    register_cmd(CommandCodes::CMD_SENS_MOUSE, [](const CommandBase&) {
-        return true;
-    });
-    register_cmd(CommandCodes::CMD_SENS_BPS, [](const CommandBase&) {
-        return true;
-    });
-    register_cmd(CommandCodes::CMD_AKT_SERVO, [](const CommandBase&) {
-        return true;
-    });
+    register_cmd(CommandCodes::CMD_SENS_ERROR, [](const CommandBase&) { return true; });
+    register_cmd(CommandCodes::CMD_SENS_MOUSE, [](const CommandBase&) { return true; });
+    register_cmd(CommandCodes::CMD_SENS_BPS, [](const CommandBase&) { return true; });
+    register_cmd(CommandCodes::CMD_AKT_SERVO, [](const CommandBase&) { return true; });
 
     {
         CommandNoCRC cmd { CommandCodes::CMD_WELCOME, CommandCodes::CMD_SUB_WELCOME_SIM, 2 /* RC5 */, 0, CommandBase::ADDR_BROADCAST };
-        if (! send_cmd(cmd)) {
+        if (!send_cmd(cmd)) {
             std::cerr << "SimConnection::SimConnection(): send_cmd() failed.\n";
         }
     }
     if (receive_sensor_data()) {
         sim_time_ms_ += 10;
         CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, CommandBase::ADDR_BROADCAST };
-        if (! send_cmd(cmd)) {
+        if (!send_cmd(cmd)) {
             std::cerr << "SimConnection::SimConnection(): send_cmd() failed.\n";
         }
     }
 
-    p_recv_thread_ = std::make_shared<std::thread>(
-        [this]() {
-            while (sock_.is_open()) {
-                if (receive_sensor_data()) {
-                    {
-                        const auto mot_l_pwm { arduino::analogRead(CtBotConfig::MOT_L_PWM_PIN) * (arduino::digitalReadFast(CtBotConfig::MOT_L_DIR_PIN) ? 450 / 2 : -450 / 2)
-                            / (1 << Motor::PWM_RESOLUTION) };
-                        const auto mot_r_pwm { arduino::analogRead(CtBotConfig::MOT_R_PWM_PIN) * (arduino::digitalReadFast(CtBotConfig::MOT_R_DIR_PIN) ? -450 / 2 : 450 / 2)
-                            / (1 << Motor::PWM_RESOLUTION) };
-                        CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(mot_l_pwm), static_cast<int16_t>(mot_r_pwm), bot_addr_ };
-                        send_cmd(cmd);
-                    }
+    p_recv_thread_ = std::make_shared<std::thread>([this]() {
+        while (sock_.is_open()) {
+            if (receive_sensor_data()) {
+                {
+                    const auto mot_l_pwm { arduino::analogRead(CtBotConfig::MOT_L_PWM_PIN)
+                        * (arduino::digitalReadFast(CtBotConfig::MOT_L_DIR_PIN) ? 450 / 2 : -450 / 2) / (1 << Motor::PWM_RESOLUTION) };
+                    const auto mot_r_pwm { arduino::analogRead(CtBotConfig::MOT_R_PWM_PIN)
+                        * (arduino::digitalReadFast(CtBotConfig::MOT_R_DIR_PIN) ? -450 / 2 : 450 / 2) / (1 << Motor::PWM_RESOLUTION) };
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(mot_l_pwm), static_cast<int16_t>(mot_r_pwm),
+                        bot_addr_ };
+                    send_cmd(cmd);
+                }
 
-                    {
-                        auto p_servo_1 { CtBot::get_instance().get_servos()[0] };
-                        auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
-                        CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM,
-                            static_cast<int16_t>(p_servo_1 ? p_servo_1->get_position() : 0),
-                            static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0),
-                            bot_addr_ };
-                        send_cmd(cmd);
-                    }
+                {
+                    auto p_servo_1 { CtBot::get_instance().get_servos()[0] };
+                    auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1 ? p_servo_1->get_position() : 0),
+                        static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0), bot_addr_ };
+                    send_cmd(cmd);
+                }
 
-                    {
-                        CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, bot_addr_ };
-                        send_cmd(cmd);
-                    }
+                {
+                    CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, bot_addr_ };
+                    send_cmd(cmd);
                 }
             }
-         }
-    );
+        }
+    });
 }
 
 SimConnection::~SimConnection() {
@@ -219,7 +207,7 @@ SimConnection::~SimConnection() {
 
 
 size_t SimConnection::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
-    if (! sock_.is_open()) {
+    if (!sock_.is_open()) {
         std::cerr << "SimConnection::receive_until(): not ready, abort.\n";
         return 0;
     }
@@ -236,7 +224,7 @@ size_t SimConnection::receive_until(std::streambuf& buf, const char delim, const
 }
 
 size_t SimConnection::send(const void* data, const size_t size) {
-    if (! sock_.is_open()) {
+    if (!sock_.is_open()) {
         std::cerr << "SimConnection::send(): not ready, abort.\n";
         return 0;
     }
@@ -256,7 +244,7 @@ bool SimConnection::receive_sensor_data() {
 }
 
 bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
-    if (! sock_.is_open()) {
+    if (!sock_.is_open()) {
         std::cerr << "SimConnection::receive_sensor_data(): not ready, abort.\n";
         return false;
     }
@@ -264,7 +252,7 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
     std::shared_ptr<CommandBase> p_cmd;
     do {
         try {
-            if (! receive_until(recv_bufer_, static_cast<const char>(CommandCodes::CMD_STOPCODE), 1024)) {
+            if (!receive_until(recv_bufer_, static_cast<const char>(CommandCodes::CMD_STOPCODE), 1024)) {
                 return false;
             }
         } catch (const boost::system::system_error& e) {
@@ -277,7 +265,7 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
         if (p_cmd->get_payload_size()) {
             p_cmd->append_payload(recv_bufer_, p_cmd->get_payload_size());
         }
-        if (! evaluate_cmd(*p_cmd)) {
+        if (!evaluate_cmd(*p_cmd)) {
             return false;
         }
     } while (p_cmd->get_cmd_code() != cmd);
@@ -286,7 +274,7 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
 }
 
 bool SimConnection::send_cmd(CommandBase& cmd) {
-    if (! sock_.is_open()) {
+    if (!sock_.is_open()) {
         return false;
     }
 
@@ -309,7 +297,7 @@ bool SimConnection::send_cmd(CommandBase& cmd) {
 }
 
 bool SimConnection::send_cmd(std::vector<std::shared_ptr<CommandBase>>& cmds) {
-    if (! sock_.is_open()) {
+    if (!sock_.is_open()) {
         return false;
     }
 
@@ -338,7 +326,7 @@ bool SimConnection::send_cmd(std::vector<std::shared_ptr<CommandBase>>& cmds) {
 
 bool SimConnection::evaluate_cmd(const CommandBase& cmd) {
     const CommandData& cmd_data(cmd.get_cmd());
-    if (! cmd.get_cmd_has_crc() && cmd_data.from != CommandBase::ADDR_SIM) {
+    if (!cmd.get_cmd_has_crc() && cmd_data.from != CommandBase::ADDR_SIM) {
         return false;
     }
 

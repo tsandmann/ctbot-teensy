@@ -99,8 +99,7 @@ protected:
     bool key_pressed(uint32_t timeout_ms = 0);
 };
 
-class HardwareSerial : public Stream {
-};
+class HardwareSerial : public Stream {};
 
 extern StdinWrapper Serial;
 extern HardwareSerial Serial1;
