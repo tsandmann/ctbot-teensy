@@ -335,7 +335,8 @@ void CtBot::shutdown() {
     delete p_sensors_;
     delete p_scheduler_;
 
-    while (true) {} // FIXME: sleep
+    while (true) {
+    } // FIXME: sleep
 }
 
 } // namespace ctbot
