@@ -46,4 +46,4 @@ void Sensors::update() {
     ena_.off(DigitalSensors::ENA_MASK | AnalogSensors::ENA_MASK);
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

@@ -137,6 +137,6 @@ public:
     void set_parameters(const float kp, const float ki, const float kd);
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SPEED_CONTROL_H_ */

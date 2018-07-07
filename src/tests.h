@@ -400,7 +400,7 @@ public:
     ~SensorLcdTest() = default;
 };
 
-} /* namespace test */
-} /* namespace ctbot */
+} // namespace tests
+} // namespace ctbot
 
 #endif /* SRC_TESTS_H_ */

@@ -93,6 +93,6 @@ protected:
     bool active_; /**< Flag to indicate if servo is currently active (duty cylce > 0) */
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SERVO_H_ */

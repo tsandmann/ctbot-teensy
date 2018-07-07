@@ -107,6 +107,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_ENCODER_H_ */

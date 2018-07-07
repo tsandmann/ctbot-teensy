@@ -66,7 +66,7 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
     const auto timeout_us(static_cast<uint32_t>(timeout_ms) * 1000UL);
     auto running_us(now - start);
 
-    while ((bytes_available < size) && ((! timeout_ms) || (running_us < timeout_us))) {
+    while ((bytes_available < size) && ((!timeout_ms) || (running_us < timeout_us))) {
         if (wait_callback_) {
             wait_callback_(this);
         }
@@ -83,7 +83,7 @@ std::size_t SerialConnectionTeensy::available() const {
 }
 
 std::size_t SerialConnectionTeensy::receive(void* data, const std::size_t size) {
-    if (! size) {
+    if (!size) {
         return 0;
     }
 
@@ -91,7 +91,7 @@ std::size_t SerialConnectionTeensy::receive(void* data, const std::size_t size) 
 }
 
 std::size_t SerialConnectionTeensy::receive(std::streambuf& buf, const std::size_t size) {
-    if (! size) {
+    if (!size) {
         return 0;
     }
 
@@ -112,7 +112,7 @@ std::size_t SerialConnectionTeensy::receive_until(void* data, const char delim, 
             *ptr = c;
             ++n;
         } else {
-// FIXME: delay / yield?
+            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
@@ -133,7 +133,7 @@ std::size_t SerialConnectionTeensy::receive_until(void* data, const std::string&
             ++ptr;
             ++n;
         } else {
-// FIXME: delay / yield?
+            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
@@ -155,7 +155,7 @@ std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const cha
             ++n;
         } else {
             tmp = 0;
-// FIXME: delay / yield?
+            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
@@ -176,7 +176,7 @@ std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std
             buf.sputc(c);
             ++n;
         } else {
-// FIXME: delay / yield?
+            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
@@ -240,4 +240,4 @@ void SerialConnectionTeensy::flush() {
     io_stream_.flush();
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

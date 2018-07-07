@@ -32,14 +32,14 @@
 
 namespace ctbot {
 
-Encoder::Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const uint8_t pin) :
-        edges_(0), last_idx_(0), speed_(0.f), speed_avg_(0.f), direction_(true), p_enc_data_(p_data), p_enc_idx_(p_idx), last_update_(0), count_(0) {
+Encoder::Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const uint8_t pin)
+    : edges_(0), last_idx_(0), speed_(0.f), speed_avg_(0.f), direction_(true), p_enc_data_(p_data), p_enc_idx_(p_idx), last_update_(0), count_(0) {
     arduino::pinMode(pin, INPUT);
 
     // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
-        arduino::attachInterrupt(
-            pin, [] () {
+        arduino::attachInterrupt(pin,
+            []() {
                 static bool last { false };
                 const bool value { arduino::digitalReadFast(CtBotConfig::ENC_L_PIN) };
 
@@ -47,11 +47,11 @@ Encoder::Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const ui
                     last = value;
                     isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_);
                 }
-            }, CHANGE
-        );
+            },
+            CHANGE);
     } else if (pin == CtBotConfig::ENC_R_PIN) {
-        arduino::attachInterrupt(
-            pin, [] () {
+        arduino::attachInterrupt(pin,
+            []() {
                 static bool last { false };
                 const bool value { arduino::digitalReadFast(CtBotConfig::ENC_R_PIN) };
 
@@ -59,8 +59,8 @@ Encoder::Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const ui
                     last = value;
                     isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_);
                 }
-            }, CHANGE
-        );
+            },
+            CHANGE);
     }
 }
 
@@ -77,7 +77,7 @@ void Encoder::update() {
     const auto dt { static_cast<int32_t>(now_us - last_update_) };
 
     if (diff_enc) {
-        if (! direction_) {
+        if (!direction_) {
             diff_enc = -diff_enc;
         }
         edges_ += diff_enc;
@@ -115,4 +115,4 @@ void Encoder::update() {
     }
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

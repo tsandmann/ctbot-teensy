@@ -48,7 +48,7 @@ void Scheduler::Task::print(CommInterface& comm) const {
 
 
 void Scheduler::run() {
-    while (running_ && (! task_queue_.empty())) {
+    while (running_ && (!task_queue_.empty())) {
         const Task& task { task_queue_.top() };
         // std::cout << "Scheduler::run(): task.next_runtime=" << task.next_runtime_ << " ms.\n";
         const uint32_t next_runtime { task.next_runtime_ };
@@ -94,7 +94,7 @@ uint16_t Scheduler::task_get(const std::string& name) const {
 bool Scheduler::task_suspend(const uint16_t id) {
     // std::cout << "Scheduler::task_suspend(0x" << std::hex << id << std::dec << ")\n";
     bool res { false };
-    for (auto& t : task_vector_ ) {
+    for (auto& t : task_vector_) {
         if (t.id_ == id) {
             t.active_ = false;
             res = true;
@@ -108,7 +108,7 @@ bool Scheduler::task_suspend(const uint16_t id) {
 bool Scheduler::task_resume(const uint16_t id) {
     // std::cout << "Scheduler::task_resume(0x" << std::hex << id << std::dec << ")\n";
     bool res { false };
-    for (auto& t : task_vector_ ) {
+    for (auto& t : task_vector_) {
         if (t.id_ == id) {
             t.active_ = true;
             res = true;
@@ -128,4 +128,4 @@ void Scheduler::print_task_list(CommInterface& comm) const {
     }
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

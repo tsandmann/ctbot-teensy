@@ -82,7 +82,7 @@ protected:
          * @param[in] other: Reference to task to compare with
          * @return true, if the other tasks has to be executed before (a lower next runtime)
          */
-        bool operator <(const Task& other) const {
+        bool operator<(const Task& other) const {
             return next_runtime_ > other.next_runtime_; // lowest next_runtime will be executed first!
         }
 
@@ -175,6 +175,6 @@ public:
     void print_task_list(CommInterface& comm) const;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SCHEDULER_H_ */

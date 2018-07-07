@@ -29,21 +29,21 @@
 #include <Print.h>
 
 namespace arduino {
-    using ::analogRead;
-    using ::analogReadAveraging;
-    using ::analogWrite;
-    using ::analogWriteFrequency;
-    using ::analogWriteResolution;
-    using ::attachInterrupt;
-    using ::digitalReadFast;
-    using ::digitalWriteFast;
-    using ::pinMode;
+using ::analogRead;
+using ::analogReadAveraging;
+using ::analogWrite;
+using ::analogWriteFrequency;
+using ::analogWriteResolution;
+using ::attachInterrupt;
+using ::digitalReadFast;
+using ::digitalWriteFast;
+using ::pinMode;
 
-    using ::delay;
-    using ::delayMicroseconds;
+using ::delay;
+using ::delayMicroseconds;
 
-    using ::Serial;
-}
+using ::Serial;
+} // namespace arduino
 
 /* get rid of these stupid macros... */
 #undef word

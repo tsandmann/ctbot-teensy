@@ -32,7 +32,8 @@
 
 namespace ctbot {
 
-Motor::Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert) : pwm_(0), pwm_pin_ (pin_pwm), dir_pin_(pin_dir), invert_dir_(invert), enc_(enc) {
+Motor::Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert)
+    : pwm_(0), pwm_pin_(pin_pwm), dir_pin_(pin_dir), invert_dir_(invert), enc_(enc) {
     arduino::pinMode(pin_pwm, OUTPUT);
     arduino::pinMode(pin_dir, OUTPUT);
 
@@ -56,8 +57,8 @@ void Motor::set(int new_pwm) {
     arduino::digitalWriteFast(dir_pin_, new_pwm >= 0);
 
     const auto old_res { arduino::analogWriteResolution(PWM_RESOLUTION) };
-    arduino::analogWrite(pwm_pin_, static_cast<int>(static_cast<float>(std::abs(pwm_)) / (CtBotConfig::MOT_PWM_MAX / static_cast<float>(1 << PWM_RESOLUTION) )));
+    arduino::analogWrite(pwm_pin_, static_cast<int>(static_cast<float>(std::abs(pwm_)) / (CtBotConfig::MOT_PWM_MAX / static_cast<float>(1 << PWM_RESOLUTION))));
     arduino::analogWriteResolution(old_res);
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

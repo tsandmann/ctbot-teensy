@@ -78,7 +78,7 @@ bool RC5::read(uint16_t& message, const bool value, const uint32_t elapsed) {
 
 bool RC5::read(bool& toggle, uint8_t& addr, uint8_t& cmd, const bool value, const uint32_t elapsed) {
     uint16_t msg;
-    if (! read(msg, value, elapsed)) {
+    if (!read(msg, value, elapsed)) {
         return false;
     }
 
