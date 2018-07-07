@@ -43,11 +43,11 @@ BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
             return p_this->run();
         },
         this);
-    arduino::pinMode(LED_BUILTIN, OUTPUT);
+    arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
 }
 
 void BlinkTest::run() {
-    arduino::digitalWriteFast(LED_BUILTIN, state_);
+    arduino::digitalWriteFast(arduino::LED_BUILTIN, state_);
     state_ = !state_;
 }
 

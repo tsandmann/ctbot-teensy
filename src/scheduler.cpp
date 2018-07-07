@@ -16,7 +16,7 @@
  */
 
 /**
- * @file    scheduler.h
+ * @file    scheduler.cpp
  * @brief   Task scheduling
  * @author  Timo Sandmann
  * @date    15.04.2018

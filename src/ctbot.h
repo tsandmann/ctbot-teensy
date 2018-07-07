@@ -50,7 +50,7 @@ class Scheduler;
 class CtBot {
 protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
-    static const char usage_text[]; /**< C-String containing the usage / help message */ // FIXME: std::string
+    static const char usage_text[]; /**< C-String containing the usage / help message */
 
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
