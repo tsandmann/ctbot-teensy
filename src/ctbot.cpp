@@ -35,8 +35,6 @@
 #include "serial_connection_teensy.h"
 #include "cmd_parser.h"
 
-#include <cstdint>
-
 
 namespace ctbot {
 

@@ -78,11 +78,11 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
     return std::min<uint16_t>(bytes_available, size);
 }
 
-std::size_t SerialConnectionTeensy::available() const {
+size_t SerialConnectionTeensy::available() const {
     return io_stream_.available();
 }
 
-std::size_t SerialConnectionTeensy::receive(void* data, const std::size_t size) {
+size_t SerialConnectionTeensy::receive(void* data, const size_t size) {
     if (!size) {
         return 0;
     }
@@ -90,7 +90,7 @@ std::size_t SerialConnectionTeensy::receive(void* data, const std::size_t size) 
     return io_stream_.readBytes(static_cast<char*>(data), size);
 }
 
-std::size_t SerialConnectionTeensy::receive(std::streambuf& buf, const std::size_t size) {
+size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
     if (!size) {
         return 0;
     }
@@ -102,7 +102,7 @@ std::size_t SerialConnectionTeensy::receive(std::streambuf& buf, const std::size
     return i;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char* ptr(reinterpret_cast<char*>(data));
@@ -122,7 +122,7 @@ std::size_t SerialConnectionTeensy::receive_until(void* data, const char delim, 
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char* ptr(reinterpret_cast<char*>(data));
@@ -143,7 +143,7 @@ std::size_t SerialConnectionTeensy::receive_until(void* data, const std::string&
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
     char tmp;
@@ -165,7 +165,7 @@ std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const cha
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::string& delim, const std::size_t maxsize) {
+size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize) {
     auto& buffer(reinterpret_cast<std::stringbuf&>(buf));
     const auto size16(static_cast<uint16_t>(maxsize));
 
@@ -186,7 +186,7 @@ std::size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std
     return n;
 }
 
-std::size_t SerialConnectionTeensy::receive_async(void* data, const std::size_t size, const uint32_t timeout_ms) {
+size_t SerialConnectionTeensy::receive_async(void* data, const size_t size, const uint32_t timeout_ms) {
     auto ptr(reinterpret_cast<uint8_t*>(data));
     const auto timeout(static_cast<uint16_t>(timeout_ms));
 
@@ -204,7 +204,7 @@ std::size_t SerialConnectionTeensy::receive_async(void* data, const std::size_t 
     return done;
 }
 
-std::size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const std::size_t size, const uint32_t timeout_ms) {
+size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms) {
     const auto timeout(static_cast<uint16_t>(timeout_ms));
 
     const auto avail(available());
@@ -220,11 +220,11 @@ std::size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const std
     return done;
 }
 
-std::size_t SerialConnectionTeensy::send(const void* data, const std::size_t size) {
+size_t SerialConnectionTeensy::send(const void* data, const size_t size) {
     return io_stream_.write(reinterpret_cast<const uint8_t*>(data), size);
 }
 
-std::size_t SerialConnectionTeensy::send(std::streambuf& buf, const std::size_t size) {
+size_t SerialConnectionTeensy::send(std::streambuf& buf, const size_t size) {
     const auto size16(static_cast<uint16_t>(size));
     for (auto i(0U); i < size16; ++i) {
         io_stream_.write(static_cast<uint8_t>(buf.sbumpc()));
