@@ -35,7 +35,7 @@ Display::Display() : p_impl_ { new LiquidCrystal_I2C(0x3f, 2, 1, 0, 4, 5, 6, 7) 
     Wire2.setSCL(4);
 
     p_impl_->begin(LINE_LENGTH, 4);
-    p_impl_->setBacklightPin(3, POSITIVE);
+    p_impl_->setBacklightPin(3, LiquidCrystal_I2C::POSITIVE);
     p_impl_->setBacklight(false);
     clear();
 }

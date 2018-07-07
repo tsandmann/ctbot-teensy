@@ -168,15 +168,15 @@ inline static void waitUsec(uint16_t uSec) {
 #define BACKLIGHT_ON          255
 
 
-/*!
- @typedef
- @abstract   Define backlight control polarity
- @discussion Backlight control polarity. @see setBacklightPin.
- */
-typedef enum { POSITIVE, NEGATIVE } t_backlighPol;
-
 class LCD : public Print {
 public:
+    /*!
+    @typedef
+    @abstract   Define backlight control polarity
+    @discussion Backlight control polarity. @see setBacklightPin.
+    */
+    typedef enum { POSITIVE, NEGATIVE } t_backlighPol;
+
     /*!
     @method
     @abstract   LiquidCrystal abstract constructor.
