@@ -56,4 +56,4 @@ int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t avg_num) con
     return static_cast<int16_t>(arduino::analogRead(pin));
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

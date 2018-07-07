@@ -45,5 +45,4 @@ void Timer::delay_us(uint32_t us) {
     arduino::delayMicroseconds(us);
 }
 
-
-} /* namespace ctbot */
+} // namespace ctbot

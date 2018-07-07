@@ -88,6 +88,6 @@ public:
     uint8_t printf(const char* format, ...);
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_DISPLAY_H_ */

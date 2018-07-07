@@ -25,37 +25,37 @@
 
 class RC5 {
 protected:
-    static constexpr uint32_t MIN_SHORT {  444U }; // us
+    static constexpr uint32_t MIN_SHORT { 444U }; // us
     static constexpr uint32_t MAX_SHORT { 1333U }; // us
-    static constexpr uint32_t MIN_LONG  { 1334U }; // us
-    static constexpr uint32_t MAX_LONG  { 2222U }; // us
+    static constexpr uint32_t MIN_LONG { 1334U }; // us
+    static constexpr uint32_t MAX_LONG { 2222U }; // us
 
     /*
      * Step by two, because it makes it possible to use the values as bit-shift counters
      * when making state-machine transitions. States are encoded as 2 bits, so we step by 2.
      */
-    static constexpr uint8_t EVENT_SHORTSPACE   { 0U };
-    static constexpr uint8_t EVENT_SHORTPULSE   { 2U };
-    static constexpr uint8_t EVENT_LONGSPACE    { 4U };
-    static constexpr uint8_t EVENT_LONGPULSE    { 6U };
-    static constexpr uint8_t STATE_START1       { 0U };
-    static constexpr uint8_t STATE_MID1         { 1U };
-    static constexpr uint8_t STATE_MID0         { 2U };
-    static constexpr uint8_t STATE_START0       { 3U };
+    static constexpr uint8_t EVENT_SHORTSPACE { 0U };
+    static constexpr uint8_t EVENT_SHORTPULSE { 2U };
+    static constexpr uint8_t EVENT_LONGSPACE { 4U };
+    static constexpr uint8_t EVENT_LONGPULSE { 6U };
+    static constexpr uint8_t STATE_START1 { 0U };
+    static constexpr uint8_t STATE_MID1 { 1U };
+    static constexpr uint8_t STATE_MID0 { 2U };
+    static constexpr uint8_t STATE_START0 { 3U };
 
     /*
      * Definitions for parsing the bitstream into discrete parts.
      * 14 bits are parsed as: [S1][S2][T][A A A A A][C C C C C C]
      * Bits are transmitted MSbit first.
      */
-    static constexpr uint16_t S2_MASK       { 0x1000 }; // 1 bit
-    static constexpr uint8_t  S2_SHIFT      { 12U };
-    static constexpr uint16_t TOGGLE_MASK   { 0x800 }; // 1 bit
-    static constexpr uint8_t  TOGGLE_SHIFT  { 11U };
-    static constexpr uint16_t ADDRESS_MASK  { 0x7C0 }; // 5 bit
-    static constexpr uint8_t  ADDRESS_SHIFT {  6U };
-    static constexpr uint16_t COMMAND_MASK  { 0x3F }; // low 6 bit
-    static constexpr uint8_t  COMMAND_SHIFT {  0U };
+    static constexpr uint16_t S2_MASK { 0x1000 }; // 1 bit
+    static constexpr uint8_t S2_SHIFT { 12U };
+    static constexpr uint16_t TOGGLE_MASK { 0x800 }; // 1 bit
+    static constexpr uint8_t TOGGLE_SHIFT { 11U };
+    static constexpr uint16_t ADDRESS_MASK { 0x7C0 }; // 5 bit
+    static constexpr uint8_t ADDRESS_SHIFT { 6U };
+    static constexpr uint16_t COMMAND_MASK { 0x3F }; // low 6 bit
+    static constexpr uint8_t COMMAND_SHIFT { 0U };
 
     /**
      * @brief Table of transitions, indexed by the current state

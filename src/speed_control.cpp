@@ -33,9 +33,10 @@ namespace ctbot {
 
 std::list<SpeedControl*> SpeedControl::controller_list_;
 
-SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor) : direction_ { true }, setpoint_ { 0.f }, kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f },
-        p_pid_controller_ { new Pid(input_, output_, setpoint_, kp_, ki_, kd_, true) }, wheel_encoder_ { wheel_enc }, motor_ { motor } {
-    if (! p_pid_controller_) {
+SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
+    : direction_ { true }, setpoint_ { 0.f }, kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f },
+      p_pid_controller_ { new Pid(input_, output_, setpoint_, kp_, ki_, kd_, true) }, wheel_encoder_ { wheel_enc }, motor_ { motor } {
+    if (!p_pid_controller_) {
         return;
     }
 
@@ -56,7 +57,7 @@ SpeedControl::~SpeedControl() {
 }
 
 void SpeedControl::run() {
-    if (! p_pid_controller_) {
+    if (!p_pid_controller_) {
         return;
     }
 
@@ -75,7 +76,7 @@ void SpeedControl::run() {
 }
 
 void SpeedControl::set_parameters(const float kp, const float ki, const float kd) {
-    if (! p_pid_controller_) {
+    if (!p_pid_controller_) {
         return;
     }
 
@@ -93,4 +94,4 @@ void SpeedControl::controller(void*) {
     }
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

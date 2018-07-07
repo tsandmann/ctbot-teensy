@@ -78,6 +78,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_MOTOR_H_ */

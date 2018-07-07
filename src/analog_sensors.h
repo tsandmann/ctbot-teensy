@@ -90,7 +90,7 @@ public:
      * @return The last value of right border sensor
      */
     auto get_border_r() const {
-         return data_.border[1];
+        return data_.border[1];
     }
 
     /**
@@ -136,6 +136,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_ANALOG_SENSORS_H_ */

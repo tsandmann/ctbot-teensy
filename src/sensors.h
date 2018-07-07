@@ -36,7 +36,7 @@ namespace ctbot {
 /**
  * @brief Collection of all c't-Bot sensors
  */
-class Sensors : public DigitalSensors , public AnalogSensors {
+class Sensors : public DigitalSensors, public AnalogSensors {
 protected:
     Ena ena_;
 
@@ -66,6 +66,6 @@ public:
     }
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SENSORS_H_ */

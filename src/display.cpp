@@ -65,7 +65,7 @@ uint8_t Display::print(const std::string& str) const {
 }
 
 uint8_t Display::printf(const char* format, ...) {
-    va_list	args;
+    va_list args;
     va_start(args, format);
 
     /* read C-string and parse format */
@@ -86,4 +86,4 @@ uint8_t Display::printf(const char* format, ...) {
     return len;
 }
 
-} /* namespace ctbot */
+} // namespace ctbot

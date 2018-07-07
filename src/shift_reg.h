@@ -57,6 +57,6 @@ private:
     void out(uint8_t data, const uint8_t pins_to_set, const uint8_t pins_to_clear) const;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_SHIFT_REG_H_ */

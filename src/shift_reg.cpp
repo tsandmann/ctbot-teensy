@@ -68,4 +68,4 @@ void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t)
 template class ShiftReg<CtBotConfig::ENA_SCK_PIN, CtBotConfig::ENA_RCK_PIN>; // ENA
 template class ShiftReg<CtBotConfig::LED_SCK_PIN, CtBotConfig::LED_RCK_PIN>; // LEDs
 
-} /* namespace ctbot */
+} // namespace ctbot

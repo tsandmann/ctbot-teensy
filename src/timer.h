@@ -82,6 +82,6 @@ public:
     static void delay_us(uint32_t us);
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_TIMER_H_ */

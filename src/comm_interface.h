@@ -40,11 +40,11 @@ class SerialConnectionTeensy;
  * @brief Enum class for possible bases
  */
 enum class PrintBase : uint8_t {
-    NONE   = 0,
-    BIN    = 2,
-    OCT    = 8,
-    DEC    = 10,
-    HEX    = 16,
+    NONE = 0,
+    BIN = 2,
+    OCT = 8,
+    DEC = 10,
+    HEX = 16,
 };
 
 /**
@@ -197,6 +197,6 @@ public:
     virtual void set_echo(bool value) override;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot
 
 #endif /* SRC_COMM_INTERFACE_H_ */
