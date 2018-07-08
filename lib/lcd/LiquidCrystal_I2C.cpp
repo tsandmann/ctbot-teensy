@@ -103,9 +103,8 @@ static constexpr TwoWire& get_i2c_port(const uint8_t i2c_port) {
     } else if (i2c_port == 3) {
         // from WireKinetis.h: "Wire3 is seldom used on Teensy 3.6"
         // return Wire3;
-    } else {
-        return Wire;
     }
+    return Wire;
 }
 
 // CONSTRUCTORS

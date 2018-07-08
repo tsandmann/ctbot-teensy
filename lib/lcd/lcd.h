@@ -448,7 +448,10 @@ public:
     @param      value: pin associated to backlight control.
     @param      pol: backlight polarity control (POSITIVE, NEGATIVE)
     */
-    virtual void setBacklightPin(uint8_t value, t_backlighPol pol) {};
+    virtual void setBacklightPin(uint8_t value, t_backlighPol pol) {
+        (void) value;
+        (void) pol;
+    };
 
     /*!
     @function
@@ -467,7 +470,9 @@ public:
     BACKLIGHT_OFF will be interpreted as off and BACKLIGHT_ON will drive the
     backlight on.
     */
-    virtual void setBacklight(uint8_t value) {};
+    virtual void setBacklight(uint8_t value) {
+        (void) value;
+    };
 
     /*!
     @function
