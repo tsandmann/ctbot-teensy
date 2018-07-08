@@ -17,6 +17,9 @@ addons:
         - g++-7
         - boost1.60
 
+before_install:
+- sudo echo 'APT::Get::AllowUnauthenticated "true";' > /etc/apt/apt.conf.d/99myown
+
 install:
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
 - pip install -U platformio
