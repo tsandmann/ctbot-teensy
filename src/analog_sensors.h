@@ -42,6 +42,7 @@ protected:
     static constexpr auto ENA_MASK = EnaTypes::BORDER | EnaTypes::LINE; // | EnaTypes::DISTANCE;
 
     uint32_t last_dist_update_;
+    uint8_t last_adc_res_;
     uint16_t distance_[2];
     uint16_t line_[2];
     uint16_t ldr_[2];
@@ -55,19 +56,30 @@ protected:
     /**
      * @brief Read the ADC value of a pin
      * @param[in] pin: The pin to read from
-     * @return ADC value in 10 bit resolution // FIXME: check resolution
+     * @return ADC value in 10 bit resolution
      */
-    int16_t analog_read(const uint8_t pin) const {
-        return analog_read(pin, 1U);
+    int16_t analog_read(const uint8_t pin) {
+        return analog_read(pin, 10, 1);
     }
 
     /**
      * @brief Read the ADC value of a pin
      * @param[in] pin: The pin to read from
-     * @param[in] avg_num: Number of reads to build an average
-     * @return ADC value in 10 bit resolution // FIXME: check resolution
+     * @param[in] resolution: Resolution in bit for ADC
+     * @return ADC value in 10 bit resolution
      */
-    int16_t analog_read(const uint8_t pin, const uint8_t avg_num) const;
+    int16_t analog_read(const uint8_t pin, const uint8_t resolution) {
+        return analog_read(pin, resolution, 1);
+    }
+
+    /**
+     * @brief Read the ADC value of a pin
+     * @param[in] pin: The pin to read from
+     * @param[in] resolution: Resolution in bit for ADC
+     * @param[in] avg_num: Number of reads to build an average
+     * @return ADC value in selected resolution
+     */
+    int16_t analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num);
 
 public:
     /**
