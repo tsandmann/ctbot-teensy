@@ -26,7 +26,7 @@
 #include <cstring>
 
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
     : p_lcd_out(nullptr) {}
 
 bool LiquidCrystal_I2C::begin(uint8_t cols, uint8_t lines) {

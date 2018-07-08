@@ -27,12 +27,16 @@
 #include <cstdint>
 
 
+namespace arduino {
 class TwoWire {
 public:
     void setSDA(uint8_t pin) {}
     void setSCL(uint8_t pin) {}
 };
 
+extern TwoWire Wire;
+extern TwoWire Wire1;
 extern TwoWire Wire2;
+} // namespace arduino
 
 #endif /* WIRE_NATIVE_H */

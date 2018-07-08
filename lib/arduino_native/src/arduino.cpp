@@ -203,9 +203,12 @@ HardwareSerial Serial4;
 HardwareSerial Serial5;
 HardwareSerial Serial6;
 
+TwoWire Wire;
+TwoWire Wire1;
+TwoWire Wire2;
+
 } // namespace arduino
 
-TwoWire Wire2; // FIXME: move to arduino
 
 extern "C" void setup();
 
