@@ -58,6 +58,10 @@ void AnalogSensors::update() {
 }
 
 int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
+    if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
+        last_adc_res_ = resolution;
+        arduino::analogReadResolution(resolution);
+    }
     arduino::analogReadAveraging(avg_num);
     const int16_t ret { static_cast<int16_t>(arduino::analogRead(pin)) };
     return ret;
