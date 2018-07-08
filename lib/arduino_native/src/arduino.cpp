@@ -65,6 +65,8 @@ int analogRead(uint8_t pin) {
 
 void analogReadAveraging(unsigned int) {}
 
+void analogReadResolution(unsigned int) {}
+
 void analogWrite(uint8_t pin, int val) {
     try {
         g_analog_pins.at(pin) = val;

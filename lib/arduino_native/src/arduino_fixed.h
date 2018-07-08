@@ -35,6 +35,7 @@
 namespace arduino {
 int analogRead(uint8_t pin);
 void analogReadAveraging(unsigned int num);
+void analogReadResolution(unsigned int bits);
 void analogWrite(uint8_t pin, int val);
 void analogWriteFrequency(uint8_t pin, float frequency);
 uint32_t analogWriteResolution(uint32_t bits);
