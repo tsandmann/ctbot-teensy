@@ -58,7 +58,19 @@ public:
     static constexpr bool SENS_LCD_TEST_AVAILABLE { true }; /**< Statically activate or deactivate sensor display test */
 
     /* uart */
-    static constexpr uint32_t UART0_BAUDRATE { 4000000UL }; /**< Baud rate used for Uart 0 */
+    static constexpr uint32_t UART0_BAUDRATE { 4000000UL }; /**< Baud rate used for Uart 0 (USB) */
+    static constexpr uint8_t UART5_PIN_RX { 34U }; /**< Number of pin to use for RX line for Uart 5 */
+    static constexpr uint8_t UART5_PIN_TX { 33U }; /**< Number of pin to use for TX line for Uart 5 */
+    static constexpr uint32_t UART5_BAUDRATE { 115200UL }; /**< Baud rate used for Uart 5 */
+    static constexpr uint8_t UART_FOR_CMD { 0 }; /**< Number of UART to use for command line interface */
+
+    /* i2c */
+    static constexpr uint8_t I2C0_PIN_SCL { 7 }; /**< Pin number of SCL for I2C 0 */
+    static constexpr uint8_t I2C0_PIN_SDA { 8 }; /**< Pin number of SDA for I2C 0 */
+    static constexpr uint8_t I2C2_PIN_SCL { 3 }; /**< Pin number of SCL for I2C 2 */
+    static constexpr uint8_t I2C2_PIN_SDA { 4 }; /**< Pin number of SDA for I2C 2 */
+    static constexpr uint8_t I2C3_PIN_SCL { 57 }; /**< Pin number of SCL for I2C 3 */
+    static constexpr uint8_t I2C3_PIN_SDA { 56 }; /**< Pin number of SDA for I2C 3 */
 
     /* shift */
     static constexpr uint8_t SHIFT_SDATA_PIN { 43 }; /**< Pin number of shift register SDATA signal */
@@ -107,6 +119,9 @@ public:
     /* servos */
     static constexpr uint8_t SERVO_1_PIN { 5 }; /**< Pin number of servo 1 pwm signal */
     static constexpr uint8_t SERVO_2_PIN { 6 }; /**< Pin number of servo 2 pwm signal */
+
+    /* lcd */
+    static constexpr uint8_t I2C_FOR_LCD { 2 }; /**< Number of I2C port to use for lcd interface */
 };
 
 } // namespace ctbot
