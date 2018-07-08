@@ -30,7 +30,8 @@
 
 namespace ctbot {
 
-AnalogSensors::AnalogSensors() : last_dist_update_ { Timer::get_ms() }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 } {
+AnalogSensors::AnalogSensors()
+    : last_dist_update_ { Timer::get_ms() }, last_adc_res_ { 0 }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 } {
     arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
@@ -44,19 +45,19 @@ AnalogSensors::AnalogSensors() : last_dist_update_ { Timer::get_ms() }, distance
 void AnalogSensors::update() {
     const uint32_t now { Timer::get_ms() };
     if (now >= last_dist_update_ + 50) {
-        distance_[0] = analog_read(CtBotConfig::DISTANCE_L_PIN, 8);
-        distance_[1] = analog_read(CtBotConfig::DISTANCE_R_PIN, 8);
+        distance_[0] = analog_read(CtBotConfig::DISTANCE_L_PIN, 10, 8);
+        distance_[1] = analog_read(CtBotConfig::DISTANCE_R_PIN, 10, 8);
         last_dist_update_ = now;
     }
-    line_[0] = analog_read(CtBotConfig::LINE_L_PIN);
-    line_[1] = analog_read(CtBotConfig::LINE_R_PIN);
-    ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 4);
-    ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 4);
-    border_[0] = analog_read(CtBotConfig::BORDER_L_PIN);
-    border_[1] = analog_read(CtBotConfig::BORDER_R_PIN);
+    line_[0] = analog_read(CtBotConfig::LINE_L_PIN, 10);
+    line_[1] = analog_read(CtBotConfig::LINE_R_PIN, 10);
+    ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 10, 4);
+    ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
+    border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
+    border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
 }
 
-int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t avg_num) const {
+int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
     arduino::analogReadAveraging(avg_num);
     const int16_t ret { static_cast<int16_t>(arduino::analogRead(pin)) };
     return ret;

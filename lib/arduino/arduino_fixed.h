@@ -82,6 +82,7 @@
 namespace arduino {
 using ::analogRead;
 using ::analogReadAveraging;
+using ::analogReadResolution;
 using ::analogWrite;
 using ::analogWriteFrequency;
 using ::analogWriteResolution;
