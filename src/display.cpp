@@ -25,14 +25,14 @@
 #include "display.h"
 
 #include <LiquidCrystal_I2C.h>
-#include <Wire.h>
+#include <arduino_fixed.h>
 
 
 namespace ctbot {
 
-Display::Display() : p_impl_ { new LiquidCrystal_I2C(0x3f, 2, 1, 0, 4, 5, 6, 7) } { // FIXME: Parameter for i2c instance
-    Wire2.setSDA(3);
-    Wire2.setSCL(4);
+Display::Display() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::I2C_FOR_LCD, 0x3f, 2, 1, 0, 4, 5, 6, 7) } {
+    arduino::Wire2.setSDA(CtBotConfig::I2C2_PIN_SDA);
+    arduino::Wire2.setSCL(CtBotConfig::I2C2_PIN_SCL);
 
     p_impl_->begin(LINE_LENGTH, 4);
     p_impl_->setBacklightPin(3, LiquidCrystal_I2C::POSITIVE);

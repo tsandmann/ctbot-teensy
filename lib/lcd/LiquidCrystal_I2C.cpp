@@ -90,33 +90,53 @@
 #define D7 3
 
 
+/**
+ * @brief Get the i2c port object
+ * @param[in] i2c_port: Number of i2c port
+ * @return Reference to i2c port driver
+ */
+static constexpr TwoWire& get_i2c_port(const uint8_t i2c_port) {
+    if (i2c_port == 1) {
+        return Wire1;
+    } else if (i2c_port == 2) {
+        return Wire2;
+    } else if (i2c_port == 3) {
+        // from WireKinetis.h: "Wire3 is seldom used on Teensy 3.6"
+        // return Wire3;
+    }
+    return Wire;
+}
+
 // CONSTRUCTORS
 // ---------------------------------------------------------------------------
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr) : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, EN, RW, RS, D4, D5, D6, D7);
 }
 
-
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t backlighPin, t_backlighPol pol = POSITIVE) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t backlighPin, t_backlighPol pol = POSITIVE)
+    : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, EN, RW, RS, D4, D5, D6, D7);
     setBacklightPin(backlighPin, pol);
 }
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs) : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, En, Rw, Rs, D4, D5, D6, D7);
 }
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t backlighPin, t_backlighPol pol = POSITIVE) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t backlighPin, t_backlighPol pol = POSITIVE)
+    : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, En, Rw, Rs, D4, D5, D6, D7);
     setBacklightPin(backlighPin, pol);
 }
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
+    : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, En, Rw, Rs, d4, d5, d6, d7);
 }
 
-LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
-    uint8_t backlighPin, t_backlighPol pol = POSITIVE) : _i2cio(Wire2) {
+LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
+    uint8_t backlighPin, t_backlighPol pol = POSITIVE)
+    : _i2cio { get_i2c_port(i2c_port) } {
     config(lcd_Addr, En, Rw, Rs, d4, d5, d6, d7);
     setBacklightPin(backlighPin, pol);
 }
@@ -127,9 +147,9 @@ LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, u
 //
 // begin
 bool LiquidCrystal_I2C::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
-   bool ret = init(); // Initialise the I2C expander interface
-   LCD::begin(cols, lines, dotsize);
-   return ret;
+    bool ret = init(); // Initialise the I2C expander interface
+    LCD::begin(cols, lines, dotsize);
+    return ret;
 }
 
 
@@ -204,7 +224,6 @@ void LiquidCrystal_I2C::config(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t
 }
 
 
-
 // low level data pushing commands
 //----------------------------------------------------------------------------
 
@@ -216,7 +235,7 @@ void LiquidCrystal_I2C::send(uint8_t value, uint8_t mode) {
     // the command.
 
     if (mode == FOUR_BITS) {
-        write4bits( (value & 0xf), COMMAND );
+        write4bits((value & 0xf), COMMAND);
     } else {
         write4bits(value >> 4, mode);
         write4bits(value & 0xf, mode);
@@ -244,7 +263,7 @@ void LiquidCrystal_I2C::write4bits(uint8_t value, uint8_t mode) {
     }
 
     pinMapValue |= mode | _backlightStsMask;
-    pulseEnable ( pinMapValue );
+    pulseEnable(pinMapValue);
 }
 
 //

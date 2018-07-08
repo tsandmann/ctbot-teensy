@@ -26,6 +26,7 @@
 
 #include <Arduino.h>
 #include <Print.h>
+#include <Wire.h>
 
 /* get rid of these stupid macros... */
 #undef word
@@ -104,6 +105,9 @@ using ::Serial4;
 using ::Serial5;
 using ::Serial6;
 using ::Stream;
+using ::Wire;
+using ::Wire1;
+using ::Wire2;
 
 static constexpr uint8_t INPUT { 0 };
 static constexpr uint8_t OUTPUT { 1 };
