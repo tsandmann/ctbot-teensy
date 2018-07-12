@@ -122,7 +122,7 @@ protected:
      * @tparam T: Type of data
      * @tparam Args: Types of additional args
      * @param[in] data: The data to print first
-     * @param[in] args: The data to print afterwards
+     * @param[in] args: Parameter pack of data to print afterwards
      */
     template <typename T, typename... Args>
     void serial_print(T data, Args... args) {

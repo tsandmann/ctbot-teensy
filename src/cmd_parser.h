@@ -95,26 +95,25 @@ public:
      */
     template <typename T>
     static char* split_args(const std::string& args, T& x1) {
-        T x2;
-        return split_args(args, x1, x2);
-    }
-
-    /**
-     * @brief Split a string into space seperated tokens and return the first two as integer arguments
-     * @tparam T: Type of argument to get out
-     * @param[in] args: Reference to input string
-     * @param[out] x1: Reference to first output argument
-     * @param[out] x2: Reference to second output argument
-     * @return Pointer to the character past the last character interpreted
-     */
-    template <typename T>
-    static char* split_args(const std::string& args, T& x1, T& x2) {
-        // FIXME: implement as a variadic template?
         const auto l { args.find(" ") + 1 };
         char* p_end;
         x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 10));
-        x2 = static_cast<T>(std::strtol(p_end, &p_end, 10));
         return p_end;
+    }
+
+    /**
+     * @brief Split a string into space seperated tokens and return them as integer arguments
+     * @tparam T: Type of argument to get out
+     * @param[in] args: Reference to input string
+     * @param[out] x1: Reference to first output argument
+     * @param[out] xn: Parameter pack of references to next arguments
+     * @return Pointer to the character past the last character interpreted
+     */
+    template <typename T, typename... Args>
+    static char* split_args(const std::string& args, T& x1, Args... xn) {
+        char* p_end { split_args(args, x1) };
+        const std::string next_args { p_end };
+        return split_args(next_args, xn...);
     }
 };
 
