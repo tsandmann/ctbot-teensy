@@ -37,14 +37,16 @@ static std::vector<std::thread*> g_task_list;
 
 uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
 
-uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const, unsigned short, void* pvParameters, uint32_t, void* pxCreatedTask) {
+uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const, unsigned short, void* pvParameters, uint32_t, void** pxCreatedTask) {
     auto p_thread { new std::thread(pvTaskCode, pvParameters) };
     g_mutex.lock();
     g_task_list.push_back(p_thread);
     g_mutex.unlock();
 
-    pxCreatedTask = p_thread;
-    return pxCreatedTask != nullptr;
+    if (pxCreatedTask) {
+        *pxCreatedTask = p_thread;
+    }
+    return p_thread != nullptr;
 }
 
 void vTaskDelay(const uint32_t ticks) {
@@ -73,7 +75,14 @@ void vTaskPrioritySet(void*, uint32_t) {}
 void vTaskStartScheduler() {
     vTaskDelay(5000UL);
 
-    // FIXME: race condition!
+
+    if (g_task_list.size() >= 2) {
+        auto task { g_task_list[1] }; // main task
+        if (task->joinable()) {
+            task->join();
+        }
+    }
+
     for (const auto& task : g_task_list) {
         if (task->joinable()) {
             task->join();

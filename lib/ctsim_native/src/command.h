@@ -263,22 +263,22 @@ protected:
     }
 
 public:
-    Command(const CommandData& cmd_data) : CommandBase(cmd_data) {
+    Command(const CommandData& cmd_data) : CommandBase { cmd_data } {
         update_crc();
     }
 
     Command(
         const CommandCodes& cmd_code, const CommandCodes& subcmd_code, int16_t data_l, int16_t data_r, uint8_t from = ADDR_NOT_SET, uint8_t to = ADDR_NOT_SET)
-        : CommandBase(cmd_code, subcmd_code, data_l, data_r, from, to) {
+        : CommandBase { cmd_code, subcmd_code, data_l, data_r, from, to } {
         update_crc();
     }
 
-    Command(boost::asio::streambuf& buf) : CommandBase(buf) {
+    Command(boost::asio::streambuf& buf) : CommandBase { buf } {
         crc_ok_ = CRCPolicy::checkCRC(*this);
 
         if (!validCRC()) {
             std::cerr << "Command<>::Command(): invalid command (CRC):\n" << *this << "\n";
-            // FIXME: exception?
+            throw std::runtime_error("Command<>::Command(): invalid command (CRC)");
         }
     }
 

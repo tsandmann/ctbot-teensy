@@ -156,7 +156,7 @@ int16_t CommInterface::debug_print(const float v, const uint8_t digits) const {
 }
 
 CommInterfaceCmdParser::CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo)
-    : CommInterface(io_connection, enable_echo), cmd_parser_(parser) {
+    : CommInterface { io_connection, enable_echo }, cmd_parser_ { parser } {
     cmd_parser_.set_echo(enable_echo);
 }
 

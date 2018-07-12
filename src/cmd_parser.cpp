@@ -31,13 +31,12 @@
 
 namespace ctbot {
 
-CmdParser::CmdParser() : echo_(false) {}
+CmdParser::CmdParser() : echo_ { false } {}
 
 void CmdParser::register_cmd(const std::string& cmd, const func_t& func) {
     commands_[cmd] = func;
     // std::cout << "CmdParser::register_cmd(): \"" << cmd << "\" registered\n";
 }
-
 
 void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const func_t& func) {
     register_cmd(cmd, func);
@@ -77,7 +76,6 @@ bool CmdParser::execute_cmd(const std::string& cmd) {
 }
 
 bool CmdParser::parse(const char* in, CommInterface& comm) {
-    // FIXME: store CommInterface as member?
     static std::string last_line;
 
     if (*in) {

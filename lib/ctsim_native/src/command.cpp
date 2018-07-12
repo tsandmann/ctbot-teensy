@@ -31,7 +31,7 @@ CommandBase::CommandBase(boost::asio::streambuf& buf) : has_crc_ { false }, crc_
     }
     if (!valid()) {
         std::cerr << "CommandBase::CommandBase(): invalid command:\n" << *this << "\n";
-        // FIXME: exception?
+        throw std::runtime_error("CommandBase::CommandBase(): invalid command (CRC)");
     }
 }
 

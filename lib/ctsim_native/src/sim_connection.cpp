@@ -260,7 +260,12 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
             return false;
         }
 
-        p_cmd = std::make_shared<CommandNoCRC>(recv_bufer_);
+        try {
+            p_cmd = std::make_shared<CommandNoCRC>(recv_bufer_);
+        } catch (const std::exception& e) {
+            std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
+            return false;
+        }
         assert(p_cmd);
         if (p_cmd->get_payload_size()) {
             p_cmd->append_payload(recv_bufer_, p_cmd->get_payload_size());

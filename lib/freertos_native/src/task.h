@@ -34,8 +34,8 @@ static constexpr uint32_t tskIDLE_PRIORITY { 0 };
 static constexpr char configIDLE_TASK_NAME[] { "IDLE" };
 
 extern "C" {
-uint32_t xTaskCreate(
-    std::function<void(void*)> pvTaskCode, const char* const pcName, unsigned short usStackDepth, void* pvParameters, uint32_t uxPriority, void* pxCreatedTask);
+uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const pcName, unsigned short usStackDepth, void* pvParameters, uint32_t uxPriority,
+    void** pxCreatedTask);
 
 void vTaskDelay(const uint32_t ticks);
 

@@ -94,7 +94,7 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
 
             while (true) {
                 Timer::delay_ms(p_task->period_);
-                if (p_task->active_) { // FIXME: optimize
+                if (p_task->active_) { // FIXME: optimize?
                     p_task->func_(p_task->func_data_);
                 }
             }
