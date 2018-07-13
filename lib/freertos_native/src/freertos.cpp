@@ -32,7 +32,7 @@
 #include <iostream>
 
 
-static std::recursive_mutex g_mutex;
+static std::recursive_timed_mutex g_mutex;
 static std::vector<std::thread*> g_task_list;
 
 uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
@@ -106,15 +106,18 @@ uint32_t uxTaskGetStackHighWaterMark(void*) {
 }
 
 void* xSemaphoreCreateMutex() {
-    return new std::recursive_mutex;
+    return new std::recursive_timed_mutex;
 }
 
 long xSemaphoreTake(void* mutex, uint32_t max_delay) {
-    // FIXME: implement timeout
     if (mutex) {
-        std::recursive_mutex* p_mtx { reinterpret_cast<std::recursive_mutex*>(mutex) };
-        p_mtx->lock();
-        return 1;
+        std::recursive_timed_mutex* p_mtx { reinterpret_cast<std::recursive_timed_mutex*>(mutex) };
+        if (max_delay == portMAX_DELAY) {
+            p_mtx->lock();
+            return 1;
+        } else if (p_mtx->try_lock_for(std::chrono::milliseconds(max_delay))) { // we assume a tick rate of 1 kHz here
+            return 1;
+        }
     }
 
     return 0;
@@ -122,7 +125,7 @@ long xSemaphoreTake(void* mutex, uint32_t max_delay) {
 
 long xSemaphoreGive(void* mutex) {
     if (mutex) {
-        std::recursive_mutex* p_mtx { reinterpret_cast<std::recursive_mutex*>(mutex) };
+        std::recursive_timed_mutex* p_mtx { reinterpret_cast<std::recursive_timed_mutex*>(mutex) };
         p_mtx->unlock();
         return 1;
     }
