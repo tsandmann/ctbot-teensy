@@ -129,7 +129,12 @@ extern "C" {
 
 /* Normal assert() semantics without relying on the provision of an assert.h header file. */
 void assert_blink(const char*, int, const char*, const char*);
+
+#ifdef NDEBUG
+#define configASSERT(condition) ((void) 0)
+#else
 #define configASSERT(__e) ((__e) ? (void) 0 : assert_blink(__FILE__, __LINE__, __PRETTY_FUNCTION__, #__e))
+#endif
 
 #ifdef __cplusplus
 }
