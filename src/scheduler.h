@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <map>
 #include <string>
 
 
@@ -74,6 +75,8 @@ protected:
          */
         Task(const uint16_t id, const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data);
 
+        ~Task();
+
         /**
          * @brief Print task information to a CommInterface
          * @param[in] comm: Reference to CommInterface instance to print to
@@ -82,8 +85,8 @@ protected:
     };
 
     uint16_t next_id_; /**< Next task ID to use */
-    std::vector<Task*> task_vector_; /**< Vector containing pointer to the tasks, ordering by task ID */
-    void* tast_vector_mutex_;
+    std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
+    void* tasks_mutex_;
 
 public:
     /**
@@ -132,6 +135,8 @@ public:
     uint16_t task_add(const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data) {
         return task_add(name, period, DEFAULT_STACK_SIZE, std::move(func), std::move(func_data));
     }
+
+    bool task_remove(const uint16_t task);
 
     /**
      * @brief Get the ID of a task given by its name

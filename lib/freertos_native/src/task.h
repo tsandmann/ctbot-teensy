@@ -37,6 +37,8 @@ extern "C" {
 uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const pcName, unsigned short usStackDepth, void* pvParameters, uint32_t uxPriority,
     void** pxCreatedTask);
 
+void vTaskDelete(void* task_handle);
+
 void vTaskDelay(const uint32_t ticks);
 
 void vTaskSuspend(void* task_handle);

@@ -35,7 +35,13 @@
 static std::recursive_timed_mutex g_mutex;
 static std::vector<std::thread*> g_task_list;
 
+extern "C" {
 uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
+
+void serial_puts(const char* str) {
+    ::puts(str);
+}
+} // extern C
 
 uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const, unsigned short, void* pvParameters, uint32_t, void** pxCreatedTask) {
     auto p_thread { new std::thread(pvTaskCode, pvParameters) };
@@ -49,16 +55,31 @@ uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const, u
     return p_thread != nullptr;
 }
 
+void vTaskDelete(void* task_handle) {
+    g_mutex.lock();
+    for (auto it = g_task_list.begin(); it != g_task_list.end(); ++it) {
+        if (*it == task_handle) {
+            g_task_list.erase(it);
+            break;
+        }
+    }
+    g_mutex.unlock();
+    if (task_handle) {
+        std::thread* p_thread { reinterpret_cast<std::thread*>(task_handle) };
+        p_thread->detach();
+    }
+}
+
 void vTaskDelay(const uint32_t ticks) {
     std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
 }
 
-void vTaskSuspend(void* task_handle) {
-    // FIXME: how to implement this?
+void vTaskSuspend(void*) {
+    // not implemented
 }
 
-void vTaskResume(void* task_hanlde) {
-    // FIXME: how to implement this?
+void vTaskResume(void*) {
+    // not implemented
 }
 
 void vTaskSuspendAll() {
@@ -73,19 +94,19 @@ long xTaskResumeAll() {
 void vTaskPrioritySet(void*, uint32_t) {}
 
 void vTaskStartScheduler() {
-    vTaskDelay(5000UL);
+    vTaskDelay(2000UL); // FIXME: baeh
 
 
-    if (g_task_list.size() >= 2) {
-        auto task { g_task_list[1] }; // main task
-        if (task->joinable()) {
-            task->join();
+    if (g_task_list.size()) {
+        std::thread* p_task { g_task_list[0] }; // main task
+        if (p_task->joinable()) {
+            p_task->join();
         }
     }
 
-    for (const auto& task : g_task_list) {
-        if (task->joinable()) {
-            task->join();
+    for (const auto& p_task : g_task_list) {
+        if (p_task->joinable()) {
+            p_task->join();
         }
     }
 }

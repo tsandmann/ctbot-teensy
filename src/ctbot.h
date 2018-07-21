@@ -52,6 +52,7 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
     static const char usage_text[]; /**< C-String containing the usage / help message */
 
+    bool shutdown_;
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
     Motor* p_motors_[2]; /**< Pointer to motor instances */

@@ -81,7 +81,7 @@ static void init_task(void*) {
 
     // serial_puts("suspending init task...");
     vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
-    vTaskSuspend(nullptr);
+    vTaskDelete(nullptr);
 }
 
 extern "C" {

@@ -57,21 +57,30 @@ void Scheduler::Task::print(CommInterface& comm) const {
     comm.debug_print(" byte\n");
 }
 
-Scheduler::Scheduler() : next_id_ { 0 }, tast_vector_mutex_ { xSemaphoreCreateMutex() } {
+Scheduler::Task::~Task() {
+    active_ = false;
+    if (handle_) {
+        vTaskDelete(handle_);
+    }
+}
+
+Scheduler::Scheduler() : next_id_ { 0 }, tasks_mutex_ { xSemaphoreCreateMutex() } {
     Task* p_task { new Task(next_id_++, configIDLE_TASK_NAME, 0, nullptr, nullptr) };
     p_task->handle_ = xTaskGetIdleTaskHandle();
 
     vTaskSuspendAll();
-    task_vector_.push_back(p_task);
+    tasks_[0] = p_task;
     xTaskResumeAll();
 }
 
 Scheduler::~Scheduler() {
-    vTaskSuspendAll();
-    for (uint16_t i { 0 }; i < next_id_; ++i) {
-        task_suspend(i);
+    enter_critical_section();
+    for (auto& t : tasks_) {
+        if (t.second->name_ != "main") {
+            task_suspend(t.first);
+        }
     }
-    xTaskResumeAll();
+    exit_critical_section();
 }
 
 void Scheduler::stop() {
@@ -81,9 +90,9 @@ void Scheduler::stop() {
 uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, task_func_t&& func, task_func_data_t&& func_data) {
     Task* p_task { new Task(next_id_, name, period, std::move(func), std::move(func_data)) };
 
-    if (tast_vector_mutex_ && xSemaphoreTake(tast_vector_mutex_, portMAX_DELAY)) {
-        task_vector_.push_back(p_task);
-        xSemaphoreGive(tast_vector_mutex_);
+    if (tasks_mutex_ && xSemaphoreTake(tasks_mutex_, portMAX_DELAY)) {
+        tasks_[p_task->id_] = p_task;
+        xSemaphoreGive(tasks_mutex_);
     } else {
         return 0;
     }
@@ -94,7 +103,7 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
 
             while (true) {
                 Timer::delay_ms(p_task->period_);
-                if (p_task->active_) { // FIXME: optimize?
+                if (p_task->active_) {
                     p_task->func_(p_task->func_data_);
                 }
             }
@@ -104,10 +113,23 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
     return next_id_++;
 }
 
+bool Scheduler::task_remove(const uint16_t task_id) {
+    if (tasks_mutex_ && xSemaphoreTake(tasks_mutex_, portMAX_DELAY)) {
+        Task* p_task { tasks_.at(task_id) };
+        tasks_.erase(task_id);
+        xSemaphoreGive(tasks_mutex_);
+        delete p_task;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 uint16_t Scheduler::task_get(const std::string& name) const {
-    for (uint16_t i { 0U }; i < next_id_; ++i) {
-        if (task_vector_[i]->name_ == name) {
-            return i;
+    for (const auto& t : tasks_) {
+        if (t.second->name_ == name) {
+            return t.first;
         }
     }
 
@@ -115,15 +137,15 @@ uint16_t Scheduler::task_get(const std::string& name) const {
 }
 
 const Scheduler::Task* Scheduler::task_get(const uint16_t id) const {
-    return task_vector_[id];
+    return tasks_.at(id);
 }
 
 bool Scheduler::task_suspend(const uint16_t id) {
-    if (id >= task_vector_.size()) {
+    if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
 
-    auto& task { *task_vector_[id] };
+    Task& task { *tasks_[id] };
     task.active_ = false;
     vTaskSuspend(task.handle_);
 
@@ -131,11 +153,11 @@ bool Scheduler::task_suspend(const uint16_t id) {
 }
 
 bool Scheduler::task_resume(const uint16_t id) {
-    if (id >= task_vector_.size()) {
+    if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
 
-    auto& task { *task_vector_[id] };
+    Task& task { *tasks_[id] };
     task.active_ = true;
     vTaskResume(task.handle_);
 
@@ -143,8 +165,8 @@ bool Scheduler::task_resume(const uint16_t id) {
 }
 
 void Scheduler::print_task_list(CommInterface& comm) const {
-    for (const auto& p_task : task_vector_) {
-        p_task->print(comm);
+    for (const auto& p_task : tasks_) {
+        p_task.second->print(comm);
     }
 }
 

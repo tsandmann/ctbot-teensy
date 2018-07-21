@@ -159,6 +159,11 @@ public:
             return print_int(v, base);
         }
     }
+
+    /**
+     * @brief Wait for any outstanding transmission on the serial connection to complete
+     */
+    void flush();
 };
 
 

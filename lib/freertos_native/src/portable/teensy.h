@@ -29,7 +29,15 @@
 #include <cstdint>
 
 
-extern "C" uint8_t* stack_top; /**< Pointer to top of initial stack, initialized in setup() */
+extern "C" {
+extern uint8_t* stack_top; /**< Pointer to top of initial stack, initialized in setup() */
+
+/**
+ * @brief Write every character from the null-terminated C-string str and one additional newline character '\n' to Serial
+ * @param[in] str: Character C-string to be written
+ */
+void serial_puts(const char* str);
+} // extern C
 
 namespace freertos {
 /**

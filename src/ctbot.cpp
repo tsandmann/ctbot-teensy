@@ -39,16 +39,16 @@
 namespace ctbot {
 
 const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\n"
-                                 "---------------------------------------------------\n"
+                                 "----------------------------------------------------------------------------------\n"
                                  "help (h)\t\t\tprint this help message\n"
                                  "halt\t\t\t\tshutdown and put Teensy in sleep mode\n"
                                  "\n"
 
                                  "config (c)\n"
                                  "\techo [0|1]\t\tset console echo on/off\n"
-                                 "\ttask ledtest [0|1]\t\tstart/stop LED test\n"
-                                 "\ttask sctrl [0|1]\t\tstart/stop speed controller task\n"
-                                 "\ttask [taskname] [0|1]\t\tstart/stop a task\n"
+                                 "\ttask ledtest [0|1]\tstart/stop LED test\n"
+                                 "\ttask sctrl [0|1]\tstart/stop speed controller task\n"
+                                 "\ttask [taskname] [0|1]\tstart/stop a task\n"
                                  "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\n"
                                  "\n"
 
@@ -73,31 +73,31 @@ const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\n"
                                  "\n"
 
                                  "set (s)\n"
-                                 "\tspeed [-100;100] [=]\t\tset new speed in % for left and right motor\n"
-                                 "\tmotor [-16000;16000] [=]\tset new pwm for left and right motor\n"
-                                 "\tservo [0;180|255] [=]\t\tset new position for servo 1 and 2, 255 to disable\n"
-                                 "\tled [0;255]\t\t\tset new LED setting\n"
-                                 "\tlcd [1;4] [1;20] TEXT\t\tprint TEXT on LCD at line and column\n"
-                                 "\tlcdbl [0;1]\t\t\tswitch LCD backlight ON (1) or OFF (0)\n" };
+                                 "\tspeed [-100;100] [=]\tset new speed in % for left and right motor\n"
+                                 "\tmotor [-16k;16000] [=]\tset new pwm for left and right motor\n"
+                                 "\tservo [0;180|255] [=]\tset new position for servo 1 and 2, 255 to disable\n"
+                                 "\tled [0;255]\t\tset new LED setting\n"
+                                 "\tlcd [1;4] [1;20] TEXT\tprint TEXT on LCD at line and column\n"
+                                 "\tlcdbl [0;1]\t\tswitch LCD backlight ON (1) or OFF (0)\n" };
 
 CtBot& CtBot::get_instance() {
     static CtBot instance;
     return instance;
 }
 
-CtBot::CtBot() : p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) } {
+CtBot::CtBot() : shutdown_ { false }, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) } {
     // initializes serial connection for debug purpose
 }
 
 void CtBot::stop() {
-    shutdown();
+    shutdown_ = true;
 }
 
 void CtBot::setup() {
     p_scheduler_ = new Scheduler();
     p_scheduler_->task_add("main", TASK_PERIOD_MS, 512UL,
         [](void* p_data) {
-            auto p_this(reinterpret_cast<CtBot*>(p_data));
+            CtBot* p_this { reinterpret_cast<CtBot*>(p_data) };
             return p_this->run();
         },
         this);
@@ -302,10 +302,17 @@ void CtBot::init_parser() {
 
 void CtBot::run() {
     p_sensors_->update();
+
+    if (shutdown_) {
+        shutdown();
+    }
 }
 
 void CtBot::shutdown() {
     p_comm_->debug_print("System shutting down...\n");
+    p_comm_->flush();
+    p_serial_wifi_->flush();
+    p_serial_usb_->flush();
 
     Scheduler::enter_critical_section();
     p_speedcontrols_[0]->set_speed(0.f);
@@ -318,8 +325,6 @@ void CtBot::shutdown() {
     p_lcd_->set_backlight(false);
     p_leds_->set(LedTypes::NONE);
     p_sensors_->disable_all();
-    p_serial_wifi_->flush();
-    p_serial_usb_->flush();
 
     delete p_comm_;
     delete p_serial_wifi_;
