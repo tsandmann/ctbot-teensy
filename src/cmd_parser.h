@@ -110,7 +110,7 @@ public:
      * @return Pointer to the character past the last character interpreted
      */
     template <typename T, typename... Args>
-    static char* split_args(const std::string& args, T& x1, Args... xn) {
+    static char* split_args(const std::string& args, T& x1, Args&... xn) {
         char* p_end { split_args(args, x1) };
         const std::string next_args { p_end };
         return split_args(next_args, xn...);
