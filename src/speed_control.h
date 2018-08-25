@@ -44,7 +44,7 @@ namespace ctbot {
 class SpeedControl {
 protected:
     static constexpr uint16_t MAX_SPEED { 450U }; /**< Maximum possible speed in mm/s */
-    static constexpr uint16_t TASK_PERIOD_MS { 1U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
 
     static std::list<SpeedControl*> controller_list_; /**< List of all SpeedControl instances created */
 
