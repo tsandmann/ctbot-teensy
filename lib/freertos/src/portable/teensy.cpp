@@ -226,9 +226,10 @@ void vApplicationIdleHook() {
 #endif // configUSE_IDLE_HOOK
 
 #if( configUSE_TICK_HOOK > 0 )
+extern "C" volatile uint32_t systick_millis_count;
 void vApplicationTickHook();
 void vApplicationTickHook() {
-    systick_isr();
+    systick_millis_count++;
 }
 #endif // configUSE_TICK_HOOK
 

@@ -27,20 +27,34 @@
 #include <arduino_fixed.h>
 #include <FreeRTOS.h>
 #include <task.h>
+#include <util/atomic.h>
 
 
 namespace ctbot {
 
 uint32_t Timer::get_us() {
-    return arduino::micros();
+    uint32_t current, load, count, istatus;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        current = SYST_CVR;
+        load = SYST_RVR;
+        count = get_ms();
+        istatus = SCB_ICSR; // bit 26 indicates if systick exception pending
+    }
+
+    if ((istatus & SCB_ICSR_PENDSTSET) && current > 50) {
+        ++count;
+    }
+
+    current = load - current;
+    return count * 1000U + current / (configCPU_CLOCK_HZ / 1000000U);
 }
 
 uint32_t Timer::get_ms() {
-    return arduino::millis();
+    return xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
 }
 
 void Timer::delay_ms(const uint32_t ms) {
-    ::vTaskDelay(ms * (configTICK_RATE_HZ / 1000UL));
+    ::vTaskDelay(ms * (configTICK_RATE_HZ / 1000U));
 }
 
 void Timer::delay_us(const uint32_t us) {
