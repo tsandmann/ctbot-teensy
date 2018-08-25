@@ -53,7 +53,7 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
-    static constexpr uint8_t DATA_ARRAY_SIZE { 8 }; /**< Size of buffer array in byte for raw encoder data */
+    static constexpr uint8_t DATA_ARRAY_SIZE { 16 }; /**< Size of buffer array in byte for raw encoder data */
 
     /**
      * @brief Construct a new Encoder object
@@ -61,7 +61,7 @@ public:
      * @param[in] p_idx: Pointer to current index in data array
      * @param[in] pin: Pin number of the input data signal
      */
-    Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const uint8_t pin);
+    Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin);
 
     /**
      * @brief Check for new input data and calculate current speed
@@ -96,14 +96,12 @@ public:
      * @tparam ARRAY_SIZE: Size of raw input data array in byte
      */
     template <uint8_t VECT_NUM, uint8_t ARRAY_SIZE>
-    static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx) {
-        const auto now { Timer::get_us() };
-
+    static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx, const uint32_t time) {
         uint8_t idx { *p_idx };
         ++idx;
         idx %= ARRAY_SIZE;
         *p_idx = idx;
-        p_data[idx] = now;
+        p_data[idx] = time;
     }
 };
 
