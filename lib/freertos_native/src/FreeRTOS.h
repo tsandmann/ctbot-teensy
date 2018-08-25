@@ -34,6 +34,7 @@ using StackType_t = uint32_t;
 static constexpr uint32_t configTICK_RATE_HZ { 1000UL };
 static constexpr uint32_t portMAX_DELAY { 0xffff };
 static constexpr uint8_t configMAX_PRIORITIES { 8 };
+static constexpr uint32_t configCPU_CLOCK_HZ { 180000000UL };
 
 extern "C" {
 void vTaskStartScheduler();
@@ -44,5 +45,11 @@ void* xTaskGetIdleTaskHandle();
 
 uint32_t uxTaskGetStackHighWaterMark(void*);
 } // extern C
+
+#ifdef NDEBUG
+#define configASSERT(condition) ((void) 0)
+#else
+#define configASSERT(__e) (assert(__e))
+#endif
 
 #endif /* _FREERTOS_NATIVE_H_ */

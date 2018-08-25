@@ -115,4 +115,10 @@ extern HardwareSerial Serial6;
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
 
+// FIXME: this is just a temporary workaround
+static constexpr uint32_t SYST_CVR { 0 };
+static constexpr uint32_t SYST_RVR { 0 };
+static constexpr uint32_t SCB_ICSR { 0 };
+static constexpr uint32_t SCB_ICSR_PENDSTSET { 0 };
+
 #endif /* _ARDUINO_FIXED_H_ */

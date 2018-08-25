@@ -50,7 +50,7 @@ uint32_t Timer::get_us() {
 }
 
 uint32_t Timer::get_ms() {
-    return xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
+    return ::xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
 }
 
 void Timer::delay_ms(const uint32_t ms) {

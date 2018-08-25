@@ -25,6 +25,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include <arduino_fixed.h>
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -68,6 +69,10 @@ void vTaskDelete(void* task_handle) {
         std::thread* p_thread { reinterpret_cast<std::thread*>(task_handle) };
         p_thread->detach();
     }
+}
+
+uint32_t xTaskGetTickCount() {
+    return arduino::millis();
 }
 
 void vTaskDelay(const uint32_t ticks) {

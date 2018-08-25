@@ -41,6 +41,8 @@ void vTaskDelete(void* task_handle);
 
 void vTaskDelay(const uint32_t ticks);
 
+uint32_t xTaskGetTickCount();
+
 void vTaskSuspend(void* task_handle);
 
 void vTaskResume(void* task_handle);
