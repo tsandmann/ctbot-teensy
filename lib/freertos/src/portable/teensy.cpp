@@ -35,7 +35,7 @@ task.h is included from an application file. */
 #include "task.h"
 #include <private/portable.h>
 
-#if( configSUPPORT_DYNAMIC_ALLOCATION == 0 )
+#if (configSUPPORT_DYNAMIC_ALLOCATION == 0)
 #error This file must not be used if configSUPPORT_DYNAMIC_ALLOCATION is 0
 #endif
 
@@ -101,12 +101,30 @@ void operator delete[](void* p, const std::nothrow_t&) noexcept {
 
 namespace freertos {
 /**
+ * @brief Check for USB events pending and call the USB ISR
+ */
+static void poll_usb() {
+    if (SIM_SCGC4 & SIM_SCGC4_USBOTG) {
+        usb_isr();
+    }
+}
+
+/**
  * @brief Delay between led error flashes
  * @param[in] ms: Milliseconds to delay
  * @note Doesn't use a timer to work with interrupts disabled
  */
-void delay_ms(const uint32_t ms) {
-    const uint32_t iterations { ms * (F_CPU / 7000UL) };
+static void delay_ms(const uint32_t ms) {
+    const uint32_t n { ms / 10 };
+    for (uint32_t i { 0 }; i < n; ++i) {
+        poll_usb();
+
+        for (uint32_t i { 0 }; i < 10UL * (F_CPU / 7000UL); ++i) { // 10 ms
+            asm volatile("nop");
+        }
+    }
+
+    const uint32_t iterations { (ms % 10) * (F_CPU / 7000UL) }; // remainder
     for (uint32_t i { 0 }; i < iterations; ++i) {
         asm volatile("nop");
     }
@@ -183,7 +201,7 @@ void* __wrap__sbrk(ptrdiff_t incr) {
     vTaskSuspendAll(); // Note: safe to use before FreeRTOS scheduler started
     void* const previousHeapEnd = currentHeapEnd;
     if (((intptr_t) currentHeapEnd + incr >= (intptr_t) stack_top - STACK_MARGIN) && stack_top) { // FIXME: double check this
-#if( configUSE_MALLOC_FAILED_HOOK == 1 )
+#if (configUSE_MALLOC_FAILED_HOOK == 1)
         {
             extern void vApplicationMallocFailedHook(void);
             vApplicationMallocFailedHook();
@@ -236,14 +254,14 @@ void vApplicationStackOverflowHook(TaskHandle_t, char*) {
 }
 
 
-#if ( configUSE_IDLE_HOOK == 1 )
+#if (configUSE_IDLE_HOOK == 1)
 void vApplicationIdleHook();
 void vApplicationIdleHook() {
     yield();
 }
 #endif // configUSE_IDLE_HOOK
 
-#if( configUSE_TICK_HOOK > 0 )
+#if (configUSE_TICK_HOOK > 0)
 extern "C" volatile uint32_t systick_millis_count;
 void vApplicationTickHook();
 void vApplicationTickHook() {
@@ -251,7 +269,7 @@ void vApplicationTickHook() {
 }
 #endif // configUSE_TICK_HOOK
 
-#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
 implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
 used by the Idle task. */
@@ -260,7 +278,7 @@ void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer, StackTyp
     function then they must be declared static - otherwise they will be allocated on
     the stack and so not exists after this function exits. */
     static StaticTask_t xIdleTaskTCB;
-    static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+    static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
     /* Pass out a pointer to the StaticTask_t structure in which the Idle task's
     state will be stored. */
@@ -283,7 +301,7 @@ void vApplicationGetTimerTaskMemory(StaticTask_t** ppxTimerTaskTCBBuffer, StackT
     function then they must be declared static - otherwise they will be allocated on
     the stack and so not exists after this function exits. */
     static StaticTask_t xTimerTaskTCB;
-    static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+    static StackType_t uxTimerTaskStack[configTIMER_TASK_STACK_DEPTH];
 
     /* Pass out a pointer to the StaticTask_t structure in which the Timer
     task's state will be stored. */
