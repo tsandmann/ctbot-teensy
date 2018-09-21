@@ -28,8 +28,6 @@
 #include "scheduler.h"
 #include "ctbot.h"
 
-#include <arduino_fixed.h>
-
 
 namespace ctbot {
 
@@ -41,51 +39,21 @@ Encoder::Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
 
     // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
-        arduino::attachInterrupt(pin,
-            []() {
-                static bool last { false };
-                static uint32_t last_time { 0 };
-                const uint32_t now { Timer::get_us() };
-                const bool value { static_cast<bool>(arduino::digitalReadFast(CtBotConfig::ENC_L_PIN)) };
-
-                if (value != last && (now - last_time > 1000U)) {
-                    last = value;
-                    last_time = now;
-                    isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_, now);
-                }
-            },
-            arduino::CHANGE);
+        arduino::attachInterrupt(
+            pin, []() { isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_); }, arduino::CHANGE);
     } else if (pin == CtBotConfig::ENC_R_PIN) {
-        arduino::attachInterrupt(pin,
-            []() {
-                static bool last { false };
-                static uint32_t last_time { 0 };
-                const uint32_t now { Timer::get_us() };
-                const bool value { static_cast<bool>(arduino::digitalReadFast(CtBotConfig::ENC_R_PIN)) };
-
-                if (value != last && (now - last_time > 1000U)) {
-                    last = value;
-                    last_time = now;
-                    isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_, now);
-                }
-            },
-            arduino::CHANGE);
+        arduino::attachInterrupt(
+            pin, []() { isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_); }, arduino::CHANGE);
     }
     Scheduler::exit_critical_section();
 }
 
 void Encoder::update() {
-    // FIXME: check data types
     const uint8_t idx { *p_enc_idx_ };
     int8_t diff_enc { static_cast<int8_t>(idx - last_idx_) };
     if (diff_enc < 0) {
         diff_enc += DATA_ARRAY_SIZE;
     }
-    // CtBot& ctbot { CtBot::get_instance() };
-    // ctbot.get_comm()->debug_print(idx, PrintBase::DEC);
-    // ctbot.get_comm()->debug_print('\t');
-    // ctbot.get_comm()->debug_print(diff_enc, PrintBase::DEC);
-    // ctbot.get_comm()->debug_print('\n');
 
     const auto now_us { Timer::get_us() };
     const auto dt { static_cast<int32_t>(now_us - last_update_) };
@@ -95,19 +63,25 @@ void Encoder::update() {
             diff_enc = -diff_enc;
         }
 
-        // ctbot.get_comm()->debug_print("diff_enc=");
-        // ctbot.get_comm()->debug_print(diff_enc, PrintBase::DEC);
-        // ctbot.get_comm()->debug_print('\n');
+        if (DEBUG) {
+            CtBot& ctbot { CtBot::get_instance() };
+            ctbot.get_comm()->debug_print("diff_enc=");
+            ctbot.get_comm()->debug_print(diff_enc, PrintBase::DEC);
+            ctbot.get_comm()->debug_print('\n');
+        }
         edges_ += diff_enc;
         last_idx_ = idx;
         count_ += diff_enc;
 
-        // ctbot.get_comm()->debug_print("count_=");
-        // ctbot.get_comm()->debug_print(count_, PrintBase::DEC);
-        // ctbot.get_comm()->debug_print('\n');
+        if (DEBUG) {
+            CtBot& ctbot { CtBot::get_instance() };
+            ctbot.get_comm()->debug_print("count_=");
+            ctbot.get_comm()->debug_print(count_, PrintBase::DEC);
+            ctbot.get_comm()->debug_print('\n');
+        }
 
-        const uint32_t current_time { p_enc_data_[idx] };
-        const int32_t diff { static_cast<int32_t>(current_time - last_update_) };
+        const auto current_time { p_enc_data_[idx] };
+        const auto diff { static_cast<int32_t>(current_time - last_update_) };
 
         if (diff == 0) {
             return;
@@ -116,29 +90,29 @@ void Encoder::update() {
         speed_ = (WHEEL_PERIMETER / ENCODER_MARKS * 1000000.f) * count_ / diff;
         speed_avg_ = speed_avg_ * (1.f - AVG_FILTER_PARAM) + speed_ * AVG_FILTER_PARAM;
 
-        // if (speed_ != 0.f) {
-        // CtBot& ctbot { CtBot::get_instance() };
-        // ctbot.get_comm()->debug_print("now_s=");
-        // ctbot.get_comm()->debug_print(now_us / 1000000.f, 6);
-        // ctbot.get_comm()->debug_print('\n');
+        if (DEBUG && speed_ != 0.f) {
+            CtBot& ctbot { CtBot::get_instance() };
+            ctbot.get_comm()->debug_print("now_s=");
+            ctbot.get_comm()->debug_print(now_us / 1000000.f, 6);
+            ctbot.get_comm()->debug_print('\n');
 
-        // ctbot.get_comm()->debug_print(speed_, 2);
-        // ctbot.get_comm()->debug_print('\t');
-        // ctbot.get_comm()->debug_print(speed_avg_, 2);
-        // ctbot.get_comm()->debug_print('\t');
-        // ctbot.get_comm()->debug_print(current_time / 1000000.f, 6);
-        // ctbot.get_comm()->debug_print('\t');
-        // ctbot.get_comm()->debug_print(last_update_ / 1000000.f, 6);
-        // ctbot.get_comm()->debug_print('\t');
-        // ctbot.get_comm()->debug_print(idx, PrintBase::DEC);
-        // ctbot.get_comm()->debug_print('\n');
+            ctbot.get_comm()->debug_print(speed_, 2);
+            ctbot.get_comm()->debug_print('\t');
+            ctbot.get_comm()->debug_print(speed_avg_, 2);
+            ctbot.get_comm()->debug_print('\t');
+            ctbot.get_comm()->debug_print(current_time / 1000000.f, 6);
+            ctbot.get_comm()->debug_print('\t');
+            ctbot.get_comm()->debug_print(last_update_ / 1000000.f, 6);
+            ctbot.get_comm()->debug_print('\t');
+            ctbot.get_comm()->debug_print(idx, PrintBase::DEC);
+            ctbot.get_comm()->debug_print('\n');
 
-        // for (auto i(0U); i < DATA_ARRAY_SIZE; ++i) {
-        //     ctbot.get_comm()->debug_print(p_enc_data_[i] / 1000000.f, 6);
-        //     ctbot.get_comm()->debug_print(' ');
-        // }
-        // ctbot.get_comm()->debug_print('\n');
-        // }
+            for (auto i { 0U }; i < DATA_ARRAY_SIZE; ++i) {
+                ctbot.get_comm()->debug_print(p_enc_data_[i] / 1000000.f, 6);
+                ctbot.get_comm()->debug_print(' ');
+            }
+            ctbot.get_comm()->debug_print('\n');
+        }
         if (count_) {
             last_update_ = current_time;
         }

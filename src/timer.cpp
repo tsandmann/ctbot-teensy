@@ -27,30 +27,17 @@
 #include <arduino_fixed.h>
 #include <FreeRTOS.h>
 #include <task.h>
-#include <util/atomic.h>
+#include <portable/teensy.h>
 
 
 namespace ctbot {
 
 uint32_t Timer::get_us() {
-    uint32_t current, load, count, istatus;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        current = SYST_CVR;
-        load = SYST_RVR;
-        count = get_ms();
-        istatus = SCB_ICSR; // bit 26 indicates if systick exception pending
-    }
-
-    if ((istatus & SCB_ICSR_PENDSTSET) && current > 50) {
-        ++count;
-    }
-
-    current = load - current;
-    return count * 1000U + current / (configCPU_CLOCK_HZ / 1000000U);
+    return freertos::get_us();
 }
 
 uint32_t Timer::get_ms() {
-    return ::xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
+    return freertos::get_ms();
 }
 
 void Timer::delay_ms(const uint32_t ms) {

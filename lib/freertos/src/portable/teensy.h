@@ -26,6 +26,8 @@
 #ifndef PORTABLE_TEENSY_H_
 #define PORTABLE_TEENSY_H_
 
+#include <FreeRTOS.h>
+#include <task.h>
 #include <cstdint>
 
 
@@ -56,6 +58,20 @@ long free_ram();
  * @brief Print amount of free (heap) RAM to Serial
  */
 void print_free_ram();
+
+/**
+ * @brief Get the current time in microseconds
+ * @return Current time in us
+ */
+uint32_t get_us();
+
+/**
+ * @brief Get the current time in milliseconds
+ * @return Current time in ms
+ */
+static inline uint32_t get_ms() {
+    return ::xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
+}
 } // namespace freertos
 
 #endif /* PORTABLE_TEENSY_H_ */

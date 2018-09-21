@@ -27,6 +27,7 @@
 
 #include "timer.h"
 
+#include <arduino_fixed.h>
 #include <cstdint>
 
 
@@ -40,6 +41,7 @@ protected:
     static constexpr float AVG_FILTER_PARAM { 0.25f }; /**< Filter coefficient for speed averaging filter */
     static constexpr float WHEEL_PERIMETER { 178.1283 }; /**< Perimeter of the wheel in mm */
     static constexpr uint8_t ENCODER_MARKS { 60 }; /**< Number of encoder marks on the wheel */
+    static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
 
     int16_t edges_; /**< Current number of edges counted; increasing for forward wheel turning, decreasing otherwise */
     uint8_t last_idx_; /**< Index in input data array of last processed entry */
@@ -92,16 +94,27 @@ public:
 
     /**
      * @brief ISR for wheel encoder pin change interrupt
-     * @tparam VECT_NUM: Number of interrupt vector (to distinguish ISRs)
+     * @tparam PIN_NUM: Number of pin to read from
      * @tparam ARRAY_SIZE: Size of raw input data array in byte
      */
-    template <uint8_t VECT_NUM, uint8_t ARRAY_SIZE>
-    static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx, const uint32_t time) {
-        uint8_t idx { *p_idx };
-        ++idx;
-        idx %= ARRAY_SIZE;
-        *p_idx = idx;
-        p_data[idx] = time;
+    template <uint8_t PIN_NUM, uint8_t ARRAY_SIZE>
+    static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx) {
+        static bool last { false };
+        static uint32_t last_time { 0 };
+
+        const uint32_t now { Timer::get_us() };
+        const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
+
+        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > 1000)) {
+            last = value;
+            last_time = now;
+
+            uint8_t idx { *p_idx };
+            ++idx;
+            idx %= ARRAY_SIZE;
+            *p_idx = idx;
+            p_data[idx] = now;
+        }
     }
 };
 

@@ -59,10 +59,10 @@ public:
     }
 
     /**
-     * @return The current time in us
+     * @return The current time in ms
      */
     uint32_t get_time() const {
-        return Timer::get_us();
+        return Timer::get_ms();
     }
 };
 

@@ -43,6 +43,7 @@ task.h is included from an application file. */
 
 #include <Arduino.h>
 #include <kinetis.h>
+#include <util/atomic.h>
 
 #include <new>
 #include <cstdlib>
@@ -134,6 +135,23 @@ void print_free_ram() {
     Serial.print("free RAM: ");
     Serial.print(freertos::free_ram() / 1024UL);
     Serial.println(" KB");
+}
+
+uint32_t get_us() {
+    uint32_t current, load, count, istatus;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        current = SYST_CVR;
+        load = SYST_RVR;
+        count = get_ms();
+        istatus = SCB_ICSR; // bit 26 indicates if systick exception pending
+    }
+
+    if ((istatus & SCB_ICSR_PENDSTSET) && current > 50) {
+        ++count;
+    }
+
+    current = load - current;
+    return count * 1000U + current / (configCPU_CLOCK_HZ / 1000000U);
 }
 } // namespace freertos
 

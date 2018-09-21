@@ -26,6 +26,7 @@
 #ifndef PORTABLE_TEENSY_NATIVE_H_
 #define PORTABLE_TEENSY_NATIVE_H_
 
+#include <arduino_fixed.h>
 #include <cstdint>
 
 
@@ -56,6 +57,22 @@ long free_ram();
  * @brief Print amount of free (heap) RAM to Serial
  */
 void print_free_ram();
+
+/**
+ * @brief Get the current time in microseconds
+ * @return Current time in us
+ */
+static inline uint32_t get_us() {
+    return arduino::micros();
+}
+
+/**
+ * @brief Get the current time in milliseconds
+ * @return Current time in ms
+ */
+static inline uint32_t get_ms() {
+    return arduino::millis();
+}
 } // namespace freertos
 
 #endif /* PORTABLE_TEENSY_NATIVE_H_ */
