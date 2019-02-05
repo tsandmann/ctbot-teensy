@@ -23,13 +23,63 @@
  */
 
 #include "ctbot.h"
-#include "scheduler.h"
-#include "timer.h"
-#include "serial_connection_teensy.h"
 #include "ctbot_config.h"
-#include "leds.h"
+#include "timer.h"
+#include "scheduler.h"
+#include "serial_connection_teensy.h"
 #include "tests.h"
 
+#include "arduino_fixed.h"
+
+
+/**
+ * @brief FreeRTOS task to initialize everything
+ * @note This task is suspended forever after initialization is done.
+ */
+static void init_task(void*) {
+    using namespace ctbot;
+
+    /* wait for USB device enumeration, terminal program connection, etc. */
+    Timer::delay_us(1500UL * 1000UL);
+
+    /* create CtBot singleton instance... */
+    // arduino::Serial.print("creating CtBot instance... ");
+    CtBot& ctbot { CtBot::get_instance() };
+    // arduino::Serial.println("done.");
+
+    /* initialize it... */
+    // arduino::Serial.print("initializing CtBot instance... ");
+    ctbot.setup();
+    // arduino::Serial.println("done.");
+
+    /* create test tasks if configured... */
+    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
+        new tests::BlinkTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
+        new tests::LedTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
+        new tests::LcdTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
+        new tests::EnaTest(ctbot);
+    }
+
+    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
+        new tests::SensorLcdTest(ctbot);
+    }
+
+    /* finally start CtBot instance */
+    // arduino::Serial.print("starting CtBot instance... ");
+    ctbot.start();
+    // arduino::Serial.println("CtBot instance exited.");
+
+    // we should never get here
+}
 
 extern "C" {
 /**
@@ -126,40 +176,9 @@ extern "C" {
  * @enduml
  */
 void setup() {
-    /* wait for USB device enumeration, terminal program connection, etc. */
-    ctbot::Timer::delay(1500U);
+    // delay_us(2000UL * 1000UL);
 
-    /* create CtBot singleton instance... */
-    auto& ctbot { ctbot::CtBot::get_instance() };
-
-    /* initialize it... */
-    ctbot.setup();
-
-    /* create test tasks if configured... */
-    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
-        new ctbot::tests::BlinkTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
-        new ctbot::tests::LedTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
-        new ctbot::tests::LcdTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
-        new ctbot::tests::EnaTest(ctbot);
-    }
-
-    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
-        new ctbot::tests::SensorLcdTest(ctbot);
-    }
-
-    /* finally start CtBot instance */
-    ctbot.start();
-
-    // we should never get here
+    init_task(nullptr);
 }
 
 /**
@@ -175,13 +194,49 @@ void loop() {}
  * @note File handle paramter is ignored, any data is written to serial connection
  */
 int _write(int, char* ptr, int len) {
-    static auto& ctbot { ctbot::CtBot::get_instance() };
-    auto p_serial { ctbot.get_serial_conn() };
+    using namespace ctbot;
+
+    static CtBot& ctbot { CtBot::get_instance() };
+    SerialConnectionTeensy* p_serial { ctbot.get_serial_usb_conn() };
 
     if (p_serial) {
         return p_serial->send(reinterpret_cast<uint8_t*>(ptr), len);
     }
     return -1;
+}
+
+#ifndef MAIN_STACK_SIZE
+#if defined(__MKL26Z64__)
+#define MAIN_STACK_SIZE 512UL
+#elif defined(__MK20DX128__)
+#define MAIN_STACK_SIZE 1024UL
+#elif defined(__MK20DX256__)
+#define MAIN_STACK_SIZE 1024UL
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#define MAIN_STACK_SIZE 8192UL
+#endif
+#else
+#error "Unknown architecture"
+#endif // MAIN_STACK_SIZE
+
+asm(".global _printf_float"); /**< to have a printf supporting floating point values */
+
+/* override _sbrk() - you have to link with option: "-Wl,--wrap=_sbrk" */
+extern unsigned long __bss_end__; // set by linker script
+extern unsigned long _estack; // set by linker script
+void* __wrap__sbrk(ptrdiff_t incr) {
+    static uint8_t* currentHeapEnd { reinterpret_cast<uint8_t*>(&__bss_end__) };
+
+    void* previousHeapEnd = currentHeapEnd;
+
+    if ((reinterpret_cast<uintptr_t>(currentHeapEnd) + incr >= reinterpret_cast<uintptr_t>(&_estack) - MAIN_STACK_SIZE)
+        || (reinterpret_cast<uintptr_t>(currentHeapEnd) + incr < reinterpret_cast<uintptr_t>(&__bss_end__))) {
+        _impure_ptr->_errno = ENOMEM; // newlib's thread-specific errno
+        return reinterpret_cast<void*>(-1); // the malloc-family routine that called sbrk will return 0
+    }
+
+    currentHeapEnd += incr;
+    return previousHeapEnd;
 }
 
 } // extern C

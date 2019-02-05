@@ -1,0 +1,34 @@
+@startuml speed_control
+
+namespace ctbot {
+    class SpeedControl {
+        +SpeedControl(Encoder& wheel_enc, Motor& motor)
+        +~SpeedControl()
+        +get_enc_speed() : float
+        +get_kd() : float
+        +get_ki() : float
+        +get_kp() : float
+        +get_speed() : float
+        +set_parameters(const float kp, const float ki, const float kd) : void
+        +set_speed(const float speed) : void
+        #{static} controller() : void
+        #{static} controller_list_ : std::list<SpeedControl*>
+        #run() : void
+        #direction_ : bool
+        #input_ : float
+        #kd_ : float
+        #ki_ : float
+        #kp_ : float
+        #motor_ : Motor&
+        #output_ : float
+        #p_pid_controller_ : Pid*
+        #setpoint_ : float
+        #wheel_encoder_ : Encoder&
+    }
+
+    SpeedControl o-- Encoder
+    SpeedControl o-- Motor
+    SpeedControl o-- SpeedControl
+}
+
+@enduml

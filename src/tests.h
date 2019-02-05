@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_TESTS_H_
-#define SRC_TESTS_H_
+#pragma once
 
 #include <cstdint>
 
@@ -42,17 +41,14 @@ namespace tests {
  * @brief Teensy onboard led blink test
  *
  * @startuml{BlinkTest.png}
- *  class BlinkTest {
- *    +BlinkTest(CtBot& ctbot)
- *    +~BlinkTest()
- *    #run() : void
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class BlinkTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 500U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 500 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     bool state_;
@@ -96,17 +92,14 @@ public:
  * @brief Led test as simple chaser light with the leds
  *
  * @startuml{LedTest.png}
- *  class LedTest {
- *    +LedTest(CtBot& ctbot)
- *    +~LedTest()
- *    #run() : void
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class LedTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 125U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 125 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
 
@@ -159,17 +152,14 @@ public:
  * @brief Display test
  *
  * @startuml{LcdTest.png}
- *  class LcdTest {
- *    +LcdTest(CtBot& ctbot)
- *    +~LcdTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class LcdTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 100U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     uint32_t x_;
@@ -253,17 +243,14 @@ public:
  * @brief Ena test
  *
  * @startuml{EnaTest.png}
- *  class EnaTest {
- *    +EnaTest()
- *    +~EnaTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class EnaTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 1000U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 1000 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     Ena* p_ena_; /**< Pointer to Ena instance */
@@ -313,17 +300,14 @@ public:
  * @brief Sensor data display
  *
  * @startuml{SensorLcdTest.png}
- *  class SensorLcdTest {
- *    +SensorLcdTest(CtBot& ctbot)
- *    +~SensorLcdTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run() : void
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class SensorLcdTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 50U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 50 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
 
@@ -402,5 +386,3 @@ public:
 
 } // namespace tests
 } // namespace ctbot
-
-#endif /* SRC_TESTS_H_ */

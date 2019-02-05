@@ -1,0 +1,28 @@
+@startuml ctbot-teensy
+
+!include analog_sensors.puml
+!include cmd_parser.puml
+!include comm_interface.puml
+!include condition.puml
+!include ctbot.puml
+!include ctbot_config.puml
+!include ctbot_task.puml
+!include digital_sensors.puml
+!include display.puml
+!include ena.puml
+!include encoder.puml
+!include leds.puml
+!include motor.puml
+!include parameter_storage.puml
+!include rc5_int.puml
+!include remote_control.puml
+!include scheduler.puml
+!include sensors.puml
+!include serial_connection_teensy.puml
+!include servo.puml
+!include shift_reg.puml
+!include speed_control.puml
+!include tests.puml
+!include timer.puml
+
+@enduml

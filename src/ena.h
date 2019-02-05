@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_ENA_H_
-#define SRC_ENA_H_
+#pragma once
 
 #include "ctbot_config.h"
 #include "shift_reg.h"
@@ -35,6 +34,12 @@ namespace ctbot {
 
 /**
  * @brief Enum class for all enable signals
+ *
+ * @startuml{EnaTypes.png}
+ *  !include ena.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 enum class EnaTypes : uint8_t {
     NONE = 0,
@@ -79,6 +84,12 @@ inline constexpr EnaTypes operator~(EnaTypes rhs) {
 
 /**
  * @brief Enable transistor driver
+ *
+ * @startuml{Ena.png}
+ *  !include ena.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Ena {
 protected:
@@ -130,5 +141,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_ENA_H_ */

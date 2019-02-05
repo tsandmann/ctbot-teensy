@@ -22,23 +22,27 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_SERIAL_CONNECTION_TEENSY_H_
-#define SRC_SERIAL_CONNECTION_TEENSY_H_
+#pragma once
 
+#include <arduino_fixed.h>
 #include <streambuf>
 
-
-class usb_serial_class;
 
 namespace ctbot {
 
 /**
  * @brief Abstraction layer for serial communication on Teensy devices
+ *
+ * @startuml{SerialConnectionTeensy.png}
+ *  !include serial_connection_teensy.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class SerialConnectionTeensy {
     // FIXME: maybe this class can be simplified a lot...
 protected:
-    usb_serial_class& io_stream_;
+    arduino::Stream& io_stream_;
 
     static void (*wait_callback_)(const void*);
 
@@ -48,13 +52,23 @@ public:
     /**
      * @brief Construct a new SerialConnectionTeensy object
      * @param[in] serial_port: ID of underlying serial port to use; 0 for USB serial port emulation
+     * @param[in] baud_rate: Baud rate of serial port to use, if serial_port > 0
      */
-    SerialConnectionTeensy(const uint8_t serial_port);
+    SerialConnectionTeensy(const uint8_t serial_port, const uint32_t baud_rate) : SerialConnectionTeensy(serial_port, 255U, 255U, baud_rate) {}
+
+    /**
+     * @brief Construct a new SerialConnectionTeensy object
+     * @param[in] serial_port: ID of underlying serial port to use; 0 for USB serial port emulation
+     * @param[in] pin_rx: Number of pin to use for RX line
+     * @param[in] pin_tx: Number of pin to use for TX line
+     * @param[in] baud_rate: Baud rate of serial port to use, if serial_port > 0
+     */
+    SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate);
 
     /**
      * @brief Destroy the SerialConnectionTeensy object
      */
-    ~SerialConnectionTeensy() = default;
+    ~SerialConnectionTeensy();
 
     /**
      * @brief Copy constructor
@@ -182,5 +196,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SERIAL_CONNECTION_TEENSY_H_ */

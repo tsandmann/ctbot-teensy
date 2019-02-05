@@ -23,109 +23,130 @@
  */
 
 #include "scheduler.h"
+#include "condition.h"
+#include "ctbot.h"
 #include "timer.h"
 #include "comm_interface.h"
+
+#include "pprintpp.hpp"
+#include "arduino_fixed.h"
 
 
 namespace ctbot {
 
-Scheduler::Task::Task(const uint16_t id, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data)
-    : id_ { id }, period_ { period }, next_runtime_ { 0 }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) } {}
-
-Scheduler::Task::Task(const uint16_t id, const uint16_t period, const uint32_t next_run, task_func_t&& func, task_func_data_t&& func_data)
-    : id_ { id }, period_ { period }, next_runtime_ { next_run }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) } {}
-
-
-void Scheduler::Task::print(CommInterface& comm) const {
-    comm.debug_print("0x");
-    comm.debug_print(id_, PrintBase::HEX);
-    comm.debug_print('\t');
-    comm.debug_print(active_ ? "  ACTIVE" : "INACTIVE");
-    comm.debug_print('\t');
-    comm.debug_print(period_, PrintBase::DEC);
-    comm.debug_print(" ms\n");
-}
-
+Scheduler::Scheduler() : next_id_ {} {}
 
 void Scheduler::run() {
-    while (running_ && (!task_queue_.empty())) {
-        const Task& task { task_queue_.top() };
-        // std::cout << "Scheduler::run(): task.next_runtime=" << task.next_runtime_ << " ms.\n";
-        const uint32_t next_runtime { task.next_runtime_ };
+    // arduino::Serial.println("Scheduler::run() entered.");
+    while (!task_queue_.empty()) {
+        Task* p_task { task_queue_.top() };
+        task_queue_.pop();
+
+        // arduino::Serial.print("Scheduler::run(): next_runtime=");
+        // arduino::Serial.print(p_task->next_runtime_, 10);
+        // arduino::Serial.println("ms");
+
+        const uint32_t next_runtime { p_task->next_runtime_ };
         uint32_t now { Timer::get_ms() };
-        // std::cout << "Scheduler::run(): now=" << now << " ms \n";
+
+        // arduino::Serial.print("Scheduler::run(): now=");
+        // arduino::Serial.print(now, 10);
+        // arduino::Serial.println("ms");
+
         while (next_runtime > now) {
-            // FIXME: sleep
+            // FIXME: sleep?
             now = Timer::get_ms();
         }
-        // std::cout << "Scheduler::run(): now=" << now << " ticks \n";
-        if (task.active_) {
-            // std::cout << "Scheduler::run(): executing function with period " << task.period_ << " ms.\n";
-            task.func_(task.func_data_);
-            // std::cout << "Scheduler::run(): function with period " << task.period_ << " ms done.\n";
+
+        // arduino::Serial.print("Scheduler::run(): now=");
+        // arduino::Serial.print(now, 10);
+        // arduino::Serial.println("ms");
+
+        if (p_task->state_ == 1) {
+            // arduino::Serial.print("Scheduler::run(): executing task \"");
+            // arduino::Serial.print(p_task->name_.c_str());
+            // arduino::Serial.println("\"");
+
+            p_task->func_();
         }
-        Task new_task { task };
-        new_task.next_runtime_ = now + new_task.period_;
-        task_queue_.pop();
-        task_queue_.push(new_task);
+        p_task->next_runtime_ = now + p_task->period_;
+        task_queue_.push(p_task);
     }
 }
 
-uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data) {
-    Task task { next_id_, period, Timer::get_ms(), std::move(func), std::move(func_data) };
-    task_queue_.push(task);
-    task_names_.push_back(name);
+void Scheduler::stop() {
+    while (true) {
+        // FIXME: sleep?
+    }
+}
 
-    // std::cout << "Scheduler::task_add(): task \"" << task_names_[next_id_] << "\" with id 0x" << std::hex << task.id_ << " and period of "
-    //     << std::dec << task.period_ << " ms added.\n";
+uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t, Task::func_t&& func) {
+    Task* p_task { new Task(*this, next_id_, name, period, std::move(func)) };
+    task_queue_.push(p_task);
+    tasks_[p_task->id_] = p_task;
     return next_id_++;
 }
 
+bool Scheduler::task_remove(const uint16_t task_id) {
+    Task* p_task { tasks_.at(task_id) };
+    tasks_.erase(task_id);
+    delete p_task;
+
+    return true;
+}
+
 uint16_t Scheduler::task_get(const std::string& name) const {
-    for (uint16_t i { 0U }; i < next_id_; ++i) {
-        if (task_names_[i] == name) {
-            return i;
+    for (const auto& t : tasks_) {
+        if (t.second->name_ == name) {
+            return t.first;
         }
     }
 
     return 0xffff;
 }
 
+Task* Scheduler::task_get(const uint16_t id) const {
+    return tasks_.at(id);
+}
+
 bool Scheduler::task_suspend(const uint16_t id) {
-    // std::cout << "Scheduler::task_suspend(0x" << std::hex << id << std::dec << ")\n";
-    bool res { false };
-    for (auto& t : task_vector_) {
-        if (t.id_ == id) {
-            t.active_ = false;
-            res = true;
-            break;
-        }
+    if (tasks_.find(id) == tasks_.end()) {
+        return false;
     }
 
-    return res;
+    Task& task { *tasks_[id] };
+    task.state_ = 2;
+
+    return true;
 }
 
 bool Scheduler::task_resume(const uint16_t id) {
-    // std::cout << "Scheduler::task_resume(0x" << std::hex << id << std::dec << ")\n";
-    bool res { false };
-    for (auto& t : task_vector_) {
-        if (t.id_ == id) {
-            t.active_ = true;
-            res = true;
-            break;
-        }
+    if (tasks_.find(id) == tasks_.end()) {
+        return false;
     }
 
-    return res;
+    Task& task { *tasks_[id] };
+    task.state_ = 1;
+
+    return true;
+}
+
+bool Scheduler::task_wait_for(const uint16_t id, Condition& cond) {
+    cond.add_task(task_get(id));
+
+    if (!task_suspend(id)) {
+        cond.remove_task(task_get(id));
+        return false;
+    }
+
+    return true;
 }
 
 void Scheduler::print_task_list(CommInterface& comm) const {
-    for (uint16_t i { 0U }; i < next_id_; ++i) {
-        comm.debug_print(" \"");
-        comm.debug_print(task_names_[task_vector_[i].id_]);
-        comm.debug_print("\":\t");
-        task_vector_[i].print(comm);
+    for (const auto& p_task : tasks_) {
+        p_task.second->print(comm);
     }
 }
 
+void Scheduler::print_ram_usage(CommInterface& comm) const {}
 } // namespace ctbot

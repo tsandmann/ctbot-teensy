@@ -1,0 +1,19 @@
+@startuml motor
+
+namespace ctbot {
+    class Motor {
+        +Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert)
+        +get() : int16_t
+        +set(const int pwm) : void
+        +set(const float pwm_rel) : void
+        #dir_pin_ : const uint8_t
+        #enc_ : Encoder&
+        #invert_dir_ : const bool
+        #pwm_ : int16_t
+        #pwm_pin_ : const uint8_t
+    }
+
+    Motor o-- Encoder
+}
+
+@enduml

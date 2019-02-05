@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_MOTOR_H_
-#define SRC_MOTOR_H_
+#pragma once
 
 #include "encoder.h"
 
@@ -34,11 +33,16 @@ namespace ctbot {
 
 /**
  * @brief Motor driver
+ *
+ * @startuml{Motor.png}
+ *  !include motor.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Motor {
 protected:
     static constexpr float PWM_FREQUENCY { 29296.f }; /**< Pwm frequency in Hz */
-    static constexpr uint8_t PWM_RESOLUTION { 11U }; /**< Pwm resolution in bits */
 
     int16_t pwm_;
     const uint8_t pwm_pin_;
@@ -47,6 +51,8 @@ protected:
     Encoder& enc_;
 
 public:
+    static constexpr uint8_t PWM_RESOLUTION { 11 }; /**< Pwm resolution in bits */
+
     /**
      * @brief Construct a new Motor object
      * @param[in] enc: Reference to encoder sensor of this motor (used to set direction)
@@ -60,7 +66,7 @@ public:
      * @brief Set a new pwm duty cycle
      * @param[in] pwm: New pwm duty cycle to set; [- CtBotConfig::MOT_PWM_MAX; CtBotConfig::MOT_PWM_MAX]
      */
-    void set(int pwm);
+    void set(const int pwm);
 
     /**
      * @brief Set a new pwm duty cycle relative to max speed
@@ -79,5 +85,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_MOTOR_H_ */

@@ -22,13 +22,14 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_CTBOT_H_
-#define SRC_CTBOT_H_
+#pragma once
 
 #include "comm_interface.h"
 
 #include <cstdint>
 
+
+class ARMKinetisDebug;
 
 /**
  * @brief Namespace for all c't-Bot classes and functionality
@@ -43,15 +44,25 @@ class Leds;
 class Display;
 class CmdParser;
 class Scheduler;
+class ParameterStorage;
 
 /**
- * @brief Main class of c't-Bot ATmega framework, responsible for initialization and control loop execution
+ * @brief Main class of c't-Bot teensy framework, responsible for initialization and control loop execution
+ *
+ * @startuml{CtBot.png}
+ *  !include ctbot.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CtBot {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
+    static constexpr uint8_t TASK_PRIORITY { 3 };
     static const char usage_text[]; /**< C-String containing the usage / help message */
 
+    bool shutdown_;
+    uint16_t task_id_;
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
     Motor* p_motors_[2]; /**< Pointer to motor instances */
@@ -59,9 +70,12 @@ protected:
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     Leds* p_leds_; /**< Pointer to led instance */
     Display* p_lcd_; /**< Pointer to display instance */
-    SerialConnectionTeensy* p_serial_; /**< Pointer to serial connection abstraction layer instance */
+    SerialConnectionTeensy* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
+    SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
+    ParameterStorage* p_parameter_;
+    ARMKinetisDebug* p_swd_debugger_;
 
     /**
      * @brief Constructor of main class
@@ -98,7 +112,7 @@ protected:
      *  end
      * @enduml
      */
-    void run();
+    virtual void run();
 
     /**
      * @brief Shut everything down and put the CPU into sleep mode
@@ -106,71 +120,17 @@ protected:
      */
     void shutdown();
 
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @param[in] data: The data to print
-     */
-    template <typename T>
-    void serial_print(T data) {
-        p_comm_->debug_print(data, PrintBase::DEC);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @tparam Args: Types of additional args
-     * @param[in] data: The data to print first
-     * @param[in] args: The data to print afterwards
-     */
-    template <typename T, typename... Args>
-    void serial_print(T data, Args... args) {
-        p_comm_->debug_print(data, PrintBase::DEC);
-        p_comm_->debug_print(' ');
-        serial_print<Args...>(args...);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @param[in] data: The data to print
-     * @param[in] base: Base of numeral system the data shall be printed in
-     */
-    template <typename T>
-    void serial_print_base(T data, const PrintBase base = PrintBase::DEC) {
-        p_comm_->debug_print(data, base);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @tparam Args: Types of additional args
-     * @param[in] data: The data to print first
-     * @param[in] args: The data to print afterwards
-     * @param[in] base: Base of numeral system the data shall be printed in
-     */
-    template <typename T, typename... Args>
-    void serial_print_base(T data, Args... args, const PrintBase base = PrintBase::DEC) {
-        p_comm_->debug_print(data, base);
-        p_comm_->debug_print(' ');
-        serial_print<Args...>(args..., base);
-    }
-
 public:
     /**
      * @brief Get the one and only instance of this class (singleton)
      * @return Reference to CtBot instance
      */
-    static CtBot& get_instance() {
-        static CtBot instance;
-        return instance;
-    }
+    static CtBot& get_instance();
 
     /**
-     * @brief Destructor
-     * @note Destructor is never called in current setup
+     * @brief Destroy the CtBot object
      */
-    ~CtBot();
+    virtual ~CtBot();
 
     /**
      * @brief Setup method responsible for initialization and creating of instances for all components (sensors, motors, etc.)
@@ -236,26 +196,8 @@ public:
      *  deactivate CommInterfaceCmdParser
      * @enduml
      */
-    void setup();
+    virtual void setup();
 
-    /**
-     * @brief Start the scheduler
-     *
-     * @startuml{CtBot_start.png}
-     *  activate CtBot
-     *  CtBot -> Scheduler: run()
-     *  deactivate CtBot
-     *  activate Scheduler
-     *
-     *  ... run until shutdown ...
-     *
-     *  CtBot <-- Scheduler
-     *  deactivate Scheduler
-     *
-     *  activate CtBot
-     *  CtBot -> CtBot: shutdown()
-     * @enduml
-     */
     void start();
 
     /**
@@ -328,14 +270,12 @@ public:
     }
 
     /**
-     * @brief Get the serial connection instance
+     * @brief Get the serial connection instance of USB serial port
      * @return Pointer to serial connection instance
      */
-    auto get_serial_conn() const {
-        return p_serial_;
+    auto get_serial_usb_conn() const {
+        return p_serial_usb_;
     }
 };
 
 } // namespace ctbot
-
-#endif /* SRC_CTBOT_H_ */

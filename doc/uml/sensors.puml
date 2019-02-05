@@ -1,0 +1,19 @@
+@startuml sensors
+
+namespace ctbot {
+    class Sensors {
+        +Sensors()
+        +disable_all() : void
+        +get_time() : uint32_t
+        +update() : void
+        #ena_ : Ena
+    }
+
+    Sensors o-- Ena
+
+    AnalogSensors <|-- Sensors
+
+    DigitalSensors <|-- Sensors
+}
+
+@enduml

@@ -1,0 +1,11 @@
+@startuml ctbot-teensy_public
+
+!include doc/uml/__files.puml
+
+set namespaceSeparator ::
+skinparam classAttributeIconSize 0
+
+hide private members
+hide protected members
+
+@enduml

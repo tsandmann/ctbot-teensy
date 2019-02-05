@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_ANALOG_SENSORS_H_
-#define SRC_ANALOG_SENSORS_H_
+#pragma once
 
 #include "ctbot_config.h"
 #include "ena.h"
@@ -36,10 +35,18 @@ namespace ctbot {
 /**
  * @brief Abstraction layer for (simple) analog sensors
  * @note No further sensor data processing is done here, just the raw ADC values are collected.
+ *
+ * @startuml{AnalogSensors.png}
+ *  !include analog_sensors.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class AnalogSensors {
 protected:
     static constexpr auto ENA_MASK = EnaTypes::BORDER | EnaTypes::LINE; // | EnaTypes::DISTANCE;
+    static constexpr uint32_t BAT_VOLTAGE_R1 { 100000 };
+    static constexpr uint32_t BAT_VOLTAGE_R2 { 21760 };
 
     uint32_t last_dist_update_;
     uint8_t last_adc_res_;
@@ -47,6 +54,7 @@ protected:
     uint16_t line_[2];
     uint16_t ldr_[2];
     uint16_t border_[2];
+    float bat_voltage_;
 
     /**
      * @brief Read all the current ADC values
@@ -58,7 +66,7 @@ protected:
      * @param[in] pin: The pin to read from
      * @return ADC value in 10 bit resolution
      */
-    int16_t analog_read(const uint8_t pin) {
+    uint16_t analog_read(const uint8_t pin) {
         return analog_read(pin, 10, 1);
     }
 
@@ -66,9 +74,9 @@ protected:
      * @brief Read the ADC value of a pin
      * @param[in] pin: The pin to read from
      * @param[in] resolution: Resolution in bit for ADC
-     * @return ADC value in 10 bit resolution
+     * @return ADC value in selected resolution
      */
-    int16_t analog_read(const uint8_t pin, const uint8_t resolution) {
+    uint16_t analog_read(const uint8_t pin, const uint8_t resolution) {
         return analog_read(pin, resolution, 1);
     }
 
@@ -79,7 +87,7 @@ protected:
      * @param[in] avg_num: Number of reads to build an average
      * @return ADC value in selected resolution
      */
-    int16_t analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num);
+    uint16_t analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num);
 
 public:
     /**
@@ -142,8 +150,10 @@ public:
     auto get_line_r() const {
         return line_[1];
     }
+
+    auto get_bat_voltage() const {
+        return bat_voltage_;
+    }
 };
 
 } // namespace ctbot
-
-#endif /* SRC_ANALOG_SENSORS_H_ */

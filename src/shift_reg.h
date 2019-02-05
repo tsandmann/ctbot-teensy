@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_SHIFT_REG_H_
-#define SRC_SHIFT_REG_H_
+#pragma once
 
 #include <cstdint>
 
@@ -34,6 +33,12 @@ namespace ctbot {
  * @brief Shift register 74HC595 driver
  * @tparam SCK_PIN: Pin number for shift register clock input
  * @tparam RCK_PIN: Pin number for storage register clock input
+ *
+ * @startuml{ShiftReg.png}
+ *  !include shift_reg.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 template <uint8_t SCK_PIN, uint8_t RCK_PIN>
 class ShiftReg {
@@ -58,5 +63,3 @@ private:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SHIFT_REG_H_ */

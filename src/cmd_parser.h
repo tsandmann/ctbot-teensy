@@ -22,14 +22,14 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_CMD_PARSER_H_
-#define SRC_CMD_PARSER_H_
+#pragma once
 
 #include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
 #include <functional>
+#include <deque>
 
 
 namespace ctbot {
@@ -38,16 +38,24 @@ class CommInterface;
 
 /**
  * @brief Simple parser for console commands
+ *
+ * @startuml{CmdParser.png}
+ *  !include cmd_parser.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CmdParser {
 protected:
     using func_t = std::function<bool(const std::string&)>;
     static constexpr size_t MAX_CMD_LENGTH { 16 };
+    static constexpr size_t HISTORY_SIZE { 16 };
 
     bool echo_;
     std::map<std::string /*cmd*/, func_t /*function*/> commands_;
+    std::deque<std::string> history_;
 
-    bool execute_cmd(const std::string& cmd);
+    bool execute_cmd(const std::string& cmd, CommInterface& comm);
 
 public:
     /**
@@ -86,6 +94,13 @@ public:
         echo_ = value;
     }
 
+    const std::string* get_history(const size_t num) const {
+        if (num && num <= history_.size()) {
+            return &history_[num - 1];
+        }
+        return nullptr;
+    }
+
     /**
      * @brief Split a string into space seperated tokens and return the first as integer argument
      * @tparam T: Type of argument to get out
@@ -95,29 +110,26 @@ public:
      */
     template <typename T>
     static char* split_args(const std::string& args, T& x1) {
-        T x2;
-        return split_args(args, x1, x2);
-    }
-
-    /**
-     * @brief Split a string into space seperated tokens and return the first two as integer arguments
-     * @tparam T: Type of argument to get out
-     * @param[in] args: Reference to input string
-     * @param[out] x1: Reference to first output argument
-     * @param[out] x2: Reference to second output argument
-     * @return Pointer to the character past the last character interpreted
-     */
-    template <typename T>
-    static char* split_args(const std::string& args, T& x1, T& x2) {
-        // FIXME: implement as a variadic template?
         const auto l { args.find(" ") + 1 };
         char* p_end;
         x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 10));
-        x2 = static_cast<T>(std::strtol(p_end, &p_end, 10));
         return p_end;
+    }
+
+    /**
+     * @brief Split a string into space seperated tokens and return them as integer arguments
+     * @tparam T: Type of argument to get out
+     * @param[in] args: Reference to input string
+     * @param[out] x1: Reference to first output argument
+     * @param[out] xn: Parameter pack of references to next arguments
+     * @return Pointer to the character past the last character interpreted
+     */
+    template <typename T, typename... Args>
+    static char* split_args(const std::string& args, T& x1, Args&... xn) {
+        char* p_end { split_args(args, x1) };
+        const std::string next_args { p_end };
+        return split_args(next_args, xn...);
     }
 };
 
 } // namespace ctbot
-
-#endif /* SRC_CMD_PARSER_H_ */

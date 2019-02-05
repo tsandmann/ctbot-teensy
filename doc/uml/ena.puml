@@ -1,0 +1,30 @@
+@startuml ena
+
+namespace ctbot {
+    class Ena {
+        +Ena()
+        +off(EnaTypes disable) : void
+        +on(EnaTypes enable) : void
+        +set(EnaTypes mask) : void
+        #EnaShiftReg = ShiftReg<CtBotConfig::ENA_SCK_PIN, CtBotConfig::ENA_RCK_PIN>
+        #shiftreg_ : EnaShiftReg
+        #status_ : EnaTypes
+        #update() : void
+    }
+
+    class EnaTypes {
+        +{static} BORDER = 8 : uint8_t
+        +{static} DISTANCE = 1 : uint8_t
+        +{static} EXTENSION_1 = 64 : uint8_t
+        +{static} EXTENSION_2 = 128 : uint8_t
+        +{static} LINE = 32 : uint8_t
+        +{static} NONE = 0 : uint8_t
+        +{static} SHUTTER = 16 : uint8_t
+        +{static} TRANSPORT = 4 : uint8_t
+        +{static} WHEEL_ENC = 2 : uint8_t
+    }
+
+    Ena o-- EnaTypes
+}
+
+@enduml

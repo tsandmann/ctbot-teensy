@@ -22,11 +22,11 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_RC5_INT_H_
-#define SRC_RC5_INT_H_
+#pragma once
 
 #include "timer.h"
 
+#include "arduino_fixed.h"
 #include <cstdint>
 
 
@@ -36,9 +36,17 @@ namespace ctbot {
 
 /**
  * @brief Interrupt driven RC5 decoder driver
+ *
+ * @startuml{Rc5.png}
+ *  !include rc5_int.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Rc5 {
 protected:
+    static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
+
     struct rc5_t {
         uint32_t us;
         bool value;
@@ -103,24 +111,34 @@ public:
         rc5_addr_ = rc5_cmd_ = 0;
     }
 
+    void set_rc5(const uint8_t addr, const uint8_t cmd);
+
     /**
      * @brief ISR for RC5 pin change interrupt
-     * @tparam VECT_NUM: Number of interrupt vector (to distinguish ISRs)
+     * @tparam PIN_NUM: Number of interrupt vector (to distinguish ISRs)
      * @tparam ARRAY_SIZE: Size of raw input data array in byte
      */
-    template <uint8_t VECT_NUM, uint8_t ARRAY_SIZE>
-    static inline __attribute__((always_inline)) void isr(const bool value, rc5_t* p_data, volatile uint8_t* p_idx) {
-        const auto now { Timer::get_us() };
+    template <uint8_t PIN_NUM, uint8_t ARRAY_SIZE>
+    static inline __attribute__((always_inline)) void isr(rc5_t* p_data, volatile uint8_t* p_idx) {
+        static bool last { true };
+        static uint32_t last_time { 0 };
 
-        uint8_t idx { *p_idx };
-        p_data[idx].us = now;
-        p_data[idx].value = value;
-        ++idx;
-        idx %= ARRAY_SIZE;
-        *p_idx = idx;
+        const auto now { Timer::get_us() };
+        const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
+
+        const auto diff { std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) };
+        if (value != last && diff >= 400 /*&& (!value || diff <= 2300)*/) {
+            last = value;
+            last_time = now;
+
+            uint8_t idx { *p_idx };
+            p_data[idx].us = now;
+            p_data[idx].value = value;
+            ++idx;
+            idx %= ARRAY_SIZE;
+            *p_idx = idx;
+        }
     }
 };
 
 } // namespace ctbot
-
-#endif /* SRC_RC5_INT_H_ */

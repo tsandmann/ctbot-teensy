@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_TIMER_H_
-#define SRC_TIMER_H_
+#pragma once
 
 #include "ctbot_config.h"
 
@@ -36,11 +35,9 @@ namespace ctbot {
  * @brief Class to group timer helper functions
  *
  * @startuml{Timer.png}
- *   class Timer {
- *     +{static} get_us(T&) : uint32_t
- *     +{static} get_us() : uint32_t
- *     +{static} get_ms() : uint32_t
- *   }
+ *  !include timer.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class Timer {
@@ -72,16 +69,14 @@ public:
      * @param ms: Number of ms to wait
      * @note Calls Arduinos delay()
      */
-    static void delay(uint32_t ms);
+    static void delay_ms(const uint32_t ms);
 
     /**
      * @brief Delay the execution by us microseconds
      * @param us: Number of us to wait
      * @note Calls Arduinos delayMicroseconds()
      */
-    static void delay_us(uint32_t us);
+    static void delay_us(const uint32_t us);
 };
 
 } // namespace ctbot
-
-#endif /* SRC_TIMER_H_ */

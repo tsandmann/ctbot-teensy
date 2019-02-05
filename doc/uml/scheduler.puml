@@ -1,0 +1,33 @@
+@startuml scheduler
+
+namespace ctbot {
+    class Scheduler {
+        +Scheduler()
+        +~Scheduler()
+        +{static} enter_critical_section() : void
+        +{static} exit_critical_section() : void
+        +{static} get_free_stack() : size_t
+        +{static} stop() : void
+        +print_ram_usage(CommInterface& comm) : void
+        +print_task_list(CommInterface& comm) : void
+        +task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) : uint16_t
+        +task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) : uint16_t
+        +task_add(const std::string& name, const uint16_t period, Task::func_t&& func) : uint16_t
+        +task_get(const std::string& name) : uint16_t
+        +task_get(const uint16_t id) : Task*
+        +task_register(const std::string& name) : uint16_t
+        +task_register(void* task) : uint16_t
+        +task_remove(const uint16_t task) : bool
+        +task_resume(const uint16_t id) : bool
+        +task_suspend(const uint16_t id) : bool
+        +task_wait_for(const uint16_t id, Condition& cond) : bool
+        #{static} DEFAULT_PRIORITY = 4 : constexpr uint8_t
+        #next_id_ : uint16_t
+        #tasks_ : std::map<uint16_t, Task*>
+        #tasks_mutex_ : void*
+    }
+
+    Scheduler o-- Task
+}
+
+@enduml

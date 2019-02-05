@@ -1,0 +1,53 @@
+@startuml ctbot
+
+namespace ctbot {
+    class CtBot {
+        +~CtBot()
+        +{static} get_instance() : CtBot&
+        +get_comm() : CommInterface*
+        +get_lcd() : Display*
+        +get_leds() : Leds*
+        +get_scheduler() : Scheduler*
+        +get_sensors() : Sensors*
+        +get_serial_usb_conn() : SerialConnectionTeensy*
+        +get_servos() : Servo*[2]
+        +get_speedcontrols() : SpeedControl*[2]
+        +setup() : void
+        +stop() : void
+        #CtBot()
+        #init_parser() : void
+        #run() : void
+        #shutdown() : void
+        #{static} usage_text : const char[]
+        #p_comm_ : CommInterface*
+        #p_lcd_ : Display*
+        #p_leds_ : Leds*
+        #p_motors_ : Motor*
+        #p_parameter_ : ParameterStorage*
+        #p_parser_ : CmdParser*
+        #p_scheduler_ : Scheduler*
+        #p_sensors_ : Sensors*
+        #p_serial_usb_ : SerialConnectionTeensy*
+        #p_serial_wifi_ : SerialConnectionTeensy*
+        #p_servos_ : Servo*
+        #p_speedcontrols_ : SpeedControl*
+        #p_swd_debugger_ : ARMKinetisDebug*
+        #shutdown_ : bool
+        #task_id_ : uint16_t
+    }
+
+    CtBot o-- CmdParser
+    CtBot o-- CommInterface
+    CtBot o-- Display
+    CtBot o-- Leds
+    CtBot o-- Motor
+    CtBot o-- ParameterStorage
+    CtBot o-- Scheduler
+    CtBot o-- Sensors
+    CtBot "2" o-- SerialConnectionTeensy
+    CtBot o-- Servo
+    CtBot o-- SpeedControl
+
+}
+
+@enduml

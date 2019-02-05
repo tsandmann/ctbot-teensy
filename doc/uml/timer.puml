@@ -1,0 +1,13 @@
+@startuml timer
+
+namespace ctbot {
+    class Timer {
+        +{static} delay_ms(const uint32_t ms) : void
+        +{static} delay_us(const uint32_t us) : void
+        +{static} get_ms() : uint32_t
+        +{static} get_us() : uint32_t
+        +{static} get_us<typename T>(T &) : uint32_t
+    }
+}
+
+@enduml

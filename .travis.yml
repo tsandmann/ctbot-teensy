@@ -8,10 +8,10 @@ cache:
         - "~/.platformio"
 
 install:
-    - pip install -U platformio
-    - platformio update
+- pip install -U platformio
+- platformio update
 
 script:
-    - platformio init
-    - platformio run --environment teensy36
-    - platformio run --environment teensy35
+- platformio init
+- platformio run --environment teensy36
+- platformio run --environment teensy35

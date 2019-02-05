@@ -25,7 +25,6 @@
 #include "serial_connection_teensy.h"
 #include "timer.h"
 
-#include <arduino_fixed.h>
 #include <cstring>
 #include <cstddef>
 #include <streambuf>
@@ -48,12 +47,48 @@ struct streambuf_helper {
     }
 };
 
+/**
+ * @brief Get the serial port object
+ * @param[in] serial_port: Number of serial port
+ * @return Reference to serial port driver
+ */
+static constexpr arduino::Stream& get_serial_port(const uint8_t serial_port) {
+    if (serial_port == 1) {
+        return arduino::Serial1;
+    } else if (serial_port == 2) {
+        return arduino::Serial2;
+    } else if (serial_port == 3) {
+        return arduino::Serial3;
+    } else if (serial_port == 4) {
+        return arduino::Serial4;
+    } else if (serial_port == 5) {
+        return arduino::Serial5;
+    } else if (serial_port == 6) {
+        return arduino::Serial6;
+    } else {
+        return arduino::Serial;
+    }
+}
+
 decltype(SerialConnectionTeensy::wait_callback_) SerialConnectionTeensy::wait_callback_(nullptr);
 
-// FIXME: generalize for other serial ports
-SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port) : io_stream_ { serial_port == 0 ? arduino::Serial : arduino::Serial } {
-    io_stream_.begin(CtBotConfig::UART0_BAUDRATE);
+SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate)
+    : io_stream_ { get_serial_port(serial_port) } {
+    if (serial_port > 0) {
+        arduino::HardwareSerial& hw_serial { reinterpret_cast<arduino::HardwareSerial&>(io_stream_) };
+        if (pin_rx < 255U) {
+            hw_serial.setRX(pin_rx);
+        }
+        if (pin_tx < 255U) {
+            hw_serial.setTX(pin_tx);
+        }
+        hw_serial.begin(baud_rate);
+    } else {
+        /* for the USB serial port there is no need to call begin() or initialize anything */
+    }
 }
+
+SerialConnectionTeensy::~SerialConnectionTeensy() {}
 
 uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) {
     uint16_t bytes_available { static_cast<uint16_t>(available()) };
@@ -61,18 +96,17 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
         return size;
     }
 
-    const auto start(Timer::get_us());
+    const auto start(Timer::get_ms());
     auto now(start);
-    const auto timeout_us(static_cast<uint32_t>(timeout_ms) * 1000UL);
-    auto running_us(now - start);
+    auto running_ms(now - start);
 
-    while ((bytes_available < size) && ((!timeout_ms) || (running_us < timeout_us))) {
+    while ((bytes_available < size) && ((!timeout_ms) || (running_ms < timeout_ms))) {
         if (wait_callback_) {
             wait_callback_(this);
         }
         bytes_available = available();
-        now = Timer::get_us();
-        running_us = now - start;
+        now = Timer::get_ms();
+        running_ms = now - start;
     }
 
     return std::min<uint16_t>(bytes_available, size);
@@ -233,7 +267,7 @@ size_t SerialConnectionTeensy::send(std::streambuf& buf, const size_t size) {
 }
 
 int SerialConnectionTeensy::peek() const {
-    return static_cast<int>(io_stream_.peek());
+    return io_stream_.peek();
 }
 
 void SerialConnectionTeensy::flush() {
