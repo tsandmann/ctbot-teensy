@@ -22,11 +22,11 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_ENCODER_H_
-#define SRC_ENCODER_H_
+#pragma once
 
 #include "timer.h"
 
+#include "arduino_fixed.h"
 #include <cstdint>
 
 
@@ -34,12 +34,19 @@ namespace ctbot {
 
 /**
  * @brief Wheel encoder sensor processing
+ *
+ * @startuml{Encoder.png}
+ *  !include encoder.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Encoder {
 protected:
     static constexpr float AVG_FILTER_PARAM { 0.25f }; /**< Filter coefficient for speed averaging filter */
     static constexpr float WHEEL_PERIMETER { 178.1283 }; /**< Perimeter of the wheel in mm */
     static constexpr uint8_t ENCODER_MARKS { 60 }; /**< Number of encoder marks on the wheel */
+    static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
 
     int16_t edges_; /**< Current number of edges counted; increasing for forward wheel turning, decreasing otherwise */
     uint8_t last_idx_; /**< Index in input data array of last processed entry */
@@ -53,7 +60,7 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
-    static constexpr uint8_t DATA_ARRAY_SIZE { 8 }; /**< Size of buffer array in byte for raw encoder data */
+    static constexpr uint8_t DATA_ARRAY_SIZE { 16 }; /**< Size of buffer array in byte for raw encoder data */
 
     /**
      * @brief Construct a new Encoder object
@@ -61,7 +68,7 @@ public:
      * @param[in] p_idx: Pointer to current index in data array
      * @param[in] pin: Pin number of the input data signal
      */
-    Encoder(const uint32_t* p_data, const volatile uint8_t* p_idx, const uint8_t pin);
+    Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin);
 
     /**
      * @brief Check for new input data and calculate current speed
@@ -92,21 +99,28 @@ public:
 
     /**
      * @brief ISR for wheel encoder pin change interrupt
-     * @tparam VECT_NUM: Number of interrupt vector (to distinguish ISRs)
+     * @tparam PIN_NUM: Number of pin to read from
      * @tparam ARRAY_SIZE: Size of raw input data array in byte
      */
-    template <uint8_t VECT_NUM, uint8_t ARRAY_SIZE>
+    template <uint8_t PIN_NUM, uint8_t ARRAY_SIZE>
     static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx) {
-        const auto now { Timer::get_us() };
+        static bool last { false };
+        static uint32_t last_time { 0 };
 
-        uint8_t idx { *p_idx };
-        ++idx;
-        idx %= ARRAY_SIZE;
-        *p_idx = idx;
-        p_data[idx] = now;
+        const uint32_t now { Timer::get_us() };
+        const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
+
+        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > 4000)) {
+            last = value;
+            last_time = now;
+
+            uint8_t idx { *p_idx };
+            ++idx;
+            idx %= ARRAY_SIZE;
+            *p_idx = idx;
+            p_data[idx] = now;
+        }
     }
 };
 
 } // namespace ctbot
-
-#endif /* SRC_ENCODER_H_ */

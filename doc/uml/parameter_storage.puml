@@ -1,0 +1,35 @@
+@startuml parameter_storage
+
+namespace ctbot {
+    class ParameterStorage {
+        +ParameterStorage(const std::string& config_file)
+        +~ParameterStorage()
+        +flush() : bool
+        +dump() : std::unique_ptr<std::string>
+        +get<typename T>(const std::string& key, T& value) : bool | T unsigned
+        +get<typename T>(const std::string& key, T& value) : bool | T signed
+        +get<typename T>(const std::string& key, T& value) : bool | T floating point
+        +get<typename T>(const std::string& key, const size_t index, T& value) : bool
+        +set<typename T>(const std::string& key, const T value) : void | T unsigned
+        +set<typename T>(const std::string& key, const T value) : void | T signed
+        +set<typename T>(const std::string& key, const T value) : void | T floating point
+        +set<typename T>(const std::string& key, const size_t index, const T& value) : void
+        #get_parameter(const std::string& key, uint32_t& value) : bool
+        #get_parameter(const std::string& key, int32_t& value) : bool
+        #get_parameter(const std::string& key, float& value) : bool
+        #get_parameter(const std::string& key, const size_t index, uint32_t& value) : bool
+        #get_parameter(const std::string& key, const size_t index, int32_t& value) : bool
+        #get_parameter(const std::string& key, const size_t index, float& value) : bool
+        #set_parameter(const std::string& key, const uint32_t value) : void
+        #set_parameter(const std::string& key, const int32_t value) : void
+        #set_parameter(const std::string& key, const float value) : void
+        #set_parameter(const std::string& key, const size_t index, const uint32_t value) : void
+        #set_parameter(const std::string& key, const size_t index, const int32_t value) : void
+        #set_parameter(const std::string& key, const size_t index, const float value) : void
+        #config_file_ : const std::string
+        #json_buffer_ : DynamicJsonBuffer
+        #p_parameter_root_ : JsonObject*
+    }
+}
+
+@enduml

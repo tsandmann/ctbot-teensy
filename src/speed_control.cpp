@@ -26,7 +26,7 @@
 #include "ctbot.h"
 #include "scheduler.h"
 
-#include <PID_v1.h>
+#include "PID_v1.h"
 
 
 namespace ctbot {
@@ -47,7 +47,7 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, &controller, nullptr);
+        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, &controller);
     }
 }
 
@@ -86,9 +86,7 @@ void SpeedControl::set_parameters(const float kp, const float ki, const float kd
     p_pid_controller_->set_tunings(kp_, ki_, kd_);
 }
 
-void SpeedControl::controller(void*) {
-    // std::cout << "SpeedControl::controller(): running speed controller at " << Timer::get_ms() << " ms\n";
-
+void SpeedControl::controller() {
     for (auto p_ctrl : controller_list_) {
         p_ctrl->run();
     }

@@ -1,0 +1,32 @@
+@startuml analog_sensors
+
+namespace ctbot {
+    class AnalogSensors {
+        +AnalogSensors()
+        +get_bat_voltage() : float
+        +get_border_l() : uint16_t
+        +get_border_r() : uint16_t
+        +get_distance_l() : uint16_t
+        +get_distance_r() : uint16_t
+        +get_ldr_l() : uint16_t
+        +get_ldr_r() : uint16_t
+        +get_line_l() : uint16_t
+        +get_line_r() : uint16_t
+        #analog_read(const uint8_t pin) : uint16_t
+        #analog_read(const uint8_t pin, const uint8_t resolution) : uint16_t
+        #analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) : uint16_t
+        #update() : void
+        #{static} BAT_VOLTAGE_R1 = 100000 : constexpr uint32_t
+        #{static} BAT_VOLTAGE_R2 = 21760 : constexpr uint32_t
+        #{static} ENA_MASK : EnaTypes
+        #bat_voltage_ : float
+        #border_ : uint16_t[2]
+        #distance_ : uint16_t[2]
+        #last_dist_update_ : uint32_t
+        #last_adc_res_ : uint8_t
+        #ldr_ : uint16_t[2]
+        #line_ : uint16_t[2]
+    }
+}
+
+@enduml

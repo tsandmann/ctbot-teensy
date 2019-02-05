@@ -30,20 +30,15 @@
 #include "sensors.h"
 #include "display.h"
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
 
 
 namespace ctbot {
 namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
-    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<BlinkTest*>(p_data));
-            return p_this->run();
-        },
-        this);
     arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
+    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void BlinkTest::run() {
@@ -53,12 +48,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<LedTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void LedTest::run() {
@@ -77,12 +67,7 @@ void LedTest::run() {
 
 
 LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ { 0U } {
-    ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<LcdTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void LcdTest::run() {
@@ -99,12 +84,7 @@ void LcdTest::run() {
 
 
 EnaTest::EnaTest(CtBot& ctbot) : ctbot_ { ctbot }, p_ena_ { new Ena }, ena_idx_ { 0 } {
-    ctbot_.get_scheduler()->task_add("enatest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<EnaTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("enatest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void EnaTest::run() {
@@ -116,12 +96,7 @@ void EnaTest::run() {
 
 
 SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<SensorLcdTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void SensorLcdTest::run() {

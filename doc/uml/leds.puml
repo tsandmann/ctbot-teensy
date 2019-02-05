@@ -1,0 +1,30 @@
+@startuml leds
+
+namespace ctbot {
+    class Leds {
+        +Leds()
+        +get() : LedTypes
+        +off(const LedTypes leds) : void
+        +on(const LedTypes leds) : void
+        +set(const LedTypes leds) : void
+        #{static} LedShiftReg = ShiftReg<CtBotConfig::LED_SCK_PIN, CtBotConfig::LED_RCK_PIN>
+        #shiftreg_ : LedShiftReg
+        #status_ : LedTypes
+    }
+
+    class LedTypes {
+        +{static} BLUE = 64 : uint8_t
+        +{static} GREEN = 32 : uint8_t
+        +{static} LEFT = 2 : uint8_t
+        +{static} NONE = 0 : uint8_t
+        +{static} ORANGE = 8 : uint8_t
+        +{static} RED = 4 : uint8_t
+        +{static} RIGHT = 1 : uint8_t
+        +{static} WHITE = 128 : uint8_t
+        +{static} YELLOW = 16 : uint8_t
+    }
+
+    Leds o-- LedTypes
+}
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml rc5_int
+
+namespace ctbot {
+    class Rc5 {
+        +Rc5(const uint8_t pin)
+        +~Rc5()
+        +{static} isr(rc5_t* p_data, volatile uint8_t* p_idx) : void
+        +get_addr() : uint8_t
+        +get_cmd() : uint8_t
+        +get_toggle() : bool
+        +reset_rc5() : void
+        +set_rc5(const uint8_t addr, const uint8_t cmd) : void
+        +update() : bool
+        +{static} input_data_ : rc5_t
+        +{static} input_idx_ : volatile uint8_t
+        #last_idx_ : uint8_t
+        #last_time_ : uint32_t
+        #p_impl_ : RC5*
+        #rc5_addr_ : uint8_t
+        #rc5_cmd_ : uint8_t
+        #rc5_toggle_ : bool
+        #reset() : void
+    }
+
+    class Rc5::rc5_t {
+        +value : bool
+        +us : uint32_t
+    }
+
+    Rc5 o-- Rc5::rc5_t
+}
+
+@enduml

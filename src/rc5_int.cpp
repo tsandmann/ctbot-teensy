@@ -23,11 +23,11 @@
  */
 
 #include "rc5_int.h"
+#include "scheduler.h"
+#include "ctbot.h"
 
-#include <rc5.h>
-#include <arduino_fixed.h>
+#include "rc5.h"
 #include <type_traits>
-// #include <iostream>
 
 
 namespace ctbot {
@@ -36,20 +36,13 @@ std::remove_all_extents<decltype(Rc5::input_data_)>::type Rc5::input_data_[Rc5::
 decltype(Rc5::input_idx_) Rc5::input_idx_ { 0 };
 
 Rc5::Rc5(const uint8_t pin) : last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, rc5_toggle_ { false }, p_impl_ { new RC5() } {
+    Scheduler::enter_critical_section();
     arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
     // FIXME: think about this...
-    arduino::attachInterrupt(pin,
-        []() {
-            static bool last { false };
-            const bool value { arduino::digitalReadFast(CtBotConfig::RC5_PIN) };
-
-            if (value != last) {
-                last = value;
-                isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(value, input_data_, &input_idx_);
-            }
-        },
-        arduino::CHANGE);
+    arduino::attachInterrupt(
+        pin, []() { isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_); }, arduino::CHANGE);
+    Scheduler::exit_critical_section();
 
     reset();
 }
@@ -78,28 +71,66 @@ bool Rc5::update() {
 
     bool found { false };
     if (diff_rc5) {
-        // std::cout << "idx=" << static_cast<uint16_t>(idx) << "\tlast_idx_=" << static_cast<uint16_t>(last_idx_) << "\tdiff_rc5=" <<
-        // static_cast<uint16_t>(diff_rc5) << "\n";
+        if (DEBUG) {
+            CtBot& ctbot { CtBot::get_instance() };
+            ctbot.get_comm()->debug_print("\r\ndiff_rc5=", false);
+            ctbot.get_comm()->debug_print(diff_rc5, false);
+            ctbot.get_comm()->debug_print("\r\n", false);
+        }
 
-        for (auto i(last_idx_); i != idx; i = (i + 1) % DATA_ARRAY_SIZE) {
-            // std::cout << "i=" << static_cast<uint16_t>(i) << "\tus=" << input_data_[i].us;
-
+        for (auto i { last_idx_ }; i != idx; i = (i + 1) % DATA_ARRAY_SIZE) {
             const uint32_t i_time { input_data_[i].us };
-            const auto diff_time { static_cast<int32_t>(i_time - last_time_) };
+            const auto diff_time { static_cast<int32_t>(i_time) - static_cast<int32_t>(last_time_) };
             last_time_ = i_time;
-            // std::cout << "\ti_time=" << i_time << " us\tdiff_time=" << diff_time << " us\tvalue=" << input_data_[i].value << "\n";
-            // std::cout << "diff_time=" << diff_time << "\tvalue=" << input_data_[i].value << "\n";
+
+            if (DEBUG) {
+                CtBot& ctbot { CtBot::get_instance() };
+                ctbot.get_comm()->debug_print("i=", false);
+                ctbot.get_comm()->debug_print(i, false);
+                ctbot.get_comm()->debug_print('\t', false);
+                ctbot.get_comm()->debug_print("us=", false);
+                ctbot.get_comm()->debug_print(input_data_[i].us, false);
+                ctbot.get_comm()->debug_print("\r\n", false);
+                ctbot.get_comm()->debug_print("i_time=", false);
+                ctbot.get_comm()->debug_print(i_time, false);
+                ctbot.get_comm()->debug_print(" us\t", false);
+                ctbot.get_comm()->debug_print("diff_time=", false);
+                ctbot.get_comm()->debug_print(diff_time, false);
+                ctbot.get_comm()->debug_print(" us\t", false);
+                ctbot.get_comm()->debug_print("value=", false);
+                ctbot.get_comm()->debug_print(input_data_[i].value, false);
+                ctbot.get_comm()->debug_print("\r\n", false);
+            }
 
             if (p_impl_->read(rc5_toggle_, rc5_addr_, rc5_cmd_, input_data_[i].value, diff_time)) {
                 found = true;
-                // std::cout << "addr=" << static_cast<uint16_t>(rc5_addr_) << "\tcmd=" << static_cast<uint16_t>(rc5_cmd_) << "\ttoggle="
-                // << rc5_toggle_ << "\n";
+
+                if (DEBUG) {
+                    CtBot& ctbot { CtBot::get_instance() };
+                    ctbot.get_comm()->debug_print("addr=", false);
+                    ctbot.get_comm()->debug_print(rc5_addr_, false);
+                    ctbot.get_comm()->debug_print('\t', false);
+                    ctbot.get_comm()->debug_print("cmd=0x", false);
+                    ctbot.get_comm()->debug_print(rc5_cmd_, false);
+                    ctbot.get_comm()->debug_print('\t', false);
+                    ctbot.get_comm()->debug_print("toggle=", false);
+                    ctbot.get_comm()->debug_print(rc5_toggle_, false);
+                    ctbot.get_comm()->debug_print("\r\n", false);
+                }
             }
         }
         last_idx_ = idx;
     }
 
     return found;
+}
+
+void Rc5::set_rc5(const uint8_t addr, const uint8_t cmd) {
+    if (addr != rc5_addr_ || cmd != rc5_cmd_) {
+        rc5_toggle_ = !rc5_toggle_;
+    }
+    rc5_addr_ = addr;
+    rc5_cmd_ = cmd;
 }
 
 } // namespace ctbot

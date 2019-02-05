@@ -21,8 +21,7 @@
  * @date    13.05.2018
  */
 
-#ifndef _ARDUINO_FIXED_H_
-#define _ARDUINO_FIXED_H_
+#pragma once
 
 #include <Arduino.h>
 #include <Print.h>
@@ -127,5 +126,3 @@ static constexpr bool digitalPinHasPWM(uint8_t p) {
     return (((p) >= 2 && (p) <= 10) || (p) == 14 || ((p) >= 20 && (p) <= 23) || (p) == 29 || (p) == 30 || ((p) >= 35 && (p) <= 38));
 }
 } // namespace arduino
-
-#endif /* _ARDUINO_FIXED_H_ */

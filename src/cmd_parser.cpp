@@ -25,19 +25,17 @@
 #include "cmd_parser.h"
 #include "comm_interface.h"
 
+#include "pprintpp.hpp"
 #include <cstdlib>
-// #include <iostream>
 
 
 namespace ctbot {
 
-CmdParser::CmdParser() : echo_(false) {}
+CmdParser::CmdParser() : echo_ { false } {}
 
 void CmdParser::register_cmd(const std::string& cmd, const func_t& func) {
     commands_[cmd] = func;
-    // std::cout << "CmdParser::register_cmd(): \"" << cmd << "\" registered\n";
 }
-
 
 void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const func_t& func) {
     register_cmd(cmd, func);
@@ -45,18 +43,30 @@ void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const
     commands_[std::string(&cmd_short, 1)] = func;
 }
 
-bool CmdParser::execute_cmd(const std::string& cmd) {
+bool CmdParser::execute_cmd(const std::string& cmd, CommInterface& comm) {
     if (!cmd.length()) {
         return false;
     }
-
-    // std::cout << "CmdParser::execute_cmd(): searching for cmd \"" << cmd << "\" ...\n";
 
     const auto arg_pos(cmd.find(" "));
     const auto cmd_str(cmd.substr(0, arg_pos));
 
     const auto it(commands_.find(cmd_str));
     if (it == commands_.end()) {
+        if (echo_) {
+            comm.set_color(CommInterface::Color::RED, CommInterface::Color::BLACK);
+            comm.set_attribute(CommInterface::Attribute::BOLD);
+            comm.debug_print("ERROR", true);
+            comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+            comm.debug_printf<true>(PP_ARGS(": command \"{s}\" not found: ", cmd.c_str()));
+            comm.set_attribute(CommInterface::Attribute::NORMAL);
+            comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+            // comm.debug_printf<false>(PP_ARGS("cmd.size={}\r\n", cmd.size()));
+            for (size_t i { 0 }; i < cmd.size(); ++i) {
+                comm.debug_printf<false>(PP_ARGS("{#x} ", static_cast<uint16_t>(cmd[i])));
+            }
+            comm.debug_print("\r\n", false);
+        }
         return false;
     }
 
@@ -65,36 +75,34 @@ bool CmdParser::execute_cmd(const std::string& cmd) {
         args = cmd.substr(arg_pos + 1);
     }
 
-    // std::cout << "CmdParser::execute_cmd(): found, args=\"" << args << "\"\n";
-    // std::cout << "CmdParser::execute_cmd(): cmd=\"" << it->first << "\" -> 0x" << std::hex
-    //     << reinterpret_cast<const intptr_t>(&(it->second)) << std::dec << "\n";
-
     bool res { it->second(args) };
 
-    // std::cout << "CmdParser::execute_cmd(): executed, res=" << res << "\n";
+    if (res && echo_) {
+        comm.set_color(CommInterface::Color::GREEN, CommInterface::Color::BLACK);
+        comm.set_attribute(CommInterface::Attribute::BOLD);
+        comm.debug_print("OK\r\n", true);
+        comm.set_attribute(CommInterface::Attribute::NORMAL);
+        comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+    } else if (echo_) {
+        comm.set_color(CommInterface::Color::RED, CommInterface::Color::BLACK);
+        comm.debug_print("ERROR\r\n", true);
+        comm.set_attribute(CommInterface::Attribute::NORMAL);
+        comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+    }
 
     return res;
 }
 
 bool CmdParser::parse(const char* in, CommInterface& comm) {
-    // FIXME: store CommInterface as member?
-    static std::string last_line;
-
     if (*in) {
-        last_line = in;
+        history_.emplace_front(in);
+        if (history_.size() > HISTORY_SIZE) {
+            history_.pop_back();
+        }
+        return execute_cmd(history_.front(), comm);
     }
 
-    if (execute_cmd(last_line)) {
-        if (echo_) {
-            comm.debug_print("OK\n");
-        }
-    } else {
-        if (echo_) {
-            comm.debug_print("ERROR\n");
-        }
-    }
-
-    return true;
+    return false;
 }
 
 } // namespace ctbot

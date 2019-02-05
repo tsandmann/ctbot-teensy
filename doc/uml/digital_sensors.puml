@@ -1,0 +1,32 @@
+@startuml digital_sensors
+
+namespace ctbot {
+    class DigitalSensors {
+        +{static} enc_data_l_ : uint32_t
+        +{static} enc_data_l_ : uint32_t
+        +{static} enc_data_l_ : uint32_t
+        +{static} enc_l_idx_ : volatile uint8_t
+        +{static} enc_r_idx_ : volatile uint8_t
+        +DigitalSensors()
+        +get_shutter() : bool
+        +get_transport() : bool
+        +get_enc_l() : Encoder&
+        +get_enc_r() : Encoder&
+        +get_rc() : RemoteControl&
+        +get_rc5() : Rc5&
+        #update() : void
+        #{static} ENA_MASK : constexpr EnaTypes
+        #enc_l_ : Encoder
+        #enc_r_ : Encoder
+        #rc5_ : Rc5
+        #remote_control_ : RemoteControl
+        #shutter_ : bool
+        #transport_ : bool
+    }
+
+    DigitalSensors "2" o-- Encoder
+    DigitalSensors o-- Rc5
+    DigitalSensors o-- RemoteControl
+}
+
+@enduml

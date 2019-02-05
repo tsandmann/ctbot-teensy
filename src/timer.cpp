@@ -30,18 +30,18 @@
 namespace ctbot {
 
 uint32_t Timer::get_us() {
-    return micros();
+    return arduino::micros();
 }
 
 uint32_t Timer::get_ms() {
-    return millis();
+    return arduino::millis();
 }
 
-void Timer::delay(uint32_t ms) {
+void Timer::delay_ms(const uint32_t ms) {
     arduino::delay(ms);
 }
 
-void Timer::delay_us(uint32_t us) {
+void Timer::delay_us(const uint32_t us) {
     arduino::delayMicroseconds(us);
 }
 

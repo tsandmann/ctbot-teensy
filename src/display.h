@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_DISPLAY_H_
-#define SRC_DISPLAY_H_
+#pragma once
 
 #include "ctbot_config.h"
 
@@ -37,10 +36,16 @@ namespace ctbot {
 
 /**
  * @brief LC Display driver implementation for devices with Hitachi HD44780 and PCF8574 i2c i/o expander
+ *
+ * @startuml{Display.png}
+ *  !include display.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Display {
 protected:
-    static constexpr uint8_t LINE_LENGTH = 20; /**< Size of display (length of one line) */
+    static constexpr uint8_t LINE_LENGTH { 20 }; /**< Size of display (length of one line) */
     LiquidCrystal_I2C* p_impl_;
     char buffer_[LINE_LENGTH + 1];
 
@@ -86,8 +91,13 @@ public:
      * @return Number of written chars
      */
     uint8_t printf(const char* format, ...);
+
+    /**
+     * @brief Enable display output to a file
+     * @param[in] out: Output file name
+     * @note Currently only stdout is implemented
+     */
+    void set_output(const std::string& out);
 };
 
 } // namespace ctbot
-
-#endif /* SRC_DISPLAY_H_ */

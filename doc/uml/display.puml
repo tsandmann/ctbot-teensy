@@ -1,0 +1,19 @@
+@startuml display
+
+namespace ctbot {
+    class Display {
+        +Display()
+        +clear() : void
+        +print(const char c) : uint8_t
+        +print(const std::string& str) : uint8_t
+        +printf(const char* format, ...) : uint8_t
+        +set_backlight(const bool status) : void
+        +set_cursor(const uint8_t row, const uint8_t column) : void
+        +set_output(const std::string& out) : void
+        #{static} LINE_LENGTH : constexpr uint8_t
+        #buffer_ : char
+        #p_impl_ : LiquidCrystal_I2C*
+    }
+}
+
+@enduml

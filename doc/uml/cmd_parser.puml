@@ -1,0 +1,23 @@
+@startuml cmd_parser
+
+namespace ctbot {
+    class CmdParser {
+        +CmdParser()
+        +{static} split_args<typename T>(const std::string& args, T& x1) : char*
+        +{static} split_args<typename T, typename... Args>(const std::string& args, T& x1, Args&... xn) : char*
+        +get_history(const size_t num) : const std::string*
+        +parse(const char* in, CommInterface& comm) : bool
+        +register_cmd(const std::string& cmd, const func_t& func) : void
+        +register_cmd(const std::string& cmd, const char cmd_short, const func_t& func) : void
+        +set_echo(bool value) : void
+        #execute_cmd(const std::string& cmd, CommInterface& comm) : bool
+        #{static} HISTORY_SIZE = 16 : constexpr size_t
+        #{static} MAX_CMD_LENGTH = 16 : constexpr size_t
+        #func_t = std::function<bool{const std::string&}>
+        #commands_ : std::map<std::string, func_t>
+        #echo_ : bool
+        #history_ : std::deque<std::string>
+    }
+}
+
+@enduml

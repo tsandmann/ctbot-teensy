@@ -26,6 +26,7 @@
  */
 
 #include "servo.h"
+#include "scheduler.h"
 
 #include <arduino_fixed.h>
 
@@ -43,9 +44,11 @@ Servo::Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const ui
         return;
     }
 
+    Scheduler::enter_critical_section();
     arduino::analogWriteFrequency(pin, 50.f);
     arduino::digitalWriteFast(pin, false);
     arduino::pinMode(pin, arduino::OUTPUT);
+    Scheduler::exit_critical_section();
 
     set(position_);
     // FIXME: wait for servo to move to target
@@ -64,16 +67,21 @@ void Servo::set(const uint8_t pos) {
     const uint32_t us { (((max_ - min_) * 46603U * position_) >> 11U) + (min_ << 12U) }; // us * 256
     const uint32_t duty { (us * 3355U) >> 22U };
 
+    Scheduler::enter_critical_section();
     const uint32_t oldres = arduino::analogWriteResolution(12);
     arduino::analogWrite(pin_, duty);
     arduino::analogWriteResolution(oldres);
+    Scheduler::exit_critical_section();
 
     active_ = true;
 }
 
 void Servo::disable() {
     /* turn servo off to save power */
+    Scheduler::enter_critical_section();
     arduino::analogWrite(pin_, 0);
+    Scheduler::exit_critical_section();
+
     active_ = false;
 }
 

@@ -1,0 +1,8 @@
+@startuml ctbot-teensy
+
+!include doc/uml/__files.puml
+
+set namespaceSeparator ::
+skinparam classAttributeIconSize 0
+
+@enduml

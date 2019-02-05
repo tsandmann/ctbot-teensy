@@ -1,0 +1,23 @@
+@startuml ctbot_task
+
+namespace ctbot {
+    class Task {
+        +Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, func_t&& func)
+        +~Task()
+        +get_priority() : uint16_t
+        +print(CommInterface& comm) : void
+        +resume() : bool
+        +func_t = std::function<void{void}>
+        #wait_for(Condition& cond) : bool
+        #handle_ : void*
+        #id_ : uint16_t
+        #name_ : std::string
+        #period_ : uint16_t
+        #scheduler_ : Scheduler&
+        #state_ : uint_fast8_t
+    }
+
+    Task o-- Scheduler
+}
+
+@enduml
