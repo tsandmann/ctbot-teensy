@@ -10,20 +10,23 @@ cache:
 addons:
     apt:
         sources:
-        - ubuntu-toolchain-r-test
-        - sourceline: 'ppa:samuel-bachmann/boost'
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:samuel-bachmann/boost'
         packages:
-        - libstdc++-7-dev
-        - g++-7
-        - boost1.60
+            - libstdc++-7-dev
+            - g++-7
+            - boost1.60
+
+env:
+    - LD_LIBRARY_PATH="/home/travis/.platformio/packages/toolchain-linux-arm-cortexm4f-eabi/bin:/home/travis/.platformio/packages/toolchain-mac-arm-cortexm4f-eabi/bin"
 
 install:
-- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
-- pip install -U platformio
-- platformio update
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
+    - pip install -U platformio
+    - platformio update
 
 script:
-- platformio init
-- platformio run --environment teensy36
-- platformio run --environment teensy35
-- platformio run --environment native
+    - platformio init
+    - platformio run --environment teensy36
+    - platformio run --environment teensy35
+    - platformio run --environment native
