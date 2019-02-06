@@ -21,8 +21,7 @@
  * @date    10.06.2018
  */
 
-#ifndef WIRE_NATIVE_H
-#define WIRE_NATIVE_H
+#pragma once
 
 #include <cstdint>
 
@@ -42,5 +41,3 @@ extern TwoWire Wire;
 extern TwoWire Wire1;
 extern TwoWire Wire2;
 } // namespace arduino
-
-#endif /* WIRE_NATIVE_H */

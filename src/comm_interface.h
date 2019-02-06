@@ -22,11 +22,11 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_COMM_INTERFACE_H_
-#define SRC_COMM_INTERFACE_H_
+#pragma once
 
 #include <cstdint>
 #include <string>
+#include <memory>
 #include <type_traits>
 
 
@@ -37,43 +37,84 @@ class CmdParser;
 class SerialConnectionTeensy;
 
 /**
- * @brief Enum class for possible bases
- */
-enum class PrintBase : uint8_t {
-    NONE = 0,
-    BIN = 2,
-    OCT = 8,
-    DEC = 10,
-    HEX = 16,
-};
-
-/**
  * @brief Abstraction layer for communication services
+ *
+ * @startuml{CommInterface.png}
+ *  !include comm_interface.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CommInterface {
 protected:
     friend class CtBot;
 
-    static constexpr size_t INPUT_BUFFER_SIZE { 128U }; /**< Size of input buffer in byte */
-    static constexpr uint16_t TASK_PERIOD_MS { 50U }; /**< Scheduling period of task in ms */
+    static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
+    static constexpr size_t OUTPUT_QUEUE_SIZE { 128 }; /**< Size of output queue in number of elements */
+    static constexpr uint16_t INPUT_TASK_PERIOD_MS { 50 }; /**< Scheduling period of input task in ms */
+    static constexpr uint8_t INPUT_TASK_PRIORITY { 2 }; /**< Priority of input task */
+    static constexpr uint32_t INPUT_TASK_STACK_SIZE { 1536 }; /**< stack size of input task */
+    static constexpr uint16_t OUTPUT_TASK_PERIOD_MS { 1 }; /**< Scheduling period of output task in ms */
+    static constexpr uint8_t OUTPUT_TASK_PRIORITY { 1 }; /**< Priority of output task */
+    static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 384 }; /**< stack size of output task */
+
+    struct OutBufferElement {
+        char character_;
+        std::string* p_str_;
+    };
+
 
     SerialConnectionTeensy& io_;
     bool echo_;
     int error_;
     char* p_input_;
+    void* output_queue_;
     char input_buffer_[INPUT_BUFFER_SIZE];
 
     /**
      * @brief Worker task implementation that processes incoming data
      * @note Pure virtual method, override for specialized implementations
      */
-    virtual void run() = 0;
+    virtual void run_input() = 0;
 
-    int16_t print_uint(const uint32_t v, const PrintBase base = PrintBase::DEC) const;
+    void run_output();
 
-    int16_t print_int(const int32_t v, const PrintBase base = PrintBase::DEC) const;
+    size_t queue_debug_msg(const char c, std::string* p_str, const bool block) const;
+
+    static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
+
+    static std::unique_ptr<char> create_formatted_string(const size_t size, const char* format, ...);
+
+    template <typename... Args>
+    static auto string_format(const char* format, const Args&... args) {
+        const auto size { get_format_size(format, args...) + 1 };
+        if (size > 0) {
+            return create_formatted_string(size, format, args...);
+        } else {
+            return std::unique_ptr<char> { new char { '\0' } };
+        }
+    }
 
 public:
+    enum class Color : uint8_t {
+        BLACK = 0,
+        RED = 1,
+        GREEN = 2,
+        YELLOW = 3,
+        BLUE = 4,
+        MAGENTA = 5,
+        CYAN = 6,
+        WHITE = 7,
+    };
+
+    enum class Attribute : uint8_t {
+        NORMAL = 0,
+        BOLD = 1,
+        UNDERLINE = 4,
+        BLINK = 5,
+        REVERSE = 7,
+    };
+
     /**
      * @brief Construct a new CommInterface object
      * @param[in] io_connection: Reference to SerialConnection to use
@@ -81,6 +122,7 @@ public:
      */
     CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo = false);
 
+    // FIXME: cleanup tasks in destructor
     /**
      * @brief Destroy the CommInterface object
      */
@@ -114,50 +156,61 @@ public:
      */
     virtual void set_echo(bool value) = 0;
 
+    void set_color(const Color fg, const Color bg);
+
+    void set_attribute(const Attribute a);
+
     /**
-     * @brief Write a character out to SerialConnection
+     * @brief Write a character out to a SerialConnection
      * @param[in] c: Character to write
      * @return Number of characters written
      */
-    int16_t debug_print(const char c) const;
+    size_t debug_print(const char c, const bool block) const {
+        return queue_debug_msg(c, nullptr, block);
+    }
 
     /**
-     * @brief Write a messages out to SerialConnection
+     * @brief Write a message out to a SerialConnection
      * @param[in] str: Pointer to message as C-string
      * @return Number of characters written
      */
-    int16_t debug_print(const char* str) const;
+    size_t debug_print(const char* str, const bool block) const;
 
     /**
-     * @brief Write a messages out to SerialConnection
+     * @brief Write a message out to a SerialConnection
      * @param[in] str: Reference to message as string
      * @return Number of characters written
      */
-    int16_t debug_print(const std::string& str) const;
+    size_t debug_print(const std::string& str, const bool block) const;
 
     /**
-     * @brief Write a floating point number out to SerialConnection
-     * @param[in] v: Floating point value
-     * @param[in] digits: Number of digits of floating point number to write
+     * @brief Write a message out to a SerialConnection
+     * @param[in] str: Message as string
      * @return Number of characters written
      */
-    int16_t debug_print(const float v, const uint8_t digits) const;
+    size_t debug_print(std::string&& str, const bool block) const;
 
     /**
-     * @brief Write an integer out to SerialConnection
-     * @tparam T: Type of integer
-     * @param[in] v: Integer value
-     * @param[in] base: Base of positional numeral system to use
+     * @brief Write an integer or float out to SerialConnection
+     * @tparam T: Type of integer or float
+     * @param[in] v: Value
      * @return Number of characters written
      */
-    template <typename T>
-    int16_t debug_print(const T v, const PrintBase base) const {
-        if (std::is_integral<T>::value && std::is_unsigned<T>::value) {
-            return print_uint(v, base);
-        }
-        if (std::is_integral<T>::value && std::is_signed<T>::value) {
-            return print_int(v, base);
-        }
+    template <typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
+    size_t debug_print(const T v, const bool block) const {
+        return debug_print(std::to_string(v), block);
+    }
+
+    /**
+     * @brief Write an formatted string (like std::printf) out to SerialConnection
+     * @tparam BLOCK: Switch blocking mode
+     * @tparam Args: Values to print
+     * @param[in] format: Format string
+     * @return Number of characters written
+     */
+    template <bool BLOCK = false, typename... Args>
+    size_t debug_printf(const char* format, const Args&... args) const {
+        return debug_print(string_format(format, args...).get(), BLOCK);
     }
 
     /**
@@ -169,17 +222,27 @@ public:
 
 /**
  * @brief Specialization of CommInterface that uses a CmdParser to build a simple command line interface
+ *
+ * @startuml{CommInterfaceCmdParser.png}
+ *  !include comm_interface.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CommInterfaceCmdParser : public CommInterface {
 protected:
     CmdParser& cmd_parser_;
+    size_t history_view_;
 
     /**
      * @brief Worker task implementation that processes incoming data
      * @details The incoming data is parsed with the associated CmdParser and
      * registered commands are executed accordingly.
      */
-    virtual void run() override;
+    virtual void run_input() override;
+
+    void clear_line();
+    void update_line(const std::string& line);
 
 public:
     /**
@@ -203,5 +266,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_COMM_INTERFACE_H_ */

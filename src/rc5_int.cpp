@@ -26,7 +26,8 @@
 #include "scheduler.h"
 #include "ctbot.h"
 
-#include <rc5.h>
+#include "rc5.h"
+#include "portable/teensy.h"
 #include <type_traits>
 
 
@@ -40,7 +41,13 @@ Rc5::Rc5(const uint8_t pin) : last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, 
     arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
     // FIXME: think about this...
-    arduino::attachInterrupt(pin, []() { isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_); }, arduino::CHANGE);
+    arduino::attachInterrupt(pin,
+        []() {
+            freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
+            isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_);
+            freertos::trace_isr_exit();
+        },
+        arduino::CHANGE);
     Scheduler::exit_critical_section();
 
     reset();
@@ -72,9 +79,9 @@ bool Rc5::update() {
     if (diff_rc5) {
         if (DEBUG) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_print("\ndiff_rc5=");
-            ctbot.get_comm()->debug_print(diff_rc5, PrintBase::DEC);
-            ctbot.get_comm()->debug_print('\n');
+            ctbot.get_comm()->debug_print("\r\ndiff_rc5=", false);
+            ctbot.get_comm()->debug_print(diff_rc5, false);
+            ctbot.get_comm()->debug_print("\r\n", false);
         }
 
         for (auto i { last_idx_ }; i != idx; i = (i + 1) % DATA_ARRAY_SIZE) {
@@ -84,21 +91,21 @@ bool Rc5::update() {
 
             if (DEBUG) {
                 CtBot& ctbot { CtBot::get_instance() };
-                ctbot.get_comm()->debug_print("i=");
-                ctbot.get_comm()->debug_print(i, PrintBase::DEC);
-                ctbot.get_comm()->debug_print('\t');
-                ctbot.get_comm()->debug_print("us=");
-                ctbot.get_comm()->debug_print(input_data_[i].us, PrintBase::DEC);
-                ctbot.get_comm()->debug_print('\n');
-                ctbot.get_comm()->debug_print("i_time=");
-                ctbot.get_comm()->debug_print(i_time, PrintBase::DEC);
-                ctbot.get_comm()->debug_print(" us\t");
-                ctbot.get_comm()->debug_print("diff_time=");
-                ctbot.get_comm()->debug_print(diff_time, PrintBase::DEC);
-                ctbot.get_comm()->debug_print(" us\t");
-                ctbot.get_comm()->debug_print("value=");
-                ctbot.get_comm()->debug_print(input_data_[i].value, PrintBase::DEC);
-                ctbot.get_comm()->debug_print('\n');
+                ctbot.get_comm()->debug_print("i=", false);
+                ctbot.get_comm()->debug_print(i, false);
+                ctbot.get_comm()->debug_print('\t', false);
+                ctbot.get_comm()->debug_print("us=", false);
+                ctbot.get_comm()->debug_print(input_data_[i].us, false);
+                ctbot.get_comm()->debug_print("\r\n", false);
+                ctbot.get_comm()->debug_print("i_time=", false);
+                ctbot.get_comm()->debug_print(i_time, false);
+                ctbot.get_comm()->debug_print(" us\t", false);
+                ctbot.get_comm()->debug_print("diff_time=", false);
+                ctbot.get_comm()->debug_print(diff_time, false);
+                ctbot.get_comm()->debug_print(" us\t", false);
+                ctbot.get_comm()->debug_print("value=", false);
+                ctbot.get_comm()->debug_print(input_data_[i].value, false);
+                ctbot.get_comm()->debug_print("\r\n", false);
             }
 
             if (p_impl_->read(rc5_toggle_, rc5_addr_, rc5_cmd_, input_data_[i].value, diff_time)) {
@@ -106,15 +113,15 @@ bool Rc5::update() {
 
                 if (DEBUG) {
                     CtBot& ctbot { CtBot::get_instance() };
-                    ctbot.get_comm()->debug_print("addr=");
-                    ctbot.get_comm()->debug_print(rc5_addr_, PrintBase::DEC);
-                    ctbot.get_comm()->debug_print('\t');
-                    ctbot.get_comm()->debug_print("cmd=0x");
-                    ctbot.get_comm()->debug_print(rc5_cmd_, PrintBase::HEX);
-                    ctbot.get_comm()->debug_print('\t');
-                    ctbot.get_comm()->debug_print("toggle=");
-                    ctbot.get_comm()->debug_print(rc5_toggle_, PrintBase::DEC);
-                    ctbot.get_comm()->debug_print('\n');
+                    ctbot.get_comm()->debug_print("addr=", false);
+                    ctbot.get_comm()->debug_print(rc5_addr_, false);
+                    ctbot.get_comm()->debug_print('\t', false);
+                    ctbot.get_comm()->debug_print("cmd=0x", false);
+                    ctbot.get_comm()->debug_print(rc5_cmd_, false);
+                    ctbot.get_comm()->debug_print('\t', false);
+                    ctbot.get_comm()->debug_print("toggle=", false);
+                    ctbot.get_comm()->debug_print(rc5_toggle_, false);
+                    ctbot.get_comm()->debug_print("\r\n", false);
                 }
             }
         }

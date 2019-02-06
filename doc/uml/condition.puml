@@ -1,0 +1,16 @@
+@startuml condition
+
+namespace ctbot {
+    class Condition {
+        +add_task(Task* p_task) : void
+        +notify() : bool
+        +notify_all() : bool
+        +remove_task(Task* p_task) : void
+        +task_waiting(const Task* p_task) : bool
+        #wait_list_ : std::list<Task*>
+    }
+
+    Condition o-- Task
+}
+
+@enduml

@@ -23,8 +23,7 @@
  * @date    10.06.2018
  */
 
-#ifndef _FREERTOS_NATIVE_H_
-#define _FREERTOS_NATIVE_H_
+#pragma once
 
 #include <cstdint>
 
@@ -51,5 +50,3 @@ uint32_t uxTaskGetStackHighWaterMark(void*);
 #else
 #define configASSERT(__e) (assert(__e))
 #endif
-
-#endif /* _FREERTOS_NATIVE_H_ */

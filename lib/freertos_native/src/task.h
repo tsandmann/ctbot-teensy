@@ -23,8 +23,7 @@
  * @date    10.06.2018
  */
 
-#ifndef _TASK_NATIVE_H_
-#define _TASK_NATIVE_H_
+#pragma once
 
 #include <cstdint>
 #include <functional>
@@ -53,5 +52,3 @@ void vTaskSuspendAll();
 
 long xTaskResumeAll();
 } // extern C
-
-#endif /* _TASK_NATIVE_H_ */

@@ -22,15 +22,17 @@
  * @date    15.04.2018
  */
 
-#ifndef SRC_SCHEDULER_H_
-#define SRC_SCHEDULER_H_
+#pragma once
 
 #include "ctbot_config.h"
+#include "ctbot_task.h"
 
 #include <cstdint>
 #include <vector>
+#include <list>
 #include <map>
 #include <string>
+#include <functional>
 
 
 extern "C" {
@@ -44,45 +46,17 @@ class CommInterface;
 
 /**
  * @brief Cooperative scheduler implementation for periodic tasks
+ *
+ * @startuml{Scheduler.png}
+ *  !include scheduler.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Scheduler {
-public:
-    using task_func_data_t = void*;
-    using task_func_t = void (*)(task_func_data_t);
-
 protected:
-    static constexpr uint16_t DEFAULT_STACK_SIZE { 2U * 1024U };
-
-    /**
-     * @brief Task control block
-     */
-    struct Task {
-        uint16_t id_; /**< ID of task */
-        uint16_t period_; /**< Execution period of task in ms */
-        bool active_; /**< Flag indicating if task is runnable (true) or blocked (false) */
-        task_func_t func_; /**< Function pointer to the task's implementation */
-        task_func_data_t func_data_; /**< Pointer to additional data for the task */
-        void* handle_; /**< FreeRTOS task handle */
-        std::string name_;
-
-        /**
-         * @brief Construct a new Task object
-         * @param[in] id: ID of task
-         * @param[in] name: Name of task
-         * @param[in] period: Execution period of task in ms
-         * @param[in] func: Function pointer to the task's implementation
-         * @param[in] func_data: Pointer to additional data for the task
-         */
-        Task(const uint16_t id, const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data);
-
-        ~Task();
-
-        /**
-         * @brief Print task information to a CommInterface
-         * @param[in] comm: Reference to CommInterface instance to print to
-         */
-        void print(CommInterface& comm) const;
-    };
+    static constexpr uint8_t DEFAULT_PRIORITY { 4 };
+    static constexpr uint32_t DEFAULT_STACK_SIZE { 2 * 1024 }; // byte
 
     uint16_t next_id_; /**< Next task ID to use */
     std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
@@ -103,6 +77,8 @@ public:
         xTaskResumeAll();
     }
 
+    static size_t get_free_stack();
+
     /**
      * @brief Construct a new Scheduler object
      */
@@ -117,24 +93,39 @@ public:
      * @brief Add a tasks to the run queue
      * @param[in] name: Reference to string with name of the task
      * @param[in] period: Execution period of task in ms
+     * @param[in] priority: Priority of task
      * @param[in] stack_size: Size of task's stack in byte
-     * @param[in] func: Function pointer to the task's implementation
-     * @param[in] func_data: Pointer to additional data for the task
+     * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, task_func_t&& func, task_func_data_t&& func_data);
+    uint16_t task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
 
     /**
      * @brief Add a tasks to the run queue
      * @param[in] name: Reference to string with name of the task
      * @param[in] period: Execution period of task in ms
-     * @param[in] func: Function pointer to the task's implementation
-     * @param[in] func_data: Pointer to additional data for the task
+     * @param[in] stack_size: Size of task's stack in byte
+     * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data) {
-        return task_add(name, period, DEFAULT_STACK_SIZE, std::move(func), std::move(func_data));
+    uint16_t task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
+        return task_add(name, period, DEFAULT_PRIORITY, stack_size, std::move(func));
     }
+
+    /**
+     * @brief Add a tasks to the run queue
+     * @param[in] name: Reference to string with name of the task
+     * @param[in] period: Execution period of task in ms
+     * @param[in] func: Function wrapper for the task's implementation
+     * @return ID of created task or 0 in case of an error
+     */
+    uint16_t task_add(const std::string& name, const uint16_t period, Task::func_t&& func) {
+        return task_add(name, period, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, std::move(func));
+    }
+
+    uint16_t task_register(const std::string& name);
+
+    uint16_t task_register(void* task);
 
     bool task_remove(const uint16_t task);
 
@@ -150,7 +141,7 @@ public:
      * @param[in] id: ID of task to get
      * @return Pointer to task entry
      */
-    const Task* task_get(const uint16_t id) const;
+    Task* task_get(const uint16_t id) const;
 
     /**
      * @brief Suspend a task, task will not be scheduled again until resumed
@@ -166,6 +157,9 @@ public:
      */
     bool task_resume(const uint16_t id);
 
+    // FIXME: Documentation
+    bool task_wait_for(const uint16_t id, Condition& cond);
+
     /**
      * @brief Print a list of all tasks and their current status
      * @param[in] comm: Reference to CommInterface instance used to print the list
@@ -173,12 +167,10 @@ public:
     void print_task_list(CommInterface& comm) const;
 
     /**
-     * @brief Print number of free (heap) RAM in byte
+     * @brief Print amount of used and free (heap) RAM in byte
      * @param[in] comm: Reference to CommInterface instance used to print with
      */
-    void print_free_ram(CommInterface& comm) const;
+    void print_ram_usage(CommInterface& comm) const;
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SCHEDULER_H_ */

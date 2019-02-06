@@ -57,7 +57,7 @@ extern "C" {
 #define configUSE_IDLE_HOOK                     1
 #define configUSE_TICK_HOOK                     1
 #define configCPU_CLOCK_HZ                      ( F_CPU )
-#define configMAX_PRIORITIES                    ( 8 )
+#define configMAX_PRIORITIES                    ( 10 )
 #define configMINIMAL_STACK_SIZE                ( ( unsigned short ) 64 )
 #define configMAX_TASK_NAME_LEN                 ( 10 )
 #define configUSE_TRACE_FACILITY                0
@@ -72,6 +72,7 @@ extern "C" {
 #define configUSE_COUNTING_SEMAPHORES           1
 #define configSUPPORT_STATIC_ALLOCATION         0
 #define configUSE_NEWLIB_REENTRANT              1
+#define configUSE_SYSVIEW                       0
 
 /* Run time stats gathering definitions. */
 #define configGENERATE_RUN_TIME_STATS           0
@@ -101,6 +102,7 @@ extern "C" {
 #define INCLUDE_eTaskGetState                   1
 #define INCLUDE_xTimerPendFunctionCall          1
 #define INCLUDE_uxTaskGetStackHighWaterMark     1
+#define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskGetIdleTaskHandle          1
 
 /* Cortex-M specific definitions. */
@@ -134,6 +136,14 @@ void assert_blink(const char*, int, const char*, const char*);
 #define configASSERT(condition) ((void) 0)
 #else
 #define configASSERT(__e) ((__e) ? (void) 0 : assert_blink(__FILE__, __LINE__, __PRETTY_FUNCTION__, #__e))
+#endif
+
+#if configUSE_SYSVIEW == 1
+#undef configUSE_TRACE_FACILITY
+#define configUSE_TRACE_FACILITY 1
+#include <SEGGER_SYSVIEW_FreeRTOS.h>
+#else
+static inline void SEGGER_SYSVIEW_Conf() {}
 #endif
 
 #ifdef __cplusplus

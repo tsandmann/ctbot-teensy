@@ -1,0 +1,84 @@
+@startuml comm_interface
+
+namespace ctbot {
+    abstract class CommInterface {
+        +CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo)
+        +~CommInterface()
+        +debug_print(const char c, const bool block) : size_t
+        +debug_print(const char* str, const bool block) : size_t
+        +debug_print(const std::string& str, const bool block) : size_t
+        +debug_print(std::string&& str, const bool block) : size_t
+        +debug_print<typename T>(const T v, const bool block) : size_t
+        +debug_printf<bool BLOCK, typename... Args>(const char* format, const Args&... args) : size_t
+        +flush() : void
+        +get_echo() : bool
+        +get_error() : int
+        +reset_error() : void
+        +set_attribute(const Attribute a) : void
+        +set_color(const Color fg, const Color bg) : void
+        +{abstract} set_echo(bool value) : void
+        #{static} get_format_size(const char* format) : size_t
+        #{static} create_formatted_string(const size_t size, const char* format) : std::unique_ptr<char>
+        #{static} string_format<typename... Args>(const char* format, const Args&... args) : std::unique_ptr<char>
+        #queue_debug_msg(const char c, std::string* p_str, const bool block) : size_t
+        #{abstract} run_input() : void
+        #run_output() : void
+        #{static} INPUT_BUFFER_SIZE = 64U : constexpr size_t
+        #{static} INPUT_TASK_PERIOD_MS = 50U : constexpr uint16_t
+        #{static} INPUT_TASK_PRIORITY = 2U : constexpr uint8_t
+        #{static} OUTPUT_QUEUE_SIZE = 128U : constexpr size_t
+        #{static} OUTPUT_TASK_PERIOD_MS = 1U : constexpr uint16_t
+        #{static} OUTPUT_TASK_PRIORITY = 1U : constexpr uint8_t
+        #echo_ : bool
+        #error_ : int
+        #input_buffer_ : char
+        #io_ : SerialConnectionTeensy&
+        #output_queue_ : void*
+        #p_input_ : char*
+    }
+
+    class CommInterface::Attribute {
+        +{static} BLINK = 5 : uint8_t
+        +{static} BOLD = 1 : uint8_t
+        +{static} NORMAL = 0 : uint8_t
+        +{static} REVERSE = 7 : uint8_t
+        +{static} UNDERLINE = 4 : uint8_t
+    }
+
+    class CommInterface::Color {
+        +{static} BLACK = 0 : uint8_t
+        +{static} BLUE = 4 : uint8_t
+        +{static} CYAN = 6 : uint8_t
+        +{static} GREEN = 2 : uint8_t
+        +{static} MAGENTA = 5 : uint8_t
+        +{static} RED = 1 : uint8_t
+        +{static} WHITE = 7 : uint8_t
+        +{static} YELLOW = 3 : uint8_t
+    }
+
+    class CommInterface::OutBufferElement {
+        +character_ : char
+        +p_str_ : std::string*
+    }
+
+    class CommInterfaceCmdParser {
+        +CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo)
+        +~CommInterfaceCmdParser()
+        #clear_line() : void
+        #run_input() : void
+        +set_echo(bool value) : void
+        #update_line(const std::string& line) : void
+        #cmd_parser_ : CmdParser&
+        #history_view_ : size_t
+    }
+
+    CommInterface <|-- CommInterfaceCmdParser
+    CommInterface o-- SerialConnectionTeensy
+    CommInterface -- CommInterface::Attribute
+    CommInterface -- CommInterface::Color
+    CommInterface o-- CommInterface::OutBufferElement
+
+    CommInterfaceCmdParser o-- CmdParser
+}
+
+@enduml

@@ -1,0 +1,23 @@
+@startuml encoder
+
+namespace ctbot {
+    class Encoder {
+        +Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
+        +{static} isr(uint32_t* p_data, volatile uint8_t* p_idx) : void
+        +get() : int16_t
+        +get_speed() : float
+        +set_direction(const bool dir) : void
+        +update() : void
+        #count_ : int8_t
+        #direction_ : bool
+        #edges_ : int16_t
+        #last_idx_ : uint8_t
+        #last_update_ : uint32_t
+        #p_enc_data_ : const uint32_t* const
+        #p_enc_idx_ : const volatile uint8_t* const
+        #speed_ : float
+        #speed_avg_ : float
+    }
+}
+
+@enduml

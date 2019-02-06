@@ -29,8 +29,11 @@
 #include "ena.h"
 #include "sensors.h"
 #include "display.h"
+#include "condition.h"
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 namespace ctbot {
@@ -38,12 +41,7 @@ namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
     arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
-    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 192UL,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<BlinkTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 192UL, [this]() { return run(); });
 }
 
 void BlinkTest::run() {
@@ -53,12 +51,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 192UL,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<LedTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 224UL, [this]() { return run(); });
 }
 
 void LedTest::run() {
@@ -77,12 +70,7 @@ void LedTest::run() {
 
 
 LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ { 0U } {
-    ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<LcdTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void LcdTest::run() {
@@ -99,12 +87,7 @@ void LcdTest::run() {
 
 
 EnaTest::EnaTest(CtBot& ctbot) : ctbot_ { ctbot }, p_ena_ { new Ena }, ena_idx_ { 0 } {
-    ctbot_.get_scheduler()->task_add("enatest", TASK_PERIOD_MS,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<EnaTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot_.get_scheduler()->task_add("enatest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void EnaTest::run() {
@@ -116,12 +99,7 @@ void EnaTest::run() {
 
 
 SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1024UL,
-        [](void* p_data) {
-            auto p_this(reinterpret_cast<SensorLcdTest*>(p_data));
-            return p_this->run();
-        },
-        this);
+    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1024UL, [this]() { return run(); });
 }
 
 void SensorLcdTest::run() {
@@ -141,6 +119,33 @@ void SensorLcdTest::run() {
     ctbot_.get_lcd()->printf("S=%4d %4d  ", static_cast<int16_t>(p_sens->get_enc_l().get_speed()), static_cast<int16_t>(p_sens->get_enc_r().get_speed()));
     ctbot_.get_lcd()->set_cursor(4, 14);
     ctbot_.get_lcd()->printf("RC=0x%02x", static_cast<int16_t>(p_sens->get_rc5().get_cmd()));
+}
+
+
+TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), p_cond1 { new Condition() }, p_cond2 { new Condition() } {
+    task1_id_ = ctbot_.get_scheduler()->task_add("task1test", TASK_PERIOD_MS, 256UL, [this]() { return run1(); });
+
+    task2_id_ = ctbot_.get_scheduler()->task_add("task2test", TASK_PERIOD_MS, 256UL, [this]() { return run2(); });
+}
+
+void TaskWaitTest::run1() {
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): waiting for condition 1...\r\n", false);
+    ctbot_.get_scheduler()->task_wait_for(task1_id_, *p_cond1);
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): got condition 1, notify condition 2...\r\n", false);
+    while (!p_cond2->notify()) {
+        vTaskDelay(10);
+    }
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): done.\r\n", false);
+}
+
+void TaskWaitTest::run2() {
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): notify condition 1...\r\n", false);
+    while (!p_cond1->notify()) {
+        vTaskDelay(10);
+    }
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): done. waiting for condition 2...\r\n", false);
+    ctbot_.get_scheduler()->task_wait_for(task2_id_, *p_cond2);
+    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): got condition 2.\r\n", false);
 }
 
 } // namespace tests

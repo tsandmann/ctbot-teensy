@@ -21,8 +21,7 @@
  * @date    10.06.2018
  */
 
-#ifndef _ARDUINO_FIXED_H_
-#define _ARDUINO_FIXED_H_
+#pragma once
 
 #include <Wire.h>
 #include <cstdint>
@@ -114,5 +113,3 @@ extern HardwareSerial Serial6;
 
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
-
-#endif /* _ARDUINO_FIXED_H_ */

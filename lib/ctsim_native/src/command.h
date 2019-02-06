@@ -6,8 +6,7 @@
  * @date    17.06.2018
  */
 
-#ifndef COMMAND_H_
-#define COMMAND_H_
+#pragma once
 
 #include <cstdint>
 #include <iostream>
@@ -307,5 +306,3 @@ inline CommandData::CommandData(
                                                                                                                          CommandCodes::CMD_STOPCODE) } {}
 
 } /* namespace ctbot */
-
-#endif /* COMMAND_H_ */

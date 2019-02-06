@@ -18,22 +18,21 @@
 
 /**
  * @file    teensy.h
- * @brief   FreeRTOS support implementations for Teensy boards
+ * @brief   FreeRTOS support implementations for Teensy boards with newlib 3
  * @author  Timo Sandmann
  * @date    26.05.2018
  */
 
-#ifndef PORTABLE_TEENSY_H_
-#define PORTABLE_TEENSY_H_
+#pragma once
 
-#include <FreeRTOS.h>
-#include <task.h>
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include <cstdint>
+#include <tuple>
 
 
 extern "C" {
-extern uint8_t* stack_top; /**< Pointer to top of initial stack, initialized in setup() */
-
 /**
  * @brief Write every character from the null-terminated C-string str and one additional newline character '\n' to Serial
  * @param[in] str: Character C-string to be written
@@ -49,15 +48,15 @@ namespace freertos {
 void error_blink(const uint8_t n);
 
 /**
- * @brief Get amount of free (heap) RAM
- * @return Free RAM on heap in byte
+ * @brief Get amount of used and free (heap) RAM
+ * @return Tuple of: free RAM in byte, used heap in byte, system free in byte
  */
-long free_ram();
+std::tuple<size_t, size_t, size_t> ram_usage();
 
 /**
- * @brief Print amount of free (heap) RAM to Serial
+ * @brief Print amount of used and free (heap) RAM to Serial
  */
-void print_free_ram();
+void print_ram_usage();
 
 /**
  * @brief Get the current time in microseconds
@@ -72,6 +71,23 @@ uint32_t get_us();
 static inline uint32_t get_ms() {
     return ::xTaskGetTickCount() / (configTICK_RATE_HZ / 1000U);
 }
-} // namespace freertos
 
-#endif /* PORTABLE_TEENSY_H_ */
+/**
+ * @brief Initialize the Sysview interface
+ */
+void sysview_init();
+
+/**
+ * @brief Trace an ISR entry
+ */
+static inline void trace_isr_enter() {
+    traceISR_ENTER();
+}
+
+/**
+ * @brief Trace an ISR exit
+ */
+static inline void trace_isr_exit() {
+    traceISR_EXIT();
+}
+} // namespace freertos

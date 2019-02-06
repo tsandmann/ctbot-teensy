@@ -17,8 +17,7 @@
  *          adapted for use with the c't-Bot teensy framework and ported to C++14
  */
 
-#ifndef RC5_H_
-#define RC5_H_
+#pragma once
 
 #include <cstdint>
 
@@ -86,5 +85,3 @@ public:
     bool read(bool& toggle, uint8_t& addr, uint8_t& cmd, const bool value, const uint32_t elapsed);
     void reset();
 };
-
-#endif /* RC5_H_ */

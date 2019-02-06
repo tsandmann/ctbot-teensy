@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_CTBOT_CONFIG_H_
-#define SRC_CTBOT_CONFIG_H_
+#pragma once
 
 #include <cstdint>
 #include <type_traits>
@@ -35,17 +34,9 @@ namespace ctbot {
  * @brief Configuration settings
  *
  * @startuml{CtBotConfig.png}
+ *  !include ctbot_config.puml
  *  set namespaceSeparator ::
  *  skinparam classAttributeIconSize 0
- *  class ctbot::CtBotConfig {
- *      +{static} BLINK_TEST_AVAILABLE : constexpr bool
- *      +{static} LED_TEST_AVAILABLE : constexpr bool
- *      +{static} ENA_TEST_AVAILABLE : constexpr bool
- *      +{static} LCD_TEST_AVAILABLE : constexpr bool
- *      +{static} SENS_LCD_TEST_AVAILABLE : constexpr bool
- *      +{static} UART0_BAUDRATE : constexpr uint32_t = 4000000UL
- *      +{static} RC5_ADDR : constexpr uint8_t = 6
- *  }
  * @enduml
  */
 class CtBotConfig {
@@ -56,12 +47,17 @@ public:
     static constexpr bool ENA_TEST_AVAILABLE { false }; /**< Statically activate or deactivate ENA test */
     static constexpr bool LCD_TEST_AVAILABLE { false }; /**< Statically activate or deactivate LCD test */
     static constexpr bool SENS_LCD_TEST_AVAILABLE { true }; /**< Statically activate or deactivate sensor display test */
+    static constexpr bool TASKWAIT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate task wait test */
+
+    static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
+
+    static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
 
     /* uart */
-    static constexpr uint32_t UART0_BAUDRATE { 4000000UL }; /**< Baud rate used for Uart 0 (USB) */
-    static constexpr uint8_t UART5_PIN_RX { 34U }; /**< Number of pin to use for RX line for Uart 5 */
-    static constexpr uint8_t UART5_PIN_TX { 33U }; /**< Number of pin to use for TX line for Uart 5 */
-    static constexpr uint32_t UART5_BAUDRATE { 115200UL }; /**< Baud rate used for Uart 5 */
+    static constexpr uint32_t UART0_BAUDRATE { 4000000 }; /**< Baud rate used for Uart 0 (USB) */
+    static constexpr uint8_t UART5_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart 5 */
+    static constexpr uint8_t UART5_PIN_TX { 33 }; /**< Number of pin to use for TX line for Uart 5 */
+    static constexpr uint32_t UART5_BAUDRATE { 2000000 }; /**< Baud rate used for Uart 5 */
     static constexpr uint8_t UART_FOR_CMD { 0 }; /**< Number of UART to use for command line interface */
 
     /* i2c */
@@ -108,6 +104,7 @@ public:
     static constexpr uint8_t LDR_R_PIN { 38 }; /**< Pin number of LDR_R signal */
     static constexpr uint8_t BORDER_L_PIN { 16 }; /**< Pin number of BORDER_L signal */
     static constexpr uint8_t BORDER_R_PIN { 17 }; /**< Pin number of BORDER_R signal */
+    static constexpr uint8_t BAT_VOLTAGE_PIN { 39 }; /**< Pin number of battery voltage signal */
 
     /* motors */
     static constexpr uint8_t MOT_L_PWM_PIN { 35 }; /**< Pin number of left motor pwm signal */
@@ -122,8 +119,10 @@ public:
 
     /* lcd */
     static constexpr uint8_t I2C_FOR_LCD { 2 }; /**< Number of I2C port to use for lcd interface */
+
+    /* SWD access to KL02 */
+    static constexpr uint8_t SWD_CLOCK_PIN { 56 };
+    static constexpr uint8_t SWD_DATA_PIN { 57 };
 };
 
 } // namespace ctbot
-
-#endif /* SRC_CTBOT_CONFIG_H_ */

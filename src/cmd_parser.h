@@ -22,14 +22,14 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_CMD_PARSER_H_
-#define SRC_CMD_PARSER_H_
+#pragma once
 
 #include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
 #include <functional>
+#include <deque>
 
 
 namespace ctbot {
@@ -38,16 +38,24 @@ class CommInterface;
 
 /**
  * @brief Simple parser for console commands
+ *
+ * @startuml{CmdParser.png}
+ *  !include cmd_parser.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CmdParser {
 protected:
     using func_t = std::function<bool(const std::string&)>;
     static constexpr size_t MAX_CMD_LENGTH { 16 };
+    static constexpr size_t HISTORY_SIZE { 16 };
 
     bool echo_;
     std::map<std::string /*cmd*/, func_t /*function*/> commands_;
+    std::deque<std::string> history_;
 
-    bool execute_cmd(const std::string& cmd);
+    bool execute_cmd(const std::string& cmd, CommInterface& comm);
 
 public:
     /**
@@ -86,6 +94,13 @@ public:
         echo_ = value;
     }
 
+    const std::string* get_history(const size_t num) const {
+        if (num && num <= history_.size()) {
+            return &history_[num - 1];
+        }
+        return nullptr;
+    }
+
     /**
      * @brief Split a string into space seperated tokens and return the first as integer argument
      * @tparam T: Type of argument to get out
@@ -118,5 +133,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_CMD_PARSER_H_ */

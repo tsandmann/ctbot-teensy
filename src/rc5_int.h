@@ -22,12 +22,11 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_RC5_INT_H_
-#define SRC_RC5_INT_H_
+#pragma once
 
 #include "timer.h"
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
 #include <cstdint>
 
 
@@ -37,6 +36,12 @@ namespace ctbot {
 
 /**
  * @brief Interrupt driven RC5 decoder driver
+ *
+ * @startuml{Rc5.png}
+ *  !include rc5_int.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Rc5 {
 protected:
@@ -137,5 +142,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_RC5_INT_H_ */

@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_SENSORS_H_
-#define SRC_SENSORS_H_
+#pragma once
 
 #include "ena.h"
 #include "digital_sensors.h"
@@ -35,6 +34,12 @@ namespace ctbot {
 
 /**
  * @brief Collection of all c't-Bot sensors
+ *
+ * @startuml{Sensors.png}
+ *  !include sensors.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Sensors : public DigitalSensors, public AnalogSensors {
 protected:
@@ -67,5 +72,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SENSORS_H_ */

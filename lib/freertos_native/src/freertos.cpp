@@ -25,20 +25,23 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
+
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <vector>
 #include <iostream>
+#include <pthread.h>
+#include <signal.h>
+#include <cassert>
 
 
 static std::recursive_timed_mutex g_mutex;
 static std::vector<std::thread*> g_task_list;
+static pthread_mutex_t g_suspend_resume_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern "C" {
-uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
-
 void serial_puts(const char* str) {
     ::puts(str);
 }
@@ -79,13 +82,59 @@ void vTaskDelay(const uint32_t ticks) {
     std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
 }
 
-void vTaskSuspend(void*) {
-    // not implemented
+void vTaskSuspend(void* task_handle) {
+    pthread_t thread;
+    if (task_handle) {
+        std::thread* p_thread { reinterpret_cast<std::thread*>(task_handle) };
+        thread = p_thread->native_handle();
+    } else {
+        thread = pthread_self();
+    }
+
+    const int rc { pthread_mutex_lock(&g_suspend_resume_mutex) };
+    assert(rc == 0);
+    pthread_kill(thread, SIGALRM);
 }
 
-void vTaskResume(void*) {
-    // not implemented
+/**
+ *  Signal handler for SIGALRM (suspend)
+ */
+static void SuspendSignalHandler(int sig) {
+    std::cout << "SuspendSignalHandler() called.\n";
+    /* we are only interested in the resume signal */
+    sigset_t signals;
+    sigemptyset(&signals);
+    sigaddset(&signals, SIGVTALRM /*resume*/);
+
+    /* wait on the resume signal... */
+    pthread_mutex_unlock(&g_suspend_resume_mutex); // FIXME: should be atomic
+    const int rc { sigwait(&signals, &sig) };
+    assert(rc == 0);
+    std::cout << "task resumed.\n";
 }
+
+void vTaskResume(void* task_handle) {
+    pthread_t thread;
+    if (task_handle) {
+        std::thread* p_thread { reinterpret_cast<std::thread*>(task_handle) };
+        thread = p_thread->native_handle();
+    } else {
+        thread = pthread_self();
+    }
+
+    const int rc { pthread_mutex_lock(&g_suspend_resume_mutex) };
+    assert(rc == 0);
+
+    if (!pthread_equal(pthread_self(), thread)) {
+        pthread_kill(thread, SIGVTALRM);
+    }
+    pthread_mutex_unlock(&g_suspend_resume_mutex);
+}
+
+/**
+ *  Signal handler for SIGVTALRM (resume)
+ */
+static void ResumeSignalHandler(int) {}
 
 void vTaskSuspendAll() {
     g_mutex.lock();
@@ -99,8 +148,29 @@ long xTaskResumeAll() {
 void vTaskPrioritySet(void*, uint32_t) {}
 
 void vTaskStartScheduler() {
-    vTaskDelay(2000UL); // FIXME: baeh
+    struct sigaction sigsuspend;
+    memset(&sigsuspend, 0, sizeof(sigsuspend));
+    sigemptyset(&sigsuspend.sa_mask);
+    sigsuspend.sa_flags = 0;
+    sigsuspend.sa_handler = SuspendSignalHandler;
+    if (sigaction(SIGALRM, &sigsuspend, nullptr)) {
+        std::cerr << "Problem installing SIGALRM\n";
+    } else {
+        std::cout << "vTaskStartScheduler(): SIGALRM installed.\n";
+    }
 
+    struct sigaction sigresume;
+    memset(&sigresume, 0, sizeof(sigresume));
+    sigemptyset(&sigresume.sa_mask);
+    sigresume.sa_flags = 0;
+    sigresume.sa_handler = ResumeSignalHandler;
+    if (sigaction(SIGVTALRM, &sigresume, nullptr)) {
+        std::cerr << "Problem installing SIGVTALRM\n";
+    } else {
+        std::cout << "vTaskStartScheduler(): SIGVTALRM installed.\n";
+    }
+
+    vTaskDelay(2000UL); // FIXME: baeh
 
     if (g_task_list.size()) {
         std::thread* p_task { g_task_list[0] }; // main task

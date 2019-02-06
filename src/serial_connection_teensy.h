@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_SERIAL_CONNECTION_TEENSY_H_
-#define SRC_SERIAL_CONNECTION_TEENSY_H_
+#pragma once
 
 #include <arduino_fixed.h>
 #include <streambuf>
@@ -33,6 +32,12 @@ namespace ctbot {
 
 /**
  * @brief Abstraction layer for serial communication on Teensy devices
+ *
+ * @startuml{SerialConnectionTeensy.png}
+ *  !include serial_connection_teensy.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class SerialConnectionTeensy {
     // FIXME: maybe this class can be simplified a lot...
@@ -64,7 +69,7 @@ public:
     /**
      * @brief Destroy the SerialConnectionTeensy object
      */
-    ~SerialConnectionTeensy() = default;
+    ~SerialConnectionTeensy();
 
     /**
      * @brief Copy constructor
@@ -192,5 +197,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SERIAL_CONNECTION_TEENSY_H_ */

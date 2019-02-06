@@ -22,12 +22,11 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_ENCODER_H_
-#define SRC_ENCODER_H_
+#pragma once
 
 #include "timer.h"
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
 #include <cstdint>
 
 
@@ -35,6 +34,12 @@ namespace ctbot {
 
 /**
  * @brief Wheel encoder sensor processing
+ *
+ * @startuml{Encoder.png}
+ *  !include encoder.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Encoder {
 protected:
@@ -105,7 +110,7 @@ public:
         const uint32_t now { Timer::get_us() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
-        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > 1000)) {
+        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > 4000)) {
             last = value;
             last_time = now;
 
@@ -119,5 +124,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_ENCODER_H_ */

@@ -9,9 +9,7 @@
  * @note    Based on Arduino PID Library - Version 1.1.1 by Brett Beauregard <br3ttb@gmail.com> brettbeauregard.com, licensed under a GPLv3 License
  */
 
-#ifndef PID_v1_h
-#define PID_v1_h
-#define LIBRARY_VERSION	1.2.0
+#pragma once
 
 #include <cstdint>
 
@@ -184,4 +182,3 @@ private:
      */
     void initialize();
 };
-#endif /* PID_v1_h */

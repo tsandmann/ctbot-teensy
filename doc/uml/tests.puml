@@ -1,0 +1,76 @@
+@startuml tests
+
+namespace ctbot::tests {
+    class BlinkTest {
+        +BlinkTest(CtBot& ctbot)
+        +~BlinkTest()
+        #run() : void
+        #{static} TASK_PERIOD_MS = 500 : constexpr uint16_t
+        #ctbot_ : CtBot&
+        #state_ : bool
+    }
+
+    ctbot::tests.BlinkTest o-- ctbot.CtBot
+
+    class EnaTest {
+        +EnaTest(CtBot& ctbot)
+        +~EnaTest()
+        #run() : void
+        #{static} TASK_PERIOD_MS = 1000 : constexpr uint16_t
+        #ctbot_ : CtBot&
+        #ena_idx_ : uint8_t
+        #p_ena_ : Ena*
+    }
+
+    ctbot::tests.EnaTest o-- ctbot.CtBot
+    ctbot::tests.EnaTest o-- ctbot.Ena
+
+    class LcdTest {
+        +LcdTest(CtBot& ctbot)
+        +~LcdTest()
+        #run() : void
+        #{static} TASK_PERIOD_MS = 100 : constexpr uint16_t
+        #ctbot_ : CtBot&
+        #x_ : uint32_t
+    }
+
+    ctbot::tests.LcdTest o-- ctbot.CtBot
+
+    class LedTest {
+        +LedTest(CtBot& ctbot)
+        +~LedTest()
+        #run() : void
+        #{static} TASK_PERIOD_MS = 125 : constexpr uint16_t
+        #ctbot_ : CtBot&
+    }
+
+    ctbot::tests.LedTest o-- ctbot.CtBot
+
+    class SensorLcdTest {
+        +SensorLcdTest(CtBot& ctbot)
+        +~SensorLcdTest()
+        #run() : void
+        #{static} TASK_PERIOD_MS = 50 : constexpr uint16_t
+        #ctbot_ : CtBot&
+    }
+
+    ctbot::tests.SensorLcdTest o-- ctbot.CtBot
+
+    class TaskWaitTest {
+        +TaskWaitTest(CtBot& ctbot)
+        +~TaskWaitTest()
+        #run1() : void
+        #run2() : void
+        #{static} TASK_PERIOD_MS = 100 : constexpr uint16_t
+        #ctbot_ : CtBot&
+        #p_cond1 : Condition*
+        #p_cond2 : Condition*
+        #task1_id_ : uint16_t
+        #task2_id_ : uint16_t
+    }
+
+    ctbot::tests.TaskWaitTest o-- ctbot.CtBot
+    ctbot::tests.TaskWaitTest "2" o-- ctbot.Condition
+}
+
+@enduml

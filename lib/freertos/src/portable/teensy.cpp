@@ -18,7 +18,7 @@
 
 /**
  * @file    teensy.cpp
- * @brief   FreeRTOS support implementations for Teensy boards with newlib
+ * @brief   FreeRTOS support implementations for Teensy boards with newlib 3
  * @author  Timo Sandmann
  * @date    26.05.2018
  */
@@ -33,26 +33,43 @@ task.h is included from an application file. */
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include <private/portable.h>
-
-#if (configSUPPORT_DYNAMIC_ALLOCATION == 0)
-#error This file must not be used if configSUPPORT_DYNAMIC_ALLOCATION is 0
-#endif
+#include "private/portable.h"
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
-#include <Arduino.h>
-#include <kinetis.h>
-#include <util/atomic.h>
+#include "Arduino.h"
+#include "kinetis.h"
+#include "util/atomic.h"
 
 #include <new>
 #include <cstdlib>
 #include <cerrno>
 #include <unistd.h>
+#include <malloc.h>
+#include <cstring>
 
+
+#ifndef MAIN_STACK_SIZE
+#if defined(__MKL26Z64__)
+#define MAIN_STACK_SIZE 512UL
+#elif defined(__MK20DX128__)
+#define MAIN_STACK_SIZE 1024UL
+#elif defined(__MK20DX256__)
+#define MAIN_STACK_SIZE 1024UL
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#define MAIN_STACK_SIZE 1024UL
+#endif
+#else
+#error "Unknown architecture"
+#endif // MAIN_STACK_SIZE
 
 extern "C" {
-uint8_t* stack_top { nullptr }; /**< Pointer to top of (initial) stack, necessary for _sbrk() */
+asm(".global _printf_float"); /**< to have a printf supporting floating point values */
+
+extern unsigned long __bss_end__; // set by linker script
+extern unsigned long _estack; // set by linker script
+static UBaseType_t int_nesting { 0 }; // used by __malloc_lock()
+static uint32_t int_prio { 0 }; // used by __malloc_lock()
 
 void serial_puts(const char* str) {
     Serial.println(str);
@@ -105,7 +122,7 @@ namespace freertos {
  */
 static void poll_usb() {
     if (SIM_SCGC4 & SIM_SCGC4_USBOTG) {
-        usb_isr();
+        ::usb_isr();
     }
 }
 
@@ -132,26 +149,41 @@ static void delay_ms(const uint32_t ms) {
 
 void error_blink(const uint8_t n) {
     __disable_irq();
+    ::digitalWriteFast(35, false); // disable pwm output
+    ::pinMode(35, OUTPUT);
+    ::digitalWriteFast(36, false); // disable pwm output
+    ::pinMode(36, OUTPUT);
     ::pinMode(LED_BUILTIN, OUTPUT);
 
     while (true) {
         for (uint8_t i { 0 }; i < n; ++i) {
-            ::digitalWrite(LED_BUILTIN, true);
+            ::digitalWriteFast(LED_BUILTIN, true);
             delay_ms(300UL);
-            ::digitalWrite(LED_BUILTIN, false);
+            ::digitalWriteFast(LED_BUILTIN, false);
             delay_ms(300UL);
         }
         delay_ms(2000UL);
     }
 }
 
-long free_ram() {
-    return stack_top - reinterpret_cast<uint8_t*>(sbrk(0));
+std::tuple<size_t, size_t, size_t> ram_usage() {
+    volatile size_t x { 0 };
+    void* ptr { sbrk(x) };
+    const size_t system_free { (reinterpret_cast<uint8_t*>(&_estack) - static_cast<uint8_t*>(ptr)) - MAIN_STACK_SIZE };
+    const auto info { mallinfo() };
+    const std::tuple<size_t, size_t, size_t> ret { system_free + info.fordblks, info.uordblks, system_free };
+    return ret;
 }
 
-void print_free_ram() {
+void print_ram_usage() {
+    const auto info { ram_usage() };
+
     Serial.print("free RAM: ");
-    Serial.print(freertos::free_ram() / 1024UL);
+    Serial.print(std::get<0>(info) / 1024UL, 10);
+    Serial.print(" KB, used heap: ");
+    Serial.print(std::get<1>(info) / 1024UL, 10);
+    Serial.print(" KB, system free: ");
+    Serial.print(std::get<2>(info) / 1024UL, 10);
     Serial.println(" KB");
 }
 
@@ -159,9 +191,9 @@ uint32_t get_us() {
     uint32_t current, load, count, istatus;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         current = SYST_CVR;
-        load = SYST_RVR;
         count = get_ms();
         istatus = SCB_ICSR; // bit 26 indicates if systick exception pending
+        load = SYST_RVR;
     }
 
     if ((istatus & SCB_ICSR_PENDSTSET) && current > 50) {
@@ -169,69 +201,76 @@ uint32_t get_us() {
     }
 
     current = load - current;
-    return count * 1000U + current / (configCPU_CLOCK_HZ / 1000000U);
+#if (configUSE_TICKLESS_IDLE == 1)
+#warning "tickless idle mode is untested"
+    return count * 1000U + current * 1000U / (load + 1U);
+#else
+    return count * 1000U + current / (configCPU_CLOCK_HZ / configTICK_RATE_HZ / 1000U);
+#endif
+}
+
+void sysview_init() {
+    SEGGER_SYSVIEW_Conf();
 }
 } // namespace freertos
 
 
 extern "C" {
-
-extern unsigned long _ebss;
-extern uint8_t* stack_top;
-
-#ifndef STACK_MARGIN
-#if defined(__MKL26Z64__)
-#define STACK_MARGIN 512
-#elif defined(__MK20DX128__)
-#define STACK_MARGIN 1024
-#elif defined(__MK20DX256__)
-#define STACK_MARGIN 4096
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define STACK_MARGIN 8192
-#endif
-#endif // STACK_MARGIN
-
-// asm(".global _printf_float"); /**< to have a printf supporting floating point values */
-
+// override _sbrk() - you have to link with option: "-Wl,--wrap=_sbrk"
 void* _sbrk(ptrdiff_t);
-// override _sbrk() to make it thread-safe - you have to link with gcc option: "-Wl,--wrap=_sbrk"
 void* __wrap__sbrk(ptrdiff_t incr) {
-    static uint8_t* currentHeapEnd = reinterpret_cast<uint8_t*>(&_ebss);
+    static uint8_t* currentHeapEnd { reinterpret_cast<uint8_t*>(&__bss_end__) };
 
-    vTaskSuspendAll(); // Note: safe to use before FreeRTOS scheduler started
-    void* const previousHeapEnd = currentHeapEnd;
-    if (((intptr_t) currentHeapEnd + incr >= (intptr_t) stack_top - STACK_MARGIN) && stack_top) { // FIXME: double check this
+    static_assert(portSTACK_GROWTH == -1, "Stack growth down assumed");
+
+    // Serial.print("_sbrk(");
+    // Serial.print(incr, 10);
+    // Serial.println(")");
+
+    void* previousHeapEnd = currentHeapEnd;
+
+    if ((reinterpret_cast<uintptr_t>(currentHeapEnd) + incr >= reinterpret_cast<uintptr_t>(&_estack) - MAIN_STACK_SIZE)
+        || (reinterpret_cast<uintptr_t>(currentHeapEnd) + incr < reinterpret_cast<uintptr_t>(&__bss_end__))) {
 #if (configUSE_MALLOC_FAILED_HOOK == 1)
         {
-            extern void vApplicationMallocFailedHook(void);
+            extern void vApplicationMallocFailedHook();
             vApplicationMallocFailedHook();
         }
 #else
         // If you prefer to believe your application will gracefully trap out-of-memory...
         _impure_ptr->_errno = ENOMEM; // newlib's thread-specific errno
-        xTaskResumeAll();
 #endif
-        return (void*) -1; // the malloc-family routine that called sbrk will return 0
+        return reinterpret_cast<void*>(-1); // the malloc-family routine that called sbrk will return 0
     }
 
     currentHeapEnd += incr;
-    xTaskResumeAll();
+    // Serial.print("currentHeapEnd=0x");
+    // Serial.print(reinterpret_cast<uintptr_t>(currentHeapEnd), 16);
+    // Serial.print(" previousHeapEnd=0x");
+    // Serial.println(reinterpret_cast<uintptr_t>(previousHeapEnd), 16);
 
     return previousHeapEnd;
 }
 
+void __malloc_lock(struct _reent*) {
+    int_prio = ::ulPortRaiseBASEPRI();
+    ++int_nesting;
+}
+
+void __malloc_unlock(struct _reent*) {
+    // configASSERT(int_nesting);
+    --int_nesting;
+    if (!int_nesting) {
+        ::vPortSetBASEPRI(int_prio);
+    }
+}
+
 void* sbrk(ptrdiff_t incr) {
-    return _sbrk(incr);
-};
-
-void* pvPortMalloc(size_t xWantedSize) {
-    return malloc(xWantedSize);
+    const auto pri { ::ulPortRaiseBASEPRI() };
+    const auto ptr { _sbrk(incr) };
+    ::vPortSetBASEPRI(pri);
+    return ptr;
 }
-
-void vPortFree(void* pv) {
-    free(pv);
-}
-
 
 void vApplicationMallocFailedHook();
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName);
@@ -245,10 +284,15 @@ void vApplicationMallocFailedHook() {
     freertos::error_blink(2);
 }
 
-void vApplicationStackOverflowHook(TaskHandle_t, char*) {
+void vApplicationStackOverflowHook(TaskHandle_t, char* task_name) {
     /* Run time stack overflow checking is performed if
     configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.
     This hook function is called if a stack overflow is detected. */
+
+    static char taskname[configMAX_TASK_NAME_LEN + 1];
+    std::memcpy(taskname, task_name, configMAX_TASK_NAME_LEN);
+    serial_puts("STACK OVERFLOW: ");
+    serial_puts(taskname);
 
     freertos::error_blink(3);
 }
@@ -257,7 +301,7 @@ void vApplicationStackOverflowHook(TaskHandle_t, char*) {
 #if (configUSE_IDLE_HOOK == 1)
 void vApplicationIdleHook();
 void vApplicationIdleHook() {
-    yield();
+    ::yield();
 }
 #endif // configUSE_IDLE_HOOK
 

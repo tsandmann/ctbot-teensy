@@ -25,6 +25,7 @@
 #include "shift_reg.h"
 #include "ctbot_config.h"
 #include "scheduler.h"
+#include "timer.h"
 
 #include <arduino_fixed.h>
 
@@ -54,6 +55,7 @@ void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t)
         const uint8_t tmp((data >> 7) & 1);
         arduino::digitalWriteFast(CtBotConfig::SHIFT_SDATA_PIN, tmp);
         arduino::digitalWriteFast(SCK_PIN, true); // latch to storage -> rising edge on SCK
+        Timer::delay_us(1);
         data <<= 1;
     }
 
@@ -61,6 +63,7 @@ void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t)
     // x([] () {
     // ...
     // });
+
     __disable_irq();
     arduino::digitalWriteFast(SCK_PIN, false);
     arduino::digitalWriteFast(CtBotConfig::SHIFT_SDATA_PIN, false);

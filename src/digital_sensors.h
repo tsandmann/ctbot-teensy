@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_DIGITAL_SENSORS_H_
-#define SRC_DIGITAL_SENSORS_H_
+#pragma once
 
 #include "ena.h"
 #include "encoder.h"
@@ -38,6 +37,12 @@ namespace ctbot {
 
 /**
  * @brief Abstraction layer for (simple) digital sensors
+ *
+ * @startuml{DigitalSensors.png}
+ *  !include digital_sensors.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class DigitalSensors {
 protected:
@@ -109,5 +114,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_DIGITAL_SENSORS_H_ */

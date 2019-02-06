@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_REMOTE_CONTROL_H_
-#define SRC_REMOTE_CONTROL_H_
+#pragma once
 
 #include "rc5_int.h"
 
@@ -35,6 +34,12 @@ namespace ctbot {
 
 /**
  * @brief Remote control implementation
+ *
+ * @startuml{RemoteControl.png}
+ *  !include remote_control.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class RemoteControl {
 protected:
@@ -70,5 +75,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_REMOTE_CONTROL_H_ */

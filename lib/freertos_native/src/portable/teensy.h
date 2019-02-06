@@ -23,16 +23,14 @@
  * @date    10.06.2018
  */
 
-#ifndef PORTABLE_TEENSY_NATIVE_H_
-#define PORTABLE_TEENSY_NATIVE_H_
+#pragma once
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
+
 #include <cstdint>
 
 
 extern "C" {
-extern uint8_t* stack_top; /**< Pointer to top of initial stack, initialized in setup() */
-
 /**
  * @brief Write every character from the null-terminated C-string str and one additional newline character '\n' to Serial
  * @param[in] str: Character C-string to be written
@@ -73,6 +71,19 @@ static inline uint32_t get_us() {
 static inline uint32_t get_ms() {
     return arduino::millis();
 }
-} // namespace freertos
 
-#endif /* PORTABLE_TEENSY_NATIVE_H_ */
+/**
+ * @brief Initialize the Sysview interface
+ */
+static inline void sysview_init() {}
+
+/**
+ * @brief Trace an ISR entry
+ */
+static inline void trace_isr_enter() {}
+
+/**
+ * @brief Trace an ISR exit
+ */
+static inline void trace_isr_exit() {}
+} // namespace freertos

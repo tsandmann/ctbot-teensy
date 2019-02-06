@@ -1,0 +1,29 @@
+@startuml serial_connection_teensy
+
+namespace ctbot {
+    class SerialConnectionTeensy {
+        +SerialConnectionTeensy(const uint8_t serial_port, const uint32_t baud_rate)
+        +SerialConnectionTeensy(const uint8_t serial_port, const uint8_t pin_rx, const uint8_t pin_tx, const uint32_t baud_rate)
+        +~SerialConnectionTeensy()
+        +{static} set_wait_callback(void (*callback)(const void*)) : void
+        +available() : size_t
+        +flush() : void
+        +peek() : int
+        +receive(void* data, const size_t size) : size_t
+        +receive(std::streambuf& buf, const size_t size) : size_t
+        +receive_async(void* data, const size_t size, const uint32_t timeout_ms) : size_t
+        +receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms) : size_t
+        +receive_until(void* data, const char delim, const size_t maxsize) : size_t
+        +receive_until(void* data, const std::string& delim, const size_t maxsize) : size_t
+        +receive_until(std::streambuf& buf, const char delim, const size_t maxsize) : size_t
+        +receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize) : size_t
+        +send(const void* data, const size_t size) : size_t
+        +send(std::streambuf& buf, const size_t size) : size_t
+        #{static} wait_callback_ : void (*) (const void*)
+        #wait_for_data(const uint16_t size, const uint16_t timeout_ms) : uint16_t
+        #io_stream_ : arduino::Stream&
+        #mutex_ : void*
+    }
+}
+
+@enduml

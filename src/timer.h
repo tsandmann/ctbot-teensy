@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_TIMER_H_
-#define SRC_TIMER_H_
+#pragma once
 
 #include "ctbot_config.h"
 
@@ -36,12 +35,9 @@ namespace ctbot {
  * @brief Class to group timer helper functions
  *
  * @startuml{Timer.png}
- *   class Timer {
- *     +{static} get_us() : uint32_t
- *     +{static} get_ms() : uint32_t
- *     +{static} delay_ms(uint32_t)
- *     +{static} delay_us(uint32_t)
- *   }
+ *  !include timer.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class Timer {
@@ -84,5 +80,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_TIMER_H_ */

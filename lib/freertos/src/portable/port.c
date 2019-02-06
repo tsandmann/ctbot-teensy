@@ -380,13 +380,6 @@ BaseType_t xPortStartScheduler( void )
 	/* Start the first task. */
 	prvPortStartFirstTask();
 
-	/* Should never get here as the tasks will now be executing!  Call the task
-	exit error function to prevent compiler warnings about a static function
-	not being called in the case that the application writer overrides this
-	functionality by defining configTASK_RETURN_ADDRESS.  Call
-	vTaskSwitchContext() so link time optimisation does not remove the
-	symbol. */
-	vTaskSwitchContext();
 	prvTaskExitError();
 
 	/* Should not get here! */
@@ -498,13 +491,19 @@ void xPortSysTickHandler( void )
 	save and then restore the interrupt mask value as its value is already
 	known. */
 	portDISABLE_INTERRUPTS();
+	traceISR_ENTER();
 	{
 		/* Increment the RTOS tick. */
 		if( xTaskIncrementTick() != pdFALSE )
 		{
+			traceISR_EXIT_TO_SCHEDULER();
 			/* A context switch is required.  Context switching is performed in
 			the PendSV interrupt.  Pend the PendSV interrupt. */
 			portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
+		}
+		else
+		{
+			traceISR_EXIT();
 		}
 	}
 	portENABLE_INTERRUPTS();

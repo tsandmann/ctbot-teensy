@@ -91,6 +91,10 @@ SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const 
     }
 }
 
+SerialConnectionTeensy::~SerialConnectionTeensy() {
+    vSemaphoreDelete(mutex_); // FIXME: check if mutex is currently hold by anyone?
+}
+
 uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) {
     uint16_t bytes_available { static_cast<uint16_t>(available()) };
     if (bytes_available >= size) {

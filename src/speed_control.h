@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_SPEED_CONTROL_H_
-#define SRC_SPEED_CONTROL_H_
+#pragma once
 
 #include "encoder.h"
 #include "motor.h"
@@ -40,11 +39,17 @@ namespace ctbot {
 
 /**
  * @brief Motor speed controller
+ *
+ * @startuml{SpeedControl.png}
+ *  !include speed_control.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class SpeedControl {
 protected:
-    static constexpr uint16_t MAX_SPEED { 450U }; /**< Maximum possible speed in mm/s */
-    static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t MAX_SPEED { 450 }; /**< Maximum possible speed in mm/s */
+    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
 
     static std::list<SpeedControl*> controller_list_; /**< List of all SpeedControl instances created */
 
@@ -65,7 +70,7 @@ protected:
      * @brief Speed controller task implementation
      * @note Calls run() on all SpeedControl instances
      */
-    static void controller(void*);
+    static void controller();
 
 public:
     /**
@@ -138,5 +143,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SPEED_CONTROL_H_ */

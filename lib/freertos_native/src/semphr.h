@@ -23,8 +23,7 @@
  * @date    10.06.2018
  */
 
-#ifndef _SEMPHR_NATIVE_H_
-#define _SEMPHR_NATIVE_H_
+#pragma once
 
 #include <cstdint>
 
@@ -34,5 +33,3 @@ void* xSemaphoreCreateMutex();
 long xSemaphoreTake(void* mutex, uint32_t max_delay);
 
 long xSemaphoreGive(void* mutex);
-
-#endif /* _SEMPHR_NATIVE_H_ */

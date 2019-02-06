@@ -23,77 +23,77 @@
  */
 
 #include "scheduler.h"
+#include "condition.h"
 #include "ctbot.h"
 #include "timer.h"
 #include "comm_interface.h"
 
-#include <arduino_fixed.h>
-#include <FreeRTOS.h>
-#include <task.h>
-#include <semphr.h>
-#include <portable/teensy.h>
+#include "pprintpp.hpp"
+#include "arduino_fixed.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+#include "portable/teensy.h"
 
 
 namespace ctbot {
 
-Scheduler::Task::Task(const uint16_t id, const std::string& name, const uint16_t period, task_func_t&& func, task_func_data_t&& func_data)
-    : id_ { id }, period_ { period }, active_ { true }, func_ { std::move(func) }, func_data_ { std::move(func_data) }, handle_ { nullptr }, name_ { name } {}
-
-void Scheduler::Task::print(CommInterface& comm) const {
-    comm.debug_print(" \"");
-    comm.debug_print(name_);
-    comm.debug_print("\":\t");
-    comm.debug_print("0x");
-    comm.debug_print(id_, PrintBase::HEX);
-    comm.debug_print('\t');
-    comm.debug_print(active_ ? "  ACTIVE" : "INACTIVE");
-    comm.debug_print('\t');
-    if (period_) {
-        comm.debug_print(period_, PrintBase::DEC);
-        comm.debug_print(" ms");
-    }
-    comm.debug_print("\tstack free: ");
-    comm.debug_print(uxTaskGetStackHighWaterMark(handle_) * sizeof(StackType_t), PrintBase::DEC);
-    comm.debug_print(" byte\n");
-}
-
-Scheduler::Task::~Task() {
-    active_ = false;
-    if (handle_) {
-        vTaskDelete(handle_);
-    }
-}
-
-Scheduler::Scheduler() : next_id_ { 0 }, tasks_mutex_ { xSemaphoreCreateMutex() } {
-    Task* p_task { new Task(next_id_++, configIDLE_TASK_NAME, 0, nullptr, nullptr) };
-    p_task->handle_ = xTaskGetIdleTaskHandle();
+Scheduler::Scheduler() : next_id_ {}, tasks_mutex_ { xSemaphoreCreateMutex() } {
+    Task* p_idle_task { new Task(*this, next_id_++, configIDLE_TASK_NAME, 0, nullptr) };
+    p_idle_task->handle_ = xTaskGetIdleTaskHandle();
 
     vTaskSuspendAll();
-    tasks_[0] = p_task;
+    tasks_[0] = p_idle_task;
     xTaskResumeAll();
 }
 
 Scheduler::~Scheduler() {
+    // Serial.println("Scheduler::~Scheduler() entered.");
     enter_critical_section();
     for (auto& t : tasks_) {
         if (t.second->name_ != "main") {
-            task_suspend(t.first);
+            // Serial.print("Scheduler::~Scheduler(): task 0x");
+            // Serial.print(t.second->id_, 16);
+            // Serial.print(" @ 0x");
+            // Serial.print(reinterpret_cast<uintptr_t>(t.second), 16);
+            // Serial.print(" will be blocked...");
+            t.second->state_ = 0;
+            // Serial.println(" done.");
         }
     }
+    // Serial.println("Scheduler::~Scheduler(): all tasks blocked.");
+
+    for (auto& t : tasks_) {
+        if (t.second->name_ != "main") {
+            // Serial.print("Scheduler::~Scheduler(): task \"");
+            // Serial.print(t.second->name_.c_str());
+            // Serial.print("\" will be deleted...");
+            delete t.second;
+            // Serial.println(" done.");
+        }
+    }
+
+    vSemaphoreDelete(tasks_mutex_);
     exit_critical_section();
+    // serial_puts("Scheduler::~Scheduler(): all tasks deleted.");
 }
 
 void Scheduler::stop() {
     vTaskEndScheduler();
 }
 
-uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, task_func_t&& func, task_func_data_t&& func_data) {
-    Task* p_task { new Task(next_id_, name, period, std::move(func), std::move(func_data)) };
+size_t Scheduler::get_free_stack() {
+    return ::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t);
+}
+
+uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) {
+    Task* p_task { new Task(*this, next_id_, name, period, std::move(func)) };
 
     if (tasks_mutex_ && xSemaphoreTake(tasks_mutex_, portMAX_DELAY)) {
         tasks_[p_task->id_] = p_task;
         xSemaphoreGive(tasks_mutex_);
     } else {
+        delete p_task;
         return 0;
     }
 
@@ -101,16 +101,36 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
         [](void* p_data) {
             Task* p_task { reinterpret_cast<Task*>(p_data) };
 
-            while (true) {
-                Timer::delay_ms(p_task->period_);
-                if (p_task->active_) {
-                    p_task->func_(p_task->func_data_);
+            while (p_task->state_) {
+                Timer::delay_ms(p_task->period_); // FIXME: use vTaskDelayUntil() instead?
+                if (p_task->state_ == 1) {
+                    p_task->func_();
                 }
             }
         },
-        p_task->name_.c_str(), stack_size / sizeof(StackType_t), p_task, configMAX_PRIORITIES - 2, &p_task->handle_);
+        p_task->name_.c_str(), stack_size / sizeof(StackType_t), p_task, priority, &p_task->handle_);
 
     return next_id_++;
+}
+
+uint16_t Scheduler::task_register(const std::string& name) {
+    auto task { ::xTaskGetHandle(name.c_str()) };
+    return task_register(task);
+}
+
+uint16_t Scheduler::task_register(void* task) {
+    Task* p_task { new Task(*this, next_id_, ::pcTaskGetName(task), 0, nullptr) };
+    p_task->handle_ = task;
+
+    if (p_task->handle_) {
+        if (tasks_mutex_ && xSemaphoreTake(tasks_mutex_, portMAX_DELAY)) {
+            tasks_[p_task->id_] = p_task;
+            xSemaphoreGive(tasks_mutex_);
+            return next_id_++;
+        }
+    }
+    delete p_task;
+    return 0;
 }
 
 bool Scheduler::task_remove(const uint16_t task_id) {
@@ -136,7 +156,7 @@ uint16_t Scheduler::task_get(const std::string& name) const {
     return 0xffff;
 }
 
-const Scheduler::Task* Scheduler::task_get(const uint16_t id) const {
+Task* Scheduler::task_get(const uint16_t id) const {
     return tasks_.at(id);
 }
 
@@ -146,7 +166,7 @@ bool Scheduler::task_suspend(const uint16_t id) {
     }
 
     Task& task { *tasks_[id] };
-    task.active_ = false;
+    task.state_ = 2;
     vTaskSuspend(task.handle_);
 
     return true;
@@ -158,8 +178,19 @@ bool Scheduler::task_resume(const uint16_t id) {
     }
 
     Task& task { *tasks_[id] };
-    task.active_ = true;
+    task.state_ = 1;
     vTaskResume(task.handle_);
+
+    return true;
+}
+
+bool Scheduler::task_wait_for(const uint16_t id, Condition& cond) {
+    cond.add_task(task_get(id));
+
+    if (!task_suspend(id)) {
+        cond.remove_task(task_get(id));
+        return false;
+    }
 
     return true;
 }
@@ -170,10 +201,10 @@ void Scheduler::print_task_list(CommInterface& comm) const {
     }
 }
 
-void Scheduler::print_free_ram(CommInterface& comm) const {
-    comm.debug_print("free RAM: ");
-    comm.debug_print(freertos::free_ram() / 1024UL, PrintBase::DEC);
-    comm.debug_print(" KB");
-}
+void Scheduler::print_ram_usage(CommInterface& comm) const {
+    const auto info { freertos::ram_usage() };
 
+    comm.debug_printf<true>(
+        PP_ARGS("free RAM: {} KB, used heap: {} KB, system free: {} KB", std::get<0>(info) / 1024UL, std::get<1>(info) / 1024UL, std::get<2>(info) / 1024UL));
+}
 } // namespace ctbot

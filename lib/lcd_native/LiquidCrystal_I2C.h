@@ -21,8 +21,7 @@
  * @date    10.06.2018
  */
 
-#ifndef LiquidCrystal_I2C_NATIVE_H
-#define LiquidCrystal_I2C_NATIVE_H
+#pragma once
 
 #include <cstdint>
 #include <cstddef>
@@ -58,5 +57,3 @@ public:
         p_lcd_out = fp;
     }
 };
-
-#endif /* LiquidCrystal_I2C_NATIVE_H */

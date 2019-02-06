@@ -22,13 +22,20 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_CTBOT_H_
-#define SRC_CTBOT_H_
+#pragma once
 
 #include "comm_interface.h"
 
 #include <cstdint>
 
+
+class ARMKinetisDebug;
+class AudioOutputAnalog;
+class AudioPlaySdWav;
+class AudioSynthWaveformSineHires;
+class TTS;
+class AudioConnection;
+class AudioMixer4;
 
 /**
  * @brief Namespace for all c't-Bot classes and functionality
@@ -43,16 +50,26 @@ class Leds;
 class Display;
 class CmdParser;
 class Scheduler;
+class ParameterStorage;
 
 /**
- * @brief Main class of c't-Bot ATmega framework, responsible for initialization and control loop execution
+ * @brief Main class of c't-Bot teensy framework, responsible for initialization and control loop execution
+ *
+ * @startuml{CtBot.png}
+ *  !include ctbot.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class CtBot {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 10U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
+    static constexpr uint8_t TASK_PRIORITY { 3 };
+    static constexpr uint32_t STACK_SIZE { 1024 };
     static const char usage_text[]; /**< C-String containing the usage / help message */
 
     bool shutdown_;
+    uint16_t task_id_;
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
     Motor* p_motors_[2]; /**< Pointer to motor instances */
@@ -64,6 +81,14 @@ protected:
     SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
+    ParameterStorage* p_parameter_;
+    ARMKinetisDebug* p_swd_debugger_;
+    AudioOutputAnalog* p_audio_output_;
+    AudioPlaySdWav* p_play_wav_;
+    // AudioSynthWaveformSineHires* p_sine_generator_;
+    TTS* p_tts_;
+    AudioConnection* p_audio_conn_[4];
+    AudioMixer4* p_audio_mixer_;
 
     /**
      * @brief Constructor of main class
@@ -100,7 +125,7 @@ protected:
      *  end
      * @enduml
      */
-    void run();
+    virtual void run();
 
     /**
      * @brief Shut everything down and put the CPU into sleep mode
@@ -108,62 +133,17 @@ protected:
      */
     void shutdown();
 
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @param[in] data: The data to print
-     */
-    template <typename T>
-    void serial_print(T data) {
-        p_comm_->debug_print(data, PrintBase::DEC);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @tparam Args: Types of additional args
-     * @param[in] data: The data to print first
-     * @param[in] args: Parameter pack of data to print afterwards
-     */
-    template <typename T, typename... Args>
-    void serial_print(T data, Args... args) {
-        p_comm_->debug_print(data, PrintBase::DEC);
-        p_comm_->debug_print(' ');
-        serial_print<Args...>(args...);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @param[in] data: The data to print
-     * @param[in] base: Base of numeral system the data shall be printed in
-     */
-    template <typename T>
-    void serial_print_base(T data, const PrintBase base = PrintBase::DEC) {
-        p_comm_->debug_print(data, base);
-    }
-
-    /**
-     * @brief Helper function to print data to serial debug line
-     * @tparam T: Type of data
-     * @tparam Args: Types of additional args
-     * @param[in] data: The data to print first
-     * @param[in] args: The data to print afterwards
-     * @param[in] base: Base of numeral system the data shall be printed in
-     */
-    template <typename T, typename... Args>
-    void serial_print_base(T data, Args... args, const PrintBase base = PrintBase::DEC) {
-        p_comm_->debug_print(data, base);
-        p_comm_->debug_print(' ');
-        serial_print<Args...>(args..., base);
-    }
-
 public:
     /**
      * @brief Get the one and only instance of this class (singleton)
      * @return Reference to CtBot instance
      */
     static CtBot& get_instance();
+
+    /**
+     * @brief Destroy the CtBot object
+     */
+    virtual ~CtBot();
 
     /**
      * @brief Setup method responsible for initialization and creating of instances for all components (sensors, motors, etc.)
@@ -229,7 +209,7 @@ public:
      *  deactivate CommInterfaceCmdParser
      * @enduml
      */
-    void setup();
+    virtual void setup();
 
     /**
      * @brief Stop the scheduler
@@ -243,6 +223,8 @@ public:
      * @enduml
      */
     void stop();
+
+    bool play_wav(const std::string& filename);
 
     /**
      * @brief Get the sensor instance
@@ -310,5 +292,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_CTBOT_H_ */

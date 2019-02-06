@@ -32,7 +32,7 @@
 namespace ctbot {
 
 AnalogSensors::AnalogSensors()
-    : last_dist_update_ { Timer::get_ms() }, last_adc_res_ { 0 }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 } {
+    : last_dist_update_ { Timer::get_ms() }, last_adc_res_ { 0 }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 }, bat_voltage_ {} {
     Scheduler::enter_critical_section();
     arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, arduino::INPUT);
@@ -58,16 +58,17 @@ void AnalogSensors::update() {
     ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
     border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
     border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
+    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, 16, 8) * (3.3f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / 65535.f);
 }
 
-int16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
+uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
     Scheduler::enter_critical_section();
     if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
         last_adc_res_ = resolution;
         arduino::analogReadResolution(resolution);
     }
     arduino::analogReadAveraging(avg_num);
-    const int16_t ret { static_cast<int16_t>(arduino::analogRead(pin)) };
+    const uint16_t ret { static_cast<uint16_t>(arduino::analogRead(pin)) };
     Scheduler::exit_critical_section();
     return ret;
 }

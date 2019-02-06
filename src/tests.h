@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_TESTS_H_
-#define SRC_TESTS_H_
+#pragma once
 
 #include <cstdint>
 
@@ -32,6 +31,7 @@ namespace ctbot {
 
 class CtBot;
 class Ena;
+class Condition;
 
 /**
  * @brief Namespace for all test classes
@@ -42,17 +42,14 @@ namespace tests {
  * @brief Teensy onboard led blink test
  *
  * @startuml{BlinkTest.png}
- *  class BlinkTest {
- *    +BlinkTest(CtBot& ctbot)
- *    +~BlinkTest()
- *    #run()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class BlinkTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 500U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 500 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     bool state_;
@@ -96,17 +93,14 @@ public:
  * @brief Led test as simple chaser light with the leds
  *
  * @startuml{LedTest.png}
- *  class LedTest {
- *    +LedTest(CtBot& ctbot)
- *    +~LedTest()
- *    #run()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class LedTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 125U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 125 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
 
@@ -159,17 +153,14 @@ public:
  * @brief Display test
  *
  * @startuml{LcdTest.png}
- *  class LcdTest {
- *    +LcdTest(CtBot& ctbot)
- *    +~LcdTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run()
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class LcdTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 100U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     uint32_t x_;
@@ -253,17 +244,14 @@ public:
  * @brief Ena test
  *
  * @startuml{EnaTest.png}
- *  class EnaTest {
- *    +EnaTest()
- *    +~EnaTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run()
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class EnaTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 1000U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 1000 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
     Ena* p_ena_; /**< Pointer to Ena instance */
@@ -313,17 +301,14 @@ public:
  * @brief Sensor data display
  *
  * @startuml{SensorLcdTest.png}
- *  class SensorLcdTest {
- *    +SensorLcdTest(CtBot& ctbot)
- *    +~SensorLcdTest()
- *    #{static} TASK_PERIOD_MS : constexpr uint16_t
- *    #run()
- *  }
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
  * @enduml
  */
 class SensorLcdTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 50U }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 50 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
 
@@ -400,7 +385,48 @@ public:
     ~SensorLcdTest() = default;
 };
 
+
+/**
+ * @brief Task wait on condition test
+ *
+ * @startuml{TaskWaitTest.png}
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
+ */
+class TaskWaitTest {
+protected:
+    static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of tasks in ms */
+
+    CtBot& ctbot_; /**< Reference to CtBot instance */
+    uint16_t task1_id_;
+    uint16_t task2_id_;
+    Condition* p_cond1;
+    Condition* p_cond2;
+
+    /* disable copy/move */
+    TaskWaitTest(const TaskWaitTest&) = delete;
+    void operator=(const TaskWaitTest&) = delete;
+    TaskWaitTest(TaskWaitTest&&) = delete;
+
+    void run1();
+
+    void run2();
+
+public:
+    /**
+     * @brief Constructor, creates the tasks, that implement the actual functionality
+     * @param[in] ctbot: Reference to CtBot instance
+     */
+    TaskWaitTest(CtBot& ctbot);
+
+    /**
+     * @brief Destructor to destroy tasks
+     * @note Never called in current setup
+     */
+    ~TaskWaitTest() = default;
+};
+
 } // namespace tests
 } // namespace ctbot
-
-#endif /* SRC_TESTS_H_ */

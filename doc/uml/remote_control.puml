@@ -1,0 +1,20 @@
+@startuml remote_control
+
+namespace ctbot {
+    class RemoteControl {
+        +RemoteControl(Rc5& rc5, const uint8_t rc5_address)
+        +register_cmd(const uint8_t cmd, func_t&& func) : void
+        +update() : void
+        #change_speed(bool right, float diff) : void
+        #{static} func_t = std::function<bool{uint8_t}>
+        #addr_ : const uint8_t
+        #key_mappings_ : std::map<uint8_t, func_t>
+        #last_cmd_ : uint8_t
+        #last_toggle_ : bool
+        #rc5_ : Rc5&
+    }
+
+    RemoteControl o-- Rc5
+}
+
+@enduml

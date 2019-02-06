@@ -25,8 +25,7 @@
  *          by Jim Studt, David A. Mellis, Mikal Hart, Paul Stoffregen
  */
 
-#ifndef SRC_SERVO_H_
-#define SRC_SERVO_H_
+#pragma once
 
 #include "ctbot_config.h"
 
@@ -39,6 +38,12 @@ namespace ctbot {
 
 /**
  * @brief Servo management
+ *
+ * @startuml{Servo.png}
+ *  !include servo.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Servo {
 public:
@@ -94,5 +99,3 @@ protected:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_SERVO_H_ */

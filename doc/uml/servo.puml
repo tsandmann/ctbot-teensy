@@ -1,0 +1,19 @@
+@startuml servo
+
+namespace ctbot {
+    class Servo {
+        +Servo(const uint8_t pin, const uint8_t initial_pos)
+        +Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos)
+        +disable() : void
+        +get_active() : bool
+        +get_position() : uint8_t
+        +set(const uint8_t pos) : void
+        #active_ : bool
+        #max_ : const uint16_t
+        #min_ : const uint16_t
+        #pin_ : const uint8_t
+        #position_ : uint8_t
+    }
+}
+
+@enduml

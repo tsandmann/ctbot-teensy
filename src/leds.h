@@ -22,8 +22,7 @@
  * @date    13.05.2018
  */
 
-#ifndef SRC_LEDS_H_
-#define SRC_LEDS_H_
+#pragma once
 
 #include "ctbot_config.h"
 #include "shift_reg.h"
@@ -36,6 +35,11 @@ namespace ctbot {
 /**
  * @brief Enum class for all LEDs
  *
+ * @startuml{LedTypes.png}
+ *  !include leds.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 enum class LedTypes : uint8_t {
     NONE = 0,
@@ -80,6 +84,12 @@ inline LedTypes operator~(LedTypes rhs) {
 
 /**
  * @brief LED driver
+ *
+ * @startuml{Leds.png}
+ *  !include leds.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
  */
 class Leds {
 protected:
@@ -127,5 +137,3 @@ public:
 };
 
 } // namespace ctbot
-
-#endif /* SRC_LEDS_H_ */

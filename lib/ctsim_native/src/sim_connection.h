@@ -6,8 +6,7 @@
  * @date    17.06.2018
  */
 
-#ifndef SIM_CONNECTION_H_
-#define SIM_CONNECTION_H_
+#pragma once
 
 #include "command.h"
 
@@ -49,5 +48,3 @@ public:
 };
 
 } /* namespace ctbot */
-
-#endif /* SIM_CONNECTION_H_ */
