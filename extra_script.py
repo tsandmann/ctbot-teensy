@@ -6,5 +6,3 @@ Import("env")
 #
 
 env.Append(CFLAGS=["-Wno-old-style-declaration"])
-
-env.Append(LINKFLAGS=["--specs=nano.specs"])

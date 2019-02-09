@@ -128,7 +128,7 @@ public:
     static CtBot& get_instance();
 
     /**
-     * @brief Destroy the CtBot object
+     * @brief Destroy the CtBot instance
      */
     virtual ~CtBot();
 
