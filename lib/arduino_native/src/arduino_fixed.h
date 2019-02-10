@@ -113,3 +113,9 @@ extern HardwareSerial Serial6;
 
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
+
+void software_isr(void);
+
+extern "C" {
+void (*_VectorsRam[116])(void);
+} // extern C

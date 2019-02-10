@@ -234,7 +234,7 @@ long free_ram() {
     return 0xffffff;
 }
 
-void print_free_ram() {
+void print_ram_usage() {
     std::cout << "free RAM: " << freertos::free_ram() / 1024UL << " KB\n";
 }
 

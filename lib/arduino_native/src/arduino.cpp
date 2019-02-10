@@ -212,6 +212,8 @@ TwoWire Wire2;
 } // namespace arduino
 
 
+void software_isr(void) {}
+
 extern "C" void setup();
 
 int main(int argc, char** argv) {
