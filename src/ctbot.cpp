@@ -36,6 +36,7 @@
 #include "cmd_parser.h"
 #include "parameter_storage.h"
 
+#include "FreeRTOS.h"
 #include "arm_kinetis_debug.h"
 #include "pprintpp.hpp"
 #include "portable/teensy.h"
