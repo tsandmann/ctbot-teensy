@@ -18,7 +18,7 @@ cache:
 #            - boost1.60
 
 env:
-    - LD_LIBRARY_PATH="/home/travis/.platformio/packages/toolchain-linux-arm-cortexm4f-eabi/bin
+    - LD_LIBRARY_PATH="/home/travis/.platformio/packages/toolchain-linux-arm-cortexm4f-eabi/bin"
 
 install:
 #    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
