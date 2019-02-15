@@ -37,10 +37,7 @@ static constexpr uint8_t configMAX_PRIORITIES { 8 };
 static constexpr uint32_t configCPU_CLOCK_HZ { 180000000UL };
 
 namespace freertos {
-std::tuple<size_t, size_t, size_t> ram_usage() {
-    const std::tuple<size_t, size_t, size_t> ret { 0, 0, 0 };
-    return ret;
-}
+std::tuple<size_t, size_t, size_t> ram_usage();
 
 void print_ram_usage();
 } // namespace freertos
@@ -54,7 +51,7 @@ void* xTaskGetIdleTaskHandle();
 
 uint32_t uxTaskGetStackHighWaterMark(void*);
 
-void portYIELD_FROM_ISR(uint8_t) {}
+void portYIELD_FROM_ISR(uint8_t);
 } // extern C
 
 #ifdef NDEBUG

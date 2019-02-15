@@ -25,6 +25,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 #include "arduino_fixed.h"
 
 #include <chrono>
@@ -201,6 +202,34 @@ uint32_t uxTaskGetStackHighWaterMark(void*) {
     return 0xffff;
 }
 
+void portYIELD_FROM_ISR(uint8_t) {}
+
+// FIXME: to be implemented
+char* pcTaskGetName(void*) {
+    static char dummy[] { "NOT IMPLEMENTED" };
+    return dummy;
+}
+
+// FIXME: to be implemented
+long uxTaskPriorityGet(void*) {
+    return 0;
+}
+
+// FIXME: to be implemented
+void* xTaskGetHandle(const char*) {
+    return nullptr;
+}
+
+// FIXME: to be implemented
+long xTaskNotifyWait(uint32_t, uint32_t, uint32_t*, uint32_t) {
+    return 0;
+}
+
+// FIXME: to be implemented
+long xTaskGenericNotifyFromISR(void*, uint32_t, eNotifyAction, uint32_t*, long*) {
+    return 0;
+}
+
 void* xSemaphoreCreateMutex() {
     return new std::recursive_timed_mutex;
 }
@@ -229,13 +258,39 @@ long xSemaphoreGive(void* mutex) {
     return 0;
 }
 
+// FIXME: to be implemented
+long uxQueueMessagesWaiting(const void*) {
+    return 0;
+}
+
+// FIXME: to be implemented
+long xQueueGenericSend(void*, const void* const, long, const long) {
+    return 0;
+}
+
+// FIXME: to be implemented
+void* xQueueGenericCreate(const long, const long, const uint8_t) {
+    static uint32_t dummy;
+    return &dummy;
+}
+
+// FIXME: to be implemented
+long xQueueReceive(void*, void* const, uint32_t) {
+    return 0;
+}
+
+// FIXME: to be implemented
+void vQueueDelete(void*) {}
+
 namespace freertos {
-long free_ram() {
-    return 0xffffff;
+std::tuple<size_t, size_t, size_t> ram_usage() {
+    const std::tuple<size_t, size_t, size_t> ret { 0xffffff, 0, 0 };
+    return ret;
 }
 
 void print_ram_usage() {
-    std::cout << "free RAM: " << freertos::free_ram() / 1024UL << " KB\n";
+    const auto x { ram_usage() };
+    std::cout << "free RAM: " << std::get<0>(x) / 1024UL << " KB\n";
 }
 
 void error_blink(uint8_t) {}
