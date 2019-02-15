@@ -25,6 +25,7 @@
 #include "parameter_storage.h"
 #include "scheduler.h"
 
+#include "arduino_fixed.h"
 #include "FreeRTOS.h"
 #include "SD.h"
 
