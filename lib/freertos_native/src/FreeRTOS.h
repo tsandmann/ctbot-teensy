@@ -26,6 +26,7 @@
 #pragma once
 
 #include <cstdint>
+#include <tuple>
 
 
 using StackType_t = uint32_t;
@@ -35,6 +36,12 @@ static constexpr uint32_t portMAX_DELAY { 0xffff };
 static constexpr uint8_t configMAX_PRIORITIES { 8 };
 static constexpr uint32_t configCPU_CLOCK_HZ { 180000000UL };
 
+namespace freertos {
+std::tuple<size_t, size_t, size_t> ram_usage();
+
+void print_ram_usage();
+} // namespace freertos
+
 extern "C" {
 void vTaskStartScheduler();
 
@@ -43,6 +50,8 @@ void vTaskEndScheduler();
 void* xTaskGetIdleTaskHandle();
 
 uint32_t uxTaskGetStackHighWaterMark(void*);
+
+void portYIELD_FROM_ISR(uint8_t);
 } // extern C
 
 #ifdef NDEBUG

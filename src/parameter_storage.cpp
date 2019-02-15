@@ -25,21 +25,23 @@
 #include "parameter_storage.h"
 #include "scheduler.h"
 
+#include "arduino_fixed.h"
 #include "FreeRTOS.h"
 #include "SD.h"
 
 
+// FIXME: use debug output of CommInterface
 namespace ctbot {
 ParameterStorage::ParameterStorage(const std::string& config_file) : config_file_ { config_file } {
-    // Serial.print("PS::PS(): stack free before: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::PS(): stack free before: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     if (!SD.exists(config_file_.c_str())) {
         File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
         if (f) {
             f.close();
         } else {
-            // Serial.println("ParameterStorage::ParameterStorage(): file create failed.");
+            // arduino::Serial.println("ParameterStorage::ParameterStorage(): file create failed.");
         }
     }
     File f { SD.open(config_file_.c_str(), O_READ) };
@@ -48,22 +50,22 @@ ParameterStorage::ParameterStorage(const std::string& config_file) : config_file
         if (n) {
             p_parameter_root_ = &json_buffer_.parseObject(f);
             if (!p_parameter_root_->success()) {
-                Serial.print("ParameterStorage::ParameterStorage(): parseObject() failed.");
+                arduino::Serial.print("ParameterStorage::ParameterStorage(): parseObject() failed.");
             } else {
-                // Serial.print("ParameterStorage::ParameterStorage(): parameter_=\"");
-                // Serial.print(dump()->c_str());
-                // Serial.println("\"");
+                // arduino::Serial.print("ParameterStorage::ParameterStorage(): parameter_=\"");
+                // arduino::Serial.print(dump()->c_str());
+                // arduino::Serial.println("\"");
             }
         } else {
             p_parameter_root_ = &json_buffer_.createObject();
         }
         f.close();
     } else {
-        Serial.println("ParameterStorage::ParameterStorage(): file open failed.");
+        arduino::Serial.println("ParameterStorage::ParameterStorage(): file open failed.");
     }
 
-    // Serial.print("PS::PS(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::PS(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 }
 
 ParameterStorage::~ParameterStorage() {
@@ -71,8 +73,8 @@ ParameterStorage::~ParameterStorage() {
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) const noexcept {
-    // Serial.print("PS::get(): stack free before: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free before: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     if (!p_parameter_root_->containsKey(key)) {
         return false;
@@ -83,14 +85,14 @@ bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) co
 
     value = p_parameter_root_->get<uint32_t>(key);
 
-    // Serial.print("PS::get(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) const noexcept {
-    // Serial.print("PS::get(): stack free before: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free before: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     if (!p_parameter_root_->containsKey(key)) {
         return false;
@@ -101,14 +103,14 @@ bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) con
 
     value = p_parameter_root_->get<int32_t>(key);
 
-    // Serial.print("PS::get(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, float& value) const noexcept {
-    // Serial.print("PS::get(): stack free before: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free before: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     if (!p_parameter_root_->containsKey(key)) {
         return false;
@@ -119,59 +121,59 @@ bool ParameterStorage::get_parameter(const std::string& key, float& value) const
 
     value = p_parameter_root_->get<float>(key);
 
-    // Serial.print("PS::get(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::get(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, uint32_t& value) const noexcept {
     if (!p_parameter_root_->containsKey(key)) {
-        // Serial.println("PS::get_parameter(): key not found.");
+        // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    auto& array { p_parameter_root_->get<JsonArray>(key) };
+    const auto& array { p_parameter_root_->get<JsonArray>(key) };
     if (array.is<uint32_t>(index)) {
         value = array.get<uint32_t>(index);
-        // Serial.print("PS::get_parameter(): key found, val=");
-        // Serial.println(value, 10);
+        // arduino::Serial.print("PS::get_parameter(): key found, val=");
+        // arduino::Serial.println(value, 10);
         return true;
     }
-    // Serial.println("PS::get_parameter(): key found, index or type invalid.");
+    // arduino::Serial.println("PS::get_parameter(): key found, index or type invalid.");
     return false;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, int32_t& value) const noexcept {
     if (!p_parameter_root_->containsKey(key)) {
-        // Serial.println("PS::get_parameter(): key not found.");
+        // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    auto& array { p_parameter_root_->get<JsonArray>(key) };
+    const auto& array { p_parameter_root_->get<JsonArray>(key) };
     if (array.is<int32_t>(index)) {
         value = array.get<int32_t>(index);
-        // Serial.print("PS::get_parameter(): key found, val=");
-        // Serial.println(value, 10);
+        // arduino::Serial.print("PS::get_parameter(): key found, val=");
+        // arduino::Serial.println(value, 10);
         return true;
     }
-    // Serial.println("PS::get_parameter(): key found, index or type invalid.");
+    // arduino::Serial.println("PS::get_parameter(): key found, index or type invalid.");
     return false;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, float& value) const noexcept {
     if (!p_parameter_root_->containsKey(key)) {
-        // Serial.println("PS::get_parameter(): key not found.");
+        // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    auto& array { p_parameter_root_->get<JsonArray>(key) };
+    const auto& array { p_parameter_root_->get<JsonArray>(key) };
     if (array.is<float>(index)) {
         value = array.get<float>(index);
-        // Serial.print("PS::get_parameter(): key found, val=");
-        Serial.println(value, 2);
+        // arduino::Serial.print("PS::get_parameter(): key found, val=");
+        // arduino::Serial.println(value, 2);
         return true;
     }
-    // Serial.println("PS::get_parameter(): key found, index or type invalid.");
+    // arduino::Serial.println("PS::get_parameter(): key found, index or type invalid.");
     return false;
 }
 
@@ -191,10 +193,10 @@ void ParameterStorage::set_parameter(const std::string& key, const size_t index,
     JsonArray* p_array;
     if (!p_parameter_root_->containsKey(key)) {
         p_array = &p_parameter_root_->createNestedArray(key);
-        // Serial.println("PS::set_parameter(): array created.");
+        // arduino::Serial.println("PS::set_parameter(): array created.");
     } else {
         p_array = &p_parameter_root_->get<JsonArray>(key);
-        // Serial.println("PS::set_parameter(): array found.");
+        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
 
     for (size_t i { 0 }; i < index; ++i) {
@@ -212,10 +214,10 @@ void ParameterStorage::set_parameter(const std::string& key, const size_t index,
     JsonArray* p_array;
     if (!p_parameter_root_->containsKey(key)) {
         p_array = &p_parameter_root_->createNestedArray(key);
-        // Serial.println("PS::set_parameter(): array created.");
+        // arduino::Serial.println("PS::set_parameter(): array created.");
     } else {
         p_array = &p_parameter_root_->get<JsonArray>(key);
-        // Serial.println("PS::set_parameter(): array found.");
+        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
 
     for (size_t i { 0 }; i < index; ++i) {
@@ -233,10 +235,10 @@ void ParameterStorage::set_parameter(const std::string& key, const size_t index,
     JsonArray* p_array;
     if (!p_parameter_root_->containsKey(key)) {
         p_array = &p_parameter_root_->createNestedArray(key);
-        // Serial.println("PS::set_parameter(): array created.");
+        // arduino::Serial.println("PS::set_parameter(): array created.");
     } else {
         p_array = &p_parameter_root_->get<JsonArray>(key);
-        // Serial.println("PS::set_parameter(): array found.");
+        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
 
     for (size_t i { 0 }; i < index; ++i) {
@@ -251,38 +253,38 @@ void ParameterStorage::set_parameter(const std::string& key, const size_t index,
 }
 
 std::unique_ptr<std::string> ParameterStorage::dump() const {
-    // Serial.print("PS::dump(): stack free before: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::dump(): stack free before: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
-    String str; // FIXME: improve buffer?
+    arduino::String str; // FIXME: improve buffer?
     p_parameter_root_->printTo(str);
     auto ret { std::make_unique<std::string>(str.c_str()) };
 
-    // Serial.print("PS::dump(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::dump(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     return ret;
 }
 
 bool ParameterStorage::flush() const {
-    // Serial.print("PS::flush(): stack free before 1: ");
-    // Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.print("PS::flush(): stack free before 1: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
 
     SD.remove(config_file_.c_str());
     File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
     if (f) {
-        // Serial.print("PS::flush(): stack free before 2: ");
-        // Serial.println(Scheduler::get_free_stack());
+        // arduino::Serial.print("PS::flush(): stack free before 2: ");
+        // arduino::Serial.println(Scheduler::get_free_stack());
 
         p_parameter_root_->printTo(f);
         f.close();
     } else {
-        // Serial.println("ParameterStorage::flush(): file create failed.");
+        // arduino::Serial.println("ParameterStorage::flush(): file create failed.");
         return false;
     }
-    // Serial.print("PS::flush(): stack free after: ");
-    // Serial.println(Scheduler::get_free_stack());
-    // Serial.println("ParameterStorage::flush(): done.");
+    // arduino::Serial.print("PS::flush(): stack free after: ");
+    // arduino::Serial.println(Scheduler::get_free_stack());
+    // arduino::Serial.println("ParameterStorage::flush(): done.");
     return true;
 }
 } // namespace ctbot

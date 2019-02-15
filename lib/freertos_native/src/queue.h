@@ -17,7 +17,7 @@
  */
 
 /**
- * @file    semphr.h
+ * @file    queue.h
  * @brief   Wrapper aroung FreeRTOS API to execute in a POSIX environment
  * @author  Timo Sandmann
  * @date    10.06.2018
@@ -25,16 +25,26 @@
 
 #pragma once
 
-#include "queue.h"
 #include <cstdint>
 
 
-void* xSemaphoreCreateMutex();
+extern "C" {
+void* xQueueGenericCreate(const long uxQueueLength, const long uxItemSize, const uint8_t ucQueueType);
 
-long xSemaphoreTake(void* mutex, uint32_t max_delay);
-
-long xSemaphoreGive(void* mutex);
-
-static inline void vSemaphoreDelete(void* xSemaphore) {
-    vQueueDelete(xSemaphore);
+static inline void* xQueueCreate(const long uxQueueLength, const long uxItemSize) {
+    return xQueueGenericCreate(uxQueueLength, uxItemSize, 0);
 }
+
+long xQueueGenericSend(void* xQueue, const void* const pvItemToQueue, long xTicksToWait, const long xCopyPosition);
+
+static inline long xQueueSendToBack(void* xQueue, const void* const pvItemToQueue, uint32_t xTicksToWait) {
+    return xQueueGenericSend(xQueue, pvItemToQueue, xTicksToWait, 0);
+}
+
+void vQueueDelete(void* xQueue);
+
+long uxQueueMessagesWaiting(const void* xQueue);
+
+long xQueueReceive(void* xQueue, void* const pvBuffer, uint32_t xTicksToWait);
+
+} // extern C

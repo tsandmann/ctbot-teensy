@@ -211,6 +211,9 @@ TwoWire Wire2;
 
 } // namespace arduino
 
+void (*_VectorsRam[116])(void);
+
+void software_isr(void) {}
 
 extern "C" void setup();
 

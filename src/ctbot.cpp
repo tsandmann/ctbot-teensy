@@ -472,7 +472,7 @@ void CtBot::init_parser() {
             p_comm_->debug_printf<true>(PP_ARGS("key=\"{s}\"\r\n", key.c_str()));
             const std::string val { args.substr(e + 1) };
             p_comm_->debug_printf<true>(PP_ARGS("val=\"{s}\"\r\n", val.c_str()));
-            const int32_t value { std::stol(val) };
+            const auto value { std::stol(val) };
             p_comm_->debug_printf<true>(PP_ARGS("\"{s}\"={}\r\n", key.c_str(), value));
             p_parameter_->set<int32_t>(key, value);
             p_parameter_->flush();

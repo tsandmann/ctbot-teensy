@@ -32,7 +32,17 @@
 static constexpr uint32_t tskIDLE_PRIORITY { 0 };
 static constexpr char configIDLE_TASK_NAME[] { "IDLE" };
 
+typedef void* TaskHandle_t;
+
 extern "C" {
+typedef enum {
+    eNoAction = 0, /* Notify the task without updating its notify value. */
+    eSetBits, /* Set bits in the task's notification value. */
+    eIncrement, /* Increment the task's notification value. */
+    eSetValueWithOverwrite, /* Set the task's notification value to a specific value even if the previous value has not yet been read by the task. */
+    eSetValueWithoutOverwrite /* Set the task's notification value if the previous value has been read by the task. */
+} eNotifyAction;
+
 uint32_t xTaskCreate(std::function<void(void*)> pvTaskCode, const char* const pcName, unsigned short usStackDepth, void* pvParameters, uint32_t uxPriority,
     void** pxCreatedTask);
 
@@ -51,4 +61,19 @@ void vTaskPrioritySet(void* task_handle, uint32_t prio);
 void vTaskSuspendAll();
 
 long xTaskResumeAll();
+
+long xTaskNotifyWait(uint32_t ulBitsToClearOnEntry, uint32_t ulBitsToClearOnExit, uint32_t* pulNotificationValue, uint32_t xTicksToWait);
+
+long xTaskGenericNotifyFromISR(
+    void* xTaskToNotify, uint32_t ulValue, eNotifyAction eAction, uint32_t* pulPreviousNotificationValue, long* pxHigherPriorityTaskWoken);
+
+static inline long xTaskNotifyFromISR(void* xTaskToNotify, uint32_t ulValue, eNotifyAction eAction, long* pxHigherPriorityTaskWoken) {
+    return xTaskGenericNotifyFromISR(xTaskToNotify, ulValue, eAction, nullptr, pxHigherPriorityTaskWoken);
+}
+
+void* xTaskGetHandle(const char* pcNameToQuery);
+
+char* pcTaskGetName(void* xTaskToQuery);
+
+long uxTaskPriorityGet(void* task_handle);
 } // extern C
