@@ -177,6 +177,7 @@ void CtBot::setup() {
                 if (p_swd_debugger_->reset(false)) {
                     p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
 
+                    // arduino::delayMicroseconds(2000000UL);
                     // if (p_swd_debugger_->sys_reset_request()) {
                     //     p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
                     // } else {
