@@ -45,8 +45,19 @@ namespace ctbot {
 class ParameterStorage {
     // FIXME: add documentation
 protected:
+    struct AlignedAllocator {
+        void* allocate(size_t size) {
+            return new uint32_t[(size + 3) / 4];
+        }
+
+        void deallocate(void* ptr) {
+            delete[] reinterpret_cast<uint32_t*>(ptr);
+        }
+    };
+    using AlignedJsonBuffer = Internals::DynamicJsonBufferBase<AlignedAllocator>;
+
     const std::string config_file_;
-    DynamicJsonBuffer json_buffer_;
+    AlignedJsonBuffer json_buffer_;
     JsonObject* p_parameter_root_;
 
     bool get_parameter(const std::string& key, uint32_t& value) const noexcept;
