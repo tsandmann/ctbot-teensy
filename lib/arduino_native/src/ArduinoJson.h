@@ -81,7 +81,9 @@ public:
 
 
 // FIXME: to be implemented
-class DynamicJsonBuffer {
+namespace Internals {
+template <class T>
+class DynamicJsonBufferBase {
 public:
     JsonObject& parseObject(File&, uint8_t = 0) {
         static JsonObject j;
@@ -93,3 +95,5 @@ public:
         return j;
     }
 };
+
+} // namespace Internals

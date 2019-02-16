@@ -24,7 +24,9 @@
 #include "arm_kinetis_debug.h"
 
 
-bool ARMDebug::begin() {}
+bool ARMDebug::begin() {
+    return false;
+}
 
 
 ARMKinetisDebug::ARMKinetisDebug(const uint8_t, const uint8_t, const LogLevel) {}

@@ -27,7 +27,7 @@ namespace ctbot {
         #set_parameter(const std::string& key, const size_t index, const int32_t value) : void
         #set_parameter(const std::string& key, const size_t index, const float value) : void
         #config_file_ : const std::string
-        #json_buffer_ : DynamicJsonBuffer
+        #json_buffer_ : AlignedJsonBuffer
         #p_parameter_root_ : JsonObject*
     }
 }
