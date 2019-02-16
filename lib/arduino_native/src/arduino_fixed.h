@@ -30,6 +30,7 @@
 #include <mutex>
 #include <atomic>
 #include <string>
+#include <cstring>
 
 
 namespace arduino {
