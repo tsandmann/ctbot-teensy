@@ -30,6 +30,7 @@
 
 #include "pprintpp.hpp"
 #include "arduino_fixed.h"
+#include <malloc.h>
 
 
 namespace ctbot {
@@ -148,5 +149,18 @@ void Scheduler::print_task_list(CommInterface& comm) const {
     }
 }
 
-void Scheduler::print_ram_usage(CommInterface& comm) const {}
+extern "C" {
+unsigned long _estack; // set by linker script
+void* _sbrk(ptrdiff_t);
+}
+
+void Scheduler::print_ram_usage(CommInterface& comm) const {
+    volatile size_t x { 0 };
+    void* ptr { _sbrk(x) };
+    const size_t system_free { (reinterpret_cast<uint8_t*>(&_estack) - static_cast<uint8_t*>(ptr)) - 8192U };
+    const auto info { mallinfo() };
+
+    comm.debug_printf<true>(
+        PP_ARGS("free RAM: {} KB, used heap: {} KB, system free: {} KB", (system_free + info.fordblks) / 1024UL, info.uordblks / 1024UL, system_free / 1024UL));
+}
 } // namespace ctbot
