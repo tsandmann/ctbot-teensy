@@ -25,6 +25,9 @@
 #pragma once
 
 #define ARDUINOJSON_ENABLE_STD_STRING 1
+#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
+#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
+#include "arduino_fixed.h"
 #include "ArduinoJson.h"
 #include <string>
 #include <memory>

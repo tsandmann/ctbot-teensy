@@ -30,6 +30,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <limits>
 #include <unistd.h>
 #include <termios.h>
 #include <poll.h>
@@ -106,66 +107,9 @@ void digitalWriteFast(uint8_t pin, uint8_t val) {
 }
 
 void pinMode(uint8_t, uint8_t) {}
+} // namespace arduino
 
-Stream::Stream() : recv_running_ { false } {};
-
-void Stream::setRX(uint8_t) {}
-
-void Stream::setTX(uint8_t) {}
-
-void Stream::begin(uint32_t) {}
-
-int Stream::available() {
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    return in_buffer_.size();
-}
-
-int Stream::peek() {
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    if (in_buffer_.size()) {
-        return in_buffer_.front();
-    }
-    return -1;
-}
-
-int Stream::read() {
-    int ret { -1 };
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    if (in_buffer_.size()) {
-        ret = static_cast<int>(in_buffer_.front());
-        in_buffer_.pop_front();
-    }
-    return ret;
-}
-
-uint32_t Stream::readBytes(void* buffer, size_t length) {
-    char* ptr { reinterpret_cast<char*>(buffer) };
-
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    length = std::min(length, in_buffer_.size());
-    for (size_t i { 0 }; i < length; ++i) {
-        ptr[i] = in_buffer_.front();
-        in_buffer_.pop_front();
-    }
-    return length;
-}
-
-uint32_t Stream::write(const char data) {
-    std::cout << data;
-    return 1;
-}
-
-uint32_t Stream::write(const void* buffer, size_t length) {
-    std::cout.write(reinterpret_cast<const char*>(buffer), length);
-    return length;
-}
-
-void Stream::flush() {
-    std::cout.flush();
-}
-
-StdinWrapper::StdinWrapper() {
-    recv_running_ = true;
+StdinOutWrapper::StdinOutWrapper() : recv_running_ { true } {
     p_recv_thread_ = new std::thread { [this]() {
         while (recv_running_) {
             if (key_pressed(100)) {
@@ -181,15 +125,56 @@ StdinWrapper::StdinWrapper() {
     } };
 }
 
-StdinWrapper::~StdinWrapper() {
+StdinOutWrapper::~StdinOutWrapper() {
     recv_running_ = false;
     if (p_recv_thread_->joinable()) {
         p_recv_thread_->join();
     }
-    std::cout << "StdinWrapper::~StdinWrapper(): receiver thread finished.\n";
+    std::cout << "StdinOutWrapper::~StdinOutWrapper(): receiver thread finished.\n";
 }
 
-bool StdinWrapper::key_pressed(uint32_t timeout_ms) {
+int StdinOutWrapper::available() {
+    std::lock_guard<std::mutex> lock { in_mutex_ };
+    return in_buffer_.size();
+}
+
+int StdinOutWrapper::peek() {
+    std::lock_guard<std::mutex> lock { in_mutex_ };
+    if (in_buffer_.size()) {
+        return in_buffer_.front();
+    }
+    return -1;
+}
+
+int StdinOutWrapper::read() {
+    int ret { -1 };
+    std::lock_guard<std::mutex> lock { in_mutex_ };
+    if (in_buffer_.size()) {
+        ret = static_cast<int>(in_buffer_.front());
+        in_buffer_.pop_front();
+    }
+    return ret;
+}
+
+size_t StdinOutWrapper::write(const uint8_t data) {
+    std::cout << static_cast<const char>(data);
+    return 1;
+}
+
+size_t StdinOutWrapper::write(const uint8_t* buffer, size_t length) {
+    std::cout.write(reinterpret_cast<const char*>(buffer), length);
+    return length;
+}
+
+int StdinOutWrapper::availableForWrite() {
+    return std::numeric_limits<int>::max();
+}
+
+void StdinOutWrapper::flush() {
+    std::cout.flush();
+}
+
+bool StdinOutWrapper::key_pressed(uint32_t timeout_ms) {
     struct pollfd pls[1];
     pls[0].fd = STDIN_FILENO;
     pls[0].events = POLLIN | POLLPRI;
@@ -197,7 +182,7 @@ bool StdinWrapper::key_pressed(uint32_t timeout_ms) {
 }
 
 
-StdinWrapper Serial;
+StdinOutWrapper Serial;
 HardwareSerial Serial1;
 HardwareSerial Serial2;
 HardwareSerial Serial3;
@@ -208,8 +193,6 @@ HardwareSerial Serial6;
 TwoWire Wire;
 TwoWire Wire1;
 TwoWire Wire2;
-
-} // namespace arduino
 
 void (*_VectorsRam[116])(void);
 

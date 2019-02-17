@@ -50,7 +50,7 @@ ParameterStorage::ParameterStorage(const std::string& config_file) : config_file
         if (n) {
             p_parameter_root_ = &json_buffer_.parseObject(f);
             if (!p_parameter_root_->success()) {
-                arduino::Serial.print("ParameterStorage::ParameterStorage(): parseObject() failed.");
+                arduino::Serial.println("ParameterStorage::ParameterStorage(): parseObject() failed.");
             } else {
                 // arduino::Serial.print("ParameterStorage::ParameterStorage(): parameter_=\"");
                 // arduino::Serial.print(dump()->c_str());

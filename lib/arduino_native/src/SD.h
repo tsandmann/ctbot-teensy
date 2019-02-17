@@ -1,6 +1,31 @@
+/*
+ * Copyright (c) 2018 Timo Sandmann
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file    SD.h
+ * @brief   Wrapper aroung Arduino SD library to execute in a POSIX environment
+ * @author  Timo Sandmann
+ * @date    17.02.2019
+ */
+
 #pragma once
 
 #include "arduino_fixed.h"
+
+#include <fstream>
 
 
 static constexpr uint8_t O_READ { 0X01 };
@@ -16,91 +41,53 @@ static constexpr uint8_t O_EXCL { 0X20 };
 static constexpr uint8_t O_TRUNC { 0X40 };
 
 
-// FIXME: to be implemented
-class SdFile : public arduino::Print {};
+class File : public Stream {
+    char name_[13];
+    std::fstream file_;
 
-
-// FIXME: to be implemented
-class File : public arduino::Stream {
 public:
     File() = default;
-    File(SdFile, const char*) {}
-    File(const File&) {}
-    ~File() = default;
-    virtual size_t write(uint8_t) {
-        return 0;
-    }
-    virtual size_t write(const uint8_t*, size_t) {
-        return 0;
-    }
-    virtual int read() {
-        return -1;
-    }
-    virtual int peek() {
-        return -1;
-    }
-    virtual int available() {
-        return 0;
-    }
-    virtual void flush() {}
-    int read(void*, uint16_t) {
-        return -1;
-    }
-    bool seek(uint32_t) {
-        return false;
-    }
-    uint32_t position() {
-        return 0;
-    }
-    uint32_t size() {
-        return 0;
-    }
-    void close() {}
-    operator bool() {
-        return false;
-    }
+    File(std::fstream file, const char* name);
+    ~File();
+    virtual size_t write(const uint8_t) override;
+    virtual size_t write(const uint8_t* buf, size_t size) override;
+    virtual int read() override;
+    virtual int peek() override;
+    virtual int available() override;
+    virtual void flush() override;
+    int read(void* buf, uint16_t nbyte);
+    bool seek(uint32_t pos);
+    // uint32_t position();
+    uint32_t size();
+    void close();
+    operator bool();
     const char* name() {
-        return "";
+        return name_;
     }
 
-    bool isDirectory() {
-        return false;
-    }
-    File openNextFile(uint8_t = O_RDONLY) {
-        return *this;
-    }
-    void rewindDirectory() {}
+    // bool isDirectory();
+    // File openNextFile(uint8_t mode = 1);
+    // void rewindDirectory();
 
-    using arduino::Print::write;
+    // using Print::write;
 };
 
 
-// FIXME: to be implemented
 class SDClass {
 public:
     bool begin(uint8_t = 0) {
-        return false;
+        return true;
     }
 
-    File open(const char*, uint8_t = O_READ) {
-        return File {};
-    }
+    File open(const char* name, uint8_t mode = O_READ);
 
-    bool exists(const char*) {
-        return false;
-    }
+    bool exists(const char* name);
 
-    bool mkdir(const char*) {
-        return false;
-    }
+    bool mkdir(const char* name);
 
-    bool remove(const char*) {
-        return false;
-    }
+    bool remove(const char* name);
 
-    bool rmdir(const char*) {
-        return false;
-    }
+    bool rmdir(const char* name);
 };
 
 extern SDClass SD;

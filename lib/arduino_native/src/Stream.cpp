@@ -15,27 +15,34 @@
  */
 
 /**
- * @file    Wire.h
- * @brief   Wrapper aroung Arduino stuff to execute in a POSIX environment
+ * @file    Stream.cpp
+ * @brief   Wrapper aroung Arduino Stream library to execute in a POSIX environment
  * @author  Timo Sandmann
- * @date    10.06.2018
+ * @date    17.02.2019
  */
 
-#pragma once
+#include "Stream.h"
 
-#include <cstdint>
+Stream::Stream() {};
 
+void Stream::setRX(uint8_t) {}
 
-class TwoWire {
-public:
-    void setSDA(uint8_t pin) {
-        (void) pin;
+void Stream::setTX(uint8_t) {}
+
+void Stream::begin(uint32_t) {}
+
+size_t Stream::readBytes(char* buffer, size_t length) {
+    if (buffer == nullptr) {
+        return 0;
     }
-    void setSCL(uint8_t pin) {
-        (void) pin;
+    size_t count = 0;
+    while (count < length) {
+        int c = read();
+        if (c < 0) {
+            break;
+        }
+        *buffer++ = (char) c;
+        count++;
     }
-};
-
-extern TwoWire Wire;
-extern TwoWire Wire1;
-extern TwoWire Wire2;
+    return count;
+}

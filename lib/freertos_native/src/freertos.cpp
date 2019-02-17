@@ -36,6 +36,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <cassert>
+#include <cstring>
 
 
 static std::recursive_timed_mutex g_mutex;
@@ -258,29 +259,45 @@ long xSemaphoreGive(void* mutex) {
     return 0;
 }
 
-// FIXME: to be implemented
-long uxQueueMessagesWaiting(const void*) {
-    return 0;
+long uxQueueMessagesWaiting(const void* xQueue) {
+    auto ptr { reinterpret_cast<const QueueGeneric_t*>(xQueue) };
+    return ptr->p_queue->size();
 }
 
-// FIXME: to be implemented
-long xQueueGenericSend(void*, const void* const, long, const long) {
-    return 0;
+long xQueueGenericSend(void* xQueue, const void* const pvItemToQueue, long /*xTicksToWait*/, const long xCopyPosition) {
+    assert(xCopyPosition == 0);
+
+    auto ptr { reinterpret_cast<QueueGeneric_t*>(xQueue) };
+    auto p_data { new uint8_t[ptr->element_size] };
+    std::memcpy(p_data, pvItemToQueue, ptr->element_size);
+    ptr->p_queue->push(std::shared_ptr<uint8_t>(p_data));
+
+    return 1;
 }
 
-// FIXME: to be implemented
-void* xQueueGenericCreate(const long, const long, const uint8_t) {
-    static uint32_t dummy;
-    return &dummy;
+void* xQueueGenericCreate(const long, const long uxItemSize, const uint8_t ucQueueType) {
+    assert(ucQueueType == 0);
+
+    auto ptr { new QueueGeneric_t };
+    ptr->element_size = uxItemSize;
+    ptr->p_queue = new MTQueue<std::shared_ptr<uint8_t>>();
+    return ptr;
 }
 
-// FIXME: to be implemented
-long xQueueReceive(void*, void* const, uint32_t) {
-    return 0;
+long xQueueReceive(void* xQueue, void* const pvBuffer, uint32_t /*xTicksToWait*/) {
+    auto ptr { reinterpret_cast<QueueGeneric_t*>(xQueue) };
+    auto p_data { ptr->p_queue->pop() };
+    std::memcpy(pvBuffer, p_data.get(), ptr->element_size);
+
+    return 1;
 }
 
-// FIXME: to be implemented
-void vQueueDelete(void*) {}
+void vQueueDelete(void* xQueue) {
+    auto ptr { reinterpret_cast<QueueGeneric_t*>(xQueue) };
+    ptr->p_queue->clear();
+    delete ptr->p_queue;
+    delete ptr;
+}
 
 namespace freertos {
 std::tuple<size_t, size_t, size_t> ram_usage() {
