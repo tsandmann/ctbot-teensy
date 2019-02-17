@@ -24,6 +24,7 @@
 #pragma once
 
 #include <cstring>
+#include <cstdint>
 
 
 class __FlashStringHelper;
@@ -246,7 +247,7 @@ private:
     // FIXME: check this
     template <typename T>
     static void toString(T value, char* dest, const unsigned int radix) {
-        char digit[] = "0123456789ABCDEFGHIJKLMNOPRSTUVWXYZ";
+        const char digit[] = "0123456789ABCDEFGHIJKLMNOPRSTUVWXYZ";
         char stack[32];
 
         int64_t quot, rem;
