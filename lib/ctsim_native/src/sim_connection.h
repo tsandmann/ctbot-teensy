@@ -36,6 +36,7 @@ protected:
     void register_cmd(const CommandCodes& cmd, decltype(commands_)::mapped_type::value_type func);
     size_t receive_until(std::streambuf& buf, const char delim, const size_t maxsize);
     size_t send(const void* data, const size_t size);
+    static void receiver_task(void* p_instance);
 
 public:
     SimConnection(const std::string& hostname, const std::string& port);

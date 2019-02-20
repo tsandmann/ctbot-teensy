@@ -87,3 +87,10 @@ static inline void trace_isr_enter() {}
  */
 static inline void trace_isr_exit() {}
 } // namespace freertos
+
+
+namespace freertos {
+std::tuple<size_t, size_t, size_t> ram_usage();
+
+void print_ram_usage();
+} // namespace freertos

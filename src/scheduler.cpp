@@ -83,7 +83,11 @@ void Scheduler::stop() {
 }
 
 size_t Scheduler::get_free_stack() {
+#if INCLUDE_uxTaskGetStackHighWaterMark == 1
     return ::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t);
+#else
+    return 0xffffff;
+#endif
 }
 
 uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) {

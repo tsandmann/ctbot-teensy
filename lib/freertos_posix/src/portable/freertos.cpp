@@ -17,24 +17,46 @@
  */
 
 /**
- * @file    semphr.h
+ * @file    freertos.cpp
  * @brief   Wrapper aroung FreeRTOS API to execute in a POSIX environment
  * @author  Timo Sandmann
  * @date    10.06.2018
  */
 
-#pragma once
+#include "FreeRTOS.h"
+#include "arduino_fixed.h"
+#include "teensy.h"
 
-#include "queue.h"
-#include <cstdint>
+#include <tuple>
+#include <iostream>
+#include <cstdio>
+#include <thread>
+#include <chrono>
 
 
-void* xSemaphoreCreateMutex();
-
-long xSemaphoreTake(void* mutex, uint32_t max_delay);
-
-long xSemaphoreGive(void* mutex);
-
-static inline void vSemaphoreDelete(void* xSemaphore) {
-    vQueueDelete(xSemaphore);
+extern "C" {
+void serial_puts(const char* str) {
+    ::puts(str);
 }
+
+#if (configUSE_IDLE_HOOK == 1)
+void vApplicationIdleHook();
+void vApplicationIdleHook() {
+    std::this_thread::sleep_for(std::chrono::microseconds(10));
+}
+#endif // configUSE_IDLE_HOOK
+} // extern C
+
+namespace freertos {
+std::tuple<size_t, size_t, size_t> ram_usage() {
+    const std::tuple<size_t, size_t, size_t> ret { 0xffffff, 0, 0 };
+    return ret;
+}
+
+void print_ram_usage() {
+    const auto x { ram_usage() };
+    std::cout << "free RAM: " << std::get<0>(x) / 1024UL << " KB\n";
+}
+
+void error_blink(uint8_t) {}
+} // namespace freertos

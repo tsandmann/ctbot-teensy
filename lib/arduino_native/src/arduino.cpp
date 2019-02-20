@@ -23,8 +23,11 @@
 
 #include "arduino_fixed.h"
 #include "Wire.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 
-#include <sim_connection.h>
+#include "sim_connection.h"
 
 #include <chrono>
 #include <iostream>
@@ -109,49 +112,61 @@ void digitalWriteFast(uint8_t pin, uint8_t val) {
 void pinMode(uint8_t, uint8_t) {}
 } // namespace arduino
 
-StdinOutWrapper::StdinOutWrapper() : recv_running_ { true } {
-    p_recv_thread_ = new std::thread { [this]() {
-        while (recv_running_) {
-            if (key_pressed(100)) {
-                std::string line;
-                std::getline(std::cin, line);
-                line += '\n';
-                {
-                    std::lock_guard<std::mutex> lock { in_mutex_ };
-                    std::copy(line.begin(), line.end(), std::inserter(in_buffer_, in_buffer_.end()));
-                }
-            }
-        }
-    } };
+StdinOutWrapper::StdinOutWrapper() : recv_running_ { true }, in_mutex_ { xSemaphoreCreateMutex() } {
+    ::xTaskCreate(StdinOutWrapper::receiver_task, "stdinout", 1024, this, 8, nullptr);
 }
 
 StdinOutWrapper::~StdinOutWrapper() {
     recv_running_ = false;
-    if (p_recv_thread_->joinable()) {
-        p_recv_thread_->join();
+    vSemaphoreDelete(in_mutex_);
+}
+
+void StdinOutWrapper::receiver_task(void* p_instance) {
+    auto p_this { reinterpret_cast<StdinOutWrapper*>(p_instance) };
+    while (p_this->recv_running_) {
+        if (p_this->key_pressed(100)) {
+            std::string line;
+            std::getline(std::cin, line); // FIXME: use ncurses?
+            line += '\n';
+            if (p_this->in_mutex_ && xSemaphoreTake(p_this->in_mutex_, portMAX_DELAY)) {
+                std::copy(line.begin(), line.end(), std::inserter(p_this->in_buffer_, p_this->in_buffer_.end()));
+                xSemaphoreGive(p_this->in_mutex_);
+            }
+        }
+        ::vTaskDelay(100);
     }
-    std::cout << "StdinOutWrapper::~StdinOutWrapper(): receiver thread finished.\n";
+    std::cout << "StdinOutWrapper::receiver_task(): receiver task finished.\n";
+    ::vTaskDelete(nullptr);
 }
 
 int StdinOutWrapper::available() {
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    return in_buffer_.size();
+    int res { 0 };
+    if (in_mutex_ && xSemaphoreTake(in_mutex_, portMAX_DELAY)) {
+        res = in_buffer_.size();
+        xSemaphoreGive(in_mutex_);
+    }
+    return res;
 }
 
 int StdinOutWrapper::peek() {
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    if (in_buffer_.size()) {
-        return in_buffer_.front();
+    int res { -1 };
+    if (in_mutex_ && xSemaphoreTake(in_mutex_, portMAX_DELAY)) {
+        if (in_buffer_.size()) {
+            res = in_buffer_.front();
+        }
+        xSemaphoreGive(in_mutex_);
     }
-    return -1;
+    return res;
 }
 
 int StdinOutWrapper::read() {
     int ret { -1 };
-    std::lock_guard<std::mutex> lock { in_mutex_ };
-    if (in_buffer_.size()) {
-        ret = static_cast<int>(in_buffer_.front());
-        in_buffer_.pop_front();
+    if (in_mutex_ && xSemaphoreTake(in_mutex_, portMAX_DELAY)) {
+        if (in_buffer_.size()) {
+            ret = static_cast<int>(in_buffer_.front());
+            in_buffer_.pop_front();
+        }
+        xSemaphoreGive(in_mutex_);
     }
     return ret;
 }
@@ -200,7 +215,7 @@ void software_isr(void) {}
 
 extern "C" void setup();
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
     std::cout << "c't-Bot Teensy framework starting...\n";
     ctbot::SimConnection sim_conn { "localhost", "10001" };
     setup();

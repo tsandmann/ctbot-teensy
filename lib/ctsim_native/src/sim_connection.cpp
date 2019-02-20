@@ -12,10 +12,13 @@
 #include "../../../src/ctbot_config.h"
 #include "../../../src/motor.h"
 #include "../../../src/servo.h"
+#include "../../../src/leds.h"
 #include "../../../src/sensors.h"
 #include "../../../src/encoder.h"
 
-#include <arduino_fixed.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "arduino_fixed.h"
 #include <iostream>
 #include <boost/system/system_error.hpp>
 
@@ -170,7 +173,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
 
     p_recv_thread_ = std::make_shared<std::thread>([this]() {
         while (sock_.is_open()) {
-            if (receive_sensor_data()) {
+            if (CtBot::get_instance().get_ready() && receive_sensor_data()) {
                 {
                     const auto mot_l_pwm { arduino::analogRead(CtBotConfig::MOT_L_PWM_PIN)
                         * (arduino::digitalReadFast(CtBotConfig::MOT_L_DIR_PIN) ? 450 / 2 : -450 / 2) / (1 << Motor::PWM_RESOLUTION) };
@@ -190,6 +193,13 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
                 }
 
                 {
+                    auto p_leds { CtBot::get_instance().get_leds() };
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_LED, CommandCodes::CMD_SUB_NORM,
+                        static_cast<int16_t>(p_leds ? static_cast<int16_t>(p_leds->get()) : 0), 0, bot_addr_ };
+                    send_cmd(cmd);
+                }
+
+                {
                     CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, bot_addr_ };
                     send_cmd(cmd);
                 }
@@ -204,7 +214,6 @@ SimConnection::~SimConnection() {
         p_recv_thread_->join();
     }
 }
-
 
 size_t SimConnection::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
     if (!sock_.is_open()) {
@@ -256,14 +265,16 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
                 return false;
             }
         } catch (const boost::system::system_error& e) {
-            std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
+            if (e.code() != boost::asio::error::basic_errors::interrupted) {
+                std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
+            }
             return false;
         }
 
         try {
             p_cmd = std::make_shared<CommandNoCRC>(recv_bufer_);
         } catch (const std::exception& e) {
-            std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
+            std::cerr << "SimConnection::receive_sensor_data(): creating new command failed: \"" << e.what() << "\"\n";
             return false;
         }
         assert(p_cmd);

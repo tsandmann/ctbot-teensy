@@ -47,7 +47,13 @@ void Task::print(CommInterface& comm) const {
     if (period_) {
         comm.debug_printf<true>(PP_ARGS("{} ms", period_));
     }
-    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte\r\n", ::uxTaskGetStackHighWaterMark(handle_) * sizeof(StackType_t)));
+#if INCLUDE_uxTaskGetStackHighWaterMark == 1
+    const size_t stack_free { ::uxTaskGetStackHighWaterMark(handle_) * sizeof(StackType_t) };
+#else
+    const size_t stack_free { 0xffffff };
+#endif
+
+    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte\r\n", stack_free));
 }
 
 Task::~Task() {

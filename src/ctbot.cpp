@@ -118,8 +118,8 @@ CtBot& CtBot::get_instance() {
 }
 
 CtBot::CtBot()
-    : shutdown_ { false }, task_id_ { 0 }, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) }, p_swd_debugger_ {}, p_audio_output_ {},
-      p_play_wav_ {}, p_audio_conn_ {}, p_audio_mixer_ {} { // initializes serial connection here for debug purpose
+    : shutdown_ { false }, ready_ { false }, task_id_ { 0 }, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) }, p_swd_debugger_ {},
+      p_audio_output_ {}, p_play_wav_ {}, p_audio_conn_ {}, p_audio_mixer_ {} { // initializes serial connection here for debug purpose
 
     std::atexit([]() {
         CtBot* ptr = &get_instance();
@@ -218,22 +218,34 @@ void CtBot::setup() {
         p_scheduler_->task_register(p_tts_->get_task_handle());
     }
 
-    // // std::array<std::tuple<uint16_t, uint16_t>, 14> distsens_left { { { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 }, { 5, 50 }, { 6, 60 }, { 7, 70 },
-    // //     { 8, 80 }, { 9, 90 }, { 10, 100 }, { 11, 110 }, { 12, 120 }, { 13, 130 }, { 14, 140 } } };
-    // std::array<std::tuple<uint32_t, uint32_t>, 14> distsens_left;
-    // bool res { true };
-    // size_t i { 0 };
-    // for (auto& x : distsens_left) {
-    //     // p_parameter_->set<uint32_t>("dist_left", i++, std::get<1>(x));
-    //     res &= p_parameter_->get<uint32_t>("dist_left", i++, std::get<1>(x));
-    // }
-    // // p_parameter_->flush();
+// #define CREATE
+#ifdef CREATE
+    std::array<std::tuple<uint16_t, uint16_t>, 14> distsens_left { { { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 }, { 5, 50 }, { 6, 60 }, { 7, 70 }, { 8, 80 },
+        { 9, 90 }, { 10, 100 }, { 11, 110 }, { 12, 120 }, { 13, 130 }, { 14, 140 } } };
+#else
+    std::array<std::tuple<uint32_t, uint32_t>, 14> distsens_left;
+#endif // CREATE
+    bool res { true };
+    size_t i { 0 };
+    for (auto& x : distsens_left) {
+#ifdef CREATE
+        p_parameter_->set<uint32_t>("dist_left", i++, std::get<1>(x));
+#else
+        res &= p_parameter_->get<uint32_t>("dist_left", i++, std::get<1>(x));
+#endif // CREATE
+    }
+#ifdef CREATE
+    p_parameter_->flush();
+#endif // CREATE
+#undef CREATE
 
-    // p_comm_->debug_print("parameter dist_left read:\r\n", true);
-    // for (const auto& e : distsens_left) {
-    //     p_comm_->debug_printf<true>(PP_ARGS("[{},{}] ", std::get<0>(e), std::get<1>(e)));
-    // }
-    // p_comm_->debug_printf<true>(PP_ARGS(" res={}\r\n", res));
+    p_comm_->debug_print("parameter dist_left read:\r\n", true);
+    for (const auto& e : distsens_left) {
+        p_comm_->debug_printf<true>(PP_ARGS("[{},{}] ", std::get<0>(e), std::get<1>(e)));
+    }
+    p_comm_->debug_printf<true>(PP_ARGS(" res={}\r\n", res));
+
+    ready_ = true;
 
     p_comm_->debug_print("\r\n*** c't-Bot init done. ***\n\r\nType \"help\" (or \"h\") to print help message\n\r\n", true);
 }

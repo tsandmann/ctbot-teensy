@@ -29,14 +29,17 @@
 #include "Stream.h"
 
 #include <cstdint>
+#include <atomic>
+#include <deque>
 
 
 class StdinOutWrapper : public Stream {
 protected:
-    std::thread* p_recv_thread_;
     std::atomic<bool> recv_running_;
     std::deque<char> in_buffer_;
-    std::mutex in_mutex_;
+    void* in_mutex_;
+
+    static void receiver_task(void* p_instance);
 
 public:
     StdinOutWrapper();

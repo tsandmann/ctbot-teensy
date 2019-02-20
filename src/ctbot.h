@@ -69,6 +69,7 @@ protected:
     static const char usage_text[]; /**< C-String containing the usage / help message */
 
     bool shutdown_;
+    bool ready_;
     uint16_t task_id_;
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
@@ -139,6 +140,11 @@ public:
      * @return Reference to CtBot instance
      */
     static CtBot& get_instance();
+
+    bool get_ready() const {
+        volatile bool ready { ready_ };
+        return ready;
+    }
 
     /**
      * @brief Destroy the CtBot instance
