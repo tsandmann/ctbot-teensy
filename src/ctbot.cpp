@@ -141,8 +141,8 @@ void CtBot::setup() {
 
     p_sensors_ = new Sensors();
 
-    p_motors_[0] = new Motor(p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, true);
-    p_motors_[1] = new Motor(p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, true);
+    p_motors_[0] = new Motor(p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, CtBotConfig::MOT_L_DIR);
+    p_motors_[1] = new Motor(p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, CtBotConfig::MOT_R_DIR);
 
     p_speedcontrols_[0] = new SpeedControl(p_sensors_->get_enc_l(), *p_motors_[0]);
     p_speedcontrols_[1] = new SpeedControl(p_sensors_->get_enc_r(), *p_motors_[1]);

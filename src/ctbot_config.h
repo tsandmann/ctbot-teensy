@@ -107,8 +107,10 @@ public:
     static constexpr uint8_t BAT_VOLTAGE_PIN { 39 }; /**< Pin number of battery voltage signal */
 
     /* motors */
+    static constexpr bool MOT_L_DIR { false }; /**< Direction of rotation for left motor */
     static constexpr uint8_t MOT_L_PWM_PIN { 35 }; /**< Pin number of left motor pwm signal */
     static constexpr uint8_t MOT_L_DIR_PIN { 29 }; /**< Pin number of left motor direction signal */
+    static constexpr bool MOT_R_DIR { true }; /**< Direction of rotation for right motor */
     static constexpr uint8_t MOT_R_PWM_PIN { 36 }; /**< Pin number of right motor pwm signal */
     static constexpr uint8_t MOT_R_DIR_PIN { 30 }; /**< Pin number of right motor direction signal */
     static constexpr int16_t MOT_PWM_MAX { 16000 }; /**< Maximum pwm duty cycle value for motors */
