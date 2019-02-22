@@ -33,9 +33,6 @@
 // FIXME: use debug output of CommInterface
 namespace ctbot {
 ParameterStorage::ParameterStorage(const std::string& config_file) : config_file_ { config_file } {
-    // arduino::Serial.print("PS::PS(): stack free before: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     if (!SD.exists(config_file_.c_str())) {
         File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
         if (f) {
@@ -63,9 +60,6 @@ ParameterStorage::ParameterStorage(const std::string& config_file) : config_file
     } else {
         arduino::Serial.println("ParameterStorage::ParameterStorage(): file open failed.");
     }
-
-    // arduino::Serial.print("PS::PS(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
 }
 
 ParameterStorage::~ParameterStorage() {
@@ -73,9 +67,6 @@ ParameterStorage::~ParameterStorage() {
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) const noexcept {
-    // arduino::Serial.print("PS::get(): stack free before: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     if (!p_parameter_root_->containsKey(key)) {
         return false;
     }
@@ -84,16 +75,10 @@ bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) co
     }
 
     value = p_parameter_root_->get<uint32_t>(key);
-
-    // arduino::Serial.print("PS::get(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) const noexcept {
-    // arduino::Serial.print("PS::get(): stack free before: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     if (!p_parameter_root_->containsKey(key)) {
         return false;
     }
@@ -102,16 +87,10 @@ bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) con
     }
 
     value = p_parameter_root_->get<int32_t>(key);
-
-    // arduino::Serial.print("PS::get(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, float& value) const noexcept {
-    // arduino::Serial.print("PS::get(): stack free before: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     if (!p_parameter_root_->containsKey(key)) {
         return false;
     }
@@ -120,9 +99,6 @@ bool ParameterStorage::get_parameter(const std::string& key, float& value) const
     }
 
     value = p_parameter_root_->get<float>(key);
-
-    // arduino::Serial.print("PS::get(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
     return true;
 }
 
@@ -253,37 +229,22 @@ void ParameterStorage::set_parameter(const std::string& key, const size_t index,
 }
 
 std::unique_ptr<std::string> ParameterStorage::dump() const {
-    // arduino::Serial.print("PS::dump(): stack free before: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     arduino::String str; // FIXME: improve buffer?
     p_parameter_root_->printTo(str);
     auto ret { std::make_unique<std::string>(str.c_str()) };
-
-    // arduino::Serial.print("PS::dump(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     return ret;
 }
 
 bool ParameterStorage::flush() const {
-    // arduino::Serial.print("PS::flush(): stack free before 1: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
-
     SD.remove(config_file_.c_str());
     File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
     if (f) {
-        // arduino::Serial.print("PS::flush(): stack free before 2: ");
-        // arduino::Serial.println(Scheduler::get_free_stack());
-
         p_parameter_root_->printTo(f);
         f.close();
     } else {
         // arduino::Serial.println("ParameterStorage::flush(): file create failed.");
         return false;
     }
-    // arduino::Serial.print("PS::flush(): stack free after: ");
-    // arduino::Serial.println(Scheduler::get_free_stack());
     // arduino::Serial.println("ParameterStorage::flush(): done.");
     return true;
 }
