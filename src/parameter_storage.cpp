@@ -23,7 +23,6 @@
  */
 
 #include "parameter_storage.h"
-#include "scheduler.h"
 
 #include "arduino_fixed.h"
 #include "FreeRTOS.h"
@@ -32,29 +31,28 @@
 
 // FIXME: use debug output of CommInterface
 namespace ctbot {
-ParameterStorage::ParameterStorage(const std::string& config_file) : config_file_ { config_file } {
+ParameterStorage::ParameterStorage(const std::string& config_file, const size_t buffer_size) : config_file_ { config_file }, p_parameter_doc_ {} {
     if (!SD.exists(config_file_.c_str())) {
         File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
         if (f) {
             f.close();
         } else {
-            // arduino::Serial.println("ParameterStorage::ParameterStorage(): file create failed.");
+            // arduino::Serial.println("PS::ParameterStorage(): file create failed.");
         }
     }
     File f { SD.open(config_file_.c_str(), O_READ) };
     if (f) {
         const size_t n { f.size() };
+        p_parameter_doc_ = new DynamicJsonDocument(n + buffer_size);
         if (n) {
-            p_parameter_root_ = &json_buffer_.parseObject(f);
-            if (!p_parameter_root_->success()) {
-                arduino::Serial.println("ParameterStorage::ParameterStorage(): parseObject() failed.");
+            auto error { deserializeJson(*p_parameter_doc_, f) };
+            if (error) {
+                arduino::Serial.print("PS::ParameterStorage(): deserializeJson() failed.");
             } else {
-                // arduino::Serial.print("ParameterStorage::ParameterStorage(): parameter_=\"");
+                // arduino::Serial.print("PS::ParameterStorage(): parameter_=\"");
                 // arduino::Serial.print(dump()->c_str());
                 // arduino::Serial.println("\"");
             }
-        } else {
-            p_parameter_root_ = &json_buffer_.createObject();
         }
         f.close();
     } else {
@@ -64,53 +62,62 @@ ParameterStorage::ParameterStorage(const std::string& config_file) : config_file
 
 ParameterStorage::~ParameterStorage() {
     flush();
+    delete p_parameter_doc_;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto data { p_parameter_doc_->getMember(key) };
+
+    if (data.isNull()) {
         return false;
     }
-    if (!p_parameter_root_->is<uint32_t>(key)) {
+    if (!data.is<uint32_t>()) {
         return false;
     }
 
-    value = p_parameter_root_->get<uint32_t>(key);
+    value = data.as<uint32_t>();
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto data { p_parameter_doc_->getMember(key) };
+
+    if (data.isNull()) {
         return false;
     }
-    if (!p_parameter_root_->is<int32_t>(key)) {
+    if (!data.is<int32_t>()) {
         return false;
     }
 
-    value = p_parameter_root_->get<int32_t>(key);
+    value = data.as<int32_t>();
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, float& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto data { p_parameter_doc_->getMember(key) };
+
+    if (data.isNull()) {
         return false;
     }
-    if (!p_parameter_root_->is<float>(key)) {
+    if (!data.is<float>()) {
         return false;
     }
 
-    value = p_parameter_root_->get<float>(key);
+    value = data.as<float>();
     return true;
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, uint32_t& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    const auto& array { p_parameter_root_->get<JsonArray>(key) };
-    if (array.is<uint32_t>(index)) {
-        value = array.get<uint32_t>(index);
+    const auto data { array.getElement(index) };
+    if (data.is<uint32_t>()) {
+        value = data.as<uint32_t>();
         // arduino::Serial.print("PS::get_parameter(): key found, val=");
         // arduino::Serial.println(value, 10);
         return true;
@@ -120,14 +127,16 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, int32_t& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    const auto& array { p_parameter_root_->get<JsonArray>(key) };
-    if (array.is<int32_t>(index)) {
-        value = array.get<int32_t>(index);
+    const auto data { array.getElement(index) };
+    if (data.is<int32_t>()) {
+        value = data.as<int32_t>();
         // arduino::Serial.print("PS::get_parameter(): key found, val=");
         // arduino::Serial.println(value, 10);
         return true;
@@ -137,16 +146,18 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
 }
 
 bool ParameterStorage::get_parameter(const std::string& key, const size_t index, float& value) const noexcept {
-    if (!p_parameter_root_->containsKey(key)) {
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
         return false;
     }
 
-    const auto& array { p_parameter_root_->get<JsonArray>(key) };
-    if (array.is<float>(index)) {
-        value = array.get<float>(index);
+    const auto data { array.getElement(index) };
+    if (data.is<float>()) {
+        value = data.as<float>();
         // arduino::Serial.print("PS::get_parameter(): key found, val=");
-        // arduino::Serial.println(value, 2);
+        // arduino::Serial.println(value, 10);
         return true;
     }
     // arduino::Serial.println("PS::get_parameter(): key found, index or type invalid.");
@@ -154,98 +165,66 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const uint32_t value) noexcept {
-    p_parameter_root_->set(key, value);
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const int32_t value) noexcept {
-    p_parameter_root_->set(key, value);
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const float value) noexcept {
-    p_parameter_root_->set(key, value);
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const size_t index, const uint32_t value) noexcept {
-    JsonArray* p_array;
-    if (!p_parameter_root_->containsKey(key)) {
-        p_array = &p_parameter_root_->createNestedArray(key);
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
-    } else {
-        p_array = &p_parameter_root_->get<JsonArray>(key);
-        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
-
-    for (size_t i { 0 }; i < index; ++i) {
-        if (!p_array->is<uint32_t>(i)) {
-            p_array->add(0U);
-        }
-    }
-
-    if (!p_array->set(index, value)) {
-        p_array->add(value);
-    }
+    // FIXME: add zero-padding?
+    array[index] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const size_t index, const int32_t value) noexcept {
-    JsonArray* p_array;
-    if (!p_parameter_root_->containsKey(key)) {
-        p_array = &p_parameter_root_->createNestedArray(key);
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
-    } else {
-        p_array = &p_parameter_root_->get<JsonArray>(key);
-        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
-
-    for (size_t i { 0 }; i < index; ++i) {
-        if (!p_array->is<int32_t>(i)) {
-            p_array->add(0);
-        }
-    }
-
-    if (!p_array->set(index, value)) {
-        p_array->add(value);
-    }
+    // FIXME: add zero-padding?
+    array[index] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string& key, const size_t index, const float value) noexcept {
-    JsonArray* p_array;
-    if (!p_parameter_root_->containsKey(key)) {
-        p_array = &p_parameter_root_->createNestedArray(key);
+    const auto array { p_parameter_doc_->getMember(key) };
+
+    if (array.isNull()) {
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
-    } else {
-        p_array = &p_parameter_root_->get<JsonArray>(key);
-        // arduino::Serial.println("PS::set_parameter(): array found.");
     }
-
-    for (size_t i { 0 }; i < index; ++i) {
-        if (!p_array->is<float>(i)) {
-            p_array->add(0.f);
-        }
-    }
-
-    if (!p_array->set(index, value)) {
-        p_array->add(value);
-    }
+    // FIXME: add zero-padding?
+    array[index] = value;
 }
 
 std::unique_ptr<std::string> ParameterStorage::dump() const {
-    arduino::String str; // FIXME: improve buffer?
-    p_parameter_root_->printTo(str);
-    auto ret { std::make_unique<std::string>(str.c_str()) };
-    return ret;
+    auto str { std::make_unique<std::string>() };
+    serializeJson(*p_parameter_doc_, *str);
+    return str;
 }
 
 bool ParameterStorage::flush() const {
     SD.remove(config_file_.c_str());
     File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
     if (f) {
-        p_parameter_root_->printTo(f);
+        serializeJson(*p_parameter_doc_, f);
         f.close();
     } else {
-        // arduino::Serial.println("ParameterStorage::flush(): file create failed.");
+        // arduino::Serial.println("PS::flush(): file create failed.");
         return false;
     }
-    // arduino::Serial.println("ParameterStorage::flush(): done.");
     return true;
 }
 } // namespace ctbot
