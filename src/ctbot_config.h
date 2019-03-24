@@ -52,6 +52,7 @@ public:
     static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
 
     static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
+    static constexpr bool SWD_DEBUGGER_ENABLE_ON_BOOT { false }; /**< Statically enable or disable SWD debug setting on boot */
 
     /* uart */
     static constexpr uint32_t UART0_BAUDRATE { 4000000 }; /**< Baud rate used for Uart 0 (USB) */

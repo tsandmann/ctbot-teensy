@@ -53,7 +53,7 @@ extern "C" {
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_TICKLESS_IDLE                 0
-#define configUSE_QUEUE_SETS                    1
+#define configUSE_QUEUE_SETS                    0
 #define configUSE_IDLE_HOOK                     1
 #define configUSE_TICK_HOOK                     1
 #define configCPU_CLOCK_HZ                      ( F_CPU )
@@ -64,14 +64,15 @@ extern "C" {
 #define configUSE_16_BIT_TICKS                  0
 #define configIDLE_SHOULD_YIELD                 1
 #define configUSE_MUTEXES                       1
-#define configQUEUE_REGISTRY_SIZE               8
-#define configCHECK_FOR_STACK_OVERFLOW          2
 #define configUSE_RECURSIVE_MUTEXES             1
+#define configQUEUE_REGISTRY_SIZE               0
+#define configCHECK_FOR_STACK_OVERFLOW          2
 #define configUSE_MALLOC_FAILED_HOOK            1
 #define configUSE_APPLICATION_TASK_TAG          0
 #define configUSE_COUNTING_SEMAPHORES           1
 #define configSUPPORT_STATIC_ALLOCATION         0
 #define configUSE_NEWLIB_REENTRANT              1
+#define configNUM_THREAD_LOCAL_STORAGE_POINTERS 1
 #define configUSE_SYSVIEW                       0
 
 /* Run time stats gathering definitions. */
@@ -97,13 +98,15 @@ extern "C" {
 #define INCLUDE_uxTaskPriorityGet               1
 #define INCLUDE_vTaskSuspend                    1
 #define INCLUDE_vTaskDelete                     1
-#define INCLUDE_vTaskDelayUntil                 1
+#define INCLUDE_vTaskDelayUntil                 0
 #define INCLUDE_vTaskDelay                      1
 #define INCLUDE_eTaskGetState                   1
 #define INCLUDE_xTimerPendFunctionCall          1
 #define INCLUDE_uxTaskGetStackHighWaterMark     1
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskGetIdleTaskHandle          1
+
+#define configINITIAL_TICK_COUNT                0U
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS
@@ -128,6 +131,9 @@ extern "C" {
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
  * See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY            ( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
+
+#define pdMS_TO_TICKS( xTimeInMs ) ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000 ) )
+#define pdTICKS_TO_MS( xTicks ) ( ( TickType_t ) ( ( ( TickType_t ) ( xTicks ) * ( TickType_t ) 1000  / ( TickType_t ) configTICK_RATE_HZ ) ) )
 
 /* Normal assert() semantics without relying on the provision of an assert.h header file. */
 void assert_blink(const char*, int, const char*, const char*);

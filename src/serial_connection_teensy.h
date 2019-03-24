@@ -24,8 +24,9 @@
 
 #pragma once
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
 #include <streambuf>
+#include <mutex>
 
 
 namespace ctbot {
@@ -42,7 +43,7 @@ namespace ctbot {
 class SerialConnectionTeensy {
     // FIXME: maybe this class can be simplified a lot...
 protected:
-    void* mutex_;
+    std::mutex mutex_;
     arduino::Stream& io_stream_;
 
     static void (*wait_callback_)(const void*);
@@ -188,7 +189,7 @@ public:
      * @return The next byte or -1, if receive buffer is empty
      * @note Just calls peek() of the underlying connection stream
      */
-    int peek() const;
+    int peek();
 
     /**
      * @brief Wait for any outstanding transmission to complete

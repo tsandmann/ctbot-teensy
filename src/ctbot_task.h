@@ -27,11 +27,11 @@
 #include <cstdint>
 #include <string>
 #include <functional>
+#include <thread>
 
 
 namespace ctbot {
 class Scheduler;
-class Condition;
 class CommInterface;
 
 /**
@@ -52,14 +52,16 @@ public:
 protected:
     uint16_t id_; /**< ID of task */
     uint16_t period_; /**< Execution period of task in ms */
+    uint8_t priority_;
     uint_fast8_t state_; /**< Flag indicating the state of the task: runnable (1), blocked (2), finished (0) */ // FIXME: enum class?
     func_t func_; /**< Function wrapper for the task's implementation */
-    void* handle_; /**< FreeRTOS task handle */
+    bool std_thread_;
+    union {
+        void* p_freertos_handle;
+        std::thread* p_thread; /**< Thread of task */
+    } handle_; // FIXME: think about this
     Scheduler& scheduler_; /**< Reference to scheduler for this task */
     std::string name_; /**< Name of task */
-
-    // FIXME: Documentation
-    bool wait_for(Condition& cond);
 
 public:
     /**
@@ -69,7 +71,7 @@ public:
      * @param[in] period: Execution period of task in ms
      * @param[in] func: Function wrapper for the task's implementation
      */
-    Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, func_t&& func);
+    Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, const uint8_t priority, func_t&& func);
 
     /**
      * @brief Destroy the Task object
@@ -79,7 +81,9 @@ public:
     // FIXME: Documentation
     bool resume();
 
-    uint16_t get_priority() const;
+    uint8_t get_priority() const {
+        return priority_;
+    }
 
     /**
      * @brief Print task information to a CommInterface

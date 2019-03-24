@@ -25,13 +25,16 @@
 #pragma once
 
 #include <cstdint>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 
 namespace ctbot {
 
 class CtBot;
 class Ena;
-class Condition;
 
 /**
  * @brief Namespace for all test classes
@@ -400,19 +403,15 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of tasks in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
-    uint16_t task1_id_;
-    uint16_t task2_id_;
-    Condition* p_cond1;
-    Condition* p_cond2;
+    std::mutex m1_, m2_;
+    std::condition_variable cv1_, cv2_;
+    std::thread *p_thr1_, *p_thr2_;
+    std::atomic<bool> running_;
 
     /* disable copy/move */
     TaskWaitTest(const TaskWaitTest&) = delete;
     void operator=(const TaskWaitTest&) = delete;
     TaskWaitTest(TaskWaitTest&&) = delete;
-
-    void run1();
-
-    void run2();
 
 public:
     /**
@@ -425,7 +424,11 @@ public:
      * @brief Destructor to destroy tasks
      * @note Never called in current setup
      */
-    ~TaskWaitTest() = default;
+    ~TaskWaitTest();
+
+    void stop() {
+        running_ = false;
+    }
 };
 
 } // namespace tests

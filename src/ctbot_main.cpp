@@ -33,29 +33,29 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "portable/teensy.h"
+#include <thread>
+#include <memory>
 
+
+namespace ctbot {
+// FIXME: just for testing purpose
+tests::TaskWaitTest* p_wait_test { nullptr };
+} // namespace ctbot
 
 static TaskHandle_t g_audio_task { nullptr };
 
-static void audio_processing(void*) {
-    while (true) {
-        ::software_isr(); // AudioStream::update_all()
-        ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
-    }
-}
-
 /**
- * @brief FreeRTOS task to initialize everything
+ * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
  */
-static void init_task(void*) {
+static void init_task() {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
     Timer::delay_us(1500UL * 1000UL);
 
     // serial_puts("init_task()");
-    // freertos::print_free_ram();
+    // freertos::print_ram_usage();
 
     /* create CtBot singleton instance... */
     // serial_puts("creating CtBot instance...");
@@ -87,8 +87,12 @@ static void init_task(void*) {
         new tests::SensorLcdTest(ctbot);
     }
 
+    if (ctbot::CtBotConfig::TFT_TEST_AVAILABLE) {
+        new tests::TftTest(ctbot);
+    }
+
     if (ctbot::CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
-        new tests::TaskWaitTest(ctbot);
+        ctbot::p_wait_test = new tests::TaskWaitTest(ctbot);
     }
 
     // extern unsigned long __bss_end__; // set by linker script
@@ -99,10 +103,16 @@ static void init_task(void*) {
     // Serial.println(reinterpret_cast<uintptr_t>(&_estack), 16);
     freertos::print_ram_usage();
 
-    if (!::xTaskCreate(audio_processing, "audio", 128UL, nullptr, configMAX_PRIORITIES - 1, &g_audio_task)) {
-        configASSERT(false);
+
+    if (ctbot::CtBotConfig::AUDIO_AVAILABLE) {
+        ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, []() {
+            while (true) {
+                ::software_isr(); // AudioStream::update_all()
+                ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
+            }
+        });
+        g_audio_task = ::xTaskGetHandle("audio");
     }
-    ctbot.get_scheduler()->task_register(g_audio_task);
 
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
     // serial_puts("deleting init task...");
@@ -215,13 +225,18 @@ void setup() {
     // delay_us(2000UL * 1000UL);
 
     // serial_puts("\n\nCreating init task...");
-    if (!::xTaskCreate(init_task, "init", 1024UL, nullptr, configMAX_PRIORITIES - 1, nullptr)) {
-        freertos::error_blink(10);
-    }
+    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
+    auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
+    free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), "INIT");
+    free_rtos_std::gthr_freertos::set_next_stacksize(last);
 
     ::vTaskStartScheduler();
+
     // we never ever get here
-    freertos::error_blink(11);
+    if (p_init_thread->joinable()) {
+        p_init_thread->join();
+    }
+    freertos::error_blink(10);
 }
 
 /**
@@ -271,12 +286,14 @@ void usage_fault_isr() {
 }
 
 void softirq_isr() {
-    freertos::trace_isr_enter();
-    if (g_audio_task) {
-        ::xTaskNotifyFromISR(g_audio_task, 0, eNoAction, nullptr);
-        portYIELD_FROM_ISR(true);
+    if (ctbot::CtBotConfig::AUDIO_AVAILABLE) {
+        freertos::trace_isr_enter();
+        if (g_audio_task) {
+            ::xTaskNotifyFromISR(g_audio_task, 0, eNoAction, nullptr);
+            portYIELD_FROM_ISR(true);
+        }
+        freertos::trace_isr_exit();
     }
-    freertos::trace_isr_exit();
 }
 
 } // extern C

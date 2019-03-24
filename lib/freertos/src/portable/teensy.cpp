@@ -187,7 +187,7 @@ void print_ram_usage() {
     Serial.println(" KB");
 }
 
-uint32_t get_us() {
+uint64_t get_us() {
     uint32_t current, load, count, istatus;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         current = SYST_CVR;
@@ -203,9 +203,9 @@ uint32_t get_us() {
     current = load - current;
 #if (configUSE_TICKLESS_IDLE == 1)
 #warning "tickless idle mode is untested"
-    return count * 1000U + current * 1000U / (load + 1U);
+    return static_cast<uint64_t>(count) * 1000U + current * 1000U / (load + 1U);
 #else
-    return count * 1000U + current / (configCPU_CLOCK_HZ / configTICK_RATE_HZ / 1000U);
+    return static_cast<uint64_t>(count) * 1000U + current / (configCPU_CLOCK_HZ / configTICK_RATE_HZ / 1000U);
 #endif
 }
 
@@ -270,6 +270,12 @@ void* sbrk(ptrdiff_t incr) {
     const auto ptr { _sbrk(incr) };
     ::vPortSetBASEPRI(pri);
     return ptr;
+}
+
+int __wrap__gettimeofday(timeval* tv, void*) {
+    const auto now_us { freertos::get_us() };
+    *tv = timeval { static_cast<time_t>(now_us / 1'000'000U), static_cast<suseconds_t>(now_us % 1'000'000U) };
+    return 0;
 }
 
 void vApplicationMallocFailedHook();

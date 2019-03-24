@@ -30,33 +30,41 @@
 #include "scheduler.h"
 #include "leds.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 
 namespace ctbot {
 
 CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo)
-    : io_ { io_connection }, echo_ { enable_echo }, error_ { 0 }, p_input_ { input_buffer_ }, output_queue_ { ::xQueueCreate(
-                                                                                                  OUTPUT_QUEUE_SIZE, sizeof(OutBufferElement)) } {
-    configASSERT(output_queue_);
-
-    CtBot::get_instance().get_scheduler()->task_add(
+    : io_ { io_connection }, echo_ { enable_echo }, error_ {}, p_input_ { input_buffer_ } {
+    input_task_ = CtBot::get_instance().get_scheduler()->task_add(
         "commIN", INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
-    CtBot::get_instance().get_scheduler()->task_add(
+    output_task_ = CtBot::get_instance().get_scheduler()->task_add(
         "commOUT", OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
 }
 
-size_t CommInterface::queue_debug_msg(const char c, std::string* p_str, const bool block) const {
-    OutBufferElement element { c, p_str };
-    if (::xQueueSendToBack(output_queue_, &element, block ? portMAX_DELAY : 0)) {
-        return p_str ? p_str->length() : 1;
+CommInterface::~CommInterface() {
+    auto schdl { CtBot::get_instance().get_scheduler() };
+    schdl->task_remove(output_task_);
+    schdl->task_remove(input_task_);
+}
+
+size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block) {
+    const auto ret { p_str ? p_str->length() : 1 };
+    OutBufferElement element { c, std::move(p_str) };
+
+    if (block) {
+        output_queue_.push(std::move(element));
     } else {
-        return 0;
+        if (!output_queue_.try_push(std::move(element))) {
+            return 0;
+        }
     }
+    return ret;
 }
 
 size_t CommInterface::get_format_size(const char* format, ...) {
@@ -67,13 +75,14 @@ size_t CommInterface::get_format_size(const char* format, ...) {
     return size;
 }
 
-std::unique_ptr<char> CommInterface::create_formatted_string(const size_t size, const char* format, ...) {
+std::unique_ptr<std::string> CommInterface::create_formatted_string(const size_t size, const char* format, ...) {
     va_list vl;
     va_start(vl, format);
-    std::unique_ptr<char> str { new char[size] };
-    std::vsnprintf(str.get(), size, format, vl);
+    auto p_str { std::make_unique<std::string>(size, '\0') };
+    std::vsnprintf(p_str->data(), size, format, vl);
     va_end(vl);
-    return str;
+
+    return p_str;
 }
 
 void CommInterface::set_color(const Color fg, const Color bg) {
@@ -84,30 +93,37 @@ void CommInterface::set_attribute(const Attribute a) {
     debug_printf<true>("\x1b[%um", static_cast<uint16_t>(a));
 }
 
-size_t CommInterface::debug_print(const char* str, const bool block) const {
-    return queue_debug_msg('\0', new std::string(str), block);
+size_t CommInterface::debug_print(const char* str, const bool block) {
+    auto p_str { std::make_unique<std::string>(str) };
+    return queue_debug_msg('\0', std::move(p_str), block);
 }
 
-size_t CommInterface::debug_print(const std::string& str, const bool block) const {
-    return queue_debug_msg('\0', new std::string(str), block);
+size_t CommInterface::debug_print(std::unique_ptr<std::string>&& p_str, const bool block) {
+    return queue_debug_msg('\0', std::move(p_str), block);
 }
 
-size_t CommInterface::debug_print(std::string&& str, const bool block) const {
-    return queue_debug_msg('\0', new std::string(str), block);
+size_t CommInterface::debug_print(const std::string& str, const bool block) {
+    auto p_str { std::make_unique<std::string>(str) };
+    return queue_debug_msg('\0', std::move(p_str), block);
+}
+
+size_t CommInterface::debug_print(std::string&& str, const bool block) {
+    auto p_str { std::make_unique<std::string>(str) };
+    return queue_debug_msg('\0', std::move(p_str), block);
 }
 
 void CommInterface::flush() {
-    while (::uxQueueMessagesWaiting(output_queue_)) {
-        Timer::delay_ms(1);
+    using namespace std::chrono_literals;
+    while (output_queue_.size()) {
+        std::this_thread::sleep_for(1ms);
     }
 }
 
 void CommInterface::run_output() {
     OutBufferElement element;
-    while (::xQueueReceive(output_queue_, &element, portMAX_DELAY)) {
+    while (output_queue_.try_pop(element)) {
         if (element.p_str_) {
             io_.send(element.p_str_->c_str(), element.p_str_->length());
-            delete element.p_str_;
         } else {
             io_.send(&element.character_, sizeof(element.character_));
         }

@@ -62,7 +62,7 @@ void print_ram_usage();
  * @brief Get the current time in microseconds
  * @return Current time in us
  */
-uint32_t get_us();
+uint64_t get_us();
 
 /**
  * @brief Get the current time in milliseconds

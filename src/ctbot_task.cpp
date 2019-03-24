@@ -23,7 +23,6 @@
  */
 
 #include "ctbot_task.h"
-#include "condition.h"
 #include "scheduler.h"
 #include "comm_interface.h"
 
@@ -31,14 +30,14 @@
 #include "arduino_fixed.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "semphr.h"
 #include <algorithm>
 
 
 namespace ctbot {
 
-Task::Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, func_t&& func)
-    : id_ { id }, period_ { period }, state_ { 1 }, func_ { std::move(func) }, handle_ { nullptr }, scheduler_ { scheduler }, name_ { name } {}
+Task::Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, const uint8_t priority, func_t&& func)
+    : id_ { id }, period_ { period }, priority_ { priority }, state_ { 1 }, func_ { std::move(func) }, std_thread_ { false }, handle_ {},
+      scheduler_ { scheduler }, name_ { name } {}
 
 void Task::print(CommInterface& comm) const {
     comm.debug_printf<true>(PP_ARGS(" \"{s}\":\t{#x}\t", name_.c_str(), id_));
@@ -47,40 +46,21 @@ void Task::print(CommInterface& comm) const {
     if (period_) {
         comm.debug_printf<true>(PP_ARGS("{} ms", period_));
     }
-#if INCLUDE_uxTaskGetStackHighWaterMark == 1
-    const size_t stack_free { ::uxTaskGetStackHighWaterMark(handle_) * sizeof(StackType_t) };
-#else
-    const size_t stack_free { 0xffffff };
-#endif
-
-    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte\r\n", stack_free));
+    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte\r\n", scheduler_.get_free_stack(id_)));
 }
 
 Task::~Task() {
     state_ = 0;
-    if (handle_) {
-        ::vTaskDelete(handle_);
+    if (std_thread_) {
+        handle_.p_thread->join();
+        delete handle_.p_thread;
+    } else {
+        ::vTaskDelete(handle_.p_freertos_handle);
     }
-}
-
-bool Task::wait_for(Condition& cond) {
-    if (!scheduler_.task_wait_for(id_, cond)) {
-        return false;
-    }
-
-    while (cond.task_waiting(this)) {
-        scheduler_.task_suspend(id_);
-    }
-
-    return true;
 }
 
 bool Task::resume() {
     return scheduler_.task_resume(id_);
-}
-
-uint16_t Task::get_priority() const {
-    return ::uxTaskPriorityGet(handle_);
 }
 
 } // namespace ctbot

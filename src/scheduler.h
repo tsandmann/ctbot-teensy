@@ -33,6 +33,8 @@
 #include <map>
 #include <string>
 #include <functional>
+#include <thread>
+#include <mutex>
 
 
 extern "C" {
@@ -60,9 +62,11 @@ protected:
 
     uint16_t next_id_; /**< Next task ID to use */
     std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
-    void* tasks_mutex_;
+    std::mutex task_mutex_;
 
 public:
+    static constexpr uint8_t MAX_PRIORITY { 9 };
+
     /**
      * @brief Stop (exit) the scheduler
      * @note Calls FreeRTOS' vTaskEndScheduler()
@@ -76,8 +80,6 @@ public:
     static inline void exit_critical_section() {
         xTaskResumeAll();
     }
-
-    static size_t get_free_stack();
 
     /**
      * @brief Construct a new Scheduler object
@@ -157,8 +159,7 @@ public:
      */
     bool task_resume(const uint16_t id);
 
-    // FIXME: Documentation
-    bool task_wait_for(const uint16_t id, Condition& cond);
+    bool task_join(const uint16_t id);
 
     /**
      * @brief Print a list of all tasks and their current status
@@ -171,6 +172,10 @@ public:
      * @param[in] comm: Reference to CommInterface instance used to print with
      */
     void print_ram_usage(CommInterface& comm) const;
+
+    size_t get_free_stack();
+
+    size_t get_free_stack(const uint16_t id);
 };
 
 } // namespace ctbot

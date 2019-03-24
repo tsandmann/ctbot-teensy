@@ -29,11 +29,13 @@
 #include "ena.h"
 #include "sensors.h"
 #include "display.h"
-#include "condition.h"
 
 #include "arduino_fixed.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#include "pprintpp.hpp"
+#include "thread_gthread.h"
+
+#include <chrono>
+#include <cstring>
 
 
 namespace ctbot {
@@ -51,7 +53,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 224UL, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
 
 void LedTest::run() {
@@ -122,30 +124,81 @@ void SensorLcdTest::run() {
 }
 
 
-TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), p_cond1 { new Condition() }, p_cond2 { new Condition() } {
-    task1_id_ = ctbot_.get_scheduler()->task_add("task1test", TASK_PERIOD_MS, 256UL, [this]() { return run1(); });
+TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
 
-    task2_id_ = ctbot_.get_scheduler()->task_add("task2test", TASK_PERIOD_MS, 256UL, [this]() { return run2(); });
+    const auto last_stack_size { free_rtos_std::gthr_freertos::set_next_stacksize(1024) };
+    p_thr1_ = new std::thread([this]() {
+        while (running_) {
+            {
+                const auto now_ms { static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) };
+                const auto free_stack { ctbot_.get_scheduler()->get_free_stack() };
+                ctbot_.get_comm()->debug_printf<true>(PP_ARGS("TaskWaitTest Thr 1: got condition 1 at {} ms. stack free: {} byte.\r\n", now_ms, free_stack));
+            }
+
+            std::this_thread::sleep_for(1s);
+
+            {
+                const auto now_ms { static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) };
+                ctbot_.get_comm()->debug_printf<true>(PP_ARGS("TaskWaitTest Thr 1: notify condition 2 at {} ms...\r\n", now_ms));
+            }
+
+            cv2_.notify_all();
+
+            ctbot_.get_comm()->debug_print("TaskWaitTest Thr 1: waiting for condition 1...\r\n", true);
+            std::unique_lock<std::mutex> lk(m1_);
+            cv1_.wait(lk);
+        }
+    });
+    { free_rtos_std::gthr_freertos::set_name(p_thr1_, "wait_1"); }
+
+    free_rtos_std::gthr_freertos::set_next_stacksize(768);
+    p_thr2_ = new std::thread([this]() {
+        while (running_) {
+            ctbot_.get_comm()->debug_print("TaskWaitTest Thr 2: waiting for condition 2...\r\n", true);
+            {
+                std::unique_lock<std::mutex> lk(m2_);
+                cv2_.wait(lk);
+            }
+
+            {
+                const auto now_ms { static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) };
+                const auto free_stack { ctbot_.get_scheduler()->get_free_stack() };
+                ctbot_.get_comm()->debug_printf<true>(PP_ARGS("TaskWaitTest Thr 2: got condition 2 at {} ms. stack free: {} byte.\r\n", now_ms, free_stack));
+            }
+
+            std::this_thread::sleep_for(5s);
+
+            {
+                const auto now_ms { static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) };
+                ctbot_.get_comm()->debug_printf<true>(PP_ARGS("TaskWaitTest Thr 2: notify condition 1 at {} ms...\r\n", now_ms));
+            }
+
+            cv1_.notify_all();
+        }
+    });
+    { free_rtos_std::gthr_freertos::set_name(p_thr2_, "wait_2"); }
+
+    free_rtos_std::gthr_freertos::set_next_stacksize(last_stack_size);
+
+    ctbot_.get_scheduler()->task_register("wait_1");
+    ctbot_.get_scheduler()->task_register("wait_2");
 }
 
-void TaskWaitTest::run1() {
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): waiting for condition 1...\r\n", false);
-    ctbot_.get_scheduler()->task_wait_for(task1_id_, *p_cond1);
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): got condition 1, notify condition 2...\r\n", false);
-    while (!p_cond2->notify()) {
-        vTaskDelay(10);
-    }
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run1(): done.\r\n", false);
-}
+TaskWaitTest::~TaskWaitTest() {
+    ctbot_.get_comm()->debug_print("TaskWaitTest::~TaskWaitTest(): exiting...\r\n", true);
 
-void TaskWaitTest::run2() {
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): notify condition 1...\r\n", false);
-    while (!p_cond1->notify()) {
-        vTaskDelay(10);
+    running_ = false;
+
+    if (p_thr1_ && p_thr1_->joinable()) {
+        p_thr1_->join();
+        delete p_thr1_;
     }
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): done. waiting for condition 2...\r\n", false);
-    ctbot_.get_scheduler()->task_wait_for(task2_id_, *p_cond2);
-    ctbot_.get_comm()->debug_print("TaskWaitTest::run2(): got condition 2.\r\n", false);
+    if (p_thr2_ && p_thr2_->joinable()) {
+        p_thr2_->join();
+        delete p_thr2_;
+    }
 }
 
 } // namespace tests

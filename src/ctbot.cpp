@@ -35,6 +35,7 @@
 #include "serial_connection_teensy.h"
 #include "cmd_parser.h"
 #include "parameter_storage.h"
+#include "tests.h"
 
 #include "FreeRTOS.h"
 #include "arm_kinetis_debug.h"
@@ -118,7 +119,7 @@ CtBot& CtBot::get_instance() {
 }
 
 CtBot::CtBot()
-    : shutdown_ { false }, ready_ { false }, task_id_ { 0 }, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) }, p_swd_debugger_ {},
+    : shutdown_ { false }, ready_ { false }, task_id_ {}, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) }, p_swd_debugger_ {},
       p_audio_output_ {}, p_play_wav_ {}, p_audio_conn_ {}, p_audio_mixer_ {} { // initializes serial connection here for debug purpose
 
     std::atexit([]() {
@@ -174,18 +175,21 @@ void CtBot::setup() {
             if (p_swd_debugger_->detect()) {
                 p_comm_->debug_print("p_swd_debugger_->detect() successfull.\r\n", true);
 
-                if (p_swd_debugger_->reset(false)) {
-                    p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
+                // if (p_swd_debugger_->reset(false)) {
+                //     p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
 
-                    // arduino::delayMicroseconds(2000000UL);
-                    // if (p_swd_debugger_->sys_reset_request()) {
-                    //     p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
-                    // } else {
-                    //     p_comm_->debug_print("p_swd_debugger_->sys_reset_request() failed.\r\n", true);
-                    // }
-                } else {
-                    p_comm_->debug_print("p_swd_debugger_->reset() failed.\r\n", true);
+                if (CtBotConfig::SWD_DEBUGGER_ENABLE_ON_BOOT) {
+                    arduino::delayMicroseconds(2000000UL);
+                    if (p_swd_debugger_->sys_reset_request()) {
+                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
+                    } else {
+                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() failed.\r\n", true);
+                    }
                 }
+
+                // } else {
+                //     p_comm_->debug_print("p_swd_debugger_->reset() failed.\r\n", true);
+                // }
             } else {
                 p_comm_->debug_print("p_swd_debugger_->detect() failed.\r\n", true);
             }
@@ -215,7 +219,7 @@ void CtBot::setup() {
         configASSERT(p_audio_conn_[0] && p_audio_conn_[1] && p_audio_conn_[3] /*&& p_audio_conn_[2]*/);
         AudioMemory(8);
         Scheduler::exit_critical_section();
-        p_scheduler_->task_register(p_tts_->get_task_handle());
+        p_scheduler_->task_register("speak");
     }
 
     ready_ = true;
@@ -551,6 +555,13 @@ void CtBot::shutdown() {
     if (CtBotConfig::AUDIO_AVAILABLE) {
         p_play_wav_->stop();
     }
+
+    // FIXME: just for testing
+    extern ctbot::tests::TaskWaitTest* p_wait_test;
+    if (p_wait_test) {
+        delete p_wait_test;
+    }
+
     p_comm_->debug_print("System shutting down...\r\n", false);
     p_comm_->flush();
     p_serial_wifi_->flush();

@@ -27,7 +27,6 @@
 #include "ena.h"
 #include "digital_sensors.h"
 #include "analog_sensors.h"
-#include "timer.h"
 
 
 namespace ctbot {
@@ -66,9 +65,7 @@ public:
     /**
      * @return The current time in ms
      */
-    uint32_t get_time() const {
-        return Timer::get_ms();
-    }
+    uint32_t get_time() const;
 };
 
 } // namespace ctbot

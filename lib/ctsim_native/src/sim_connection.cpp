@@ -265,7 +265,9 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
                 return false;
             }
         } catch (const boost::system::system_error& e) {
-            if (e.code() != boost::asio::error::basic_errors::interrupted) {
+            if (e.code() == boost::asio::error::misc_errors::eof) {
+                sock_.close();
+            } else if (e.code() != boost::asio::error::basic_errors::interrupted) {
                 std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
             }
             return false;

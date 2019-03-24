@@ -24,14 +24,14 @@
  */
 
 #include "FreeRTOS.h"
-#include "arduino_fixed.h"
-#include "teensy.h"
 
-#include <tuple>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <cstdio>
 #include <thread>
 #include <chrono>
+#include <tuple>
 
 
 extern "C" {
@@ -39,12 +39,71 @@ void serial_puts(const char* str) {
     ::puts(str);
 }
 
-#if (configUSE_IDLE_HOOK == 1)
+void vTaskStartScheduler() {
+    while (true) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(1s);
+    }
+}
+
+void vTaskEndScheduler() {
+    ::exit(0);
+}
+
+void vTaskSuspendAll() {}
+
+long xTaskResumeAll() {
+    return 0;
+}
+
+void vTaskResume(TaskHandle_t) {}
+
+void vTaskSuspend(TaskHandle_t) {}
+
+void vTaskDelete(TaskHandle_t) {}
+
+void vTaskPrioritySet(TaskHandle_t, UBaseType_t) {}
+
+BaseType_t xTaskNotifyWait(uint32_t, uint32_t, uint32_t*, TickType_t) {
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(100ms);
+    return 0;
+}
+
+BaseType_t xTaskNotifyFromISR(TaskHandle_t, uint32_t, eNotifyAction, BaseType_t*) {
+    return 1;
+}
+
+TaskHandle_t xTaskGetHandle(const char*) {
+    return nullptr; // FIXME: check this
+}
+
+char* pcTaskGetName(TaskHandle_t) {
+    static char dummy[configMAX_TASK_NAME_LEN + 1] { "INVALID" };
+    return dummy;
+}
+
+TaskHandle_t xTaskGetIdleTaskHandle() {
+    return nullptr; // FIXME: check this
+}
+
+UBaseType_t uxTaskPriorityGet(TaskHandle_t) {
+    return 0;
+}
+
+UBaseType_t uxTaskGetStackHighWaterMark(TaskHandle_t) {
+    return 0xffffff / sizeof(StackType_t);
+}
+
 void vApplicationIdleHook();
 void vApplicationIdleHook() {
-    std::this_thread::sleep_for(std::chrono::microseconds(10));
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(10ms);
 }
-#endif // configUSE_IDLE_HOOK
+
+void assert_blink(const char* file, int line, const char* func, const char* expr) {
+    std::cout << file << " (" << line << "):" << func << " - " << expr << "\n";
+}
 } // extern C
 
 namespace freertos {

@@ -25,6 +25,7 @@
 #include "speed_control.h"
 #include "ctbot.h"
 #include "scheduler.h"
+#include "timer.h"
 
 #include "pid_v1.h"
 
@@ -54,6 +55,9 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
 SpeedControl::~SpeedControl() {
     controller_list_.remove(this);
     delete p_pid_controller_;
+    if (!controller_list_.size()) {
+        CtBot::get_instance().get_scheduler()->task_remove(CtBot::get_instance().get_scheduler()->task_get("sctrl"));
+    }
 }
 
 void SpeedControl::run() {
@@ -62,8 +66,7 @@ void SpeedControl::run() {
     }
 
     input_ = std::fabs(get_enc_speed());
-    const auto now_ms(Timer::get_ms());
-    p_pid_controller_->compute(now_ms);
+    p_pid_controller_->compute(Timer::get_ms());
 
     int pwm;
     if (setpoint_ == 0.f) {

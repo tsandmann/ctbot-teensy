@@ -17,14 +17,19 @@
 #include "english.h"
 
 #include "AudioStream.h"
-
+#include "circular_buffer.h"
 #include <string>
 #include <cstdint>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 
 class TTS : public AudioStream {
 public:
     TTS();
+
+    virtual ~TTS();
 
     bool speak(const std::string& text, const bool block);
 
@@ -36,11 +41,7 @@ public:
         default_pitch_ = pitch;
     }
 
-    bool is_playing() const;
-
-    void* get_task_handle() const {
-        return task_handle_;
-    }
+    bool is_playing();
 
 private:
     static constexpr uint32_t SAMPLING_FREQ { 44100U * 1U }; /**< DAC Sampling frequency in Hz */
@@ -53,9 +54,10 @@ private:
     uint8_t default_pitch_;
     char phonemes_[128];
     int8_t modifier_[sizeof(phonemes_)];
-    void* task_handle_;
-    void* text_queue_;
-    void* out_queue_;
+    std::thread* task_handle_;
+    std::atomic<bool> task_running_;
+    CircularBuffer<std::string*, TEXT_QUEUE_SIZE> text_queue_;
+    CircularBuffer<audio_block_t*, OUT_QUEUE_SIZE> out_queue_;
     audio_block_t* buffer_;
     size_t buffer_idx_;
     int16_t last_sample_;
@@ -65,8 +67,7 @@ private:
         return (c == 0 || c == ' ' || c == ',' || c == '.' || c == '?' || c == '\'' || c == '!' || c == ':' || c == '/');
     }
 
-    static void audio_processing(TTS* p_instance);
-
+    void audio_processing();
 
     bool say_text(const char* text);
 

@@ -14,47 +14,61 @@
 
 #include "tts.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
 #include "arduino_fixed.h"
-
 #include <memory>
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 
-TTS::TTS()
-    : AudioStream(0, nullptr), default_pitch_ { 4 }, task_handle_ {}, text_queue_ { ::xQueueCreate(TEXT_QUEUE_SIZE, sizeof(std::string*)) },
-      out_queue_ { ::xQueueCreate(OUT_QUEUE_SIZE, sizeof(audio_block_t*)) }, buffer_ {}, last_sample_ {} {
-    if (!::xTaskCreate(
-            [](void* p_this) { audio_processing(static_cast<TTS*>(p_this)); }, "speak", TTS_TASK_STACK_SIZE / 4U, this, TTS_TASK_PRIORITY, &task_handle_)) {
-        configASSERT(false);
+TTS::TTS() : AudioStream(0, nullptr), default_pitch_ { 4 }, task_running_ { true }, buffer_ {}, last_sample_ {} {
+    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(TTS_TASK_STACK_SIZE) };
+    task_handle_ = new std::thread([this]() { audio_processing(); });
+    free_rtos_std::gthr_freertos::set_next_stacksize(last);
+
+    free_rtos_std::gthr_freertos::set_priority(task_handle_, TTS_TASK_PRIORITY);
+    free_rtos_std::gthr_freertos::set_name(task_handle_, "speak");
+}
+
+TTS::~TTS() {
+    task_running_ = false;
+    if (task_handle_ && task_handle_->joinable()) {
+        task_handle_->join();
+        delete task_handle_;
     }
 }
 
 bool TTS::speak(const std::string& text, const bool block) {
     auto p_text { new std::string(text) };
-    return ::xQueueSendToBack(text_queue_, &p_text, block ? portMAX_DELAY : 0);
+    if (block) {
+        text_queue_.push(std::move(p_text));
+        return true;
+    } else {
+        return text_queue_.try_push(std::move(p_text));
+    }
 }
 
-bool TTS::is_playing() const {
-    return buffer_ || ::uxQueueMessagesWaiting(out_queue_);
+bool TTS::is_playing() {
+    return buffer_ || out_queue_.size();
 }
 
-void TTS::audio_processing(TTS* p_instance) {
+void TTS::audio_processing() {
     std::string* p_element;
-    while (::xQueueReceive(p_instance->text_queue_, &p_element, portMAX_DELAY)) {
-        p_instance->say_text(p_element->c_str());
+    while (task_running_) {
+        text_queue_.pop(p_element);
+        say_text(p_element->c_str());
         delete p_element;
     }
-    configASSERT(false);
 }
 
 bool TTS::say_text(const char* original) {
     std::unique_ptr<char[]> buffer { new char[sizeof(phonemes_)] };
-    configASSERT(buffer);
+    if (!buffer) {
+        return false;
+    }
+
     bool res { false };
 
     if (text_to_phonemes(original, s_vocab, buffer.get())) {
@@ -597,7 +611,8 @@ void TTS::prepare_buffer() {
 
     buffer_ = allocate();
     while (!buffer_) {
-        ::vTaskDelay(3U * (configTICK_RATE_HZ / 1000U)); // wait for 3 ms
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(3ms);
         buffer_ = allocate();
     }
     buffer_idx_ = 0;
@@ -605,16 +620,14 @@ void TTS::prepare_buffer() {
 
 void TTS::commit_buffer() {
     if (buffer_idx_ == AUDIO_BLOCK_SAMPLES) {
-        if (!::xQueueSendToBack(out_queue_, &buffer_, portMAX_DELAY)) {
-            configASSERT(false);
-        }
+        out_queue_.push(buffer_);
         buffer_ = nullptr;
     }
 }
 
 void TTS::update() {
     audio_block_t* p_element;
-    if (::xQueueReceive(out_queue_, &p_element, 0)) {
+    if (out_queue_.try_pop(p_element)) {
         transmit(p_element);
         release(p_element);
     }

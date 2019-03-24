@@ -27,9 +27,13 @@
 #include "WString.h"
 #include "Print.h"
 #include "Stream.h"
+#include "FreeRTOS.h"
 
 #include <cstdint>
 #include <atomic>
+#include <thread>
+#include <mutex>
+#include <memory>
 #include <deque>
 
 
@@ -37,9 +41,10 @@ class StdinOutWrapper : public Stream {
 protected:
     std::atomic<bool> recv_running_;
     std::deque<char> in_buffer_;
-    void* in_mutex_;
+    std::unique_ptr<std::thread> p_in_thread_;
+    std::mutex in_mutex_;
 
-    static void receiver_task(void* p_instance);
+    // static void receiver_task(void* p_instance);
 
 public:
     StdinOutWrapper();
