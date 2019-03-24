@@ -87,10 +87,6 @@ static void init_task() {
         new tests::SensorLcdTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::TFT_TEST_AVAILABLE) {
-        new tests::TftTest(ctbot);
-    }
-
     if (ctbot::CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
         ctbot::p_wait_test = new tests::TaskWaitTest(ctbot);
     }
