@@ -42,6 +42,29 @@ typedef enum {
     eSetValueWithoutOverwrite /* Set the task's notification value if the previous value has been read by the task. */
 } eNotifyAction;
 
+typedef enum {
+    eRunning = 0, /* A task is querying the state of itself, so must be running. */
+    eReady, /* The task being queried is in a read or pending ready list. */
+    eBlocked, /* The task being queried is in the Blocked state. */
+    eSuspended, /* The task being queried is in the Suspended state, or is in the Blocked state with an infinite time out. */
+    eDeleted, /* The task being queried has been deleted, but its TCB has not yet been freed. */
+    eInvalid /* Used as an 'invalid state' value. */
+} eTaskState;
+
+typedef struct xTASK_STATUS {
+    TaskHandle_t xHandle; /* The handle of the task to which the rest of the information in the structure relates. */
+    const char* pcTaskName; /* A pointer to the task's name. */
+    UBaseType_t xTaskNumber; /* A number unique to the task. */
+    eTaskState eCurrentState; /* The state in which the task existed when the structure was populated. */
+    UBaseType_t uxCurrentPriority; /* The priority at which the task was running (may be inherited) when the structure was populated. */
+    UBaseType_t uxBasePriority; /* The priority to which the task will return if the task's current priority has been inherited to avoid unbounded priority
+                                   inversion when obtaining a mutex. */
+    uint32_t ulRunTimeCounter; /* The total run time allocated to the task so far, as defined by the run time stats clock. */
+    StackType_t* pxStackBase; /* Points to the lowest address of the task's stack area. */
+    uint16_t usStackHighWaterMark; /* The minimum amount of stack space that has remained for the task since the task was created.  The closer this value is to
+                                      zero the closer the task has come to overflowing its stack. */
+} TaskStatus_t;
+
 extern "C" {
 void vTaskSuspendAll();
 
@@ -68,4 +91,8 @@ char* pcTaskGetName(TaskHandle_t xTaskToQuery);
 UBaseType_t uxTaskGetStackHighWaterMark(TaskHandle_t xTask);
 
 void* xTaskGetIdleTaskHandle();
+
+UBaseType_t uxTaskGetNumberOfTasks();
+
+UBaseType_t uxTaskGetSystemState(TaskStatus_t* const pxTaskStatusArray, const UBaseType_t uxArraySize, uint32_t* const pulTotalRunTime);
 } // extern C

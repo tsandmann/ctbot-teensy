@@ -542,7 +542,9 @@ void CtBot::run() {
     //         p_comm_->debug_printf<true>(PP_ARGS("{s}:{s}{s}{.2} %%\r\n", name, tabs, space, e.second));
     //     }
 
-    //     p_comm_->debug_print("\r\n", true);
+    //     if (p_runtime_stats->size()) {
+    //         p_comm_->debug_print("\r\n", true);
+    //     }
     // }
 }
 

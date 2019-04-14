@@ -95,6 +95,14 @@ UBaseType_t uxTaskGetStackHighWaterMark(TaskHandle_t) {
     return 0xffffff / sizeof(StackType_t);
 }
 
+UBaseType_t uxTaskGetNumberOfTasks() {
+    return 0; // FIXME: implement?
+}
+
+UBaseType_t uxTaskGetSystemState(TaskStatus_t* const /*pxTaskStatusArray*/, const UBaseType_t /*uxArraySize*/, uint32_t* const /*pulTotalRunTime*/) {
+    return 0; // FIXME: implement?
+}
+
 void vApplicationIdleHook();
 void vApplicationIdleHook() {
     using namespace std::chrono_literals;

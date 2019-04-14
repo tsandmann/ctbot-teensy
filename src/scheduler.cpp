@@ -224,7 +224,6 @@ std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_sta
     num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
 
     auto current_runtimes { std::make_unique<std::vector<std::pair<void*, float>>>() };
-    // auto current_runtimes { new std::vector<std::pair<void*, float>>() };
 
     for (size_t i { 0 }; i < num_tasks; ++i) {
         current_runtimes->push_back(std::make_pair(
