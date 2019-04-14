@@ -213,4 +213,31 @@ void Scheduler::print_ram_usage(CommInterface& comm) const {
         PP_ARGS("free RAM: {} KB, used heap: {} KB, system free: {} KB", std::get<0>(info) / 1024UL, std::get<1>(info) / 1024UL, std::get<2>(info) / 1024UL));
 }
 
+std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_stats() const {
+    static std::map<void*, uint32_t> last_runtimes;
+    static uint64_t last_total_runtime { 0 };
+
+    size_t num_tasks { ::uxTaskGetNumberOfTasks() };
+    std::vector<TaskStatus_t> task_data;
+    task_data.resize(num_tasks);
+    uint32_t total_runtime;
+    num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
+
+    auto current_runtimes { std::make_unique<std::vector<std::pair<void*, float>>>() };
+    // auto current_runtimes { new std::vector<std::pair<void*, float>>() };
+
+    for (size_t i { 0 }; i < num_tasks; ++i) {
+        current_runtimes->push_back(std::make_pair(
+            task_data[i].xHandle, (task_data[i].ulRunTimeCounter - last_runtimes[task_data[i].xHandle]) * 100.f / (total_runtime - last_total_runtime)));
+        last_runtimes[task_data[i].xHandle] = task_data[i].ulRunTimeCounter;
+    }
+    last_total_runtime = total_runtime;
+
+
+    auto cmp = [](std::pair<void*, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
+    std::sort(current_runtimes->begin(), current_runtimes->end(), cmp);
+
+    return current_runtimes;
+}
+
 } // namespace ctbot

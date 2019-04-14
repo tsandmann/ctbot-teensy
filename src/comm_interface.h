@@ -166,6 +166,7 @@ public:
     /**
      * @brief Write a character out to a SerialConnection
      * @param[in] c: Character to write
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const char c, const bool block) {
@@ -175,13 +176,15 @@ public:
     /**
      * @brief Write a message out to a SerialConnection
      * @param[in] str: Pointer to message as C-string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const char* str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
-     * @param[in] p_str: Message as std::unique_ptr of string
+     * @param[in] p_str: Message as std::unique_ptr of std::string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(std::unique_ptr<std::string>&& p_str, const bool block);
@@ -189,6 +192,7 @@ public:
     /**
      * @brief Write a message out to a SerialConnection
      * @param[in] str: Reference to message as string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const std::string& str, const bool block);
@@ -196,6 +200,7 @@ public:
     /**
      * @brief Write a message out to a SerialConnection
      * @param[in] str: Message as string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(std::string&& str, const bool block);
@@ -204,6 +209,7 @@ public:
      * @brief Write an integer or float out to SerialConnection
      * @tparam T: Type of integer or float
      * @param[in] v: Value
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     template <typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>

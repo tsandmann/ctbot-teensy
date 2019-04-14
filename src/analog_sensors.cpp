@@ -26,7 +26,7 @@
 #include "scheduler.h"
 #include "timer.h"
 
-#include <arduino_fixed.h>
+#include "arduino_fixed.h"
 
 
 namespace ctbot {
@@ -62,10 +62,12 @@ void AnalogSensors::update() {
 }
 
 uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
-    Scheduler::enter_critical_section();
     if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
         last_adc_res_ = resolution;
+        Scheduler::enter_critical_section();
         arduino::analogReadResolution(resolution);
+    } else {
+        Scheduler::enter_critical_section();
     }
     arduino::analogReadAveraging(avg_num);
     const uint16_t ret { static_cast<uint16_t>(arduino::analogRead(pin)) };

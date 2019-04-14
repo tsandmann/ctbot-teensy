@@ -319,6 +319,14 @@ void vApplicationTickHook() {
 }
 #endif // configUSE_TICK_HOOK
 
+#if (configGENERATE_RUN_TIME_STATS == 1)
+extern "C" uint64_t freertos_get_us();
+uint64_t freertos_get_us() {
+    return freertos::get_us();
+}
+
+#endif // configGENERATE_RUN_TIME_STATS
+
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
 implementation of vApplicationGetIdleTaskMemory() to provide the memory that is

@@ -49,6 +49,7 @@ public:
     static constexpr bool SENS_LCD_TEST_AVAILABLE { true }; /**< Statically activate or deactivate sensor display test */
     static constexpr bool TASKWAIT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate task wait test */
 
+    static constexpr bool LCD_AVAILABLE { true }; /**< Statically activate or deactivate LC display */
     static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
 
     static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
@@ -64,10 +65,28 @@ public:
     /* i2c */
     static constexpr uint8_t I2C0_PIN_SCL { 7 }; /**< Pin number of SCL for I2C 0 */
     static constexpr uint8_t I2C0_PIN_SDA { 8 }; /**< Pin number of SDA for I2C 0 */
+
     static constexpr uint8_t I2C2_PIN_SCL { 3 }; /**< Pin number of SCL for I2C 2 */
     static constexpr uint8_t I2C2_PIN_SDA { 4 }; /**< Pin number of SDA for I2C 2 */
+
     static constexpr uint8_t I2C3_PIN_SCL { 57 }; /**< Pin number of SCL for I2C 3 */
     static constexpr uint8_t I2C3_PIN_SDA { 56 }; /**< Pin number of SDA for I2C 3 */
+
+    /* spi */
+    static constexpr uint8_t SPI0_PIN_MOSI { 11 }; /**< Pin number of MOSI for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_MISO { 12 }; /**< Pin number of MISO for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_SCK { 14 }; /**< Pin number of SCK for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_CS { 15 }; /**< Pin number of default CS for SPI 0 */
+
+    static constexpr uint8_t SPI1_PIN_MOSI { 0 }; /**< Pin number of MOSI for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_MISO { 1 }; /**< Pin number of MISO for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_SCK { 32 }; /**< Pin number of SCK for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_CS { 31 }; /**< Pin number of default CS for SPI 1 */
+
+    static constexpr uint8_t SPI2_PIN_MOSI { 44 }; /**< Pin number of MOSI for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_MISO { 45 }; /**< Pin number of MISO for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_SCK { 46 }; /**< Pin number of SCK for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_CS { 43 }; /**< Pin number of default CS for SPI 2 */
 
     /* shift */
     static constexpr uint8_t SHIFT_SDATA_PIN { 43 }; /**< Pin number of shift register SDATA signal */
@@ -121,7 +140,7 @@ public:
     static constexpr uint8_t SERVO_2_PIN { 6 }; /**< Pin number of servo 2 pwm signal */
 
     /* lcd */
-    static constexpr uint8_t I2C_FOR_LCD { 2 }; /**< Number of I2C port to use for lcd interface */
+    static constexpr uint8_t LCD_I2C { 2 }; /**< Number of I2C port to use for lcd controller */
 
     /* SWD access to KL02 */
     static constexpr uint8_t SWD_CLOCK_PIN { 56 };

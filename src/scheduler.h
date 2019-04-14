@@ -176,6 +176,8 @@ public:
     size_t get_free_stack();
 
     size_t get_free_stack(const uint16_t id);
+
+    std::unique_ptr<std::vector<std::pair<void*, float>>> get_runtime_stats() const;
 };
 
 } // namespace ctbot

@@ -47,7 +47,7 @@ private:
     static constexpr uint32_t SAMPLING_FREQ { 44100U * 1U }; /**< DAC Sampling frequency in Hz */
     static constexpr size_t TEXT_QUEUE_SIZE { 4 }; /**< Size of text queue in number of elements */
     static constexpr size_t OUT_QUEUE_SIZE { 4 }; /**< Size of out queue in number of elements */
-    static constexpr uint16_t TTS_TASK_STACK_SIZE { 576 }; /**< Size of stack in byte */
+    static constexpr uint16_t TTS_TASK_STACK_SIZE { 1024 }; /**< Size of stack in byte */
     static constexpr uint8_t TTS_TASK_PRIORITY { 2 };
     static constexpr uint8_t pitches_[] { 1, 2, 4, 6, 8, 10, 13, 16 }; // User specified pitch changes
 

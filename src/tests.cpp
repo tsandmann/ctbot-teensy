@@ -28,7 +28,7 @@
 #include "leds.h"
 #include "ena.h"
 #include "sensors.h"
-#include "display.h"
+#include "lc_display.h"
 
 #include "arduino_fixed.h"
 #include "pprintpp.hpp"

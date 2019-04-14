@@ -26,7 +26,7 @@
 #include "ctbot_config.h"
 #include "scheduler.h"
 #include "leds.h"
-#include "display.h"
+#include "lc_display.h"
 #include "ena.h"
 #include "sensors.h"
 #include "motor.h"
@@ -43,6 +43,7 @@
 #include "portable/teensy.h"
 #include <cstdlib>
 #include <string>
+#include <cstring>
 #include <array>
 #include <tuple>
 
@@ -152,7 +153,9 @@ void CtBot::setup() {
     p_servos_[1] = new Servo(CtBotConfig::SERVO_2_PIN);
 
     p_leds_ = new Leds();
-    p_lcd_ = new Display();
+    if (CtBotConfig::LCD_AVAILABLE) {
+        p_lcd_ = new LCDisplay();
+    }
 
     p_parser_ = new CmdParser();
     p_serial_wifi_ = new SerialConnectionTeensy(5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE);
@@ -275,7 +278,7 @@ void CtBot::init_parser() {
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
-        } else if (args.find("lcdout") != args.npos) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdout") != args.npos) {
             const size_t s { args.find(" ") + 1 };
             const size_t e { args.find(" ", s) };
             const std::string filename { args.substr(s, e - s) };
@@ -416,7 +419,7 @@ void CtBot::init_parser() {
             uint8_t led;
             CmdParser::split_args(args, led);
             p_leds_->set(static_cast<ctbot::LedTypes>(led));
-        } else if (args.find("lcdbl") != args.npos) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdbl") != args.npos) {
             bool v;
             CmdParser::split_args(args, v);
             p_lcd_->set_backlight(v);
@@ -515,11 +518,32 @@ void CtBot::init_parser() {
 }
 
 void CtBot::run() {
+    if (!ready_) {
+        return;
+    }
+
     p_sensors_->update();
 
     if (shutdown_) {
         shutdown();
     }
+
+    // static uint32_t last_ms { 0 };
+    // const auto now { Timer::get_ms() };
+    // if (now - last_ms > 500) {
+    //     last_ms = now;
+
+    //     auto p_runtime_stats { p_scheduler_->get_runtime_stats() };
+    //     for (auto& e : *p_runtime_stats) {
+    //         const auto name { ::pcTaskGetName(e.first) };
+    //         const char* tabs { std::strlen(name) > 6 ? "\t" : "\t\t" };
+    //         const char* space { e.second >= 10.f ? "" : " " };
+
+    //         p_comm_->debug_printf<true>(PP_ARGS("{s}:{s}{s}{.2} %%\r\n", name, tabs, space, e.second));
+    //     }
+
+    //     p_comm_->debug_print("\r\n", true);
+    // }
 }
 
 bool CtBot::play_wav(const std::string& filename) {
@@ -574,8 +598,10 @@ void CtBot::shutdown() {
     p_motors_[1]->set(0);
     p_servos_[0]->disable();
     p_servos_[1]->disable();
-    p_lcd_->clear();
-    p_lcd_->set_backlight(false);
+    if (CtBotConfig::LCD_AVAILABLE) {
+        p_lcd_->clear();
+        p_lcd_->set_backlight(false);
+    }
     p_leds_->set(LedTypes::NONE);
     p_sensors_->disable_all();
 
@@ -602,8 +628,10 @@ void CtBot::shutdown() {
     // serial_puts("p_serial_wifi_ deleted.");
     delete p_parser_;
     // serial_puts("p_parser_ deleted.");
-    delete p_lcd_;
-    // serial_puts("p_lcd_ deleted.");
+    if (CtBotConfig::LCD_AVAILABLE) {
+        delete p_lcd_;
+        // serial_puts("p_lcd_ deleted.")
+    };
     delete p_leds_;
     // serial_puts("p_leds_ deleted.");
     delete p_servos_[0];

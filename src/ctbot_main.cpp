@@ -67,28 +67,28 @@ static void init_task() {
     // serial_puts("ctbot.setup() done.");
 
     /* create test tasks if configured... */
-    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
+    if (CtBotConfig::BLINK_TEST_AVAILABLE) {
         new tests::BlinkTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
+    if (CtBotConfig::LED_TEST_AVAILABLE) {
         new tests::LedTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
+    if (CtBotConfig::LCD_TEST_AVAILABLE) {
         new tests::LcdTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
+    if (CtBotConfig::ENA_TEST_AVAILABLE) {
         new tests::EnaTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
+    if (CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
         new tests::SensorLcdTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
-        ctbot::p_wait_test = new tests::TaskWaitTest(ctbot);
+    if (CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
+        p_wait_test = new tests::TaskWaitTest(ctbot);
     }
 
     // extern unsigned long __bss_end__; // set by linker script
@@ -100,7 +100,7 @@ static void init_task() {
     freertos::print_ram_usage();
 
 
-    if (ctbot::CtBotConfig::AUDIO_AVAILABLE) {
+    if (CtBotConfig::AUDIO_AVAILABLE) {
         ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, []() {
             while (true) {
                 ::software_isr(); // AudioStream::update_all()

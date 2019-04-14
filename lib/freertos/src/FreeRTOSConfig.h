@@ -60,7 +60,7 @@ extern "C" {
 #define configMAX_PRIORITIES                    ( 10 )
 #define configMINIMAL_STACK_SIZE                ( ( unsigned short ) 64 )
 #define configMAX_TASK_NAME_LEN                 ( 10 )
-#define configUSE_TRACE_FACILITY                0
+#define configUSE_TRACE_FACILITY                1
 #define configUSE_16_BIT_TICKS                  0
 #define configIDLE_SHOULD_YIELD                 1
 #define configUSE_MUTEXES                       1
@@ -76,9 +76,9 @@ extern "C" {
 #define configUSE_SYSVIEW                       0
 
 /* Run time stats gathering definitions. */
-#define configGENERATE_RUN_TIME_STATS           0
+#define configGENERATE_RUN_TIME_STATS           1
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
-#define portGET_RUN_TIME_COUNTER_VALUE()
+#define portGET_RUN_TIME_COUNTER_VALUE()        freertos_get_us()
 
 /* This demo makes use of one or more example stats formatting functions.  These
  * format the raw data provided by the uxTaskGetSystemState() function in to human
@@ -150,6 +150,10 @@ void assert_blink(const char*, int, const char*, const char*);
 #include <SEGGER_SYSVIEW_FreeRTOS.h>
 #else
 static inline void SEGGER_SYSVIEW_Conf() {}
+#endif
+
+#if configGENERATE_RUN_TIME_STATS == 1
+uint64_t freertos_get_us(void);
 #endif
 
 #ifdef __cplusplus
