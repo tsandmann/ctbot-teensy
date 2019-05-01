@@ -41,7 +41,7 @@ class Motor;
 class SpeedControl;
 class Servo;
 class Leds;
-class Display;
+class LCDisplay;
 class CmdParser;
 class Scheduler;
 class ParameterStorage;
@@ -59,9 +59,11 @@ class CtBot {
 protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
     static constexpr uint8_t TASK_PRIORITY { 3 };
+    static constexpr uint32_t STACK_SIZE { 2048 };
     static const char usage_text[]; /**< C-String containing the usage / help message */
 
     bool shutdown_;
+    bool ready_;
     uint16_t task_id_;
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
@@ -69,7 +71,7 @@ protected:
     SpeedControl* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     Leds* p_leds_; /**< Pointer to led instance */
-    Display* p_lcd_; /**< Pointer to display instance */
+    LCDisplay* p_lcd_; /**< Pointer to LC display instance */
     SerialConnectionTeensy* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
     SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
@@ -126,6 +128,11 @@ public:
      * @return Reference to CtBot instance
      */
     static CtBot& get_instance();
+
+    bool get_ready() const {
+        volatile bool ready { ready_ };
+        return ready;
+    }
 
     /**
      * @brief Destroy the CtBot instance
@@ -230,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Get the display instance
+     * @brief Get the LC display instance
      * @return Pointer to display instance
      */
     auto get_lcd() const {

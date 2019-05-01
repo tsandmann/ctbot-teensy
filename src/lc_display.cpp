@@ -16,13 +16,13 @@
  */
 
 /**
- * @file    display.cpp
+ * @file    lc_display.cpp
  * @brief   LC display driver for devices with Hitachi HD44780 and PCF8574 i2c i/o expander
  * @author  Timo Sandmann
  * @date    13.05.2018
  */
 
-#include "display.h"
+#include "lc_display.h"
 #include "scheduler.h"
 
 #include <LiquidCrystal_I2C.h>
@@ -32,7 +32,7 @@
 
 namespace ctbot {
 
-Display::Display() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::I2C_FOR_LCD, 0x3f, 2, 1, 0, 4, 5, 6, 7) } {
+LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::LCD_I2C, 0x3f, 2, 1, 0, 4, 5, 6, 7) } {
     Scheduler::enter_critical_section();
     arduino::Wire2.setSDA(CtBotConfig::I2C2_PIN_SDA);
     arduino::Wire2.setSCL(CtBotConfig::I2C2_PIN_SCL);
@@ -45,13 +45,13 @@ Display::Display() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::I2C_FOR_LCD, 0
     clear();
 }
 
-void Display::clear() const {
+void LCDisplay::clear() const {
     Scheduler::enter_critical_section();
     p_impl_->clear();
     Scheduler::exit_critical_section();
 }
 
-void Display::set_cursor(const uint8_t row, const uint8_t column) const {
+void LCDisplay::set_cursor(const uint8_t row, const uint8_t column) const {
     const uint8_t c { static_cast<uint8_t>(column - 1) };
     if (c >= LINE_LENGTH) {
         return;
@@ -61,27 +61,27 @@ void Display::set_cursor(const uint8_t row, const uint8_t column) const {
     Scheduler::exit_critical_section();
 }
 
-void Display::set_backlight(const bool status) const {
+void LCDisplay::set_backlight(const bool status) const {
     Scheduler::enter_critical_section();
     p_impl_->setBacklight(status);
     Scheduler::exit_critical_section();
 }
 
-uint8_t Display::print(const char c) const {
+uint8_t LCDisplay::print(const char c) const {
     Scheduler::enter_critical_section();
     const uint8_t ret { static_cast<uint8_t>(p_impl_->print(c)) };
     Scheduler::exit_critical_section();
     return ret;
 }
 
-uint8_t Display::print(const std::string& str) const {
+uint8_t LCDisplay::print(const std::string& str) const {
     Scheduler::enter_critical_section();
     const uint8_t ret { static_cast<uint8_t>(p_impl_->print(str.c_str())) }; // baeh
     Scheduler::exit_critical_section();
     return ret;
 }
 
-uint8_t Display::printf(const char* format, ...) {
+uint8_t LCDisplay::printf(const char* format, ...) {
     va_list args;
     va_start(args, format);
 
@@ -105,7 +105,7 @@ uint8_t Display::printf(const char* format, ...) {
     return len;
 }
 
-void Display::set_output(const std::string& out) {
+void LCDisplay::set_output(const std::string& out) {
     if (out == "stdout") {
         p_impl_->set_output(stdout);
     } else {

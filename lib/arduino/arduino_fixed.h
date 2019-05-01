@@ -23,9 +23,10 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <Print.h>
-#include <Wire.h>
+#include "Arduino.h"
+#include "Print.h"
+#include "Wire.h"
+#include "SPI.h"
 
 /* get rid of these stupid macros... */
 #undef word
@@ -104,10 +105,26 @@ using ::Serial3;
 using ::Serial4;
 using ::Serial5;
 using ::Serial6;
+using ::SPI;
+using ::SPI1;
+using ::SPI2;
 using ::Stream;
 using ::Wire;
 using ::Wire1;
 using ::Wire2;
+
+using ::String;
+
+template <typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+T map(T x, T in_min, T in_max, T out_min, T out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+template <typename T, typename std::enable_if_t<std::is_reference<T>::value, int> = 0,
+    typename std::enable_if_t<std::is_integral<typename std::remove_reference<T>::type>::value, int> = 0>
+T map(const T x, const T in_min, const T in_max, const T out_min, const T out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 static constexpr uint8_t INPUT { 0 };
 static constexpr uint8_t OUTPUT { 1 };

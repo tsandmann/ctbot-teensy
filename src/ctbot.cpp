@@ -26,7 +26,7 @@
 #include "ctbot_config.h"
 #include "scheduler.h"
 #include "leds.h"
-#include "display.h"
+#include "lc_display.h"
 #include "ena.h"
 #include "sensors.h"
 #include "motor.h"
@@ -40,6 +40,7 @@
 #include "pprintpp.hpp"
 #include <cstdlib>
 #include <string>
+#include <cstring>
 #include <array>
 #include <tuple>
 
@@ -103,7 +104,7 @@ CtBot& CtBot::get_instance() {
 }
 
 CtBot::CtBot()
-    : shutdown_ { false }, task_id_ { 0 }, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) },
+    : shutdown_ { false }, ready_ { false }, task_id_ {}, p_serial_usb_ { new SerialConnectionTeensy(0, CtBotConfig::UART0_BAUDRATE) },
       p_swd_debugger_ {} { // initializes serial connection here for debug purpose
 
     std::atexit([]() {
@@ -131,12 +132,12 @@ void CtBot::stop() {
 
 void CtBot::setup() {
     p_scheduler_ = new Scheduler();
-    task_id_ = p_scheduler_->task_add("main", TASK_PERIOD_MS, [this]() { return run(); });
+    task_id_ = p_scheduler_->task_add("main", TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
 
     p_sensors_ = new Sensors();
 
-    p_motors_[0] = new Motor(p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, true);
-    p_motors_[1] = new Motor(p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, true);
+    p_motors_[0] = new Motor(p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, CtBotConfig::MOT_L_DIR);
+    p_motors_[1] = new Motor(p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, CtBotConfig::MOT_R_DIR);
 
     p_speedcontrols_[0] = new SpeedControl(p_sensors_->get_enc_l(), *p_motors_[0]);
     p_speedcontrols_[1] = new SpeedControl(p_sensors_->get_enc_r(), *p_motors_[1]);
@@ -145,7 +146,9 @@ void CtBot::setup() {
     p_servos_[1] = new Servo(CtBotConfig::SERVO_2_PIN);
 
     p_leds_ = new Leds();
-    p_lcd_ = new Display();
+    if (CtBotConfig::LCD_AVAILABLE) {
+        p_lcd_ = new LCDisplay();
+    }
 
     p_parser_ = new CmdParser();
     p_serial_wifi_ = new SerialConnectionTeensy(5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE);
@@ -167,17 +170,21 @@ void CtBot::setup() {
             if (p_swd_debugger_->detect()) {
                 p_comm_->debug_print("p_swd_debugger_->detect() successfull.\r\n", true);
 
-                if (p_swd_debugger_->reset(false)) {
-                    p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
+                // if (p_swd_debugger_->reset(false)) {
+                //     p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
 
-                    // if (p_swd_debugger_->sys_reset_request()) {
-                    //     p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
-                    // } else {
-                    //     p_comm_->debug_print("p_swd_debugger_->sys_reset_request() failed.\r\n", true);
-                    // }
-                } else {
-                    p_comm_->debug_print("p_swd_debugger_->reset() failed.\r\n", true);
+                if (CtBotConfig::SWD_DEBUGGER_ENABLE_ON_BOOT) {
+                    arduino::delayMicroseconds(2'000'000UL);
+                    if (p_swd_debugger_->sys_reset_request()) {
+                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
+                    } else {
+                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() failed.\r\n", true);
+                    }
                 }
+
+                // } else {
+                //     p_comm_->debug_print("p_swd_debugger_->reset() failed.\r\n", true);
+                // }
             } else {
                 p_comm_->debug_print("p_swd_debugger_->detect() failed.\r\n", true);
             }
@@ -185,6 +192,8 @@ void CtBot::setup() {
             p_comm_->debug_print("p_swd_debugger_->begin() failed.\r\n", true);
         }
     }
+
+    ready_ = true;
 
     p_comm_->debug_print("\r\n*** c't-Bot init done. ***\n\r\nType \"help\" (or \"h\") to print help message\n\r\n", true);
 }
@@ -237,7 +246,7 @@ void CtBot::init_parser() {
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
-        } else if (args.find("lcdout") != args.npos) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdout") != args.npos) {
             const size_t s { args.find(" ") + 1 };
             const size_t e { args.find(" ", s) };
             const std::string filename { args.substr(s, e - s) };
@@ -372,7 +381,7 @@ void CtBot::init_parser() {
             uint8_t led;
             CmdParser::split_args(args, led);
             p_leds_->set(static_cast<ctbot::LedTypes>(led));
-        } else if (args.find("lcdbl") != args.npos) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdbl") != args.npos) {
             bool v;
             CmdParser::split_args(args, v);
             p_lcd_->set_backlight(v);
@@ -418,7 +427,7 @@ void CtBot::init_parser() {
             p_comm_->debug_printf<true>(PP_ARGS("key=\"{s}\"\r\n", key.c_str()));
             const std::string val { args.substr(e + 1) };
             p_comm_->debug_printf<true>(PP_ARGS("val=\"{s}\"\r\n", val.c_str()));
-            const int32_t value { std::stol(val) };
+            const auto value { std::stol(val) };
             p_comm_->debug_printf<true>(PP_ARGS("\"{s}\"={}\r\n", key.c_str(), value));
             p_parameter_->set<int32_t>(key, value);
             p_parameter_->flush();
@@ -430,6 +439,10 @@ void CtBot::init_parser() {
 }
 
 void CtBot::run() {
+    if (!ready_) {
+        return;
+    }
+
     p_sensors_->update();
 
     if (shutdown_) {
@@ -451,8 +464,10 @@ void CtBot::shutdown() {
     p_motors_[1]->set(0);
     p_servos_[0]->disable();
     p_servos_[1]->disable();
-    p_lcd_->clear();
-    p_lcd_->set_backlight(false);
+    if (CtBotConfig::LCD_AVAILABLE) {
+        p_lcd_->clear();
+        p_lcd_->set_backlight(false);
+    }
     p_leds_->set(LedTypes::NONE);
     p_sensors_->disable_all();
 
@@ -462,14 +477,18 @@ void CtBot::shutdown() {
 
     delete p_parameter_;
     // arduino::Serial.println("p_parameter_ deleted.");
+    Scheduler::exit_critical_section();
     delete p_comm_;
+    Scheduler::enter_critical_section();
     // arduino::Serial.println("p_comm_ deleted.");
     delete p_serial_wifi_;
     // arduino::Serial.println("p_serial_wifi_ deleted.");
     delete p_parser_;
     // arduino::Serial.println("p_parser_ deleted.");
-    delete p_lcd_;
-    // arduino::Serial.println("p_lcd_ deleted.");
+    if (CtBotConfig::LCD_AVAILABLE) {
+        delete p_lcd_;
+        // arduino::Serial.println("p_lcd_ deleted.")
+    };
     delete p_leds_;
     // arduino::Serial.println("p_leds_ deleted.");
     delete p_servos_[0];

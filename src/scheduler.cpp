@@ -81,7 +81,7 @@ void Scheduler::stop() {
     }
 }
 
-uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t, Task::func_t&& func) {
+uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t /*priority*/, const uint32_t, Task::func_t&& func) {
     Task* p_task { new Task(*this, next_id_, name, period, std::move(func)) };
     task_queue_.push(p_task);
     tasks_[p_task->id_] = p_task;
