@@ -29,47 +29,49 @@
 #include "serial_connection_teensy.h"
 #include "tests.h"
 
+#include "kinetis.h"
 #include "arduino_fixed.h"
 
 
 /**
- * @brief FreeRTOS task to initialize everything
+ * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
  */
 static void init_task(void*) {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
-    Timer::delay_us(1500UL * 1000UL);
+    Timer::delay_us(2'000UL * 1'000UL);
+
+    // ::serial_puts("init_task()");
 
     /* create CtBot singleton instance... */
-    // arduino::Serial.print("creating CtBot instance... ");
+    // ::serial_puts("creating CtBot instance...");
     CtBot& ctbot { CtBot::get_instance() };
-    // arduino::Serial.println("done.");
 
     /* initialize it... */
-    // arduino::Serial.print("initializing CtBot instance... ");
+    // ::serial_puts("calling ctbot.setup()...");
     ctbot.setup();
-    // arduino::Serial.println("done.");
+    // ::serial_puts("ctbot.setup() done.");
 
     /* create test tasks if configured... */
-    if (ctbot::CtBotConfig::BLINK_TEST_AVAILABLE) {
+    if (CtBotConfig::BLINK_TEST_AVAILABLE) {
         new tests::BlinkTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::LED_TEST_AVAILABLE) {
+    if (CtBotConfig::LED_TEST_AVAILABLE) {
         new tests::LedTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::LCD_TEST_AVAILABLE) {
+    if (CtBotConfig::LCD_TEST_AVAILABLE) {
         new tests::LcdTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::ENA_TEST_AVAILABLE) {
+    if (CtBotConfig::ENA_TEST_AVAILABLE) {
         new tests::EnaTest(ctbot);
     }
 
-    if (ctbot::CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
+    if (CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
         new tests::SensorLcdTest(ctbot);
     }
 
@@ -176,8 +178,6 @@ extern "C" {
  * @enduml
  */
 void setup() {
-    // delay_us(2000UL * 1000UL);
-
     init_task(nullptr);
 }
 
@@ -206,17 +206,11 @@ int _write(int, char* ptr, int len) {
 }
 
 #ifndef MAIN_STACK_SIZE
-#if defined(__MKL26Z64__)
-#define MAIN_STACK_SIZE 512UL
-#elif defined(__MK20DX128__)
-#define MAIN_STACK_SIZE 1024UL
-#elif defined(__MK20DX256__)
-#define MAIN_STACK_SIZE 1024UL
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 #define MAIN_STACK_SIZE 8192UL
-#endif
 #else
 #error "Unknown architecture"
+#endif
 #endif // MAIN_STACK_SIZE
 
 asm(".global _printf_float"); /**< to have a printf supporting floating point values */
@@ -237,6 +231,76 @@ void* __wrap__sbrk(ptrdiff_t incr) {
 
     currentHeapEnd += incr;
     return previousHeapEnd;
+}
+
+/**
+ * @brief Check for USB events pending and call the USB ISR
+ */
+static void poll_usb() {
+    if (SIM_SCGC4 & SIM_SCGC4_USBOTG) {
+        ::usb_isr();
+    }
+}
+
+/**
+ * @brief Delay between led error flashes
+ * @param[in] ms: Milliseconds to delay
+ * @note Doesn't use a timer to work with interrupts disabled
+ */
+static void delay_ms(const uint32_t ms) {
+    const uint32_t n { ms / 10 };
+    for (uint32_t i { 0 }; i < n; ++i) {
+        poll_usb();
+
+        for (uint32_t i { 0 }; i < 10UL * (F_CPU / 7000UL); ++i) { // 10 ms
+            asm volatile("nop");
+        }
+    }
+
+    const uint32_t iterations { (ms % 10) * (F_CPU / 7000UL) }; // remainder
+    for (uint32_t i { 0 }; i < iterations; ++i) {
+        asm volatile("nop");
+    }
+}
+
+static void error_blink(const uint8_t n) {
+    __disable_irq();
+    arduino::digitalWriteFast(35, false); // disable pwm output
+    arduino::pinMode(35, arduino::OUTPUT);
+    arduino::digitalWriteFast(36, false); // disable pwm output
+    arduino::pinMode(36, arduino::OUTPUT);
+    arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
+
+    while (true) {
+        for (uint8_t i { 0 }; i < n; ++i) {
+            arduino::digitalWriteFast(arduino::LED_BUILTIN, true);
+            delay_ms(300UL);
+            arduino::digitalWriteFast(arduino::LED_BUILTIN, false);
+            delay_ms(300UL);
+        }
+        delay_ms(2'000UL);
+    }
+}
+
+/**
+ * @brief Hard fault - blink four short flash every two seconds
+ */
+void hard_fault_isr() {
+    error_blink(4);
+}
+
+/**
+ * @brief Bus fault - blink five short flashes every two seconds
+ */
+void bus_fault_isr() {
+    error_blink(5);
+}
+
+/**
+ * @brief Usage fault - blink six short flashes every two seconds
+ */
+void usage_fault_isr() {
+    error_blink(6);
 }
 
 } // extern C

@@ -28,7 +28,7 @@
 #include "leds.h"
 #include "ena.h"
 #include "sensors.h"
-#include "display.h"
+#include "lc_display.h"
 
 #include "arduino_fixed.h"
 
@@ -38,7 +38,7 @@ namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ { false } {
     arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
-    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 192UL, [this]() { return run(); });
 }
 
 void BlinkTest::run() {
@@ -48,7 +48,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
 
 void LedTest::run() {
@@ -96,7 +96,7 @@ void EnaTest::run() {
 
 
 SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, [this]() { return run(); });
+    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1024UL, [this]() { return run(); });
 }
 
 void SensorLcdTest::run() {

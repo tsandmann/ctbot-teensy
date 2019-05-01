@@ -16,7 +16,7 @@
  */
 
 /**
- * @file    display.h
+ * @file    lc_display.h
  * @brief   LC display driver for devices with Hitachi HD44780 and PCF8574 i2c i/o expander
  * @author  Timo Sandmann
  * @date    13.05.2018
@@ -43,14 +43,14 @@ namespace ctbot {
  *  skinparam classAttributeIconSize 0
  * @enduml
  */
-class Display {
+class LCDisplay {
 protected:
     static constexpr uint8_t LINE_LENGTH { 20 }; /**< Size of display (length of one line) */
     LiquidCrystal_I2C* p_impl_;
     char buffer_[LINE_LENGTH + 1];
 
 public:
-    Display();
+    LCDisplay();
 
     /**
      * @brief Clear entire display, set cursor to home position

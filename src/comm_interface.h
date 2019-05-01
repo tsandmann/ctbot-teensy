@@ -51,15 +51,17 @@ protected:
     friend class CtBot;
 
     static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
-    static constexpr size_t OUTPUT_QUEUE_SIZE { 128 }; /**< Size of output queue in number of elements */
+    static constexpr size_t OUTPUT_QUEUE_SIZE { 64 }; /**< Size of output queue in number of elements */
     static constexpr uint16_t INPUT_TASK_PERIOD_MS { 50 }; /**< Scheduling period of input task in ms */
     static constexpr uint8_t INPUT_TASK_PRIORITY { 2 }; /**< Priority of input task */
-    static constexpr uint16_t OUTPUT_TASK_PERIOD_MS { 1 }; /**< Scheduling period of output task in ms */
+    static constexpr uint32_t INPUT_TASK_STACK_SIZE { 1536 }; /**< stack size of input task */
+    static constexpr uint16_t OUTPUT_TASK_PERIOD_MS { 20 }; /**< Scheduling period of output task in ms */
     static constexpr uint8_t OUTPUT_TASK_PRIORITY { 1 }; /**< Priority of output task */
+    static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 1024 }; /**< stack size of output task */
 
     struct OutBufferElement {
         char character_;
-        std::string* p_str_;
+        std::unique_ptr<std::string> p_str_;
     };
 
 
@@ -68,6 +70,8 @@ protected:
     int error_;
     char* p_input_;
     std::queue<OutBufferElement> output_queue_;
+    uint16_t input_task_;
+    uint16_t output_task_;
     char input_buffer_[INPUT_BUFFER_SIZE];
 
     /**
@@ -78,11 +82,11 @@ protected:
 
     void run_output();
 
-    size_t queue_debug_msg(const char c, std::string* p_str, const bool block);
+    size_t queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block);
 
     static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
-    static std::unique_ptr<char> create_formatted_string(const size_t size, const char* format, ...);
+    static std::unique_ptr<std::string> create_formatted_string(const size_t size, const char* format, ...);
 
     template <typename... Args>
     static auto string_format(const char* format, const Args&... args) {
@@ -90,7 +94,7 @@ protected:
         if (size > 0) {
             return create_formatted_string(size, format, args...);
         } else {
-            return std::unique_ptr<char> { new char { '\0' } };
+            return std::unique_ptr<std::string> {};
         }
     }
 
@@ -121,11 +125,10 @@ public:
      */
     CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo = false);
 
-    // FIXME: cleanup tasks in destructor
     /**
      * @brief Destroy the CommInterface object
      */
-    virtual ~CommInterface() = default;
+    virtual ~CommInterface();
 
     /**
      * @return Current character echo mode setting
@@ -162,6 +165,7 @@ public:
     /**
      * @brief Write a character out to a SerialConnection
      * @param[in] c: Character to write
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const char c, const bool block) {
@@ -171,13 +175,23 @@ public:
     /**
      * @brief Write a message out to a SerialConnection
      * @param[in] str: Pointer to message as C-string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const char* str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
+     * @param[in] p_str: Message as std::unique_ptr of std::string
+     * @param[in] block: Switch blocking mode
+     * @return Number of characters written
+     */
+    size_t debug_print(std::unique_ptr<std::string>&& p_str, const bool block);
+
+    /**
+     * @brief Write a message out to a SerialConnection
      * @param[in] str: Reference to message as string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(const std::string& str, const bool block);
@@ -185,6 +199,7 @@ public:
     /**
      * @brief Write a message out to a SerialConnection
      * @param[in] str: Message as string
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     size_t debug_print(std::string&& str, const bool block);
@@ -193,6 +208,7 @@ public:
      * @brief Write an integer or float out to SerialConnection
      * @tparam T: Type of integer or float
      * @param[in] v: Value
+     * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
     template <typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
@@ -209,7 +225,7 @@ public:
      */
     template <bool BLOCK = false, typename... Args>
     size_t debug_printf(const char* format, const Args&... args) {
-        return debug_print(string_format(format, args...).get(), BLOCK);
+        return debug_print(string_format(format, args...), BLOCK);
     }
 
     /**
