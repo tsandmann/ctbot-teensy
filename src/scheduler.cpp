@@ -91,10 +91,12 @@ size_t Scheduler::get_free_stack(const uint16_t id) {
 }
 
 uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) {
-    Task* p_task { new Task(*this, next_id_, name, period, priority, std::move(func)) };
-
-    std::unique_lock<std::mutex> lock(task_mutex_);
-    tasks_[p_task->id_] = p_task;
+    Task* p_task;
+    {
+        std::unique_lock<std::mutex> lock(task_mutex_);
+        p_task = new Task(*this, next_id_++, name, period, priority, std::move(func));
+        tasks_[p_task->id_] = p_task;
+    }
 
     p_task->std_thread_ = true;
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(stack_size) };
@@ -115,7 +117,7 @@ uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, con
     free_rtos_std::gthr_freertos::set_priority(p_task->handle_.p_thread, priority);
     free_rtos_std::gthr_freertos::set_name(p_task->handle_.p_thread, p_task->name_.c_str());
 
-    return next_id_++;
+    return p_task->id_;
 }
 
 uint16_t Scheduler::task_register(const std::string& name) {
@@ -128,14 +130,19 @@ uint16_t Scheduler::task_register(void* task) {
         return 0;
     }
 
-    Task* p_task { new Task(*this, next_id_, ::pcTaskGetName(task), 0, ::uxTaskPriorityGet(task), nullptr) };
-    p_task->std_thread_ = false;
-    p_task->handle_.p_freertos_handle = task;
-
-    if (p_task->handle_.p_freertos_handle) {
+    Task* p_task;
+    {
         std::unique_lock<std::mutex> lock(task_mutex_);
-        tasks_[p_task->id_] = p_task;
-        return next_id_++;
+        p_task = new Task(*this, next_id_++, ::pcTaskGetName(task), 0, ::uxTaskPriorityGet(task), nullptr);
+        p_task->std_thread_ = false;
+        p_task->handle_.p_freertos_handle = task;
+
+        if (p_task->handle_.p_freertos_handle) {
+            tasks_[p_task->id_] = p_task;
+            return p_task->id_;
+        } else {
+            --next_id_;
+        }
     }
 
     delete p_task;
@@ -143,15 +150,19 @@ uint16_t Scheduler::task_register(void* task) {
 }
 
 bool Scheduler::task_remove(const uint16_t task_id) {
-    std::unique_lock<std::mutex> lock(task_mutex_);
-    Task* p_task { tasks_.at(task_id) };
-    tasks_.erase(task_id);
+    Task* p_task;
+    {
+        std::unique_lock<std::mutex> lock(task_mutex_);
+        p_task = tasks_.at(task_id);
+        tasks_.erase(task_id);
+    }
     delete p_task;
 
     return true;
 }
 
 uint16_t Scheduler::task_get(const std::string& name) const {
+    // FIXME: lock?
     for (const auto& t : tasks_) {
         if (t.second->name_ == name) {
             return t.first;
@@ -162,10 +173,12 @@ uint16_t Scheduler::task_get(const std::string& name) const {
 }
 
 Task* Scheduler::task_get(const uint16_t id) const {
+    // FIXME: lock?
     return tasks_.at(id);
 }
 
 bool Scheduler::task_suspend(const uint16_t id) {
+    // FIXME: lock?
     if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
@@ -178,6 +191,7 @@ bool Scheduler::task_suspend(const uint16_t id) {
 }
 
 bool Scheduler::task_resume(const uint16_t id) {
+    // FIXME: lock?
     if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
@@ -190,6 +204,7 @@ bool Scheduler::task_resume(const uint16_t id) {
 }
 
 bool Scheduler::task_join(const uint16_t id) {
+    // FIXME: lock?
     if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
