@@ -52,7 +52,7 @@ void Task::print(CommInterface& comm) const {
 Task::~Task() {
     state_ = 0;
     if (std_thread_) {
-        handle_.p_thread->join();
+        handle_.p_thread->detach();
         delete handle_.p_thread;
     } else {
         ::vTaskDelete(handle_.p_freertos_handle);

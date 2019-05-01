@@ -624,7 +624,9 @@ void CtBot::shutdown() {
 
     delete p_parameter_;
     // serial_puts("p_parameter_ deleted.");
+    Scheduler::exit_critical_section();
     delete p_comm_;
+    Scheduler::enter_critical_section();
     // serial_puts("p_comm_ deleted.");
     delete p_serial_wifi_;
     // serial_puts("p_serial_wifi_ deleted.");

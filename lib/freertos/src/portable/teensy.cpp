@@ -162,7 +162,7 @@ void error_blink(const uint8_t n) {
             ::digitalWriteFast(LED_BUILTIN, false);
             delay_ms(300UL);
         }
-        delay_ms(2000UL);
+        delay_ms(2'000UL);
     }
 }
 

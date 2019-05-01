@@ -41,7 +41,8 @@ Rc5::Rc5(const uint8_t pin) : last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, 
     arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
     // FIXME: think about this...
-    arduino::attachInterrupt(pin,
+    arduino::attachInterrupt(
+        pin,
         []() {
             freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
             isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_);

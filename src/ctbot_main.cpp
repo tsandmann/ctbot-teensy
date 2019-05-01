@@ -52,19 +52,19 @@ static void init_task() {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
-    Timer::delay_us(1500UL * 1000UL);
+    Timer::delay_us(2'000UL * 1'000UL);
 
-    // serial_puts("init_task()");
+    // ::serial_puts("init_task()");
     // freertos::print_ram_usage();
 
     /* create CtBot singleton instance... */
-    // serial_puts("creating CtBot instance...");
+    // ::serial_puts("creating CtBot instance...");
     CtBot& ctbot { CtBot::get_instance() };
 
     /* initialize it... */
-    // serial_puts("calling ctbot.setup()...");
+    // ::serial_puts("calling ctbot.setup()...");
     ctbot.setup();
-    // serial_puts("ctbot.setup() done.");
+    // ::serial_puts("ctbot.setup() done.");
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
@@ -111,7 +111,7 @@ static void init_task() {
     }
 
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
-    // serial_puts("deleting init task...");
+    // ::serial_puts("deleting init task...");
     ::vTaskDelete(nullptr);
 }
 
@@ -213,14 +213,10 @@ void softirq_isr();
  */
 void setup() {
     __disable_irq();
-
     _VectorsRam[80] = softirq_isr;
 
     freertos::sysview_init();
 
-    // delay_us(2000UL * 1000UL);
-
-    // serial_puts("\n\nCreating init task...");
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
     free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), "INIT");

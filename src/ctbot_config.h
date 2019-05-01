@@ -127,7 +127,7 @@ public:
     static constexpr uint8_t BAT_VOLTAGE_PIN { 39 }; /**< Pin number of battery voltage signal */
 
     /* motors */
-    static constexpr bool MOT_L_DIR { false }; /**< Direction of rotation for left motor */
+    static constexpr bool MOT_L_DIR { true }; /**< Direction of rotation for left motor */
     static constexpr uint8_t MOT_L_PWM_PIN { 35 }; /**< Pin number of left motor pwm signal */
     static constexpr uint8_t MOT_L_DIR_PIN { 29 }; /**< Pin number of left motor direction signal */
     static constexpr bool MOT_R_DIR { true }; /**< Direction of rotation for right motor */
