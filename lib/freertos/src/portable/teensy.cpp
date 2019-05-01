@@ -50,17 +50,11 @@ task.h is included from an application file. */
 
 
 #ifndef MAIN_STACK_SIZE
-#if defined(__MKL26Z64__)
-#define MAIN_STACK_SIZE 512UL
-#elif defined(__MK20DX128__)
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 #define MAIN_STACK_SIZE 1024UL
-#elif defined(__MK20DX256__)
-#define MAIN_STACK_SIZE 1024UL
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define MAIN_STACK_SIZE 1024UL
-#endif
 #else
 #error "Unknown architecture"
+#endif
 #endif // MAIN_STACK_SIZE
 
 extern "C" {

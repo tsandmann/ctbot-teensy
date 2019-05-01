@@ -26,7 +26,7 @@ Consider this as experimental code. **If it breaks, you get to keep both pieces.
 ## Usage
 
 1. build project
-    * commandline: `plaformio run`
+    * commandline: `platformio run`
     * VS Code: use “Build” button on the PlatformIO toolbar or shortcut (`ctrl/cmd+alt+b`)
     * Eclipse CDT: `Project` -> `Build Project` or shortcut (`ctrl/cmd+b`)
 1. upload firmware image
