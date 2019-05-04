@@ -41,7 +41,6 @@
 #include "thread_gthread.h"
 
 #include <queue>
-#include <algorithm>
 
 
 namespace free_rtos_std {
