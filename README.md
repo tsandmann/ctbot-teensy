@@ -16,7 +16,7 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 
 1. Install PlatformIO core as described [here][PIOInstall]
     * can be skipped, if using VS Code IDE with [PlatformIO extension][PlatformIOVSC]
-    * can be skipped, if using Atom IDE with package [platformio-ide](https://atom.io/packages/platformio-ide)
+    * can be skipped, if using Atom IDE with package [platformio-ide][PlatformIOAtom]
     * if you don't want to use PlatformIO core, see [manual build](#manual-build) for setup
 1. Clone this git repository: `git clone https://github.com/tsandmann/ctbot-teensy`
 1. Change to cloned repo: `cd ctbot-teensy`
@@ -70,8 +70,8 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 * This is currently untested
 * To compile for a teensy board
     1. Install a C++ compiler for the arm-none-eabi architecture, e.g. arm-none-eabi-g++ with newlib C standard library and libstdc++ C++ runtime library. The compiler has to be capable to compile at least C++14.
-    1. Download and compile [Teensy Core Libraries for Arduino](https://github.com/PaulStoffregen/cores/tree/master/teensy3) into a static library, e.g. `libFrameworkArduino.a`
-    1. Download and compile [Teensy Wire Library](https://github.com/PaulStoffregen/Wire.git) into a static library, e.g. `libWire.a`
+    1. Download and compile [Teensy Core Libraries for Arduino][TeensyLibCore] into a static library, e.g. `libFrameworkArduino.a`
+    1. Download and compile [Teensy Wire Library][TeensyLibWire] into a static library, e.g. `libWire.a`
     1. Compile the following files from these subdirectories of the project:
         * `src/*.cpp`
         * `lib/lcd/*.cpp`
@@ -93,6 +93,7 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 [PIOGithub]: https://github.com/platformio/platformio-core
 [PIOInstall]: http://docs.platformio.org/en/latest/installation.html
 [PlatformIOVSC]: http://docs.platformio.org/en/latest/faq.html#faq-install-shell-commands
+[PlatformIOAtom]: https://atom.io/packages/platformio-ide
 [VSCode]: https://github.com/Microsoft/vscode
 [EclipseCDT]: https://eclipse.org
 [PlatformIOIDE]: http://docs.platformio.org/en/latest/ide.html#ide
@@ -102,3 +103,5 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 [CppCon2015Stroustrup]: https://youtu.be/1OEu9C51K2A
 [CppCon2015Sutter]: https://youtu.be/hEx5DNLWGgA
 [Doxygen style 1]: https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html#cppblock
+[TeensyLibCore]: https://github.com/tsandmann/teensy-cores.git
+[TeensyLibWire]: https://github.com/tsandmann/teensy-wire.git
