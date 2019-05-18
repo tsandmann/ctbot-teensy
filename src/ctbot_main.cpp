@@ -205,6 +205,15 @@ int _write(int, char* ptr, int len) {
     return -1;
 }
 
+int _kill(int, int) {
+    while (true) {
+    }
+}
+
+int _getpid() {
+    return 1;
+}
+
 #ifndef MAIN_STACK_SIZE
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 #define MAIN_STACK_SIZE 8192UL
