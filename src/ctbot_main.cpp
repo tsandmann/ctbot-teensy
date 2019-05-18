@@ -224,11 +224,8 @@ void setup() {
 
     ::vTaskStartScheduler();
 
-    // we never ever get here
-    if (p_init_thread->joinable()) {
-        p_init_thread->join();
-    }
     freertos::error_blink(10);
+    // we never ever get here
 }
 
 /**

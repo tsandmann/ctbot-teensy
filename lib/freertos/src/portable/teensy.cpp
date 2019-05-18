@@ -272,6 +272,14 @@ int __wrap__gettimeofday(timeval* tv, void*) {
     return 0;
 }
 
+int _kill(int, int) {
+    freertos::error_blink(7);
+}
+
+int _getpid() {
+    return reinterpret_cast<int>(xTaskGetCurrentTaskHandle());
+}
+
 void vApplicationMallocFailedHook();
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName);
 
