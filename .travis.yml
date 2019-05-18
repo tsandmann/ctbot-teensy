@@ -12,12 +12,10 @@ addons:
         sources:
             - ubuntu-toolchain-r-test
             - sourceline: 'ppa:samuel-bachmann/boost'
-        packages:
-            - libstdc++-7-dev
-            - g++-7
-            - boost1.60
 
 install:
+    - sudo apt-get update -qq
+    - sudo apt-get -y --allow-unauthenticated install libstdc++-7-dev g++-7 boost1.60
     - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
     - pip install -U platformio
 
