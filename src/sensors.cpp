@@ -23,7 +23,8 @@
  */
 
 #include "sensors.h"
-#include "timer.h"
+
+#include <chrono>
 
 
 namespace ctbot {
@@ -44,6 +45,11 @@ void Sensors::update() {
     DigitalSensors::update();
 
     ena_.off(DigitalSensors::ENA_MASK | AnalogSensors::ENA_MASK);
+}
+
+uint32_t Sensors::get_time() const {
+    using namespace std::chrono;
+    return duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 }
 
 } // namespace ctbot

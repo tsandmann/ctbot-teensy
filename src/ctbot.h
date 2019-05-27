@@ -30,6 +30,12 @@
 
 
 class ARMKinetisDebug;
+class AudioOutputAnalog;
+class AudioPlaySdWav;
+class AudioSynthWaveformSineHires;
+class TTS;
+class AudioConnection;
+class AudioMixer4;
 
 /**
  * @brief Namespace for all c't-Bot classes and functionality
@@ -78,6 +84,12 @@ protected:
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     ParameterStorage* p_parameter_;
     ARMKinetisDebug* p_swd_debugger_;
+    AudioOutputAnalog* p_audio_output_;
+    AudioPlaySdWav* p_play_wav_;
+    // AudioSynthWaveformSineHires* p_sine_generator_;
+    TTS* p_tts_;
+    AudioConnection* p_audio_conn_[4];
+    AudioMixer4* p_audio_mixer_;
 
     /**
      * @brief Constructor of main class
@@ -205,8 +217,6 @@ public:
      */
     virtual void setup();
 
-    void start();
-
     /**
      * @brief Stop the scheduler
      *
@@ -219,6 +229,8 @@ public:
      * @enduml
      */
     void stop();
+
+    bool play_wav(const std::string& filename);
 
     /**
      * @brief Get the sensor instance

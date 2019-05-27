@@ -47,8 +47,10 @@ public:
     static constexpr bool ENA_TEST_AVAILABLE { false }; /**< Statically activate or deactivate ENA test */
     static constexpr bool LCD_TEST_AVAILABLE { false }; /**< Statically activate or deactivate LCD test */
     static constexpr bool SENS_LCD_TEST_AVAILABLE { true }; /**< Statically activate or deactivate sensor display test */
+    static constexpr bool TASKWAIT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate task wait test */
 
     static constexpr bool LCD_AVAILABLE { true }; /**< Statically activate or deactivate LC display */
+    static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
 
     static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
     static constexpr bool SWD_DEBUGGER_ENABLE_ON_BOOT { false }; /**< Statically enable or disable SWD debug setting on boot */

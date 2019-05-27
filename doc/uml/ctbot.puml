@@ -12,6 +12,7 @@ namespace ctbot {
         +get_serial_usb_conn() : SerialConnectionTeensy*
         +get_servos() : Servo*[2]
         +get_speedcontrols() : SpeedControl*[2]
+        +play_wav(const std::string& filename) : bool
         +setup() : void
         +stop() : void
         #CtBot()
@@ -19,12 +20,16 @@ namespace ctbot {
         #run() : void
         #shutdown() : void
         #{static} usage_text : const char[]
+        #p_audio_conn_ : AudioConnection*
+        #p_audio_mixer_ : AudioMixer4*
+        #p_audio_output_ : AudioOutputAnalog*
         #p_comm_ : CommInterface*
         #p_lcd_ : Display*
         #p_leds_ : Leds*
         #p_motors_ : Motor*
         #p_parameter_ : ParameterStorage*
         #p_parser_ : CmdParser*
+        #p_play_wav_ : AudioPlaySdWav*
         #p_scheduler_ : Scheduler*
         #p_sensors_ : Sensors*
         #p_serial_usb_ : SerialConnectionTeensy*
@@ -32,6 +37,7 @@ namespace ctbot {
         #p_servos_ : Servo*
         #p_speedcontrols_ : SpeedControl*
         #p_swd_debugger_ : ARMKinetisDebug*
+        #p_tts_ : TTS*
         #shutdown_ : bool
         #task_id_ : uint16_t
     }

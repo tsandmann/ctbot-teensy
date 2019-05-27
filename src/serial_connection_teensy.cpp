@@ -23,12 +23,12 @@
  */
 
 #include "serial_connection_teensy.h"
-#include "timer.h"
 
 #include <cstring>
 #include <cstddef>
 #include <streambuf>
 #include <sstream>
+#include <thread>
 
 
 namespace ctbot {
@@ -96,17 +96,19 @@ uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16
         return size;
     }
 
-    const auto start(Timer::get_ms());
-    auto now(start);
-    auto running_ms(now - start);
+    const auto start { std::chrono::system_clock::now() };
+    auto now { start };
+    auto running { now - start };
 
-    while ((bytes_available < size) && ((!timeout_ms) || (running_ms < timeout_ms))) {
+    while ((bytes_available < size) && ((!timeout_ms) || (std::chrono::duration_cast<std::chrono::milliseconds>(running).count() < timeout_ms))) {
         if (wait_callback_) {
             wait_callback_(this);
         }
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(1us);
         bytes_available = available();
-        now = Timer::get_ms();
-        running_ms = now - start;
+        now = std::chrono::system_clock::now();
+        running = now - start;
     }
 
     return std::min<uint16_t>(bytes_available, size);
@@ -121,6 +123,7 @@ size_t SerialConnectionTeensy::receive(void* data, const size_t size) {
         return 0;
     }
 
+    std::unique_lock<std::mutex> mlock(mutex_);
     return io_stream_.readBytes(static_cast<char*>(data), size);
 }
 
@@ -130,6 +133,7 @@ size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
     }
 
     uint16_t i;
+    std::unique_lock<std::mutex> mlock(mutex_);
     for (i = 0U; i < size; ++i) {
         buf.sputc(io_stream_.read());
     }
@@ -139,17 +143,22 @@ size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
 size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
-    char* ptr(reinterpret_cast<char*>(data));
+    char* ptr { reinterpret_cast<char*>(data) };
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            c = io_stream_.read();
+        }
         if (c >= 0) {
             *ptr = c;
             ++n;
         } else {
-            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1us);
         }
     } while (*ptr++ != delim && n < size16);
 
@@ -159,18 +168,23 @@ size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const
 size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
     uint16_t n { 0 };
-    char* ptr(reinterpret_cast<char*>(data));
+    char* ptr { reinterpret_cast<char*>(data) };
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            c = io_stream_.read();
+        }
         if (c >= 0) {
             *ptr = c;
             ++ptr;
             ++n;
         } else {
-            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1us);
         }
     } while (std::strncmp(reinterpret_cast<const char*>(data), delim.c_str(), n) && n < size16);
 
@@ -178,21 +192,26 @@ size_t SerialConnectionTeensy::receive_until(void* data, const std::string& deli
 }
 
 size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
-    const auto size16(static_cast<uint16_t>(maxsize));
+    const auto size16 { static_cast<uint16_t>(maxsize) };
     uint16_t n { 0 };
     char tmp;
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            c = io_stream_.read();
+        }
         if (c >= 0) {
             tmp = c;
             buf.sputc(tmp);
             ++n;
         } else {
             tmp = 0;
-            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1us);
         }
     } while (tmp != delim && n < size16);
 
@@ -200,20 +219,25 @@ size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char del
 }
 
 size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize) {
-    auto& buffer(reinterpret_cast<std::stringbuf&>(buf));
-    const auto size16(static_cast<uint16_t>(maxsize));
+    auto& buffer { reinterpret_cast<std::stringbuf&>(buf) };
+    const auto size16 { static_cast<uint16_t>(maxsize) };
 
     uint16_t n { 0 };
     do {
-        const int c { io_stream_.read() };
+        int c { -1 };
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            c = io_stream_.read();
+        }
         if (c >= 0) {
             buf.sputc(c);
             ++n;
         } else {
-            // FIXME: delay / yield?
             if (wait_callback_) {
                 wait_callback_(this);
             }
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(1us);
         }
     } while (std::strncmp(streambuf_helper::get_data(buffer), delim.c_str(), n) && n < size16);
 
@@ -221,56 +245,60 @@ size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::str
 }
 
 size_t SerialConnectionTeensy::receive_async(void* data, const size_t size, const uint32_t timeout_ms) {
-    auto ptr(reinterpret_cast<uint8_t*>(data));
-    const auto timeout(static_cast<uint16_t>(timeout_ms));
+    auto ptr { reinterpret_cast<uint8_t*>(data) };
+    const auto timeout { static_cast<uint16_t>(timeout_ms) };
 
-    const auto avail(available());
-    const auto to_read(std::min(avail, size));
+    const auto avail { available() };
+    const auto to_read { std::min(avail, size) };
     size_t done { 0 };
     if (to_read) {
         done = receive(ptr, to_read);
         ptr += done;
     }
 
-    const auto n(wait_for_data(size - done, timeout));
+    const auto n { wait_for_data(size - done, timeout) };
     done += receive(ptr, n);
 
     return done;
 }
 
 size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms) {
-    const auto timeout(static_cast<uint16_t>(timeout_ms));
+    const auto timeout { static_cast<uint16_t>(timeout_ms) };
 
-    const auto avail(available());
-    const auto to_read(std::min(avail, size));
+    const auto avail { available() };
+    const auto to_read { std::min(avail, size) };
     size_t done { 0 };
     if (to_read) {
         done = receive(buf, to_read);
     }
 
-    const auto n(wait_for_data(size - done, timeout));
+    const auto n { wait_for_data(size - done, timeout) };
     done += receive(buf, n);
 
     return done;
 }
 
 size_t SerialConnectionTeensy::send(const void* data, const size_t size) {
+    std::unique_lock<std::mutex> mlock(mutex_);
     return io_stream_.write(reinterpret_cast<const uint8_t*>(data), size);
 }
 
 size_t SerialConnectionTeensy::send(std::streambuf& buf, const size_t size) {
-    const auto size16(static_cast<uint16_t>(size));
+    const auto size16 { static_cast<uint16_t>(size) };
+    std::unique_lock<std::mutex> mlock(mutex_);
     for (auto i(0U); i < size16; ++i) {
         io_stream_.write(static_cast<uint8_t>(buf.sbumpc()));
     }
     return size;
 }
 
-int SerialConnectionTeensy::peek() const {
+int SerialConnectionTeensy::peek() {
+    std::unique_lock<std::mutex> mlock(mutex_);
     return io_stream_.peek();
 }
 
 void SerialConnectionTeensy::flush() {
+    std::unique_lock<std::mutex> mlock(mutex_);
     io_stream_.flush();
 }
 

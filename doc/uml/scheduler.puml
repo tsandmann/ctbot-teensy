@@ -22,6 +22,7 @@ namespace ctbot {
         +task_suspend(const uint16_t id) : bool
         +task_wait_for(const uint16_t id, Condition& cond) : bool
         #{static} DEFAULT_PRIORITY = 4 : constexpr uint8_t
+        #{static} DEFAULT_STACK_SIZE = 2048 : constexpr uint32_t
         #next_id_ : uint16_t
         #tasks_ : std::map<uint16_t, Task*>
         #tasks_mutex_ : void*

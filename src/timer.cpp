@@ -25,20 +25,21 @@
 #include "timer.h"
 
 #include "arduino_fixed.h"
+#include "portable/teensy.h"
+#include <chrono>
 
 
 namespace ctbot {
 
 uint32_t Timer::get_us() {
-    return arduino::micros();
+    // using namespace std::chrono;
+    // return static_cast<uint32_t>(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
+    return freertos::get_us();
 }
 
 uint32_t Timer::get_ms() {
-    return arduino::millis();
-}
-
-void Timer::delay_ms(const uint32_t ms) {
-    arduino::delay(ms);
+    using namespace std::chrono;
+    return static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 }
 
 void Timer::delay_us(const uint32_t us) {

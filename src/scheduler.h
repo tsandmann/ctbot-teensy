@@ -28,11 +28,19 @@
 #include "ctbot_task.h"
 
 #include <cstdint>
-#include <queue>
+#include <vector>
+#include <list>
 #include <map>
 #include <string>
 #include <functional>
+#include <thread>
+#include <mutex>
 
+
+extern "C" {
+void vTaskSuspendAll();
+long xTaskResumeAll();
+}
 
 namespace ctbot {
 
@@ -50,41 +58,27 @@ class CommInterface;
 class Scheduler {
 protected:
     static constexpr uint8_t DEFAULT_PRIORITY { 4 };
-
-    struct TaskComparator {
-        /**
-         * @brief Compare operator for Task
-         * @param[in] *lhs Pointer to task to compare with other task
-         * @param[in] *rhs Pointer other task for comparison
-         * @return true, if the other tasks has to be executed before (a lower next runtime)
-         */
-        bool operator()(Task* lhs, Task* rhs) {
-            return lhs->next_runtime_ > rhs->next_runtime_; // lowest next_runtime will be executed first!
-        }
-    };
+    static constexpr uint32_t DEFAULT_STACK_SIZE { 2 * 1024 }; // byte
 
     uint16_t next_id_; /**< Next task ID to use */
-    std::priority_queue<Task*, std::vector<Task*>, TaskComparator> task_queue_; /**< Queue of all tasks, sorted ascending by next runtime */
     std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
+    std::mutex task_mutex_;
 
 public:
-    /**
-     * @brief Entry point of scheduler
-     * @note Does not return until scheduler is stoppped
-     */
-    void run();
+    static constexpr uint8_t MAX_PRIORITY { 9 };
 
     /**
-     * @brief Stop the scheduler (and its main loop, @see run)
+     * @brief Stop (exit) the scheduler
+     * @note Calls FreeRTOS' vTaskEndScheduler()
      */
     static void stop();
 
     static inline void enter_critical_section() {
-        // FIXME: disable ints?
+        vTaskSuspendAll();
     }
 
     static inline void exit_critical_section() {
-        // FIXME: disable ints?
+        xTaskResumeAll();
     }
 
     /**
@@ -93,11 +87,16 @@ public:
     Scheduler();
 
     /**
+     * @brief Destroy the Scheduler object
+     */
+    ~Scheduler();
+
+    /**
      * @brief Add a tasks to the run queue
      * @param[in] name: Reference to string with name of the task
      * @param[in] period: Execution period of task in ms
      * @param[in] priority: Priority of task
-     * @param[in] stack_size: Size of task's stack in byte (dummy)
+     * @param[in] stack_size: Size of task's stack in byte
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
@@ -107,7 +106,7 @@ public:
      * @brief Add a tasks to the run queue
      * @param[in] name: Reference to string with name of the task
      * @param[in] period: Execution period of task in ms
-     * @param[in] stack_size: Size of task's stack in byte (dummy)
+     * @param[in] stack_size: Size of task's stack in byte
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
@@ -123,8 +122,12 @@ public:
      * @return ID of created task or 0 in case of an error
      */
     uint16_t task_add(const std::string& name, const uint16_t period, Task::func_t&& func) {
-        return task_add(name, period, DEFAULT_PRIORITY, 0, std::move(func));
+        return task_add(name, period, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, std::move(func));
     }
+
+    uint16_t task_register(const std::string& name);
+
+    uint16_t task_register(void* task);
 
     bool task_remove(const uint16_t task);
 
@@ -156,8 +159,7 @@ public:
      */
     bool task_resume(const uint16_t id);
 
-    // FIXME: Documentation
-    bool task_wait_for(const uint16_t id, Condition& cond);
+    bool task_join(const uint16_t id);
 
     /**
      * @brief Print a list of all tasks and their current status
@@ -170,6 +172,12 @@ public:
      * @param[in] comm: Reference to CommInterface instance used to print with
      */
     void print_ram_usage(CommInterface& comm) const;
+
+    size_t get_free_stack();
+
+    size_t get_free_stack(const uint16_t id);
+
+    std::unique_ptr<std::vector<std::pair<void*, float>>> get_runtime_stats() const;
 };
 
 } // namespace ctbot

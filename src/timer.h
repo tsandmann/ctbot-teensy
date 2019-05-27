@@ -65,16 +65,9 @@ public:
     static uint32_t get_ms();
 
     /**
-     * @brief Delay the execution by ms milliseconds
-     * @param ms: Number of ms to wait
-     * @note Calls Arduinos delay()
-     */
-    static void delay_ms(const uint32_t ms);
-
-    /**
      * @brief Delay the execution by us microseconds
      * @param us: Number of us to wait
-     * @note Calls Arduinos delayMicroseconds()
+     * @note Calls Arduinos delayMicroseconds(), does NOT block the task
      */
     static void delay_us(const uint32_t us);
 };
