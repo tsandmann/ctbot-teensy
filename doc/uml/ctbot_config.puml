@@ -2,11 +2,16 @@
 
 namespace ctbot {
     class CtBotConfig {
+        +{static} BEHAVIOR_MODEL_AVAILABLE = true : constexpr bool
+
         +{static} BLINK_TEST_AVAILABLE = false : constexpr bool
         +{static} ENA_TEST_AVAILABLE = false : constexpr bool
         +{static} LCD_TEST_AVAILABLE = false : constexpr bool
         +{static} LED_TEST_AVAILABLE = true : constexpr bool
         +{static} SENS_LCD_TEST_AVAILABLE = true : constexpr bool
+        +{static} TASKWAIT_TEST_AVAILABLE = false : constexpr bool
+
+        +{static} AUDIO_AVAILABLE = true : constexpr bool
 
         +{static} SWD_DEBUGGER_AVAILABLE = false : constexpr bool
 

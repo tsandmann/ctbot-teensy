@@ -23,80 +23,146 @@
  */
 
 #include "scheduler.h"
-#include "condition.h"
 #include "ctbot.h"
 #include "timer.h"
 #include "comm_interface.h"
 
 #include "pprintpp.hpp"
 #include "arduino_fixed.h"
-#include <malloc.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "portable/teensy.h"
 
 
 namespace ctbot {
 
-Scheduler::Scheduler() : next_id_ {} {}
+Scheduler::Scheduler() : next_id_ {} {
+    Task* p_idle_task { new Task(*this, next_id_++, configIDLE_TASK_NAME, 0, ::uxTaskPriorityGet(::xTaskGetIdleTaskHandle()), nullptr) };
+    p_idle_task->std_thread_ = false;
+    p_idle_task->handle_.p_freertos_handle = ::xTaskGetIdleTaskHandle();
 
-void Scheduler::run() {
-    // arduino::Serial.println("Scheduler::run() entered.");
-    while (!task_queue_.empty()) {
-        Task* p_task { task_queue_.top() };
-        task_queue_.pop();
+    ::vTaskSuspendAll();
+    tasks_[0] = p_idle_task;
+    ::xTaskResumeAll();
+}
 
-        // arduino::Serial.print("Scheduler::run(): next_runtime=");
-        // arduino::Serial.print(p_task->next_runtime_, 10);
-        // arduino::Serial.println("ms");
-
-        const uint32_t next_runtime { p_task->next_runtime_ };
-        uint32_t now { Timer::get_ms() };
-
-        // arduino::Serial.print("Scheduler::run(): now=");
-        // arduino::Serial.print(now, 10);
-        // arduino::Serial.println("ms");
-
-        while (next_runtime > now) {
-            // FIXME: sleep?
-            now = Timer::get_ms();
+Scheduler::~Scheduler() {
+    // arduino::Serial.println("Scheduler::~Scheduler() entered.");
+    enter_critical_section();
+    for (auto& t : tasks_) {
+        if (t.second->name_ != "main") {
+            // arduino::Serial.print("Scheduler::~Scheduler(): task 0x");
+            // arduino::Serial.print(t.second->id_, 16);
+            // arduino::Serial.print(" @ 0x");
+            // arduino::Serial.print(reinterpret_cast<uintptr_t>(t.second), 16);
+            // arduino::Serial.print(" will be blocked...");
+            t.second->state_ = 0;
+            // arduino::Serial.println(" done.");
         }
-
-        // arduino::Serial.print("Scheduler::run(): now=");
-        // arduino::Serial.print(now, 10);
-        // arduino::Serial.println("ms");
-
-        if (p_task->state_ == 1) {
-            // arduino::Serial.print("Scheduler::run(): executing task \"");
-            // arduino::Serial.print(p_task->name_.c_str());
-            // arduino::Serial.println("\"");
-
-            p_task->func_();
-        }
-        p_task->next_runtime_ = now + p_task->period_;
-        task_queue_.push(p_task);
     }
+    // arduino::Serial.println("Scheduler::~Scheduler(): all tasks blocked.");
+
+    for (auto& t : tasks_) {
+        if (t.second->name_ != "main") {
+            // arduino::Serial.print("Scheduler::~Scheduler(): task \"");
+            // arduino::Serial.print(t.second->name_.c_str());
+            // arduino::Serial.print("\" will be deleted...");
+            delete t.second;
+            // arduino::Serial.println(" done.");
+        }
+    }
+    exit_critical_section();
+    // serial_puts("Scheduler::~Scheduler(): all tasks deleted.");
 }
 
 void Scheduler::stop() {
-    while (true) {
-        // FIXME: sleep?
-    }
+    ::vTaskEndScheduler();
 }
 
-uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t /*priority*/, const uint32_t, Task::func_t&& func) {
-    Task* p_task { new Task(*this, next_id_, name, period, std::move(func)) };
-    task_queue_.push(p_task);
-    tasks_[p_task->id_] = p_task;
-    return next_id_++;
+size_t Scheduler::get_free_stack() {
+    return ::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t);
+}
+
+size_t Scheduler::get_free_stack(const uint16_t id) {
+    auto p_task { task_get(id) };
+    return ::uxTaskGetStackHighWaterMark(
+               p_task->std_thread_ ? free_rtos_std::gthr_freertos::get_freertos_handle(p_task->handle_.p_thread) : p_task->handle_.p_freertos_handle)
+        * sizeof(StackType_t);
+}
+
+uint16_t Scheduler::task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) {
+    Task* p_task;
+    {
+        std::unique_lock<std::mutex> lock(task_mutex_);
+        p_task = new Task(*this, next_id_++, name, period, priority, std::move(func));
+        tasks_[p_task->id_] = p_task;
+    }
+
+    p_task->std_thread_ = true;
+    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(stack_size) };
+    p_task->handle_.p_thread = new std::thread([p_task]() {
+        using namespace std::chrono;
+        auto last_exec { system_clock::now() };
+        while (p_task->state_) {
+            std::this_thread::sleep_until(last_exec + milliseconds(p_task->period_));
+            last_exec = system_clock::now();
+            if (p_task->state_ == 1) {
+                p_task->func_();
+            }
+        }
+    });
+    configASSERT(p_task->handle_.p_thread);
+    free_rtos_std::gthr_freertos::set_next_stacksize(last);
+
+    free_rtos_std::gthr_freertos::set_priority(p_task->handle_.p_thread, priority);
+    free_rtos_std::gthr_freertos::set_name(p_task->handle_.p_thread, p_task->name_.c_str());
+
+    return p_task->id_;
+}
+
+uint16_t Scheduler::task_register(const std::string& name) {
+    auto task { ::xTaskGetHandle(name.c_str()) };
+    return task_register(task);
+}
+
+uint16_t Scheduler::task_register(void* task) {
+    if (!task) {
+        return 0;
+    }
+
+    Task* p_task;
+    {
+        std::unique_lock<std::mutex> lock(task_mutex_);
+        p_task = new Task(*this, next_id_++, ::pcTaskGetName(task), 0, ::uxTaskPriorityGet(task), nullptr);
+        p_task->std_thread_ = false;
+        p_task->handle_.p_freertos_handle = task;
+
+        if (p_task->handle_.p_freertos_handle) {
+            tasks_[p_task->id_] = p_task;
+            return p_task->id_;
+        } else {
+            --next_id_;
+        }
+    }
+
+    delete p_task;
+    return 0;
 }
 
 bool Scheduler::task_remove(const uint16_t task_id) {
-    Task* p_task { tasks_.at(task_id) };
-    tasks_.erase(task_id);
+    Task* p_task;
+    {
+        std::unique_lock<std::mutex> lock(task_mutex_);
+        p_task = tasks_.at(task_id);
+        tasks_.erase(task_id);
+    }
     delete p_task;
 
     return true;
 }
 
 uint16_t Scheduler::task_get(const std::string& name) const {
+    // FIXME: lock?
     for (const auto& t : tasks_) {
         if (t.second->name_ == name) {
             return t.first;
@@ -107,38 +173,44 @@ uint16_t Scheduler::task_get(const std::string& name) const {
 }
 
 Task* Scheduler::task_get(const uint16_t id) const {
+    // FIXME: lock?
     return tasks_.at(id);
 }
 
 bool Scheduler::task_suspend(const uint16_t id) {
+    // FIXME: lock?
     if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
 
     Task& task { *tasks_[id] };
     task.state_ = 2;
+    free_rtos_std::gthr_freertos::suspend(task.handle_.p_thread);
 
     return true;
 }
 
 bool Scheduler::task_resume(const uint16_t id) {
+    // FIXME: lock?
     if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
 
     Task& task { *tasks_[id] };
     task.state_ = 1;
+    free_rtos_std::gthr_freertos::resume(task.handle_.p_thread);
 
     return true;
 }
 
-bool Scheduler::task_wait_for(const uint16_t id, Condition& cond) {
-    cond.add_task(task_get(id));
-
-    if (!task_suspend(id)) {
-        cond.remove_task(task_get(id));
+bool Scheduler::task_join(const uint16_t id) {
+    // FIXME: lock?
+    if (tasks_.find(id) == tasks_.end()) {
         return false;
     }
+
+    Task& task { *tasks_[id] };
+    task.handle_.p_thread->join();
 
     return true;
 }
@@ -149,18 +221,37 @@ void Scheduler::print_task_list(CommInterface& comm) const {
     }
 }
 
-extern "C" {
-unsigned long _estack; // set by linker script
-void* _sbrk(ptrdiff_t);
-}
-
 void Scheduler::print_ram_usage(CommInterface& comm) const {
-    volatile size_t x { 0 };
-    void* ptr { _sbrk(x) };
-    const size_t system_free { (reinterpret_cast<uint8_t*>(&_estack) - static_cast<uint8_t*>(ptr)) - 8192U };
-    const auto info { mallinfo() };
+    const auto info { freertos::ram_usage() };
 
     comm.debug_printf<true>(
-        PP_ARGS("free RAM: {} KB, used heap: {} KB, system free: {} KB", (system_free + info.fordblks) / 1024UL, info.uordblks / 1024UL, system_free / 1024UL));
+        PP_ARGS("free RAM: {} KB, used heap: {} KB, system free: {} KB", std::get<0>(info) / 1024UL, std::get<1>(info) / 1024UL, std::get<2>(info) / 1024UL));
 }
+
+std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_stats() const {
+    static std::map<void*, uint32_t> last_runtimes;
+    static uint64_t last_total_runtime { 0 };
+
+    size_t num_tasks { ::uxTaskGetNumberOfTasks() };
+    std::vector<TaskStatus_t> task_data;
+    task_data.resize(num_tasks);
+    uint32_t total_runtime;
+    num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
+
+    auto current_runtimes { std::make_unique<std::vector<std::pair<void*, float>>>() };
+
+    for (size_t i { 0 }; i < num_tasks; ++i) {
+        current_runtimes->push_back(std::make_pair(
+            task_data[i].xHandle, (task_data[i].ulRunTimeCounter - last_runtimes[task_data[i].xHandle]) * 100.f / (total_runtime - last_total_runtime)));
+        last_runtimes[task_data[i].xHandle] = task_data[i].ulRunTimeCounter;
+    }
+    last_total_runtime = total_runtime;
+
+
+    auto cmp = [](std::pair<void*, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
+    std::sort(current_runtimes->begin(), current_runtimes->end(), cmp);
+
+    return current_runtimes;
+}
+
 } // namespace ctbot

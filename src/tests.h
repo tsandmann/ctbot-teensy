@@ -25,6 +25,12 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+#include <vector>
 
 
 namespace ctbot {
@@ -382,6 +388,49 @@ public:
      * @note Never called in current setup
      */
     ~SensorLcdTest() = default;
+};
+
+
+/**
+ * @brief Task wait on condition test
+ *
+ * @startuml{TaskWaitTest.png}
+ *  !include tests.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
+ */
+class TaskWaitTest {
+protected:
+    static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of tasks in ms */
+
+    CtBot& ctbot_; /**< Reference to CtBot instance */
+    std::mutex m1_, m2_;
+    std::condition_variable cv1_, cv2_;
+    std::thread *p_thr1_, *p_thr2_;
+    std::atomic<bool> running_;
+
+    /* disable copy/move */
+    TaskWaitTest(const TaskWaitTest&) = delete;
+    void operator=(const TaskWaitTest&) = delete;
+    TaskWaitTest(TaskWaitTest&&) = delete;
+
+public:
+    /**
+     * @brief Constructor, creates the tasks, that implement the actual functionality
+     * @param[in] ctbot: Reference to CtBot instance
+     */
+    TaskWaitTest(CtBot& ctbot);
+
+    /**
+     * @brief Destructor to destroy tasks
+     * @note Never called in current setup
+     */
+    ~TaskWaitTest();
+
+    void stop() {
+        running_ = false;
+    }
 };
 
 } // namespace tests

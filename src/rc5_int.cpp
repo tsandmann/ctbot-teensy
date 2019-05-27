@@ -27,6 +27,7 @@
 #include "ctbot.h"
 
 #include "rc5.h"
+#include "portable/teensy.h"
 #include <type_traits>
 
 
@@ -41,7 +42,13 @@ Rc5::Rc5(const uint8_t pin) : last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, 
 
     // FIXME: think about this...
     arduino::attachInterrupt(
-        pin, []() { isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_); }, arduino::CHANGE);
+        pin,
+        []() {
+            freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
+            isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_);
+            freertos::trace_isr_exit();
+        },
+        arduino::CHANGE);
     Scheduler::exit_critical_section();
 
     reset();

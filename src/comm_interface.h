@@ -24,11 +24,12 @@
 
 #pragma once
 
+#include "circular_buffer.h"
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <mutex>
 #include <type_traits>
-#include <queue>
 
 
 namespace ctbot {
@@ -69,7 +70,7 @@ protected:
     bool echo_;
     int error_;
     char* p_input_;
-    std::queue<OutBufferElement> output_queue_;
+    CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> output_queue_;
     uint16_t input_task_;
     uint16_t output_task_;
     char input_buffer_[INPUT_BUFFER_SIZE];

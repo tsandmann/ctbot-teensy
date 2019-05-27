@@ -65,28 +65,6 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
   * More to come soon
 * ...
 
-## Manual Build
-
-* This is currently untested
-* To compile for a teensy board
-    1. Install a C++ compiler for the arm-none-eabi architecture, e.g. arm-none-eabi-g++ with newlib C standard library and libstdc++ C++ runtime library. The compiler has to be capable to compile at least C++14.
-    1. Download and compile [Teensy Core Libraries for Arduino][TeensyLibCore] into a static library, e.g. `libFrameworkArduino.a`
-    1. Download and compile [Teensy Wire Library][TeensyLibWire] into a static library, e.g. `libWire.a`
-    1. Compile the following files from these subdirectories of the project:
-        * `src/*.cpp`
-        * `lib/lcd/*.cpp`
-        * `lib/PCF8574/*.cpp`
-        * `lib/pid/*.cpp`
-        * `lib/rc5/*.cpp`
-    1. Add the following subdirectories to your compiler include path:
-        * `src/`
-        * `lib/arduino/`
-        * `lib/lcd/`
-        * `lib/PCF8574/`
-        * `lib/pid/`
-        * `lib/rc5/`
-    1. Additional linker flags (beside others): `-Wl,--start-group libWire.a libFrameworkArduino.a -lm -lstdc++ -Wl,--end-group`
-
 [ctBot]: https://www.heise.de/ct/artikel/c-t-Bot-und-c-t-Sim-284119.html
 [Teensy]: https://www.pjrc.com/teensy/index.html
 [PlatformIO]: https://platformio.org

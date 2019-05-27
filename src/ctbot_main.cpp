@@ -29,21 +29,33 @@
 #include "serial_connection_teensy.h"
 #include "tests.h"
 
-#include "kinetis.h"
 #include "arduino_fixed.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "portable/teensy.h"
+#include <thread>
+#include <memory>
 
+
+namespace ctbot {
+// FIXME: just for testing purpose
+tests::TaskWaitTest* p_wait_test { nullptr };
+} // namespace ctbot
+
+static TaskHandle_t g_audio_task { nullptr };
 
 /**
  * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
  */
-static void init_task(void*) {
+static void init_task() {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
     Timer::delay_us(2'000UL * 1'000UL);
 
     // ::serial_puts("init_task()");
+    // freertos::print_ram_usage();
 
     /* create CtBot singleton instance... */
     // ::serial_puts("creating CtBot instance...");
@@ -75,15 +87,37 @@ static void init_task(void*) {
         new tests::SensorLcdTest(ctbot);
     }
 
-    /* finally start CtBot instance */
-    // arduino::Serial.print("starting CtBot instance... ");
-    ctbot.start();
-    // arduino::Serial.println("CtBot instance exited.");
+    if (CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
+        p_wait_test = new tests::TaskWaitTest(ctbot);
+    }
 
-    // we should never get here
+    // extern unsigned long __bss_end__; // set by linker script
+    // extern unsigned long _estack; // set by linker script
+    // Serial.print("__bss_end__=0x");
+    // Serial.println(reinterpret_cast<uintptr_t>(&__bss_end__), 16);
+    // Serial.print("_estack=0x");
+    // Serial.println(reinterpret_cast<uintptr_t>(&_estack), 16);
+    freertos::print_ram_usage();
+
+
+    if (CtBotConfig::AUDIO_AVAILABLE) {
+        ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, []() {
+            while (true) {
+                ::software_isr(); // AudioStream::update_all()
+                ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
+            }
+        });
+        g_audio_task = ::xTaskGetHandle("audio");
+    }
+
+    ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
+    // ::serial_puts("deleting init task...");
+    ::vTaskDelete(nullptr);
 }
 
 extern "C" {
+void softirq_isr();
+
 /**
  * @brief Entry point for c't-Bot initialization
  *
@@ -178,7 +212,20 @@ extern "C" {
  * @enduml
  */
 void setup() {
-    init_task(nullptr);
+    __disable_irq();
+    _VectorsRam[80] = softirq_isr;
+
+    freertos::sysview_init();
+
+    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
+    auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
+    free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), "INIT");
+    free_rtos_std::gthr_freertos::set_next_stacksize(last);
+
+    ::vTaskStartScheduler();
+
+    freertos::error_blink(10);
+    // we never ever get here
 }
 
 /**
@@ -205,111 +252,36 @@ int _write(int, char* ptr, int len) {
     return -1;
 }
 
-int _kill(int, int) {
-    while (true) {
-    }
-}
-
-int _getpid() {
-    return 1;
-}
-
-#ifndef MAIN_STACK_SIZE
-#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define MAIN_STACK_SIZE 8192UL
-#else
-#error "Unknown architecture"
-#endif
-#endif // MAIN_STACK_SIZE
-
-asm(".global _printf_float"); /**< to have a printf supporting floating point values */
-
-/* override _sbrk() - you have to link with option: "-Wl,--wrap=_sbrk" */
-extern unsigned long __bss_end__; // set by linker script
-extern unsigned long _estack; // set by linker script
-void* __wrap__sbrk(ptrdiff_t incr) {
-    static uint8_t* currentHeapEnd { reinterpret_cast<uint8_t*>(&__bss_end__) };
-
-    void* previousHeapEnd = currentHeapEnd;
-
-    if ((reinterpret_cast<uintptr_t>(currentHeapEnd) + incr >= reinterpret_cast<uintptr_t>(&_estack) - MAIN_STACK_SIZE)
-        || (reinterpret_cast<uintptr_t>(currentHeapEnd) + incr < reinterpret_cast<uintptr_t>(&__bss_end__))) {
-        _impure_ptr->_errno = ENOMEM; // newlib's thread-specific errno
-        return reinterpret_cast<void*>(-1); // the malloc-family routine that called sbrk will return 0
-    }
-
-    currentHeapEnd += incr;
-    return previousHeapEnd;
-}
-
-/**
- * @brief Check for USB events pending and call the USB ISR
- */
-static void poll_usb() {
-    if (SIM_SCGC4 & SIM_SCGC4_USBOTG) {
-        ::usb_isr();
-    }
-}
-
-/**
- * @brief Delay between led error flashes
- * @param[in] ms: Milliseconds to delay
- * @note Doesn't use a timer to work with interrupts disabled
- */
-static void delay_ms(const uint32_t ms) {
-    const uint32_t n { ms / 10 };
-    for (uint32_t i { 0 }; i < n; ++i) {
-        poll_usb();
-
-        for (uint32_t i { 0 }; i < 10UL * (F_CPU / 7000UL); ++i) { // 10 ms
-            asm volatile("nop");
-        }
-    }
-
-    const uint32_t iterations { (ms % 10) * (F_CPU / 7000UL) }; // remainder
-    for (uint32_t i { 0 }; i < iterations; ++i) {
-        asm volatile("nop");
-    }
-}
-
-static void error_blink(const uint8_t n) {
-    __disable_irq();
-    arduino::digitalWriteFast(35, false); // disable pwm output
-    arduino::pinMode(35, arduino::OUTPUT);
-    arduino::digitalWriteFast(36, false); // disable pwm output
-    arduino::pinMode(36, arduino::OUTPUT);
-    arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
-
-    while (true) {
-        for (uint8_t i { 0 }; i < n; ++i) {
-            arduino::digitalWriteFast(arduino::LED_BUILTIN, true);
-            delay_ms(300UL);
-            arduino::digitalWriteFast(arduino::LED_BUILTIN, false);
-            delay_ms(300UL);
-        }
-        delay_ms(2'000UL);
-    }
-}
-
 /**
  * @brief Hard fault - blink four short flash every two seconds
  */
 void hard_fault_isr() {
-    error_blink(4);
+    freertos::error_blink(4);
 }
 
 /**
  * @brief Bus fault - blink five short flashes every two seconds
  */
 void bus_fault_isr() {
-    error_blink(5);
+    freertos::error_blink(5);
 }
 
 /**
  * @brief Usage fault - blink six short flashes every two seconds
  */
 void usage_fault_isr() {
-    error_blink(6);
+    freertos::error_blink(6);
+}
+
+void softirq_isr() {
+    if (ctbot::CtBotConfig::AUDIO_AVAILABLE) {
+        freertos::trace_isr_enter();
+        if (g_audio_task) {
+            ::xTaskNotifyFromISR(g_audio_task, 0, eNoAction, nullptr);
+            portYIELD_FROM_ISR(true);
+        }
+        freertos::trace_isr_exit();
+    }
 }
 
 } // extern C

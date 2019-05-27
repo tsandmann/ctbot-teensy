@@ -59,6 +59,11 @@ void ShiftReg<SCK_PIN, RCK_PIN>::out(uint8_t data, const uint8_t, const uint8_t)
         data <<= 1;
     }
 
+    // ExecuteAtomic<> x;
+    // x([] () {
+    // ...
+    // });
+
     __disable_irq();
     arduino::digitalWriteFast(SCK_PIN, false);
     arduino::digitalWriteFast(CtBotConfig::SHIFT_SDATA_PIN, false);

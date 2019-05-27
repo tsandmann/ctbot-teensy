@@ -2,12 +2,21 @@ language: python
 python:
     - "2.7"
 
-sudo: false
+sudo: required
 cache:
     directories:
         - "~/.platformio"
 
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:samuel-bachmann/boost'
+
 install:
+    - sudo apt-get update -qq
+    - sudo apt-get -y --allow-unauthenticated install libstdc++-7-dev g++-7 boost1.60
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
     - pip install -U platformio
 
 script:
@@ -15,3 +24,4 @@ script:
     - platformio init
     - platformio run --environment teensy36
     - platformio run --environment teensy35
+    - platformio run --environment native

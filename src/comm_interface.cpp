@@ -33,6 +33,8 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 
 namespace ctbot {
@@ -52,12 +54,17 @@ CommInterface::~CommInterface() {
     schdl->task_remove(input_task_);
 }
 
-size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool /*block*/) {
+size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block) {
     const auto ret { p_str ? p_str->length() : 1 };
     OutBufferElement element { c, std::move(p_str) };
 
-    output_queue_.push(std::move(element));
-
+    if (block) {
+        output_queue_.push(std::move(element));
+    } else {
+        if (!output_queue_.try_push(std::move(element))) {
+            return 0;
+        }
+    }
     return ret;
 }
 
@@ -107,16 +114,15 @@ size_t CommInterface::debug_print(std::string&& str, const bool block) {
 }
 
 void CommInterface::flush() {
+    using namespace std::chrono_literals;
     while (output_queue_.size()) {
-        arduino::yield();
+        std::this_thread::sleep_for(1ms);
     }
 }
 
 void CommInterface::run_output() {
     OutBufferElement element;
-    while (output_queue_.size()) {
-        element = std::move(output_queue_.front());
-        output_queue_.pop();
+    while (output_queue_.try_pop(element)) {
         if (element.p_str_) {
             io_.send(element.p_str_->c_str(), element.p_str_->length());
         } else {
