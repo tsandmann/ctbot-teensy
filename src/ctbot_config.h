@@ -135,6 +135,9 @@ public:
     static constexpr uint8_t MOT_R_DIR_PIN { 30 }; /**< Pin number of right motor direction signal */
     static constexpr int16_t MOT_PWM_MAX { 16000 }; /**< Maximum pwm duty cycle value for motors */
 
+    /* wheel encoders */
+    static constexpr uint8_t ENCODER_MARKS { 60 }; /**< Number of encoder marks on a wheel */
+
     /* servos */
     static constexpr uint8_t SERVO_1_PIN { 5 }; /**< Pin number of servo 1 pwm signal */
     static constexpr uint8_t SERVO_2_PIN { 6 }; /**< Pin number of servo 2 pwm signal */
