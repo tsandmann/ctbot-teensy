@@ -25,6 +25,7 @@
 #pragma once
 
 #include "timer.h"
+#include "ctbot_config.h"
 
 #include "arduino_fixed.h"
 #include <cstdint>
@@ -45,7 +46,6 @@ class Encoder {
 protected:
     static constexpr float AVG_FILTER_PARAM { 0.25f }; /**< Filter coefficient for speed averaging filter */
     static constexpr float WHEEL_PERIMETER { 178.1283 }; /**< Perimeter of the wheel in mm */
-    static constexpr uint8_t ENCODER_MARKS { 60 }; /**< Number of encoder marks on the wheel */
     static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
 
     int16_t edges_; /**< Current number of edges counted; increasing for forward wheel turning, decreasing otherwise */
@@ -60,7 +60,7 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
-    static constexpr uint8_t DATA_ARRAY_SIZE { 16 }; /**< Size of buffer array in byte for raw encoder data */
+    static constexpr uint8_t DATA_ARRAY_SIZE { 32 }; /**< Size of buffer array in byte for raw encoder data */
 
     /**
      * @brief Construct a new Encoder object
@@ -110,7 +110,8 @@ public:
         const uint32_t now { Timer::get_us() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
-        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > 4000)) {
+        constexpr int32_t MIN_DT_US { static_cast<int32_t>(1000.f * 1000.f / (151.f * 1.2f / 60.f) / CtBotConfig::ENCODER_MARKS) }; // max 151 rpm +20% margin
+        if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > MIN_DT_US)) {
             last = value;
             last_time = now;
 

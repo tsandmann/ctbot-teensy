@@ -83,7 +83,7 @@ void Encoder::update() {
             return;
         }
 
-        speed_ = (WHEEL_PERIMETER / ENCODER_MARKS * 1000000.f) * count_ / diff;
+        speed_ = (WHEEL_PERIMETER / CtBotConfig::ENCODER_MARKS * 1000000.f) * count_ / diff;
         speed_avg_ = speed_avg_ * (1.f - AVG_FILTER_PARAM) + speed_ * AVG_FILTER_PARAM;
 
         if (DEBUG && speed_ != 0.f) {
