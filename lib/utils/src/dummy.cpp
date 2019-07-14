@@ -21,3 +21,7 @@
  * @author  Timo Sandmann
  * @date    24.03.2019
  */
+
+#ifdef __clang__
+int dummy;
+#endif
