@@ -139,6 +139,7 @@ using ::Serial5;
 using ::Serial6;
 using ::Stream;
 using ::String;
+using ::TwoWire;
 using ::Wire;
 using ::Wire1;
 using ::Wire2;
