@@ -66,6 +66,9 @@ public:
     static constexpr uint8_t I2C0_PIN_SCL { 7 }; /**< Pin number of SCL for I2C 0 */
     static constexpr uint8_t I2C0_PIN_SDA { 8 }; /**< Pin number of SDA for I2C 0 */
 
+    static constexpr uint8_t I2C1_PIN_SCL { 37 }; /**< Pin number of SCL for I2C 1 */
+    static constexpr uint8_t I2C1_PIN_SDA { 38 }; /**< Pin number of SDA for I2C 1 */
+
     static constexpr uint8_t I2C2_PIN_SCL { 3 }; /**< Pin number of SCL for I2C 2 */
     static constexpr uint8_t I2C2_PIN_SDA { 4 }; /**< Pin number of SDA for I2C 2 */
 

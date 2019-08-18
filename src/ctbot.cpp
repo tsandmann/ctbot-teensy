@@ -35,6 +35,7 @@
 #include "serial_connection_teensy.h"
 #include "cmd_parser.h"
 #include "parameter_storage.h"
+#include "i2c_wrapper.h"
 #include "tests.h"
 
 #include "FreeRTOS.h"
@@ -111,7 +112,17 @@ const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\r\n"
 
                                  "audio (a)\r\n"
                                  "\tplay FILENAME\t\tplay wavefile FILENAME from SD card\r\n"
-                                 "\tstop\t\t\tstop currently playing wavefile\r\n" };
+                                 "\tstop\t\t\tstop currently playing wavefile\r\n"
+
+                                 "i2c (i)\r\n"
+                                 "\tselect [0;3] FREQ\tselect I2C bus to use (0, 1, 2 or 3) and set frequency to FREQ kHz\r\n"
+                                 "\taddr ADDRESS\t\tset I2C-address of device to use\r\n"
+                                 "\tread8 REG\t\tread 1 byte from register at address REG\r\n"
+                                 "\tread16 REG\t\tread 2 bytes from register at address REG\r\n"
+                                 "\tread32 REG\t\tread 4 bytes from register at address REG\r\n"
+                                 "\twrite8 REG DATA\t\twrite 1 byte (DATA) in register at address REG\r\n"
+                                 "\twrite16 REG DATA\twrite 2 bytes (DATA) in register at address REG\r\n"
+                                 "\twrite32 REG DATA\twrite 4 bytes (DATA) in register at address REG\r\n" };
 
 
 CtBot& CtBot::get_instance() {
@@ -515,6 +526,84 @@ void CtBot::init_parser() {
             return true;
         });
     }
+
+    p_parser_->register_cmd("i2c", 'i', [this](const std::string& args) {
+        if (args.find("select") != args.npos) {
+            uint8_t bus;
+            uint16_t freq;
+            CmdParser::split_args(args, bus, freq);
+            return I2C_Wrapper::set_bus(bus, freq);
+        } else if (args.find("addr") != args.npos) {
+            uint8_t addr;
+            CmdParser::split_args(args, addr); // FIXME: accept hex values
+            I2C_Wrapper::set_address(addr);
+            return true;
+        } else if (args.find("read8") != args.npos) {
+            uint8_t addr;
+            CmdParser::split_args(args, addr); // FIXME: accept hex values
+            uint8_t data;
+            if (I2C_Wrapper::read_reg8(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("read16") != args.npos) {
+            uint8_t addr;
+            CmdParser::split_args(args, addr); // FIXME: accept hex values
+            uint16_t data;
+            if (I2C_Wrapper::read_reg16(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("read32") != args.npos) {
+            uint8_t addr;
+            CmdParser::split_args(args, addr); // FIXME: accept hex values
+            uint32_t data;
+            if (I2C_Wrapper::read_reg32(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("write8") != args.npos) {
+            uint8_t addr;
+            uint8_t data;
+            CmdParser::split_args(args, addr, data); // FIXME: accept hex values
+            if (I2C_Wrapper::write_reg8(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("write16") != args.npos) {
+            uint8_t addr;
+            uint16_t data;
+            CmdParser::split_args(args, addr, data); // FIXME: accept hex values
+            if (I2C_Wrapper::write_reg16(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("write32") != args.npos) {
+            uint8_t addr;
+            uint32_t data;
+            CmdParser::split_args(args, addr, data); // FIXME: accept hex values
+            if (I2C_Wrapper::read_reg32(addr, data)) {
+                return false;
+            } else {
+                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else {
+            return false;
+        }
+
+        return true;
+    });
 }
 
 void CtBot::run() {

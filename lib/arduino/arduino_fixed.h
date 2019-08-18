@@ -109,9 +109,11 @@ using ::SPI;
 using ::SPI1;
 using ::SPI2;
 using ::Stream;
+using ::TwoWire;
 using ::Wire;
 using ::Wire1;
 using ::Wire2;
+// using ::Wire3; //FIXME: activate I2C_3
 
 using ::String;
 

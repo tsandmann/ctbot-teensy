@@ -45,7 +45,7 @@ namespace freertos {
  * @brief Indicate an error with the onboard LED
  * @param[in] n: Number of short LED pulses to encode the error
  */
-void error_blink(const uint8_t n);
+void error_blink(const uint8_t n) __attribute__((noreturn));
 
 /**
  * @brief Get amount of used and free (heap) RAM
