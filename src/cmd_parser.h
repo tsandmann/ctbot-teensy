@@ -112,7 +112,7 @@ public:
     static char* split_args(const std::string& args, T& x1) {
         const auto l { args.find(" ") + 1 };
         char* p_end;
-        x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 10));
+        x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 0));
         return p_end;
     }
 
