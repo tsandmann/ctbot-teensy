@@ -27,6 +27,27 @@
 #include <cstddef>
 
 
+typedef struct {
+    volatile uint8_t A1;
+    volatile uint8_t F;
+    volatile uint8_t C1;
+    volatile uint8_t S;
+    volatile uint8_t D;
+    volatile uint8_t C2;
+    volatile uint8_t FLT;
+    volatile uint8_t RA;
+    volatile uint8_t SMB;
+    volatile uint8_t A2;
+    volatile uint8_t SLTH;
+    volatile uint8_t SLTL;
+} KINETIS_I2C_t;
+
+#define KINETIS_I2C0 (*(KINETIS_I2C_t*) 0x40066000)
+#define KINETIS_I2C1 (*(KINETIS_I2C_t*) 0x40067000)
+#define KINETIS_I2C2 (*(KINETIS_I2C_t*) 0x400E6000)
+#define KINETIS_I2C3 (*(KINETIS_I2C_t*) 0x400E7000)
+
+
 class TwoWire {
 public:
     void begin() {}

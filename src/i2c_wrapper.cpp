@@ -31,7 +31,9 @@ arduino::TwoWire* I2C_Wrapper::p_i2c_ {};
 uint8_t I2C_Wrapper::bus_ {};
 uint8_t I2C_Wrapper::addr_ {};
 
+
 bool I2C_Wrapper::set_bus(const uint8_t bus_id, const uint16_t freq) {
+    bus_ = bus_id;
     switch (bus_id) {
         case 0: {
             p_i2c_ = &arduino::Wire;
@@ -77,6 +79,44 @@ bool I2C_Wrapper::set_bus(const uint8_t bus_id, const uint16_t freq) {
     }
 
     return true;
+}
+
+uint16_t I2C_Wrapper::get_freq() {
+    switch (bus_) {
+        case 0: {
+            switch (KINETIS_I2C0.F) {
+                case 0x2C: return 104;
+                case 0x1C: return 416;
+                case 0x12: return 938;
+            }
+            break;
+        }
+        case 1: {
+            switch (KINETIS_I2C1.F) {
+                case 0x2C: return 104;
+                case 0x1C: return 416;
+                case 0x12: return 938;
+            }
+            break;
+        }
+        case 2: {
+            switch (KINETIS_I2C2.F) {
+                case 0x2C: return 104;
+                case 0x1C: return 416;
+                case 0x12: return 938;
+            }
+            break;
+        }
+        case 3: {
+            switch (KINETIS_I2C3.F) {
+                case 0x2C: return 104;
+                case 0x1C: return 416;
+                case 0x12: return 938;
+            }
+            break;
+        }
+    }
+    return 0;
 }
 
 void I2C_Wrapper::set_address(const uint8_t addr) {

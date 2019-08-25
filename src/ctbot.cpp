@@ -545,7 +545,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::read_reg8(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else if (args.find("read16") != args.npos) {
@@ -555,7 +556,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::read_reg16(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else if (args.find("read32") != args.npos) {
@@ -565,7 +567,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::read_reg32(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else if (args.find("write8") != args.npos) {
@@ -575,7 +578,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::write_reg8(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else if (args.find("write16") != args.npos) {
@@ -585,7 +589,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::write_reg16(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else if (args.find("write32") != args.npos) {
@@ -595,7 +600,8 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::read_reg32(addr, data)) {
                 return false;
             } else {
-                p_comm_->debug_printf<true>(PP_ARGS("bus {} dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_address(), addr, data));
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;
             }
         } else {

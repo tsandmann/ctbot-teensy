@@ -40,11 +40,15 @@ public:
     static uint8_t get_bus() {
         return bus_;
     }
+
     static bool set_bus(const uint8_t bus_id, const uint16_t freq = 100);
+
+    static uint16_t get_freq();
 
     static uint8_t get_address() {
         return addr_;
     }
+
     static void set_address(const uint8_t addr);
 
     static uint8_t read_reg8(const uint8_t reg, uint8_t& data);
