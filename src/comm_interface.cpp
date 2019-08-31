@@ -113,6 +113,11 @@ size_t CommInterface::debug_print(std::string&& str, const bool block) {
     return queue_debug_msg('\0', std::move(p_str), block);
 }
 
+size_t CommInterface::debug_print(const std::string_view& str, const bool block) {
+    auto p_str { std::make_unique<std::string>(str) };
+    return queue_debug_msg('\0', std::move(p_str), block);
+}
+
 void CommInterface::flush() {
     using namespace std::chrono_literals;
     while (output_queue_.size()) {
@@ -161,7 +166,8 @@ void CommInterfaceCmdParser::run_input() {
             if (echo_) {
                 io_.send("\r\n", 2);
             }
-            cmd_parser_.parse(input_buffer_, *this);
+            const std::string_view str { input_buffer_, static_cast<size_t>(p_input_ - input_buffer_) };
+            cmd_parser_.parse(str, *this);
             p_input_ = input_buffer_;
             history_view_ = 0;
             break;

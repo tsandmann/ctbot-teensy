@@ -46,3 +46,19 @@ size_t Stream::readBytes(char* buffer, size_t length) {
     }
     return count;
 }
+
+size_t Stream::readBytesUntil(char terminator, char* buffer, size_t length) {
+    if (buffer == nullptr) {
+        return 0;
+    }
+    size_t count = 0;
+    while (count < length) {
+        int c = read();
+        if (c < 0 || c == terminator) {
+            break;
+        }
+        *buffer++ = (char) c;
+        count++;
+    }
+    return count;
+}
