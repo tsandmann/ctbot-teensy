@@ -66,7 +66,6 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
     static constexpr uint8_t TASK_PRIORITY { 3 };
     static constexpr uint32_t STACK_SIZE { 2048 };
-    static const char usage_text[]; /**< C-String containing the usage / help message */
 
     bool shutdown_;
     bool ready_;
