@@ -43,39 +43,48 @@ void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const
     commands_[std::string(&cmd_short, 1)] = func;
 }
 
-bool CmdParser::execute_cmd(const std::string& cmd, CommInterface& comm) {
-    if (!cmd.length()) {
+bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
+    if (!cmd.size()) {
         return false;
     }
 
-    const auto arg_pos(cmd.find(" "));
-    const auto cmd_str(cmd.substr(0, arg_pos));
+    if (cmd[0] == '#') {
+        // just a comment
+        return true;
+    }
 
-    const auto it(commands_.find(cmd_str));
+    const auto arg_pos { cmd.find(" ") };
+    const auto cmd_str { cmd.substr(0, arg_pos) };
+
+    const auto it { commands_.find(cmd_str) };
     if (it == commands_.end()) {
         if (echo_) {
             comm.set_color(CommInterface::Color::RED, CommInterface::Color::BLACK);
             comm.set_attribute(CommInterface::Attribute::BOLD);
             comm.debug_print("ERROR", true);
             comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
-            comm.debug_printf<true>(PP_ARGS(": command \"{s}\" not found: ", cmd.c_str()));
+            comm.debug_print(": command \"", true);
+            comm.debug_print(cmd, true);
+            comm.debug_print("\" not found.\r\n", true);
             comm.set_attribute(CommInterface::Attribute::NORMAL);
-            comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
-            // comm.debug_printf<false>(PP_ARGS("cmd.size={}\r\n", cmd.size()));
-            for (size_t i { 0 }; i < cmd.size(); ++i) {
-                comm.debug_printf<false>(PP_ARGS("{#x} ", static_cast<uint16_t>(cmd[i])));
+            if (DEBUG_) {
+                comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+                comm.debug_printf<true>(PP_ARGS("cmd.size={}\r\n", cmd.size()));
+                for (size_t i { 0 }; i < cmd.size(); ++i) {
+                    comm.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(cmd[i])));
+                }
             }
-            comm.debug_print("\r\n", false);
+            comm.debug_print("\r\n", true);
         }
         return false;
     }
 
-    std::string args;
-    if (arg_pos != std::string::npos && cmd.length() > arg_pos + 1) {
+    std::string args; // FIXME: string_view
+    if (arg_pos != std::string::npos && cmd.size() > arg_pos + 1) {
         args = cmd.substr(arg_pos + 1);
     }
 
-    bool res { it->second(args) };
+    const bool res { it->second(args) };
 
     if (res && echo_) {
         comm.set_color(CommInterface::Color::GREEN, CommInterface::Color::BLACK);
@@ -93,10 +102,10 @@ bool CmdParser::execute_cmd(const std::string& cmd, CommInterface& comm) {
     return res;
 }
 
-bool CmdParser::parse(const char* in, CommInterface& comm) {
-    if (*in) {
+bool CmdParser::parse(const std::string_view& in, CommInterface& comm) {
+    if (!in.empty()) {
         history_.emplace_front(in);
-        if (history_.size() > HISTORY_SIZE) {
+        if (history_.size() > HISTORY_SIZE_) {
             history_.pop_back();
         }
         return execute_cmd(history_.front(), comm);

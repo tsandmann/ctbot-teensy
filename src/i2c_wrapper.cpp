@@ -150,6 +150,34 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) {
     return 0;
 }
 
+uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) {
+    if (!p_i2c_) {
+        return 4;
+    }
+
+    p_i2c_->beginTransmission(addr_);
+    p_i2c_->write(reg >> 8);
+    p_i2c_->write(reg && 0xff);
+    const uint8_t status { p_i2c_->endTransmission() };
+    if (status) {
+        return status;
+    }
+
+    if (p_i2c_->requestFrom(addr_, 1U) != 1U) {
+        return 4;
+    }
+    while (p_i2c_->available() < 1) {
+    }
+
+    const auto x { p_i2c_->read() };
+    if (x < 0) {
+        return 4;
+    }
+    data = static_cast<uint8_t>(x);
+
+    return 0;
+}
+
 uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) {
     if (!p_i2c_) {
         return 4;
@@ -238,6 +266,17 @@ uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) {
     return p_i2c_->endTransmission();
 }
 
+uint8_t I2C_Wrapper::write_reg8(const uint16_t reg, const uint8_t value) {
+    if (!p_i2c_) {
+        return 4;
+    }
+
+    p_i2c_->beginTransmission(addr_);
+    p_i2c_->write(reg >> 8);
+    p_i2c_->write(reg & 0xff);
+    p_i2c_->write(value);
+    return p_i2c_->endTransmission();
+}
 
 uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) {
     if (!p_i2c_) {
@@ -246,11 +285,10 @@ uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) {
 
     p_i2c_->beginTransmission(addr_);
     p_i2c_->write(reg);
-    p_i2c_->write((value >> 8) & 0xff); // high byte
+    p_i2c_->write(value >> 8); // high byte
     p_i2c_->write(value & 0xff); // low byte
     return p_i2c_->endTransmission();
 }
-
 
 uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) {
     if (!p_i2c_) {
@@ -259,12 +297,18 @@ uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) {
 
     p_i2c_->beginTransmission(addr_);
     p_i2c_->write(reg);
-    p_i2c_->write((value >> 24) & 0xff); // highest byte
+    p_i2c_->write(value >> 24); // highest byte
     p_i2c_->write((value >> 16) & 0xff);
     p_i2c_->write((value >> 8) & 0xff);
     p_i2c_->write(value & 0xff); // lowest byte
     return p_i2c_->endTransmission();
 }
 
+uint8_t I2C_Wrapper::set_bit(const uint8_t reg, const uint8_t bit, const bool value) {
+    uint8_t data;
+    read_reg8(reg, data);
+    value ? data |= 1 << bit : data &= ~(1 << bit);
+    return write_reg8(reg, data);
+}
 
 } // namespace ctbot

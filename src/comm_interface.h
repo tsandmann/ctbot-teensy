@@ -27,6 +27,7 @@
 #include "circular_buffer.h"
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <memory>
 #include <mutex>
 #include <type_traits>
@@ -204,6 +205,8 @@ public:
      * @return Number of characters written
      */
     size_t debug_print(std::string&& str, const bool block);
+
+    size_t debug_print(const std::string_view& str, const bool block);
 
     /**
      * @brief Write an integer or float out to SerialConnection

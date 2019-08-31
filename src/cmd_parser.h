@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <string_view>
 #include <functional>
 #include <deque>
 
@@ -48,14 +49,12 @@ class CommInterface;
 class CmdParser {
 protected:
     using func_t = std::function<bool(const std::string&)>;
-    static constexpr size_t MAX_CMD_LENGTH { 16 };
-    static constexpr size_t HISTORY_SIZE { 16 };
+    static constexpr bool DEBUG_ { true };
+    static constexpr size_t HISTORY_SIZE_ { 16 };
 
     bool echo_;
-    std::map<std::string /*cmd*/, func_t /*function*/> commands_;
+    std::map<std::string /*cmd*/, func_t /*function*/, std::less<>> commands_;
     std::deque<std::string> history_;
-
-    bool execute_cmd(const std::string& cmd, CommInterface& comm);
 
 public:
     /**
@@ -80,11 +79,17 @@ public:
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered
-     * @param[in] in: Pointer to input data buffer as C-string
+     * @param[in] in: Pointer to input data as string_view
      * @param[in] comm: Reference to CommInterface (for debugging output only)
      * @return true on success
      */
-    bool parse(const char* in, CommInterface& comm);
+    bool parse(const std::string_view& in, CommInterface& comm);
+
+    bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
+
+    auto get_echo() const {
+        return echo_;
+    }
 
     /**
      * @brief Set the character echo mode for console

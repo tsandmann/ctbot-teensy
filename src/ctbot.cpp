@@ -34,6 +34,7 @@
 #include "servo.h"
 #include "serial_connection_teensy.h"
 #include "cmd_parser.h"
+#include "cmd_script.h"
 #include "parameter_storage.h"
 #include "i2c_wrapper.h"
 #include "tests.h"
@@ -64,6 +65,7 @@
 
 namespace ctbot {
 
+// FIXME: list of strings for command-blocks
 const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\r\n"
                                  "----------------------------------------------------------------------------------\r\n"
                                  "help (h)\t\t\tprint this help message\r\n"
@@ -105,7 +107,7 @@ const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\r\n"
                                  "\tspeed [-100;100] [=]\tset new speed in % for left and right motor\r\n"
                                  "\tmotor [-16k;16k] [=]\tset new pwm for left and right motor\r\n"
                                  "\tservo [0;180|255] [=]\tset new position for servo 1 and 2, 255 to disable\r\n"
-                                 "\tled [0;255]\t\tset new LED setting\r\n"
+                                 "\tled [0;255]\t\tset LED mask\r\n"
                                  "\tlcd [1;4] [1;20] TEXT\tprint TEXT on LCD at line and column\r\n"
                                  "\tlcdbl [0;1]\t\tswitch LCD backlight ON (1) or OFF (0)\r\n"
                                  "\r\n"
@@ -113,6 +115,17 @@ const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\r\n"
                                  "audio (a)\r\n"
                                  "\tplay FILENAME\t\tplay wavefile FILENAME from SD card\r\n"
                                  "\tstop\t\t\tstop currently playing wavefile\r\n"
+                                 "\r\n"
+
+                                 "fs (f)\r\n"
+                                 "\tls DIR\t\t\tlist files of directory DIR on SD card\r\n"
+                                 "\r\n"
+
+                                 "prog (p)\r\n"
+                                 "\trun FILENAME\t\trun script FILENAME from SD card\r\n"
+                                 "\tview FILENAME\t\tprint script FILENAME to terminal\r\n"
+                                 "\tcreate NUM FILENAME\tcreate script FILENAME from last NUM commands in history\r\n"
+                                 "\r\n"
 
                                  "i2c (i)\r\n"
                                  "\tselect [0;3] FREQ\tselect I2C bus to use (0, 1, 2 or 3) and set frequency to FREQ kHz\r\n"
@@ -122,7 +135,8 @@ const char CtBot::usage_text[] { "command\tsubcommand [param]\texplanation\r\n"
                                  "\tread32 REG\t\tread 4 bytes from register at address REG\r\n"
                                  "\twrite8 REG DATA\t\twrite 1 byte (DATA) in register at address REG\r\n"
                                  "\twrite16 REG DATA\twrite 2 bytes (DATA) in register at address REG\r\n"
-                                 "\twrite32 REG DATA\twrite 4 bytes (DATA) in register at address REG\r\n" };
+                                 "\twrite32 REG DATA\twrite 4 bytes (DATA) in register at address REG\r\n"
+                                 "\r\n" };
 
 
 CtBot& CtBot::get_instance() {
@@ -171,6 +185,8 @@ void CtBot::setup() {
     p_parser_ = new CmdParser();
     p_serial_wifi_ = new SerialConnectionTeensy(5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE);
     p_comm_ = new CommInterfaceCmdParser(CtBotConfig::UART_FOR_CMD == 5 ? *p_serial_wifi_ : *p_serial_usb_, *p_parser_, true);
+    configASSERT(p_parser_);
+    configASSERT(p_comm_);
 
     init_parser();
 
@@ -527,6 +543,70 @@ void CtBot::init_parser() {
         });
     }
 
+    p_parser_->register_cmd("fs", 'f', [this](const std::string& args) {
+        if (args.find("ls") != args.npos) {
+            const auto s { args.find(" ") };
+            std::string dir;
+            if (s == args.npos) {
+                dir = "/";
+            } else {
+                dir = args.substr(s + 1);
+            }
+
+            auto root { SD.open(dir.c_str()) };
+            if (!root.isDirectory()) {
+                return false;
+            }
+
+            while (true) {
+                auto entry { root.openNextFile() };
+                if (!entry) {
+                    break;
+                }
+
+                p_comm_->debug_print(entry.name(), true);
+                if (!entry.isDirectory()) {
+                    p_comm_->debug_printf<true>(PP_ARGS("\t\t{}\r\n", entry.size()));
+                }
+
+                entry.close();
+            }
+
+            return true;
+        }
+
+        return false;
+    });
+
+    p_parser_->register_cmd("prog", 'p', [this](const std::string& args) {
+        if (args.find("run") != args.npos) {
+            const size_t s { args.find(" ") + 1 };
+            const size_t e { args.find(" ", s) };
+            const std::string filename { args.substr(s, e - s) };
+
+            auto p_cmd_script { std::make_unique<CmdScript>(filename, *p_comm_, *p_parser_) };
+            return p_cmd_script->exec_script();
+        } else if (args.find("view") != args.npos) {
+            const size_t s { args.find(" ") + 1 };
+            const size_t e { args.find(" ", s) };
+            const std::string filename { args.substr(s, e - s) };
+
+            auto p_cmd_script { std::make_unique<CmdScript>(filename, *p_comm_, *p_parser_) };
+            return p_cmd_script->print_script();
+        } else if (args.find("create") != args.npos) {
+            size_t num;
+            const std::string_view str { CmdParser::split_args(args, num) };
+            const size_t s { str.find(" ") + 1 };
+            const size_t e { str.find(" ", s) };
+            const std::string filename { str.substr(s, e - s) };
+
+            auto p_cmd_script { std::make_unique<CmdScript>(filename, *p_comm_, *p_parser_) };
+            return p_cmd_script->create_script(num);
+        }
+
+        return false;
+    });
+
     p_parser_->register_cmd("i2c", 'i', [this](const std::string& args) {
         if (args.find("select") != args.npos) {
             uint8_t bus;
@@ -600,6 +680,32 @@ void CtBot::init_parser() {
             if (I2C_Wrapper::read_reg32(addr, data)) {
                 return false;
             } else {
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("setbit") != args.npos) {
+            uint8_t addr;
+            uint8_t bit;
+            CmdParser::split_args(args, addr, bit);
+            if (I2C_Wrapper::set_bit(addr, bit, true)) {
+                return false;
+            } else {
+                uint8_t data;
+                I2C_Wrapper::read_reg8(addr, data);
+                p_comm_->debug_printf<true>(PP_ARGS(
+                    "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
+                return true;
+            }
+        } else if (args.find("clearbit") != args.npos) {
+            uint8_t addr;
+            uint8_t bit;
+            CmdParser::split_args(args, addr, bit);
+            if (I2C_Wrapper::set_bit(addr, bit, false)) {
+                return false;
+            } else {
+                uint8_t data;
+                I2C_Wrapper::read_reg8(addr, data);
                 p_comm_->debug_printf<true>(PP_ARGS(
                     "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", I2C_Wrapper::get_bus(), I2C_Wrapper::get_freq(), I2C_Wrapper::get_address(), addr, data));
                 return true;

@@ -52,12 +52,16 @@ public:
     static void set_address(const uint8_t addr);
 
     static uint8_t read_reg8(const uint8_t reg, uint8_t& data);
+    static uint8_t read_reg8(const uint16_t reg, uint8_t& data);
     static uint8_t read_reg16(const uint8_t reg, uint16_t& data);
     static uint8_t read_reg32(const uint8_t reg, uint32_t& data);
 
     static uint8_t write_reg8(const uint8_t reg, const uint8_t value);
+    static uint8_t write_reg8(const uint16_t reg, const uint8_t value);
     static uint8_t write_reg16(const uint8_t reg, const uint16_t value);
     static uint8_t write_reg32(const uint8_t reg, const uint32_t value);
+
+    static uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value);
 };
 
 } // namespace ctbot
