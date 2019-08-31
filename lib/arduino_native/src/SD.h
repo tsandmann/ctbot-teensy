@@ -65,11 +65,15 @@ public:
         return name_;
     }
 
-    // bool isDirectory();
-    // File openNextFile(uint8_t mode = 1);
+    bool isDirectory() {
+        return false;
+    }
+    File openNextFile(uint8_t mode = 1) {
+        return File {};
+    }
     // void rewindDirectory();
 
-    // using Print::write;
+    using Print::write;
 };
 
 
