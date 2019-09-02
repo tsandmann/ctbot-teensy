@@ -35,9 +35,8 @@ std::vector<std::string_view> CtBotHelpTexts::texts_ {};
 const char CtBotHelpTexts::general_[] { "command\tsubcommand [param]\texplanation\r\n"
                                         "----------------------------------------------------------------------------------\r\n"
                                         "help (h)\t\t\tprint this help message\r\n"
-                                        "\r\n"
-
-                                        "halt\t\t\t\tshutdown and put Teensy in sleep mode\r\n" };
+                                        "halt\t\t\t\tshutdown and put Teensy in sleep mode\r\n"
+                                        "sleep\tMS\t\t\tsleep for MS milliseconds\r\n" };
 
 const char CtBotHelpTexts::config_[] { "config (c)\r\n"
                                        "\techo [0|1]\t\tset console echo on/off\r\n"

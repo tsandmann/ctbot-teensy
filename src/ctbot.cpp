@@ -44,11 +44,14 @@
 #include "arm_kinetis_debug.h"
 #include "pprintpp.hpp"
 #include "portable/teensy.h"
+
 #include <cstdlib>
 #include <string>
 #include <cstring>
 #include <array>
 #include <tuple>
+#include <thread>
+#include <chrono>
 
 #ifndef sei
 #define sei() __enable_irq() // for Audio.h
@@ -503,6 +506,13 @@ void CtBot::init_parser() {
         }
 
         return false;
+    });
+
+    p_parser_->register_cmd("sleep", [this](const std::string& args) {
+        uint32_t duration;
+        CmdParser::split_args(args, duration);
+        std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+        return true;
     });
 
     if (CtBotConfig::PROG_AVAILABLE) {
