@@ -51,6 +51,8 @@ public:
 
     static constexpr bool LCD_AVAILABLE { true }; /**< Statically activate or deactivate LC display */
     static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
+    static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
+    static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
 
     static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
     static constexpr bool SWD_DEBUGGER_ENABLE_ON_BOOT { false }; /**< Statically enable or disable SWD debug setting on boot */
