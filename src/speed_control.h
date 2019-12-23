@@ -48,7 +48,6 @@ namespace ctbot {
  */
 class SpeedControl {
 protected:
-    static constexpr uint16_t MAX_SPEED { 450 }; /**< Maximum possible speed in mm/s */
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
 
     static std::list<SpeedControl*> controller_list_; /**< List of all SpeedControl instances created */
@@ -73,6 +72,8 @@ protected:
     static void controller();
 
 public:
+    static constexpr uint16_t MAX_SPEED { 450 }; /**< Maximum possible speed in mm/s */
+
     /**
      * @brief Construct a new SpeedControl object
      * @param[in] wheel_enc: Reference to wheel encoder to use for controller input (speed)

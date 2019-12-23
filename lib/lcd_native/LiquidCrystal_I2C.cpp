@@ -53,14 +53,23 @@ void LiquidCrystal_I2C::setCursor(uint8_t col, uint8_t row) {
     }
 }
 
-size_t LiquidCrystal_I2C::print(char c) {
+size_t LiquidCrystal_I2C::write(uint8_t b) {
     if (p_lcd_out) {
-        fputc(c, p_lcd_out);
+        fputc(b, p_lcd_out);
     }
     return 1;
 }
 
-size_t LiquidCrystal_I2C::print(const char s[]) {
+size_t LiquidCrystal_I2C::write(const uint8_t* buf, size_t size) {
+    if (p_lcd_out) {
+        for (size_t i { 0 }; i < size; ++i) {
+            fputc(*buf++, p_lcd_out);
+        }
+    }
+    return size;
+}
+
+size_t LiquidCrystal_I2C::write(const char* s) {
     if (p_lcd_out) {
         fputs(s, p_lcd_out);
     }

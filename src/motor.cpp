@@ -34,7 +34,7 @@
 namespace ctbot {
 
 Motor::Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert)
-    : pwm_(0), pwm_pin_(pin_pwm), dir_pin_(pin_dir), invert_dir_(invert), enc_(enc) {
+    : pwm_ {}, pwm_pin_ { pin_pwm }, dir_pin_ { pin_dir }, invert_dir_ { invert }, enc_ { enc } {
     Scheduler::enter_critical_section();
     arduino::pinMode(pin_pwm, arduino::OUTPUT);
     arduino::pinMode(pin_dir, arduino::OUTPUT);

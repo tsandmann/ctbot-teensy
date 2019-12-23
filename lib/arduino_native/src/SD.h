@@ -69,6 +69,7 @@ public:
         return false;
     }
     File openNextFile(uint8_t mode = 1) {
+        (void) mode;
         return File {};
     }
     // void rewindDirectory();

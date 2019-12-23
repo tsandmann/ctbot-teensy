@@ -115,8 +115,8 @@ void assert_blink(const char* file, int line, const char* func, const char* expr
 } // extern C
 
 namespace freertos {
-std::tuple<size_t, size_t, size_t> ram_usage() {
-    const std::tuple<size_t, size_t, size_t> ret { 0xffffff, 0, 0 };
+std::tuple<size_t, size_t, size_t, size_t> ram_usage() {
+    const std::tuple<size_t, size_t, size_t, size_t> ret { 0xffffff, 0, 0, 0 };
     return ret;
 }
 

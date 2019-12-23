@@ -49,9 +49,15 @@ public:
 
     void setCursor(uint8_t col, uint8_t row);
 
-    size_t print(char c);
+    size_t write(uint8_t b);
 
-    size_t print(const char s[]);
+    size_t write(const char* s);
+
+    size_t write(const uint8_t* buf, size_t size);
+
+    size_t write(const char* str, size_t size) {
+        return write(reinterpret_cast<const uint8_t*>(str), size);
+    }
 
     void set_output(FILE* fp) {
         p_lcd_out = fp;

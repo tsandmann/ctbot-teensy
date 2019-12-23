@@ -29,7 +29,7 @@
 
 // FIXME: use debug output of CommInterface
 namespace ctbot {
-ParameterStorage::ParameterStorage(const std::string& config_file, const size_t buffer_size) : config_file_ { config_file }, p_parameter_doc_ {} {
+ParameterStorage::ParameterStorage(const std::string_view& config_file, const size_t buffer_size) : config_file_ { config_file }, p_parameter_doc_ {} {
     if (!SD.exists(config_file_.c_str())) {
         File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
         if (f) {
@@ -41,7 +41,7 @@ ParameterStorage::ParameterStorage(const std::string& config_file, const size_t 
     File f { SD.open(config_file_.c_str(), O_READ) };
     if (f) {
         const size_t n { f.size() };
-        p_parameter_doc_ = new DynamicJsonDocument(n + buffer_size);
+        p_parameter_doc_ = new DynamicJsonDocument { n + buffer_size };
         if (n) {
             auto error { deserializeJson(*p_parameter_doc_, f) };
             if (error) {
@@ -63,8 +63,8 @@ ParameterStorage::~ParameterStorage() {
     delete p_parameter_doc_;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, uint32_t& value) const noexcept {
+    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (data.isNull()) {
         return false;
@@ -77,8 +77,8 @@ bool ParameterStorage::get_parameter(const std::string& key, uint32_t& value) co
     return true;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, int32_t& value) const noexcept {
+    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (data.isNull()) {
         return false;
@@ -91,8 +91,8 @@ bool ParameterStorage::get_parameter(const std::string& key, int32_t& value) con
     return true;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, float& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, float& value) const noexcept {
+    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (data.isNull()) {
         return false;
@@ -105,8 +105,8 @@ bool ParameterStorage::get_parameter(const std::string& key, float& value) const
     return true;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, const size_t index, uint32_t& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, uint32_t& value) const noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -124,8 +124,8 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
     return false;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, const size_t index, int32_t& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, int32_t& value) const noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -143,8 +143,8 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
     return false;
 }
 
-bool ParameterStorage::get_parameter(const std::string& key, const size_t index, float& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, float& value) const noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -162,45 +162,45 @@ bool ParameterStorage::get_parameter(const std::string& key, const size_t index,
     return false;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const uint32_t value) noexcept {
-    (*p_parameter_doc_)[key] = value;
+void ParameterStorage::set_parameter(const std::string_view& key, const uint32_t value) noexcept {
+    (*p_parameter_doc_)[std::string { key }] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const int32_t value) noexcept {
-    (*p_parameter_doc_)[key] = value;
+void ParameterStorage::set_parameter(const std::string_view& key, const int32_t value) noexcept {
+    (*p_parameter_doc_)[std::string { key }] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const float value) noexcept {
-    (*p_parameter_doc_)[key] = value;
+void ParameterStorage::set_parameter(const std::string_view& key, const float value) noexcept {
+    (*p_parameter_doc_)[std::string { key }] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const size_t index, const uint32_t value) noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const uint32_t value) noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(key);
+        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?
     array[index] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const size_t index, const int32_t value) noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const int32_t value) noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(key);
+        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?
     array[index] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string& key, const size_t index, const float value) noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const float value) noexcept {
+    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(key);
+        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?

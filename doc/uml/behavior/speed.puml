@@ -1,0 +1,21 @@
+@startuml speed
+
+namespace ctbot {
+    class Speed {
+        +Speed()
+        +{static} Ptr = std::unique_ptr<Speed>
+        +get_center<typename T>() : T
+        +get_left<typename T>() : T
+        +get_right<typename T>() : T
+        +print(CommInterface& comm) : void
+        +set_center<typename T>(const T& value) : void
+        +set_left<typename T>(const T& value) : void
+        +set_right<typename T>(const T& value) : void
+        #{static} speed_t = int16_t
+        #center_ : speed_t
+        #left_ : speed_t
+        #right_ : speed_t
+    }
+}
+
+@enduml

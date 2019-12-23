@@ -24,6 +24,7 @@
 #pragma once
 
 #include "Wire.h"
+#include "SPI.h"
 #include "WString.h"
 #include "Print.h"
 #include "Stream.h"
@@ -123,6 +124,17 @@ static constexpr bool digitalPinHasPWM(uint8_t p) {
     return (((p) >= 2 && (p) <= 10) || (p) == 14 || ((p) >= 20 && (p) <= 23) || (p) == 29 || (p) == 30 || ((p) >= 35 && (p) <= 38));
 }
 
+template <typename T, typename std::enable_if_t<std::is_integral<T>::value, int> = 0>
+T map(T x, T in_min, T in_max, T out_min, T out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+template <typename T, typename std::enable_if_t<std::is_reference<T>::value, int> = 0,
+    typename std::enable_if_t<std::is_integral<typename std::remove_reference<T>::type>::value, int> = 0>
+T map(const T x, const T in_min, const T in_max, const T out_min, const T out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 uint32_t micros();
 uint32_t millis();
 
@@ -137,6 +149,9 @@ using ::Serial3;
 using ::Serial4;
 using ::Serial5;
 using ::Serial6;
+using ::SPI;
+using ::SPI1;
+using ::SPI2;
 using ::Stream;
 using ::String;
 using ::TwoWire;

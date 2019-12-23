@@ -27,6 +27,7 @@
 #include "timer.h"
 
 #include "arduino_fixed.h"
+
 #include <cstdint>
 
 
@@ -45,7 +46,7 @@ namespace ctbot {
  */
 class Rc5 {
 protected:
-    static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
+    static constexpr bool DEBUG_ { false }; /**< Flag to enable debug output */
 
     struct rc5_t {
         uint32_t us;
@@ -121,13 +122,13 @@ public:
     template <uint8_t PIN_NUM, uint8_t ARRAY_SIZE>
     static inline __attribute__((always_inline)) void isr(rc5_t* p_data, volatile uint8_t* p_idx) {
         static bool last { true };
-        static uint32_t last_time { 0 };
+        static uint32_t last_time {};
 
         const auto now { Timer::get_us() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
         const auto diff { std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) };
-        if (value != last && diff >= 400 /*&& (!value || diff <= 2300)*/) {
+        if (value != last && diff >= 400 /*&& (!value || diff <= 2300)*/) { // FIXME: check 2300 condition
             last = value;
             last_time = now;
 

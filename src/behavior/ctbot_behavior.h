@@ -1,0 +1,161 @@
+/*
+ * This file is part of the c't-Bot teensy framework.
+ * Copyright (c) 2019 Timo Sandmann
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file    ctbot_behavior.h
+ * @brief   Behavior model abstraction layer
+ * @author  Timo Sandmann
+ * @date    26.05.2019
+ */
+
+#pragma once
+
+#include "../ctbot.h"
+#include "resource_container.h"
+
+#include <memory>
+#include <map>
+#include <string>
+#include <string_view>
+#include <functional>
+#include <any>
+#include <tuple>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+
+
+namespace ctbot {
+class Behavior;
+class Pose;
+class Speed;
+
+/**
+ * @brief Main class of c't-Bot teensy framework with behaviors
+ *
+ * @startuml{CtBotBehavior.png}
+ *  !include behavior/ctbot_behavior.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
+ */
+class CtBotBehavior : public CtBot {
+protected:
+    friend class CtBot; // allows protected constructor to enforce singleton pattern
+
+    static const char usage_text_beh[]; /**< C-String containing the usage / help message */
+
+    ResourceContainer::Ptr p_data_; /**< Top level resource container for sensor models */
+    ResourceContainer::Ptr p_actuators_; /**< Top level resource container for for actuators */
+    std::mutex model_mutex_;
+    std::condition_variable model_cond_; /**< Pointer to condition for sensor model updates */
+    int16_t enc_last_l_; /**< Last value of left wheel encoder */
+    int16_t enc_last_r_; /**< Last value of right wheel encoder */
+    std::map<const std::string /* name */, std::tuple<uint8_t /* # parameter */, std::any /* factory functor */>, std::less<>>
+        behavior_list_; /**< List of all registered behaviors */
+    std::unique_ptr<Behavior> p_beh_; /**< Pointer to currently running behavior started from command line */
+    bool beh_enabled_;
+
+    /**
+     * @brief Constructor of main class
+     * @note Constructor is protected to enforce singleton pattern
+     */
+    CtBotBehavior();
+
+    /* enforce singleton */
+    CtBotBehavior(const CtBotBehavior&) = delete;
+    void operator=(const CtBotBehavior&) = delete;
+    CtBotBehavior(CtBotBehavior&&) = delete;
+
+    /**
+     * @brief Main task implementation
+     */
+    virtual void run() override;
+
+    virtual void shutdown() override;
+
+    /**
+     * @brief Update pose and speed based on new wheel encoder data
+     *
+     * @param[out] pose Reference to a Pose instance to be updated
+     * @param[out] speed Reference to a Speed instance to be updated
+     * @return true, if pose and speed were updated successfully
+     */
+    bool update_enc(Pose& pose, Speed& speed);
+
+    void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
+
+public:
+    /**
+     * @brief Destroy the CtBotBehavior instance
+     */
+    virtual ~CtBotBehavior() override = default;
+
+    /**
+     * @see CtBot::setup()
+     */
+    virtual void setup(const bool set_ready) override;
+
+    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>()> initializer);
+
+    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t)> initializer);
+
+    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)> initializer);
+
+    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)> initializer);
+
+    void register_behavior(
+        const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)> initializer);
+
+    /**
+     * @brief Get the one and only instance of this class (singleton)
+     * @return Reference to CtBotBehavior instance
+     */
+    static CtBotBehavior& get_instance() {
+        return reinterpret_cast<CtBotBehavior&>(CtBot::get_instance());
+    }
+
+    /**
+     * @brief Get the data resource container
+     *
+     * @return Pointer to data resource container
+     */
+    ResourceContainer* get_data() {
+        return p_data_.get();
+    }
+
+    /**
+     * @brief Get the actuator resource container
+     *
+     * @return Pointer to actuator resource container
+     */
+    ResourceContainer* get_actuators() {
+        return p_actuators_.get();
+    }
+
+    void wait_for_model_update(std::atomic<bool>& abort) {
+        using namespace std::chrono_literals;
+
+        std::unique_lock<std::mutex> lk(model_mutex_);
+        while (model_cond_.wait_for(lk, 10ms) == std::cv_status::timeout) {
+            if (abort) {
+                return;
+            }
+        }
+    }
+};
+} // namespace ctbot

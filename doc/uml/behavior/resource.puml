@@ -1,0 +1,26 @@
+@startuml resource
+
+namespace ctbot {
+    class Resource <template <typename T>> {
+        +Resource()
+        +{static} type = T
+        +{static} basetype Resource<T>
+        +get_ref() : T&
+        +notify() : bool
+        +read<typename K>() : K
+        +read<typename K>() : K&
+        +register_listener(std::function<void(constResource&)> func, void* owner = nullptr) : void
+        +write<typename K>(const K x) : bool
+        +write<typename K>(const K& x) : bool
+        #data_ : T
+        #listeners_ : std::list<std::tuple<std::function<void{const Resource &}>, void*>>
+    }
+
+    class ResourceBase {
+        +{static} Ptr = std::unique_ptr<ResourceBase>
+    }
+
+    ResourceBase <|-- Resource
+}
+
+@enduml

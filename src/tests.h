@@ -33,10 +33,13 @@
 #include <vector>
 
 
+class Adafruit_ILI9341;
+class XPT2046_Touchscreen;
+class Adafruit_GFX_Button;
+
 namespace ctbot {
 
 class CtBot;
-class Ena;
 
 /**
  * @brief Namespace for all test classes
@@ -259,7 +262,6 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 1000 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
-    Ena* p_ena_; /**< Pointer to Ena instance */
     uint8_t ena_idx_;
 
     /* disable copy/move */
@@ -407,7 +409,7 @@ protected:
     CtBot& ctbot_; /**< Reference to CtBot instance */
     std::mutex m1_, m2_;
     std::condition_variable cv1_, cv2_;
-    std::thread *p_thr1_, *p_thr2_;
+    std::thread *p_thr1_, *p_thr2_, *p_thr3_;
     std::atomic<bool> running_;
 
     /* disable copy/move */
@@ -431,6 +433,135 @@ public:
     void stop() {
         running_ = false;
     }
+};
+
+class TftTest {
+protected:
+    static constexpr uint16_t TASK_PERIOD_MS { 50 }; /**< Scheduling period of tasks in ms */
+
+    CtBot& ctbot_; /**< Reference to CtBot instance */
+    Adafruit_ILI9341* p_tft_;
+
+    /* disable copy/move */
+    TftTest(const TftTest&) = delete;
+    void operator=(const TftTest&) = delete;
+    TftTest(TftTest&&) = delete;
+
+    void run();
+
+    unsigned long testText();
+
+    unsigned long testLines(uint16_t color);
+
+    unsigned long testFastLines(uint16_t color1, uint16_t color2);
+
+    unsigned long testRects(uint16_t color);
+
+    unsigned long testFilledRects(uint16_t color1, uint16_t color2);
+
+    unsigned long testFilledCircles(uint8_t radius, uint16_t color);
+
+    unsigned long testCircles(uint8_t radius, uint16_t color);
+
+    unsigned long testTriangles();
+
+    unsigned long testFilledTriangles();
+
+    unsigned long testRoundRects();
+
+    unsigned long testFilledRoundRects();
+
+public:
+    /**
+     * @brief Constructor, creates the tasks, that implement the actual functionality
+     * @param[in] ctbot: Reference to CtBot instance
+     */
+    TftTest(CtBot& ctbot);
+
+    /**
+     * @brief Destructor to destroy tasks
+     * @note Never called in current setup
+     */
+    ~TftTest();
+};
+
+class TouchTest {
+protected:
+    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of tasks in ms */
+
+    CtBot& ctbot_; /**< Reference to CtBot instance */
+    XPT2046_Touchscreen* p_touch_;
+
+    /* disable copy/move */
+    TouchTest(const TouchTest&) = delete;
+    void operator=(const TouchTest&) = delete;
+    TouchTest(TouchTest&&) = delete;
+
+    void run();
+
+public:
+    /**
+     * @brief Constructor, creates the tasks, that implement the actual functionality
+     * @param[in] ctbot: Reference to CtBot instance
+     */
+    TouchTest(CtBot& ctbot);
+
+    /**
+     * @brief Destructor to destroy tasks
+     * @note Never called in current setup
+     */
+    ~TouchTest();
+};
+
+class ButtonTest {
+protected:
+    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of tasks in ms */
+
+    static constexpr uint16_t BUTTON_W { 120 };
+    static constexpr uint16_t BUTTON_H { 60 };
+    static constexpr uint16_t DISPLAY_XOFFSET { 120 };
+    static constexpr uint16_t DISPLAY_TEXTOFFSET { 120 };
+    static constexpr uint16_t DISPLAY_YOFFSET { 0 };
+    static constexpr uint8_t BUTTON_TEXTSIZE { 2 };
+
+    // This is calibration data for the raw touch data to the screen coordinates
+    // For rotation 1, these put the buttons at the top of the screen
+    static constexpr uint16_t TS_MAXX { 100 };
+    static constexpr uint16_t TS_MINX { 3800 };
+    static constexpr uint16_t TS_MINY { 100 };
+    static constexpr uint16_t TS_MAXY { 3750 };
+
+    enum class Buttons : uint8_t { BTN_1 = 1, BTN_2 = 2, BTN_3 = 3, BTN_4 = 4 };
+
+    CtBot& ctbot_; /**< Reference to CtBot instance */
+    std::vector<Adafruit_GFX_Button*> buttons_;
+
+    /* disable copy/move */
+    ButtonTest(const ButtonTest&) = delete;
+    void operator=(const ButtonTest&) = delete;
+    ButtonTest(ButtonTest&&) = delete;
+
+    void initialize_buttons();
+    void draw_buttons();
+    Buttons button_release();
+    void center_cursor_set(const std::string& str, const int16_t x, const int16_t y);
+    void center_print(const std::string& str, bool clear = true);
+    void test_lines(uint16_t color);
+    void test_rects(uint16_t color);
+    void test_circles(uint8_t radius, uint16_t color);
+    void test_triangles();
+    void display_tasks();
+
+    void run();
+
+public:
+    /**
+     * @brief Constructor, creates the tasks, that implement the actual functionality
+     * @param[in] ctbot: Reference to CtBot instance
+     */
+    ButtonTest(CtBot& ctbot);
+
+    ~ButtonTest();
 };
 
 } // namespace tests

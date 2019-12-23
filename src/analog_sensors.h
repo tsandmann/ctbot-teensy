@@ -25,7 +25,8 @@
 #pragma once
 
 #include "ctbot_config.h"
-#include "ena.h"
+#include "ena_i2c.h"
+#include "leds_i2c.h"
 
 #include <cstdint>
 
@@ -44,13 +45,14 @@ namespace ctbot {
  */
 class AnalogSensors {
 protected:
-    static constexpr auto ENA_MASK = EnaTypes::BORDER | EnaTypes::LINE; // | EnaTypes::DISTANCE;
-    static constexpr uint32_t BAT_VOLTAGE_R1 { 100000 };
-    static constexpr uint32_t BAT_VOLTAGE_R2 { 21760 };
+    static constexpr auto ENA_MASK_INIT = EnaI2cTypes::NONE;
+    static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
+    static constexpr auto ENA_MASK_PWM = LedTypesEna::BORDER_L | LedTypesEna::BORDER_R | LedTypesEna::LINE_L | LedTypesEna::LINE_R;
+    static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna::NONE;
+    static constexpr uint32_t BAT_VOLTAGE_R1 { 100'392 };
+    static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 }; // FIXME: calibrated value
 
-    uint32_t last_dist_update_;
     uint8_t last_adc_res_;
-    uint16_t distance_[2];
     uint16_t line_[2];
     uint16_t ldr_[2];
     uint16_t border_[2];
@@ -107,20 +109,6 @@ public:
      */
     auto get_border_r() const {
         return border_[1];
-    }
-
-    /**
-     * @return The last value of left distance sensor
-     */
-    auto get_distance_l() const {
-        return distance_[0];
-    }
-
-    /**
-     * @return The last value of right distance sensor
-     */
-    auto get_distance_r() const {
-        return distance_[1];
     }
 
     /**

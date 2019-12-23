@@ -29,6 +29,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <charconv>
 #include <functional>
 #include <deque>
 
@@ -48,8 +49,8 @@ class CommInterface;
  */
 class CmdParser {
 protected:
-    using func_t = std::function<bool(const std::string&)>;
-    static constexpr bool DEBUG_ { true };
+    using func_t = std::function<bool(const std::string_view&)>;
+    static constexpr bool DEBUG_ { false };
     static constexpr size_t HISTORY_SIZE_ { 16 };
 
     bool echo_;
@@ -63,19 +64,19 @@ public:
     CmdParser();
 
     /**
-     * @brief Register a new command given as a string
+     * @brief Register a new command given as a string_view
      * @param[in] cmd: Pointer to of command
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, const func_t& func);
+    void register_cmd(const std::string& cmd, func_t&& func);
 
     /**
-     * @brief Register a new command given as a string
+     * @brief Register a new command given as a string_view
      * @param[in] cmd: Pointer to string of command
      * @param[in] cmd_short: Shortcut for command as a single character
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, const char cmd_short, const func_t& func);
+    void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered
@@ -99,40 +100,60 @@ public:
         echo_ = value;
     }
 
-    const std::string* get_history(const size_t num) const {
+    const std::string_view get_history(const size_t num) const {
         if (num && num <= history_.size()) {
-            return &history_[num - 1];
+            return std::string_view { history_[num - 1] };
         }
-        return nullptr;
+        return std::string_view {};
+    }
+
+    /**
+     * @brief Split a string into space seperated tokens and return the first as integer argument
+     * @param[in] args: Reference to input string
+     * @param[out] b: Reference to first output argument of type bool
+     * @return Pointer to the character past the last character interpreted
+     */
+    static std::string_view split_args(const std::string_view& args, bool& b) {
+        uint_fast8_t x1;
+        auto l { args.find(' ') };
+        if (l == args.npos) {
+            return std::string_view {};
+        }
+        ++l;
+        auto ptr { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        b = x1;
+        return args.substr(ptr.ptr - args.cbegin());
     }
 
     /**
      * @brief Split a string into space seperated tokens and return the first as integer argument
      * @tparam T: Type of argument to get out
-     * @param[in] args: Reference to input string
+     * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
-     * @return Pointer to the character past the last character interpreted
+     * @return string_view to the last character interpreted
      */
     template <typename T>
-    static char* split_args(const std::string& args, T& x1) {
-        const auto l { args.find(" ") + 1 };
-        char* p_end;
-        x1 = static_cast<T>(std::strtol(args.c_str() + l, &p_end, 0));
-        return p_end;
+    static std::string_view split_args(const std::string_view& args, T& x1) {
+        auto l { args.find(' ') };
+        if (l == args.npos) {
+            return std::string_view {};
+        }
+        ++l;
+        auto ptr { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        return args.substr(ptr.ptr - args.cbegin());
     }
 
     /**
      * @brief Split a string into space seperated tokens and return them as integer arguments
      * @tparam T: Type of argument to get out
-     * @param[in] args: Reference to input string
+     * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
      * @param[out] xn: Parameter pack of references to next arguments
-     * @return Pointer to the character past the last character interpreted
+     * @return string_view to the last character interpreted
      */
     template <typename T, typename... Args>
-    static char* split_args(const std::string& args, T& x1, Args&... xn) {
-        char* p_end { split_args(args, x1) };
-        const std::string next_args { p_end };
+    static std::string_view split_args(const std::string_view& args, T& x1, Args&... xn) {
+        auto next_args { split_args(args, x1) };
         return split_args(next_args, xn...);
     }
 };

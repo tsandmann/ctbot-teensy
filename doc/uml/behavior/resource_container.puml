@@ -1,0 +1,39 @@
+@startuml resource_container
+
+namespace ctbot {
+    class ResourceContainer {
+        +ResourceContainer()
+        +~ResourceContainer()
+        +{static} Ptr = std::unique_ptr<ResourceContainer>
+        +add_resource(const std::string& name, ResourceBase::Ptr&& p_res, bool active) : bool
+        +create_resource<class T>(const char* name, bool active) : T*
+        +create_resource<class T, typename... Args>(const char* name, bool active, Args&&... args) : Resource<T>*
+        +create_resource<class T>(const char* container_name, const char* new_res, bool active) : T*
+        +create_resource<class T, typename... Args>(const char* container_name, const char* new_res, bool active, Args&&... args) : Resource<T>*
+        +get_resource(const std::string& name) : ResourceBase*
+        +get_resource<typename T>(const std::string& name) : Resource<T>*
+        +get_resource<typename T>(const std::string& name) : ResourceContainer*
+        +get_resource<typename T>(const std::string& name, T*& p_res) : bool
+        +get_resources() : std::map<std::string, std::tuple<uint32_t, ResourceBase::Ptr>>&
+        +get_res_ptr<typename T>(const std::string& name) : T*
+        +register_listener(std::function<void(constResourceContainer&)> func) : void
+        +register_listener(std::function<void(constResourceContainer&)> func, void* owner) : void
+        +remove_listener(void* owner) : bool
+        +reset_update_states() : void
+        +set_active(const std::string& name, bool active) : void
+        +set_update_state(const std::string& name) : bool
+        #call_listener() : void
+        #get_id(const std::string& name) : uint32_t
+        #get_resource_deep(const std::string& name) : ResourceBase*
+        #listeners_ : std::list<std::tuple<std::function<void{const ResourceContainer &}>, void*>>
+        #next_id_ : uint32_t
+        #resources_ : std::map<std::string, std::tuple<uint32_t, ResourceBase::Ptr>>
+        #resources_active_ : std::vector<uint32_t>
+        #resource_updates_ : std::map<uint32_t, bool>
+    }
+
+    ResourceBase <|-- ResourceContainer
+    ResourceContainer o-- ResourceBase
+}
+
+@enduml

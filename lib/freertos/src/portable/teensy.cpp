@@ -62,8 +62,9 @@ asm(".global _printf_float"); /**< to have a printf supporting floating point va
 
 extern unsigned long __bss_end__; // set by linker script
 extern unsigned long _estack; // set by linker script
-static UBaseType_t int_nesting { 0 }; // used by __malloc_lock()
-static uint32_t int_prio { 0 }; // used by __malloc_lock()
+static uint8_t* current_heap_end { reinterpret_cast<uint8_t*>(&__bss_end__) };
+static UBaseType_t int_nesting {}; // used by __malloc_lock()
+static uint32_t int_prio {}; // used by __malloc_lock()
 
 void serial_puts(const char* str) {
     Serial.println(str);
@@ -78,6 +79,7 @@ void serial_puts(const char* str) {
  * @param[in] expr: Expression that failed as C-string
  */
 void assert_blink(const char* file, int line, const char* func, const char* expr) {
+    __disable_irq();
     Serial.print("ASSERT in [");
     Serial.print(file);
     Serial.print(':');
@@ -89,6 +91,10 @@ void assert_blink(const char* file, int line, const char* func, const char* expr
     Serial.flush();
 
     freertos::error_blink(1);
+}
+
+void mcu_shutdown() {
+    freertos::error_blink(0);
 }
 } // extern C
 
@@ -127,16 +133,16 @@ static void poll_usb() {
  */
 static void delay_ms(const uint32_t ms) {
     const uint32_t n { ms / 10 };
-    for (uint32_t i { 0 }; i < n; ++i) {
+    for (uint32_t i {}; i < n; ++i) {
         poll_usb();
 
-        for (uint32_t i { 0 }; i < 10UL * (F_CPU / 7000UL); ++i) { // 10 ms
+        for (uint32_t i {}; i < 10UL * (F_CPU / 7'000UL); ++i) { // 10 ms
             asm volatile("nop");
         }
     }
 
-    const uint32_t iterations { (ms % 10) * (F_CPU / 7000UL) }; // remainder
-    for (uint32_t i { 0 }; i < iterations; ++i) {
+    const uint32_t iterations { (ms % 10) * (F_CPU / 7'000UL) }; // remainder
+    for (uint32_t i {}; i < iterations; ++i) {
         asm volatile("nop");
     }
 }
@@ -150,7 +156,7 @@ void error_blink(const uint8_t n) {
     ::pinMode(LED_BUILTIN, OUTPUT);
 
     while (true) {
-        for (uint8_t i { 0 }; i < n; ++i) {
+        for (uint8_t i {}; i < n; ++i) {
             ::digitalWriteFast(LED_BUILTIN, true);
             delay_ms(300UL);
             ::digitalWriteFast(LED_BUILTIN, false);
@@ -160,20 +166,23 @@ void error_blink(const uint8_t n) {
     }
 }
 
-std::tuple<size_t, size_t, size_t> ram_usage() {
-    volatile size_t x { 0 };
-    void* ptr { sbrk(x) };
-    const size_t system_free { (reinterpret_cast<uint8_t*>(&_estack) - static_cast<uint8_t*>(ptr)) - MAIN_STACK_SIZE };
+std::tuple<size_t, size_t, size_t, size_t> ram_usage() {
+    const size_t ram_size { static_cast<size_t>(reinterpret_cast<uint8_t*>(&_estack) - reinterpret_cast<uint8_t*>(0x1fff'0000)) };
+    const size_t system_free { (reinterpret_cast<uint8_t*>(&_estack) - current_heap_end) - MAIN_STACK_SIZE };
     const auto info { mallinfo() };
-    const std::tuple<size_t, size_t, size_t> ret { system_free + info.fordblks, info.uordblks, system_free };
+    const std::tuple<size_t, size_t, size_t, size_t> ret { system_free + info.fordblks, info.uordblks, system_free, ram_size };
     return ret;
 }
 
 void print_ram_usage() {
     const auto info { ram_usage() };
 
-    Serial.print("free RAM: ");
+    Serial.print("RAM size: ");
+    Serial.print(std::get<3>(info) / 1024UL, 10);
+    Serial.print(" KB, free RAM: ");
     Serial.print(std::get<0>(info) / 1024UL, 10);
+    Serial.print(" KB, used bss/data: ");
+    Serial.print((std::get<3>(info) - std::get<0>(info) - std::get<1>(info)) / 1024UL, 10);
     Serial.print(" KB, used heap: ");
     Serial.print(std::get<1>(info) / 1024UL, 10);
     Serial.print(" KB, system free: ");
@@ -213,18 +222,16 @@ extern "C" {
 // override _sbrk() - you have to link with option: "-Wl,--wrap=_sbrk"
 void* _sbrk(ptrdiff_t);
 void* __wrap__sbrk(ptrdiff_t incr) {
-    static uint8_t* currentHeapEnd { reinterpret_cast<uint8_t*>(&__bss_end__) };
-
     static_assert(portSTACK_GROWTH == -1, "Stack growth down assumed");
 
     // Serial.print("_sbrk(");
     // Serial.print(incr, 10);
     // Serial.println(")");
 
-    void* previousHeapEnd = currentHeapEnd;
+    void* previous_heap_end = current_heap_end;
 
-    if ((reinterpret_cast<uintptr_t>(currentHeapEnd) + incr >= reinterpret_cast<uintptr_t>(&_estack) - MAIN_STACK_SIZE)
-        || (reinterpret_cast<uintptr_t>(currentHeapEnd) + incr < reinterpret_cast<uintptr_t>(&__bss_end__))) {
+    if ((reinterpret_cast<uintptr_t>(current_heap_end) + incr >= reinterpret_cast<uintptr_t>(&_estack) - MAIN_STACK_SIZE)
+        || (reinterpret_cast<uintptr_t>(current_heap_end) + incr < reinterpret_cast<uintptr_t>(&__bss_end__))) {
 #if (configUSE_MALLOC_FAILED_HOOK == 1)
         {
             extern void vApplicationMallocFailedHook();
@@ -237,13 +244,13 @@ void* __wrap__sbrk(ptrdiff_t incr) {
         return reinterpret_cast<void*>(-1); // the malloc-family routine that called sbrk will return 0
     }
 
-    currentHeapEnd += incr;
-    // Serial.print("currentHeapEnd=0x");
-    // Serial.print(reinterpret_cast<uintptr_t>(currentHeapEnd), 16);
-    // Serial.print(" previousHeapEnd=0x");
-    // Serial.println(reinterpret_cast<uintptr_t>(previousHeapEnd), 16);
+    current_heap_end += incr;
+    // Serial.print("current_heap_end=0x");
+    // Serial.print(reinterpret_cast<uintptr_t>(current_heap_end), 16);
+    // Serial.print(" previous_heap_end=0x");
+    // Serial.println(reinterpret_cast<uintptr_t>(previous_heap_end), 16);
 
-    return previousHeapEnd;
+    return previous_heap_end;
 }
 
 void __malloc_lock(struct _reent*) {
@@ -274,6 +281,14 @@ int __wrap__gettimeofday(timeval* tv, void*) {
 
 int _kill(int, int) {
     freertos::error_blink(7);
+}
+
+void __cxa_pure_virtual() {
+    freertos::error_blink(8);
+}
+
+void abort() {
+    freertos::error_blink(9);
 }
 
 int _getpid() {

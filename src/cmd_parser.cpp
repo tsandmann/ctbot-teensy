@@ -26,19 +26,20 @@
 #include "comm_interface.h"
 
 #include "pprintpp.hpp"
+
 #include <cstdlib>
 
 
 namespace ctbot {
 
-CmdParser::CmdParser() : echo_ { false } {}
+CmdParser::CmdParser() : echo_ {} {}
 
-void CmdParser::register_cmd(const std::string& cmd, const func_t& func) {
+void CmdParser::register_cmd(const std::string& cmd, func_t&& func) {
     commands_[cmd] = func;
 }
 
-void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, const func_t& func) {
-    register_cmd(cmd, func);
+void CmdParser::register_cmd(const std::string& cmd, const char cmd_short, func_t&& func) {
+    register_cmd(cmd, std::move(func));
 
     commands_[std::string(&cmd_short, 1)] = func;
 }
@@ -70,7 +71,7 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
             if (DEBUG_) {
                 comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
                 comm.debug_printf<true>(PP_ARGS("cmd.size={}\r\n", cmd.size()));
-                for (size_t i { 0 }; i < cmd.size(); ++i) {
+                for (size_t i {}; i < cmd.size(); ++i) {
                     comm.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(cmd[i])));
                 }
             }

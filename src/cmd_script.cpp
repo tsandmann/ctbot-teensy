@@ -168,26 +168,26 @@ bool CmdScript::create_script(const size_t history_depth) {
     File file { SD.open(filename_.c_str(), O_WRITE | O_CREAT | O_TRUNC) };
 
     for (size_t i { history_depth + 1U }; i > 1; --i) {
-        auto p_str { cmd_parser_.get_history(i) };
-        if (p_str) {
+        auto str { cmd_parser_.get_history(i) };
+        if (str.size()) {
             if (DEBUG_VERBOSE_) {
-                comm_interface_.debug_printf<true>(PP_ARGS("p_str->size={}\r\n", p_str->size()));
-                for (size_t i { 0 }; i < p_str->size(); ++i) {
-                    comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(p_str->at(i))));
+                comm_interface_.debug_printf<true>(PP_ARGS("str.size={}\r\n", str.size()));
+                for (size_t i { 0 }; i < str.size(); ++i) {
+                    comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str.at(i))));
                 }
                 comm_interface_.debug_print("\r\n", true);
             }
 
-            auto pos { p_str->find_first_of('\r') };
-            if (pos == p_str->npos) {
-                pos = p_str->size();
+            auto pos { str.find_first_of('\r') };
+            if (pos == str.npos) {
+                pos = str.size();
             }
 
             if (DEBUG_VERBOSE_) {
                 comm_interface_.debug_printf<true>(PP_ARGS("pos={}\r\n", pos));
             }
 
-            file.write(p_str->c_str(), pos);
+            file.write(str.data(), pos);
             file.write("\r\n");
         }
     }

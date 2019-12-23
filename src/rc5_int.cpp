@@ -28,15 +28,16 @@
 
 #include "rc5.h"
 #include "portable/teensy.h"
+
 #include <type_traits>
 
 
 namespace ctbot {
 
 std::remove_all_extents<decltype(Rc5::input_data_)>::type Rc5::input_data_[Rc5::DATA_ARRAY_SIZE];
-decltype(Rc5::input_idx_) Rc5::input_idx_ { 0 };
+decltype(Rc5::input_idx_) Rc5::input_idx_ {};
 
-Rc5::Rc5(const uint8_t pin) : last_idx_ { 0 }, rc5_addr_ { 0 }, rc5_cmd_ { 0 }, rc5_toggle_ { false }, p_impl_ { new RC5() } {
+Rc5::Rc5(const uint8_t pin) : last_idx_ {}, rc5_addr_ {}, rc5_cmd_ {}, rc5_toggle_ {}, p_impl_ { new RC5 } {
     Scheduler::enter_critical_section();
     arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
@@ -76,9 +77,9 @@ bool Rc5::update() {
         diff_rc5 += DATA_ARRAY_SIZE;
     }
 
-    bool found { false };
+    bool found {};
     if (diff_rc5) {
-        if (DEBUG) {
+        if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
             ctbot.get_comm()->debug_print("\r\ndiff_rc5=", false);
             ctbot.get_comm()->debug_print(diff_rc5, false);
@@ -90,7 +91,7 @@ bool Rc5::update() {
             const auto diff_time { static_cast<int32_t>(i_time) - static_cast<int32_t>(last_time_) };
             last_time_ = i_time;
 
-            if (DEBUG) {
+            if (DEBUG_) {
                 CtBot& ctbot { CtBot::get_instance() };
                 ctbot.get_comm()->debug_print("i=", false);
                 ctbot.get_comm()->debug_print(i, false);
@@ -112,7 +113,7 @@ bool Rc5::update() {
             if (p_impl_->read(rc5_toggle_, rc5_addr_, rc5_cmd_, input_data_[i].value, diff_time)) {
                 found = true;
 
-                if (DEBUG) {
+                if (DEBUG_) {
                     CtBot& ctbot { CtBot::get_instance() };
                     ctbot.get_comm()->debug_print("addr=", false);
                     ctbot.get_comm()->debug_print(rc5_addr_, false);

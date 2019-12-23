@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <functional>
 #include <thread>
 
@@ -53,9 +54,10 @@ protected:
     uint16_t id_; /**< ID of task */
     uint16_t period_; /**< Execution period of task in ms */
     uint8_t priority_;
-    uint_fast8_t state_; /**< Flag indicating the state of the task: runnable (1), blocked (2), finished (0) */ // FIXME: enum class?
+    volatile uint8_t state_; /**< Flag indicating the state of the task: runnable (1), blocked (2), finished (0) */ // FIXME: enum class?
     func_t func_; /**< Function wrapper for the task's implementation */
     bool std_thread_;
+    bool external_;
     union {
         void* p_freertos_handle;
         std::thread* p_thread; /**< Thread of task */
@@ -71,7 +73,8 @@ public:
      * @param[in] period: Execution period of task in ms
      * @param[in] func: Function wrapper for the task's implementation
      */
-    Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, const uint8_t priority, func_t&& func);
+    Task(Scheduler& scheduler, const uint16_t id, const std::string_view& name, const bool external, const uint16_t period, const uint8_t priority,
+        func_t&& func);
 
     /**
      * @brief Destroy the Task object
@@ -83,6 +86,10 @@ public:
 
     uint8_t get_priority() const {
         return priority_;
+    }
+
+    auto& get_name() const {
+        return name_;
     }
 
     /**

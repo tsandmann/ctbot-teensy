@@ -49,9 +49,9 @@ void error_blink(const uint8_t n) __attribute__((noreturn));
 
 /**
  * @brief Get amount of used and free (heap) RAM
- * @return Tuple of: free RAM in byte, used heap in byte, system free in byte
+ * @return Tuple of: free RAM in byte, used heap in byte, system free in byte, ram size in byte
  */
-std::tuple<size_t, size_t, size_t> ram_usage();
+std::tuple<size_t, size_t, size_t, size_t> ram_usage();
 
 /**
  * @brief Print amount of used and free (heap) RAM to Serial

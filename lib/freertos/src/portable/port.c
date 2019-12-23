@@ -391,7 +391,8 @@ void vPortEndScheduler( void )
 {
 	/* sleep forever */
 	portDISABLE_INTERRUPTS();
-	configASSERT(0);
+	void mcu_shutdown( void );
+	mcu_shutdown();
 
 	__asm volatile( "dsb" ::: "memory" );
 	__asm volatile( "wfi" );

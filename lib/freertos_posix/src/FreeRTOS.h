@@ -73,3 +73,6 @@ void assert_blink(const char*, int, const char*, const char*);
 #else
 #define configASSERT(__e) ((__e) ? (void) 0 : assert_blink(__FILE__, __LINE__, __PRETTY_FUNCTION__, #__e), assert(__e))
 #endif // NDEBUG
+
+#define pdMS_TO_TICKS(xTimeInMs) ((TickType_t)(((TickType_t)(xTimeInMs) * (TickType_t) 1000UL) / (TickType_t) 1000))
+#define pdTICKS_TO_MS(xTicks) ((TickType_t)(((TickType_t)(xTicks) * (TickType_t) 1000 / (TickType_t) configTICK_RATE_HZ)))

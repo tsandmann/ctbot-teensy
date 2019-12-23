@@ -23,28 +23,75 @@
  */
 
 #include "sensors.h"
+#include "ctbot.h"
 
 #include <chrono>
 
 
 namespace ctbot {
 
-Sensors::Sensors() {
-    ena_.off(DigitalSensors::ENA_MASK); // disable digital sensors
-    ena_.off(AnalogSensors::ENA_MASK); // disable analog sensors
-    ena_.on(EnaTypes::DISTANCE); // enable distance sensors (always-on)
-    ena_.on(EnaTypes::WHEEL_ENC); // enable wheel encoder (always-on)
+Sensors::Sensors(CtBot& ctbot) : DigitalSensors { ctbot }, ctbot_ { ctbot } {
+    ctbot_.get_ena()->on(AnalogSensors::ENA_MASK_INIT | DigitalSensors::ENA_MASK_INIT); // enable always-on ENA ports
+    ctbot_.get_ena()->off(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK); // disable ENA sensors, that aren't always-on
+    ctbot_.get_ena_pwm()->on(AnalogSensors::ENA_MASK_PWM_INIT | DigitalSensors::ENA_MASK_PWM_INIT); // enable always-on PWM sensors (wheel encoder)
+    ctbot_.get_ena_pwm()->off(AnalogSensors::ENA_MASK_PWM | DigitalSensors::ENA_MASK_PWM); // disable PWM sensors, that aren't always-on
 }
 
-void Sensors::update() {
-    ena_.on(DigitalSensors::ENA_MASK | AnalogSensors::ENA_MASK);
+bool Sensors::update() {
+    bool ret { true };
 
-    Timer::delay_us(200); // FIXME: fine tuning
-
-    AnalogSensors::update();
     DigitalSensors::update();
+    AnalogSensors::update();
 
-    ena_.off(DigitalSensors::ENA_MASK | AnalogSensors::ENA_MASK);
+    return ret;
+}
+
+bool Sensors::enable_sensors() {
+    bool ret { true };
+
+    ret &= ctbot_.get_ena()->on(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK);
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena()->on() failed.\r\n", true);
+    }
+
+    ret &= ctbot_.get_ena_pwm()->on(AnalogSensors::ENA_MASK_PWM | DigitalSensors::ENA_MASK_PWM);
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena_pwm()->on() failed.\r\n", true);
+    }
+
+    return ret;
+}
+
+bool Sensors::disable_sensors() {
+    bool ret { true };
+
+    ret &= ctbot_.get_ena()->off(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK);
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena()->off() failed.\r\n", true);
+    }
+
+    ret &= ctbot_.get_ena_pwm()->off(AnalogSensors::ENA_MASK_PWM | DigitalSensors::ENA_MASK_PWM);
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena_pwm()->off() failed.\r\n", true);
+    }
+
+    return ret;
+}
+
+bool Sensors::disable_all() {
+    bool ret { true };
+
+    ret &= ctbot_.get_ena()->off(static_cast<EnaI2cTypes>(0xff));
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::disable_all(): get_ena()->off() failed.\r\n", true);
+    }
+
+    ret &= ctbot_.get_ena_pwm()->off(static_cast<LedTypesEna>(0xff));
+    if (DEBUG_ && !ret) {
+        CtBot::get_instance().get_comm()->debug_print("Sensors::disable_all(): get_ena_pwm()->off() failed.\r\n", true);
+    }
+
+    return ret;
 }
 
 uint32_t Sensors::get_time() const {

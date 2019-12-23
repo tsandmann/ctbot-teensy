@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 
 class LiquidCrystal_I2C;
@@ -51,6 +52,8 @@ protected:
 
 public:
     LCDisplay();
+
+    ~LCDisplay();
 
     /**
      * @brief Clear entire display, set cursor to home position
@@ -79,10 +82,10 @@ public:
 
     /**
      * @brief Write a string to the display, starting at the current position
-     * @param[in] str: Reference to the string
+     * @param[in] str: Reference to the string as string_view
      * @return Number of written chars
      */
-    uint8_t print(const std::string& str) const;
+    uint8_t print(const std::string_view& str) const;
 
     /**
      * @brief Write a formatted C-string to the display, starting at the current position
@@ -97,7 +100,7 @@ public:
      * @param[in] out: Output file name
      * @note Currently only stdout is implemented
      */
-    void set_output(const std::string& out);
+    void set_output(const std::string_view& out);
 };
 
 } // namespace ctbot

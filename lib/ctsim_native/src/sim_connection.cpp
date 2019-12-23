@@ -9,16 +9,23 @@
 #include "sim_connection.h"
 #include "command.h"
 #include "../../../src/ctbot.h"
+#include "../../../src/behavior/ctbot_behavior.h"
 #include "../../../src/ctbot_config.h"
 #include "../../../src/motor.h"
+#include "../../../src/speed_control.h"
 #include "../../../src/servo.h"
-#include "../../../src/leds.h"
+#include "../../../src/leds_i2c.h"
 #include "../../../src/sensors.h"
 #include "../../../src/encoder.h"
+#include "../../../src/i2c_wrapper.h"
+#include "../../../src/vl53l0x.h"
+#include "../../../src/vl6180x.h"
 
+#include "circular_buffer.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "arduino_fixed.h"
+
 #include <iostream>
 #include <boost/system/system_error.hpp>
 
@@ -38,7 +45,7 @@ uint32_t millis() {
 namespace ctbot {
 
 SimConnection::SimConnection(const std::string& hostname, const std::string& port)
-    : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 } {
+    : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 }, now_ms_ {}, p_i2c_range_ {} {
     boost::asio::ip::tcp::resolver r { io_service_ };
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
     boost::asio::ip::tcp::resolver::iterator it { r.resolve(q) };
@@ -51,7 +58,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         return;
     }
 
-    register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase& cmd) {
+    register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase&) {
         // std::cout << "CMD_WELCOME received: " << cmd << "\n";
         CommandNoCRC cmd1 { CommandCodes::CMD_ID, CommandCodes::CMD_SUB_ID_REQUEST, 0, 0, CommandBase::ADDR_BROADCAST };
         send_cmd(cmd1);
@@ -77,39 +84,47 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         }
         return true;
     });
-    register_cmd(CommandCodes::CMD_SHUTDOWN, [](const CommandBase& cmd) {
+    register_cmd(CommandCodes::CMD_SHUTDOWN, [](const CommandBase&) {
         // std::cout << "CMD_SHUTDOWN received: " << cmd << "\n";
         CtBot::get_instance().stop();
         return true;
     });
-    register_cmd(CommandCodes::CMD_SENS_IR, [](const CommandBase& cmd) {
-        arduino::analogWrite(CtBotConfig::DISTANCE_L_PIN, cmd.get_cmd_data_l());
-        arduino::analogWrite(CtBotConfig::DISTANCE_R_PIN, cmd.get_cmd_data_r());
+    register_cmd(CommandCodes::CMD_SENS_IR, [this](const CommandBase& cmd) {
+        // std::cout << "CMD_SENS_IR received: " << cmd << "\n";
+
+        p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
+        p_i2c_range_->write_reg16(static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10), cmd.get_cmd_data_l());
+        p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7); // FIXME: handle SYSTEM_INTERRUPT_CLEAR?
+
+        p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
+        p_i2c_range_->write_reg16(static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10), cmd.get_cmd_data_r());
+        p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+
         return true;
     });
-    register_cmd(CommandCodes::CMD_SENS_ENC, [](const CommandBase& cmd) {
+    register_cmd(CommandCodes::CMD_SENS_ENC, [this](const CommandBase& cmd) {
         // std::cout << "CMD_SENS_ENC received: " << cmd << "\n";
 
         const int16_t diff_l { cmd.get_cmd_data_l() };
-        if (diff_l) {
-            // std::cout << "CMD_SENS_ENC received: diff_l=" << diff_l << "\n";
+        // std::cout << "CMD_SENS_ENC received: diff_l=" << diff_l << "\n";
 
+        for (int16_t i {}; i < std::abs(diff_l); ++i) {
             uint8_t idx { DigitalSensors::enc_l_idx_ };
             ++idx;
             idx %= Encoder::DATA_ARRAY_SIZE;
+            DigitalSensors::enc_data_l_[idx] = now_ms_ * 1'000UL;
             DigitalSensors::enc_l_idx_ = idx;
-            DigitalSensors::enc_data_l_[idx] = Timer::get_us();
         }
 
         const int16_t diff_r { cmd.get_cmd_data_r() };
-        if (diff_r) {
-            // std::cout << "CMD_SENS_ENC received: diff_r=" << diff_r << "\n";
+        // std::cout << "CMD_SENS_ENC received: diff_r=" << diff_r << "\n";
 
+        for (int16_t i {}; i < std::abs(diff_r); ++i) {
             uint8_t idx { DigitalSensors::enc_r_idx_ };
             ++idx;
             idx %= Encoder::DATA_ARRAY_SIZE;
+            DigitalSensors::enc_data_r_[idx] = now_ms_ * 1'000UL;
             DigitalSensors::enc_r_idx_ = idx;
-            DigitalSensors::enc_data_r_[idx] = Timer::get_us();
         }
 
         return true;
@@ -129,12 +144,14 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         arduino::analogWrite(CtBotConfig::LDR_R_PIN, cmd.get_cmd_data_r());
         return true;
     });
-    register_cmd(CommandCodes::CMD_SENS_TRANS, [](const CommandBase& cmd) {
-        arduino::digitalWriteFast(CtBotConfig::TRANSPORT_PIN, cmd.get_cmd_data_l());
+    register_cmd(CommandCodes::CMD_SENS_TRANS, [this](const CommandBase& cmd) {
+        p_i2c_range_->set_address(CtBotConfig::VL6180X_I2C_ADDR);
+        p_i2c_range_->write_reg8(VL6180X::RESULT_RANGE_VAL_REG, cmd.get_cmd_data_l() > 0 ? 10 : 50);
+        p_i2c_range_->write_reg8(VL6180X::RESULT_INTERRUPT_STATUS_REG, 4); // FIXME: handle SYSTEM__INTERRUPT_CLEAR?
         return true;
     });
-    register_cmd(CommandCodes::CMD_SENS_DOOR, [](const CommandBase& cmd) {
-        arduino::digitalWriteFast(CtBotConfig::SHUTTER_PIN, cmd.get_cmd_data_l());
+    register_cmd(CommandCodes::CMD_SENS_DOOR, [](const CommandBase&) {
+        // arduino::digitalWriteFast(CtBotConfig::SHUTTER_PIN, cmd.get_cmd_data_l());
         return true;
     });
     register_cmd(CommandCodes::CMD_SENS_RC5, [](const CommandBase& cmd) {
@@ -157,6 +174,21 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     register_cmd(CommandCodes::CMD_SENS_BPS, [](const CommandBase&) { return true; });
     register_cmd(CommandCodes::CMD_AKT_SERVO, [](const CommandBase&) { return true; });
 
+    p_i2c_range_ = new I2C_Wrapper { CtBotConfig::VL53L0X_I2C_BUS };
+    assert(p_i2c_range_);
+    p_i2c_range_->init();
+    arduino::Wire.set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
+
+    p_i2c_range_->set_address(VL53L0X::DEFAULT_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+    p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+
+    p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+
+    p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+
     {
         CommandNoCRC cmd { CommandCodes::CMD_WELCOME, CommandCodes::CMD_SUB_WELCOME_SIM, 2 /* RC5 */, 0, CommandBase::ADDR_BROADCAST };
         if (!send_cmd(cmd)) {
@@ -165,6 +197,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     }
     if (receive_sensor_data()) {
         sim_time_ms_ += 10;
+        now_ms_ += 10; // FIXME: calc from delta?
         CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, CommandBase::ADDR_BROADCAST };
         if (!send_cmd(cmd)) {
             std::cerr << "SimConnection::SimConnection(): send_cmd() failed.\n";
@@ -172,30 +205,51 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     }
 
     p_recv_thread_ = std::make_shared<std::thread>([this]() {
+        while (!CtBot::get_instance().get_ready()) {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(10ms);
+        }
+
+        auto p_model { CtBotBehavior::get_instance().get_data()->get_resource<ResourceContainer>("model.") };
+        assert(p_model);
+        auto p_res { p_model->create_resource<bool>("sim_update", true) };
+        assert(p_res);
+        p_res->register_listener([p_model](const Resource<bool>::basetype&) {
+            p_model->set_update_state("sim_update");
+            return;
+        });
+
         while (sock_.is_open()) {
             if (CtBot::get_instance().get_ready() && receive_sensor_data()) {
+                p_res->notify(); // FIXME: think about this
+
                 {
-                    const auto mot_l_pwm { arduino::analogRead(CtBotConfig::MOT_L_PWM_PIN)
-                        * (arduino::digitalReadFast(CtBotConfig::MOT_L_DIR_PIN) ? 450 / 2 : -450 / 2) / (1 << Motor::PWM_RESOLUTION) };
-                    const auto mot_r_pwm { arduino::analogRead(CtBotConfig::MOT_R_PWM_PIN)
-                        * (arduino::digitalReadFast(CtBotConfig::MOT_R_DIR_PIN) ? -450 / 2 : 450 / 2) / (1 << Motor::PWM_RESOLUTION) };
-                    CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(mot_l_pwm), static_cast<int16_t>(mot_r_pwm),
-                        bot_addr_ };
+                    auto p_speedctrl_l { CtBot::get_instance().get_speedcontrols()[0] };
+                    auto p_speedctrl_r { CtBot::get_instance().get_speedcontrols()[1] };
+
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM,
+                        static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControl::MAX_SPEED / 200.f),
+                        static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControl::MAX_SPEED / 200.f), bot_addr_ };
+
                     send_cmd(cmd);
                 }
 
                 {
                     auto p_servo_1 { CtBot::get_instance().get_servos()[0] };
                     auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
-                    CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1 ? p_servo_1->get_position() : 0),
-                        static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0), bot_addr_ };
+
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1->get_position()),
+                        static_cast<int16_t>(p_servo_2->get_position()), bot_addr_ };
+
                     send_cmd(cmd);
                 }
 
                 {
                     auto p_leds { CtBot::get_instance().get_leds() };
+
                     CommandNoCRC cmd { CommandCodes::CMD_AKT_LED, CommandCodes::CMD_SUB_NORM,
                         static_cast<int16_t>(p_leds ? static_cast<int16_t>(p_leds->get()) : 0), 0, bot_addr_ };
+
                     send_cmd(cmd);
                 }
 

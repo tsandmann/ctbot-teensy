@@ -23,6 +23,7 @@
 
 #include "arduino_fixed.h"
 #include "Wire.h"
+#include "SPI.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -189,6 +190,10 @@ HardwareSerial Serial3;
 HardwareSerial Serial4;
 HardwareSerial Serial5;
 HardwareSerial Serial6;
+
+SPIClass SPI;
+SPIClass SPI1;
+SPIClass SPI2;
 
 TwoWire Wire;
 TwoWire Wire1;

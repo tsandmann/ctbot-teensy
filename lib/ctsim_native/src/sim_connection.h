@@ -22,6 +22,8 @@
 
 namespace ctbot {
 
+class I2C_Wrapper;
+
 class SimConnection {
 protected:
     boost::asio::streambuf recv_bufer_;
@@ -29,6 +31,8 @@ protected:
     boost::asio::ip::tcp::socket sock_;
     uint8_t bot_addr_;
     int16_t sim_time_ms_;
+    uint64_t now_ms_;
+    I2C_Wrapper* p_i2c_range_;
     std::map<CommandCodes /*cmd*/, std::vector<std::function<bool(const CommandBase&)>> /*functions*/> commands_;
     std::shared_ptr<std::thread> p_recv_thread_;
 

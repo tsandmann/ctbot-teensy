@@ -29,7 +29,9 @@
 #define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
 #include "arduino_fixed.h"
 #include "ArduinoJson.h"
+
 #include <string>
+#include <string_view>
 #include <memory>
 #include <type_traits>
 
@@ -51,22 +53,22 @@ protected:
     const std::string config_file_;
     DynamicJsonDocument* p_parameter_doc_;
 
-    bool get_parameter(const std::string& key, uint32_t& value) const noexcept;
-    bool get_parameter(const std::string& key, int32_t& value) const noexcept;
-    bool get_parameter(const std::string& key, float& value) const noexcept;
-    bool get_parameter(const std::string& key, const size_t index, uint32_t& value) const noexcept;
-    bool get_parameter(const std::string& key, const size_t index, int32_t& value) const noexcept;
-    bool get_parameter(const std::string& key, const size_t index, float& value) const noexcept;
+    bool get_parameter(const std::string_view& key, uint32_t& value) const noexcept;
+    bool get_parameter(const std::string_view& key, int32_t& value) const noexcept;
+    bool get_parameter(const std::string_view& key, float& value) const noexcept;
+    bool get_parameter(const std::string_view& key, const size_t index, uint32_t& value) const noexcept;
+    bool get_parameter(const std::string_view& key, const size_t index, int32_t& value) const noexcept;
+    bool get_parameter(const std::string_view& key, const size_t index, float& value) const noexcept;
 
-    void set_parameter(const std::string& key, const uint32_t value) noexcept;
-    void set_parameter(const std::string& key, const int32_t value) noexcept;
-    void set_parameter(const std::string& key, const float value) noexcept;
-    void set_parameter(const std::string& key, const size_t index, const uint32_t value) noexcept;
-    void set_parameter(const std::string& key, const size_t index, const int32_t value) noexcept;
-    void set_parameter(const std::string& key, const size_t index, const float value) noexcept;
+    void set_parameter(const std::string_view& key, const uint32_t value) noexcept;
+    void set_parameter(const std::string_view& key, const int32_t value) noexcept;
+    void set_parameter(const std::string_view& key, const float value) noexcept;
+    void set_parameter(const std::string_view& key, const size_t index, const uint32_t value) noexcept;
+    void set_parameter(const std::string_view& key, const size_t index, const int32_t value) noexcept;
+    void set_parameter(const std::string_view& key, const size_t index, const float value) noexcept;
 
 public:
-    ParameterStorage(const std::string& config_file, const size_t buffer_size = 512);
+    ParameterStorage(const std::string_view& config_file, const size_t buffer_size = 512);
     ~ParameterStorage();
 
     std::unique_ptr<std::string> dump() const;
@@ -74,7 +76,7 @@ public:
     bool flush() const;
 
     template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, bool>::type get(const std::string& key, T& value) const noexcept {
+    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
         uint32_t v;
         const bool res { get_parameter(key, v) };
         if (res) {
@@ -84,7 +86,7 @@ public:
     }
 
     template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type get(const std::string& key, T& value) const noexcept {
+    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
         int32_t v;
         const bool res { get_parameter(key, v) };
         if (res) {
@@ -94,7 +96,7 @@ public:
     }
 
     template <typename T>
-    typename std::enable_if<std::is_floating_point<T>::value, bool>::type get(const std::string& key, T& value) const noexcept {
+    typename std::enable_if<std::is_floating_point<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
         float v;
         const bool res { get_parameter(key, v) };
         if (res) {
@@ -104,27 +106,27 @@ public:
     }
 
     template <typename T>
-    typename std::enable_if<std::is_fundamental<T>::value, bool>::type get(const std::string& key, const size_t index, T& value) const noexcept {
+    typename std::enable_if<std::is_fundamental<T>::value, bool>::type get(const std::string_view& key, const size_t index, T& value) const noexcept {
         return get_parameter(key, index, value);
     }
 
     template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, void>::type set(const std::string& key, const T value) noexcept {
+    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
         set_parameter(key, static_cast<uint32_t>(value));
     }
 
     template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, void>::type set(const std::string& key, const T value) noexcept {
+    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
         set_parameter(key, static_cast<int32_t>(value));
     }
 
     template <typename T>
-    typename std::enable_if<std::is_floating_point<T>::value, void>::type set(const std::string& key, const T value) noexcept {
+    typename std::enable_if<std::is_floating_point<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
         set_parameter(key, static_cast<float>(value));
     }
 
     template <typename T>
-    typename std::enable_if<std::is_fundamental<T>::value, void>::type set(const std::string& key, const size_t index, const T& value) noexcept {
+    typename std::enable_if<std::is_fundamental<T>::value, void>::type set(const std::string_view& key, const size_t index, const T& value) noexcept {
         set_parameter(key, index, value);
     }
 };

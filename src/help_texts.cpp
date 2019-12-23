@@ -96,7 +96,7 @@ const char CtBotHelpTexts::i2c_[] { "i2c (i)\r\n"
                                     "\twrite32 REG DATA\twrite 4 bytes (DATA) in register at address REG\r\n" };
 
 std::string_view CtBotHelpTexts::create_sv(const char* str) {
-    return std::move(std::string_view(str, std::strlen(str)));
+    return std::move(std::string_view { str, std::strlen(str) });
 }
 
 void CtBotHelpTexts::init() {
