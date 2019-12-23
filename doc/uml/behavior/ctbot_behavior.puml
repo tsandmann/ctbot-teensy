@@ -1,0 +1,29 @@
+@startuml ctbot_behavior
+
+namespace ctbot {
+    class CtBotBehavior {
+        +CtBotBehavior()
+        +~CtBotBehavior()
+        +{static} get_instance() : CtBotBehavior&
+        +get_actuators() : ResourceContainer*
+        +get_data() : ResourceContainer*
+        +get_model_condition() : Condition*
+        +setup() : void
+        #update_enc(Pose& pose, Speed& speed) : bool
+        #run() : void
+        #{static} usage_text_beh : const char[]
+        #enc_last_l_ : int16_t
+        #enc_last_r_ : int16_t
+        #p_actuators_ : ResourceContainer::Ptr
+        #p_beh_ : std::unique_ptr<Behavior>
+        #p_data_ : ResourceContainer::Ptr
+        #p_model_cond_ : std::unique_ptr<Condition>
+    }
+
+    CtBot <|-- CtBotBehavior
+    CtBotBehavior o-- Behavior
+    CtBotBehavior o-- Condition
+    CtBotBehavior "2" o-- ResourceContainer
+}
+
+@enduml

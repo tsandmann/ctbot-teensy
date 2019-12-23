@@ -16,12 +16,20 @@
  */
 
 /**
- * @file    dummy.cpp
- * @brief   Empty dummy file to make clang's ar happy
+ * @file    pose.cpp
+ * @brief   Pose representation
  * @author  Timo Sandmann
- * @date    24.03.2019
+ * @date    26.05.2019
  */
 
-#ifdef __clang__
-int dummy;
-#endif
+#include "pose.h"
+#include "comm_interface.h"
+
+#include "pprintpp.hpp"
+
+
+namespace ctbot {
+void Pose::print(CommInterface& comm) const {
+    comm.debug_printf<false>(PP_ARGS("\\{x={.2} y={.2} heading={.2}}", get_x(), get_y(), get_heading()));
+}
+} // namespace ctbot

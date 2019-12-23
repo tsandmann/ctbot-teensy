@@ -40,8 +40,8 @@ TTS::~TTS() {
     }
 }
 
-bool TTS::speak(const std::string& text, const bool block) {
-    auto p_text { new std::string(text) };
+bool TTS::speak(const std::string_view& text, const bool block) {
+    auto p_text { new std::string { text } };
     if (block) {
         text_queue_.push(std::move(p_text));
         return true;
@@ -57,9 +57,12 @@ bool TTS::is_playing() {
 void TTS::audio_processing() {
     std::string* p_element;
     while (task_running_) {
-        text_queue_.pop(p_element);
-        say_text(p_element->c_str());
-        delete p_element;
+        if (text_queue_.try_pop(p_element)) {
+            say_text(p_element->c_str());
+            delete p_element;
+        }
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100ms);
     }
 }
 

@@ -1,0 +1,29 @@
+@startuml pose
+
+namespace ctbot {
+    class Pose {
+        +Pose()
+        +{static} Ptr = std::unique_ptr<Pose>
+        +get_dist_square<typename T>(const Pose& other) : T
+        +get_heading<typename T>() : T
+        +get_heading_cos<typename T>() : T
+        +get_heading_sin<typename T>() : T
+        +get_x<typename T>() : T
+        +get_ytypename T>() : T
+        +print(CommInterface& comm) : void
+        +set_heading<typename T>(const T& value) : void
+        +set_x<typename T>(const T& value) : void
+        +set_y<typename T>(const T& value) : void
+        +turned_angle<typename T>(const Pose& other, const Speed& bot_speed) : T
+        +turned_angle_abs<typename T>(const Pose& other) : T
+        #{static} to_deg<typename T>(const T radian) : constexpr T
+        #{static} to_rad<typename T>(const T degree) : constexpr T
+        #heading_ : float
+        #heading_cos_ : float
+        #heading_sin_ : float
+        #x_ : float
+        #y_ : float
+    }
+}
+
+@enduml

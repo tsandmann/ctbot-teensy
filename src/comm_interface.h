@@ -25,6 +25,7 @@
 #pragma once
 
 #include "circular_buffer.h"
+
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -51,6 +52,7 @@ class SerialConnectionTeensy;
 class CommInterface {
 protected:
     friend class CtBot;
+    friend class TFTDisplay;
 
     static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
     static constexpr size_t OUTPUT_QUEUE_SIZE { 64 }; /**< Size of output queue in number of elements */
@@ -74,7 +76,7 @@ protected:
     CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> output_queue_;
     uint16_t input_task_;
     uint16_t output_task_;
-    char input_buffer_[INPUT_BUFFER_SIZE];
+    char input_buffer_[INPUT_BUFFER_SIZE]; // FIXME: std::array?
 
     /**
      * @brief Worker task implementation that processes incoming data
@@ -90,6 +92,8 @@ protected:
 
     static std::unique_ptr<std::string> create_formatted_string(const size_t size, const char* format, ...);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
     template <typename... Args>
     static auto string_format(const char* format, const Args&... args) {
         const auto size { get_format_size(format, args...) + 1 };
@@ -99,6 +103,7 @@ protected:
             return std::unique_ptr<std::string> {};
         }
     }
+#pragma GCC diagnostic pop
 
 public:
     enum class Color : uint8_t {
@@ -206,6 +211,12 @@ public:
      */
     size_t debug_print(std::string&& str, const bool block);
 
+    /**
+     * @brief Write a message out to a SerialConnection
+     * @param[in] str: Reference to message as string_view
+     * @param[in] block: Switch blocking mode
+     * @return Number of characters written
+     */
     size_t debug_print(const std::string_view& str, const bool block);
 
     /**
@@ -261,7 +272,7 @@ protected:
     virtual void run_input() override;
 
     void clear_line();
-    void update_line(const std::string& line);
+    void update_line(const std::string_view& line);
 
 public:
     /**

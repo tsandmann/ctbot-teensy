@@ -24,18 +24,14 @@
 
 #include "analog_sensors.h"
 #include "scheduler.h"
-#include "timer.h"
 
 #include "arduino_fixed.h"
 
 
 namespace ctbot {
 
-AnalogSensors::AnalogSensors()
-    : last_dist_update_ { Timer::get_ms() }, last_adc_res_ { 0 }, distance_ { 0, 0 }, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 }, bat_voltage_ {} {
+AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 }, bat_voltage_ {} {
     Scheduler::enter_critical_section();
-    arduino::pinMode(CtBotConfig::DISTANCE_L_PIN, arduino::INPUT);
-    arduino::pinMode(CtBotConfig::DISTANCE_R_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LINE_R_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
@@ -46,19 +42,14 @@ AnalogSensors::AnalogSensors()
 }
 
 void AnalogSensors::update() {
-    const uint32_t now { Timer::get_ms() };
-    if (now >= last_dist_update_ + 50) {
-        distance_[0] = analog_read(CtBotConfig::DISTANCE_L_PIN, 10, 8);
-        distance_[1] = analog_read(CtBotConfig::DISTANCE_R_PIN, 10, 8);
-        last_dist_update_ = now;
-    }
     line_[0] = analog_read(CtBotConfig::LINE_L_PIN, 10);
     line_[1] = analog_read(CtBotConfig::LINE_R_PIN, 10);
     ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 10, 4);
     ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
     border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
     border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
-    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, 16, 8) * (3.3f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / 65535.f);
+    bat_voltage_ =
+        analog_read(CtBotConfig::BAT_VOLTAGE_PIN, 16, 8) * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / 65'535.f);
 }
 
 uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {

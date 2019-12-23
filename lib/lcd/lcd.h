@@ -184,6 +184,8 @@ public:
     the base abstract class.
     */
     LCD();
+    
+    virtual ~LCD() = default;
 
     /*!
     @function

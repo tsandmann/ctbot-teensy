@@ -30,14 +30,17 @@
 #include "arduino_fixed.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "portable/teensy.h"
+
 #include <algorithm>
 
 
 namespace ctbot {
 
-Task::Task(Scheduler& scheduler, const uint16_t id, const std::string& name, const uint16_t period, const uint8_t priority, func_t&& func)
-    : id_ { id }, period_ { period }, priority_ { priority }, state_ { 1 }, func_ { std::move(func) }, std_thread_ { false }, handle_ {},
-      scheduler_ { scheduler }, name_ { name } {}
+Task::Task(
+    Scheduler& scheduler, const uint16_t id, const std::string_view& name, const bool external, const uint16_t period, const uint8_t priority, func_t&& func)
+    : id_ { id }, period_ { period }, priority_ { priority }, state_ { 1 }, func_ { std::move(func) }, std_thread_ {}, external_ { external }, handle_ {},
+      scheduler_ { scheduler }, name_ { std::string { name } } {}
 
 void Task::print(CommInterface& comm) const {
     comm.debug_printf<true>(PP_ARGS(" \"{s}\":\t{#x}\t", name_.c_str(), id_));
@@ -50,13 +53,36 @@ void Task::print(CommInterface& comm) const {
 }
 
 Task::~Task() {
+    arduino::Serial.print("Task::~Task() for \"");
+    arduino::Serial.print(name_.c_str());
+    arduino::Serial.println('\"');
+
     state_ = 0;
     if (std_thread_) {
-        handle_.p_thread->detach();
-        delete handle_.p_thread;
+        if (handle_.p_thread && !external_) {
+            ::serial_puts("Task::~Task(): task is std::thread.");
+            if (handle_.p_thread->joinable()) {
+                if (name_ != "main") {
+                    ::serial_puts("Task::~Task(): calling join()...");
+                    handle_.p_thread->join();
+                    ::serial_puts("Task::~Task(): join() done.");
+                } else {
+                    handle_.p_thread->detach();
+                    ::serial_puts("Task::~Task(): detach() done.");
+                }
+            } else {
+                ::serial_puts("Task::~Task(): not joinable.");
+            }
+            delete handle_.p_thread;
+            ::serial_puts("Task::~Task(): thread deleted.");
+        }
     } else {
-        ::vTaskDelete(handle_.p_freertos_handle);
+        ::serial_puts("Task::~Task(): task is pure FreeRTOS task.");
+        if (handle_.p_freertos_handle && !external_) {
+            ::vTaskDelete(handle_.p_freertos_handle);
+        }
     }
+    ::serial_puts("Task::~Task() done.");
 }
 
 bool Task::resume() {

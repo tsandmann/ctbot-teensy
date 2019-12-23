@@ -1,0 +1,57 @@
+@startuml behavior
+
+namespace ctbot {
+    abstract class Behavior {
+        +Behavior(const std::string& name)
+        +Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms)
+        +Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size)
+        +~Behavior()
+        +{static} behavior_factory<class T, typename... Args>(Args&&... args) : std::unique_ptr<T>
+        +{static} behavior_factory<class T, typename... Args>(std::unique_ptr<T>& ptr, Args&&... args) : void
+        +behavior_factory<class T, typename... Args>(bool block, Args&&... args) : std::unique_ptr<T>
+        +behavior_factory<class T, typename... Args>(std::unique_ptr<T>& ptr, bool block, Args&&... args) : void
+        +finished() : bool
+        +get_cond() : Condition&
+        +get_priority() : uint16_t
+        +set_actuator<typename T, T min, T max, typename U>(Actuator<T, min, max>* actuator, const U& value) : bool
+        +switch_to<class T, typename... Args>(Args&&... args) : std::unique_ptr<T>
+        +{static} BasePtr = std::unique_ptr<Behavior>
+        #debug_print<bool ENABLED, typename... Args>(Args... args) : size_t
+        #debug_printf<bool ENABLED, typename... Args>(const Args&... args) : size_t
+        #exit() : bool
+        #get_ctbot() : CtBot*
+        #get_motor_l() : AMotor*
+        #get_motor_r() : AMotor*
+        #get_pose() : Pose*
+        #get_sensors() : Sensors*
+        #get_speed() : Speed*
+        #init_actuator<typename T>(const std::string& name, T*& p_res) : bool
+        #init_data<typename T>(const std::string& name, T*& p_res) : bool
+        #init_data_ptr<typename T>(const std::string& name, T*& ptr) : bool
+        #print_pose(const bool moving) : void
+        #{abstract} run() : void
+        #wait_for(Condition& cond) : bool
+        #wait_for_model_update() : bool
+        #{static} DEFAULT_CYCLE_TIME = 10 : constexpr uint16_t
+        #{static} DEFAULT_PRIORITY = 6 : constexpr uint16_t
+        #{static} DEFAULT_STACK_SIZE = 1024 : constexpr uint32_t
+        -caller_cv_ : Condition
+        -finished_ : bool
+        -p_ctbot_ : CtBotBehavior* const
+        -p_left_ : AMotor*
+        -p_pose_ : Pose*
+        -p_right_ : AMotor*
+        -p_sensors_ : Sensors*
+        -p_speed_ : Speed*
+        -task_id_ : uint16_t
+    }
+
+    Behavior o-- AMotor
+    Behavior o-- Condition
+    Behavior o-- CtBotBehavior
+    Behavior o-- Pose
+    Behavior o-- Sensors
+    Behavior o-- Speed
+}
+
+@enduml

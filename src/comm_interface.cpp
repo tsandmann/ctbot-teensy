@@ -28,7 +28,6 @@
 #include "serial_connection_teensy.h"
 #include "timer.h"
 #include "scheduler.h"
-#include "leds.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -50,8 +49,8 @@ CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_
 CommInterface::~CommInterface() {
     auto schdl { CtBot::get_instance().get_scheduler() };
     flush();
-    schdl->task_remove(output_task_);
     schdl->task_remove(input_task_);
+    schdl->task_remove(output_task_);
 }
 
 size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block) {
@@ -71,7 +70,7 @@ size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>
 size_t CommInterface::get_format_size(const char* format, ...) {
     va_list vl;
     va_start(vl, format);
-    const auto size { std::vsnprintf(nullptr, 0, format, vl) };
+    const auto size { std::vsnprintf(nullptr, 0, format, vl) + 1 };
     va_end(vl);
     return size;
 }
@@ -118,6 +117,11 @@ size_t CommInterface::debug_print(const std::string_view& str, const bool block)
     return queue_debug_msg('\0', std::move(p_str), block);
 }
 
+// size_t CommInterface::debug_print(const arduino::String& str, const bool block) {
+//     auto p_str { std::make_unique<std::string>(str.c_str(), str.length()) };
+//     return queue_debug_msg('\0', std::move(p_str), block);
+// }
+
 void CommInterface::flush() {
     using namespace std::chrono_literals;
     while (output_queue_.size()) {
@@ -134,6 +138,8 @@ void CommInterface::run_output() {
             io_.send(&element.character_, sizeof(element.character_));
         }
     }
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(100ms);
 }
 
 CommInterfaceCmdParser::CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo)
@@ -187,9 +193,9 @@ void CommInterfaceCmdParser::run_input() {
                 /* UP */
                 char tmp;
                 io_.receive(&tmp, 1);
-                auto p_cmd { cmd_parser_.get_history(++history_view_) };
-                if (p_cmd) {
-                    update_line(*p_cmd);
+                auto cmd { cmd_parser_.get_history(++history_view_) };
+                if (!cmd.empty()) {
+                    update_line(cmd);
                 } else {
                     --history_view_;
                 }
@@ -199,9 +205,9 @@ void CommInterfaceCmdParser::run_input() {
                 char tmp;
                 io_.receive(&tmp, 1);
                 if (history_view_ > 1) {
-                    auto p_cmd { cmd_parser_.get_history(--history_view_) };
-                    if (p_cmd) {
-                        update_line(*p_cmd);
+                    auto cmd { cmd_parser_.get_history(--history_view_) };
+                    if (!cmd.empty()) {
+                        update_line(cmd);
                     } else {
                         ++history_view_;
                     }
@@ -229,12 +235,12 @@ void CommInterfaceCmdParser::clear_line() {
     io_.send("\r", 1);
 }
 
-void CommInterfaceCmdParser::update_line(const std::string& line) {
+void CommInterfaceCmdParser::update_line(const std::string_view& line) {
     clear_line();
-    io_.send(line.c_str(), line.size());
+    io_.send(line);
 
     const size_t n { line.size() > INPUT_BUFFER_SIZE ? INPUT_BUFFER_SIZE : line.size() };
-    std::strncpy(input_buffer_, line.c_str(), n);
+    std::strncpy(input_buffer_, line.data(), n);
     p_input_ = &input_buffer_[n];
 }
 

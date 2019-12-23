@@ -1,0 +1,23 @@
+@startuml behavior_turn
+
+namespace ctbot {
+    class BehaviorTurn {
+        +BehaviorTurn(const int16_t degrees)
+        +BehaviorTurn(const int16_t degrees, const uint16_t priority)
+        +{static} Ptr = std::unique_ptr<BehaviorTurn>
+        #run() : void
+        -old_head_ : float
+        -state_ : State
+        -target_ : float
+        -turn_direction_ : bool
+    }
+
+    class BehaviorTurn::State {
+        +{static} TURN : uint8_t
+        +{static} END : uint8_t
+    }
+
+    Behavior <|-- BehaviorTurn
+}
+
+@enduml

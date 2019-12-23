@@ -142,7 +142,7 @@ size_t SerialConnectionTeensy::receive(std::streambuf& buf, const size_t size) {
 
 size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
-    uint16_t n { 0 };
+    uint16_t n {};
     char* ptr { reinterpret_cast<char*>(data) };
     do {
         int c { -1 };
@@ -167,7 +167,7 @@ size_t SerialConnectionTeensy::receive_until(void* data, const char delim, const
 
 size_t SerialConnectionTeensy::receive_until(void* data, const std::string& delim, const size_t maxsize) {
     const auto size16(static_cast<uint16_t>(maxsize));
-    uint16_t n { 0 };
+    uint16_t n {};
     char* ptr { reinterpret_cast<char*>(data) };
     do {
         int c { -1 };
@@ -193,7 +193,7 @@ size_t SerialConnectionTeensy::receive_until(void* data, const std::string& deli
 
 size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
     const auto size16 { static_cast<uint16_t>(maxsize) };
-    uint16_t n { 0 };
+    uint16_t n {};
     char tmp;
     do {
         int c { -1 };
@@ -222,7 +222,7 @@ size_t SerialConnectionTeensy::receive_until(std::streambuf& buf, const std::str
     auto& buffer { reinterpret_cast<std::stringbuf&>(buf) };
     const auto size16 { static_cast<uint16_t>(maxsize) };
 
-    uint16_t n { 0 };
+    uint16_t n {};
     do {
         int c { -1 };
         {
@@ -250,7 +250,7 @@ size_t SerialConnectionTeensy::receive_async(void* data, const size_t size, cons
 
     const auto avail { available() };
     const auto to_read { std::min(avail, size) };
-    size_t done { 0 };
+    size_t done {};
     if (to_read) {
         done = receive(ptr, to_read);
         ptr += done;
@@ -267,7 +267,7 @@ size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const size_t s
 
     const auto avail { available() };
     const auto to_read { std::min(avail, size) };
-    size_t done { 0 };
+    size_t done {};
     if (to_read) {
         done = receive(buf, to_read);
     }
@@ -281,6 +281,11 @@ size_t SerialConnectionTeensy::receive_async(std::streambuf& buf, const size_t s
 size_t SerialConnectionTeensy::send(const void* data, const size_t size) {
     std::unique_lock<std::mutex> mlock(mutex_);
     return io_stream_.write(reinterpret_cast<const uint8_t*>(data), size);
+}
+
+size_t SerialConnectionTeensy::send(const std::string_view& sv) {
+    std::unique_lock<std::mutex> mlock(mutex_);
+    return io_stream_.write(sv.data(), sv.size());
 }
 
 size_t SerialConnectionTeensy::send(std::streambuf& buf, const size_t size) {

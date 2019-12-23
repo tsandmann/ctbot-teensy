@@ -7,6 +7,6 @@
     "url": "https://github.com/jscrane/TTS.git"
   },
   "version": "1.0.0",
-  "frameworks": "arduino",
+  "frameworks": "*",
   "platforms": "*"
 }

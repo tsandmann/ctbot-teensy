@@ -26,16 +26,21 @@
 
 #include "comm_interface.h"
 
+#include <string>
+#include <string_view>
 #include <cstdint>
+#include <functional>
+#include <map>
+#include <tuple>
 
 
 class ARMKinetisDebug;
 class AudioOutputAnalog;
 class AudioPlaySdWav;
-class AudioSynthWaveformSineHires;
 class TTS;
 class AudioConnection;
 class AudioMixer4;
+class LuaWrapper;
 
 /**
  * @brief Namespace for all c't-Bot classes and functionality
@@ -46,10 +51,14 @@ class Sensors;
 class Motor;
 class SpeedControl;
 class Servo;
-class Leds;
+class EnaI2c;
+class LedsI2c;
+class LedsI2cEna;
 class LCDisplay;
+class TFTDisplay;
 class CmdParser;
 class Scheduler;
+class I2C_Wrapper;
 class ParameterStorage;
 
 /**
@@ -64,7 +73,7 @@ class ParameterStorage;
 class CtBot {
 protected:
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
-    static constexpr uint8_t TASK_PRIORITY { 3 };
+    static constexpr uint8_t TASK_PRIORITY { 7 };
     static constexpr uint32_t STACK_SIZE { 2048 };
 
     bool shutdown_;
@@ -75,20 +84,28 @@ protected:
     Motor* p_motors_[2]; /**< Pointer to motor instances */
     SpeedControl* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
-    Leds* p_leds_; /**< Pointer to led instance */
+    EnaI2c* p_ena_;
+    LedsI2cEna* p_ena_pwm_;
+    LedsI2c* p_leds_; /**< Pointer to led instance */
     LCDisplay* p_lcd_; /**< Pointer to LC display instance */
+    TFTDisplay* p_tft_; /**< Pointer to TFT display instance */
     SerialConnectionTeensy* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
     SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
+    I2C_Wrapper* p_i2c_;
     ParameterStorage* p_parameter_;
     ARMKinetisDebug* p_swd_debugger_;
     AudioOutputAnalog* p_audio_output_;
     AudioPlaySdWav* p_play_wav_;
-    // AudioSynthWaveformSineHires* p_sine_generator_;
     TTS* p_tts_;
     AudioConnection* p_audio_conn_[4];
     AudioMixer4* p_audio_mixer_;
+    std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> pre_hooks_;
+    std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> post_hooks_;
+    void* p_watch_timer_;
+    LuaWrapper* p_lua_;
+
 
     /**
      * @brief Constructor of main class
@@ -131,7 +148,7 @@ protected:
      * @brief Shut everything down and put the CPU into sleep mode
      * @details All motors, servos, leds, sensors are stopped / shut down and all tasks are suspended.
      */
-    void shutdown();
+    virtual void shutdown();
 
 public:
     /**
@@ -214,7 +231,7 @@ public:
      *  deactivate CommInterfaceCmdParser
      * @enduml
      */
-    virtual void setup();
+    virtual void setup(const bool set_ready);
 
     /**
      * @brief Stop the scheduler
@@ -229,7 +246,7 @@ public:
      */
     void stop();
 
-    bool play_wav(const std::string& filename);
+    bool play_wav(const std::string_view& filename);
 
     /**
      * @brief Get the sensor instance
@@ -237,6 +254,22 @@ public:
      */
     auto get_sensors() const {
         return p_sensors_;
+    }
+
+    /**
+     * @brief Get the ena instance
+     * @return Pointer to ena instance
+     */
+    auto get_ena() const {
+        return p_ena_;
+    }
+
+    /**
+     * @brief Get the ena_pwm instance
+     * @return Pointer to ena_pwm instance
+     */
+    auto get_ena_pwm() const {
+        return p_ena_pwm_;
     }
 
     /**
@@ -253,6 +286,10 @@ public:
      */
     auto get_lcd() const {
         return p_lcd_;
+    }
+
+    auto get_tft() const {
+        return p_tft_;
     }
 
     /**
@@ -287,6 +324,10 @@ public:
         return p_comm_;
     }
 
+    auto get_cmd_parser() const {
+        return p_parser_;
+    }
+
     /**
      * @brief Get the serial connection instance of USB serial port
      * @return Pointer to serial connection instance
@@ -294,6 +335,10 @@ public:
     auto get_serial_usb_conn() const {
         return p_serial_usb_;
     }
+
+    void add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active = true);
+
+    void add_post_hook(const std::string& name, std::function<void()>&& hook, bool active = true);
 };
 
 } // namespace ctbot

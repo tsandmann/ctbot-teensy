@@ -28,6 +28,7 @@
 #include "ctbot_config.h"
 
 #include "arduino_fixed.h"
+
 #include <cstdint>
 
 
@@ -44,9 +45,9 @@ namespace ctbot {
  */
 class Encoder {
 protected:
-    static constexpr float AVG_FILTER_PARAM { 0.25f }; /**< Filter coefficient for speed averaging filter */
+    static constexpr float AVG_FILTER_PARAM { CtBotConfig::ENCODER_MARKS > 100 ? 0.1f : 0.25f }; /**< Filter coefficient for speed averaging filter */
     static constexpr float WHEEL_PERIMETER { 178.1283 }; /**< Perimeter of the wheel in mm */
-    static constexpr bool DEBUG { false }; /**< Flag to enable debug output */
+    static constexpr bool DEBUG_ { false }; /**< Flag to enable debug output */
 
     int16_t edges_; /**< Current number of edges counted; increasing for forward wheel turning, decreasing otherwise */
     uint8_t last_idx_; /**< Index in input data array of last processed entry */
@@ -60,7 +61,8 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
-    static constexpr uint8_t DATA_ARRAY_SIZE { 32 }; /**< Size of buffer array in byte for raw encoder data */
+    static constexpr uint8_t DATA_ARRAY_SIZE { CtBotConfig::ENCODER_MARKS <= 60 ? 32 : 64 };
+    /**< Size of buffer array in byte for raw encoder data */ // FIXME: calc correct size
 
     /**
      * @brief Construct a new Encoder object
@@ -104,13 +106,13 @@ public:
      */
     template <uint8_t PIN_NUM, uint8_t ARRAY_SIZE>
     static inline __attribute__((always_inline)) void isr(uint32_t* p_data, volatile uint8_t* p_idx) {
-        static bool last { false };
-        static uint32_t last_time { 0 };
+        static bool last {};
+        static uint32_t last_time {};
 
         const uint32_t now { Timer::get_us() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
-        constexpr int32_t MIN_DT_US { static_cast<int32_t>(1000.f * 1000.f / (151.f * 1.2f / 60.f) / CtBotConfig::ENCODER_MARKS) }; // max 151 rpm +20% margin
+        constexpr int32_t MIN_DT_US { static_cast<int32_t>(1'000'000.f / (200.f * 1.2f / 60.f) / CtBotConfig::ENCODER_MARKS) }; // max 200 rpm +20% margin
         if (value != last && (std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) > MIN_DT_US)) {
             last = value;
             last_time = now;

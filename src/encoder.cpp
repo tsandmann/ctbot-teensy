@@ -34,8 +34,7 @@
 namespace ctbot {
 
 Encoder::Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
-    : edges_ { 0 }, last_idx_ { 0 }, speed_ { 0.f }, speed_avg_ { 0.f }, direction_ { true }, p_enc_data_ { p_data }, p_enc_idx_ { p_idx },
-      last_update_ { 0 }, count_ { 0 } {
+    : edges_ {}, last_idx_ {}, speed_ {}, speed_avg_ {}, direction_ { true }, p_enc_data_ { p_data }, p_enc_idx_ { p_idx }, last_update_ {}, count_ {} {
     Scheduler::enter_critical_section();
     arduino::pinMode(pin, arduino::INPUT);
 
@@ -77,7 +76,7 @@ void Encoder::update() {
             diff_enc = -diff_enc;
         }
 
-        if (DEBUG) {
+        if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
             ctbot.get_comm()->debug_printf<false>("diff_enc=%d\r\n", diff_enc);
         }
@@ -85,7 +84,7 @@ void Encoder::update() {
         last_idx_ = idx;
         count_ += diff_enc;
 
-        if (DEBUG) {
+        if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
             ctbot.get_comm()->debug_printf<false>("count_=%d\r\n", count_);
         }
@@ -97,16 +96,17 @@ void Encoder::update() {
             return;
         }
 
-        speed_ = (WHEEL_PERIMETER / CtBotConfig::ENCODER_MARKS * 1000000.f) * count_ / diff;
+        speed_ = (WHEEL_PERIMETER / CtBotConfig::ENCODER_MARKS * 1'000'000.f) * count_ / diff;
         speed_avg_ = speed_avg_ * (1.f - AVG_FILTER_PARAM) + speed_ * AVG_FILTER_PARAM;
 
-        if (DEBUG && speed_ != 0.f) {
+        if (DEBUG_ && speed_ != 0.f) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("now_s=%f\r\n", now_us / 1000000.f);
-            ctbot.get_comm()->debug_printf<false>("%.2f\t%.2f\t%f\t%f\t%u\r\n", speed_, speed_avg_, current_time / 1000000.f, last_update_ / 1000000.f, idx);
+            ctbot.get_comm()->debug_printf<false>("now_s=%f\r\n", now_us / 1'000'000.f);
+            ctbot.get_comm()->debug_printf<false>(
+                "%.2f\t%.2f\t%f\t%f\t%u\r\n", speed_, speed_avg_, current_time / 1'000'000.f, last_update_ / 1'000'000.f, idx);
 
-            for (auto i { 0U }; i < DATA_ARRAY_SIZE; ++i) {
-                ctbot.get_comm()->debug_printf<false>("%f ", p_enc_data_[i] / 1000000.f);
+            for (uint8_t i {}; i < DATA_ARRAY_SIZE; ++i) {
+                ctbot.get_comm()->debug_printf<false>("%f ", p_enc_data_[i] / 1'000'000.f);
             }
             ctbot.get_comm()->debug_print("\r\n", false);
         }
@@ -114,7 +114,7 @@ void Encoder::update() {
             last_update_ = current_time;
         }
         count_ = 0;
-    } else if (dt > 600000L) {
+    } else if (dt > 600'000L) {
         speed_ = speed_avg_ = 0.f;
         count_ = 0;
         last_update_ = now_us;

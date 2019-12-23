@@ -1,0 +1,14 @@
+@startuml behavior_test
+
+namespace ctbot {
+    class BehaviorTest {
+        +BehaviorTest()
+        +{static} Ptr = std::unique_ptr<BehaviorTest>
+        #run() : void
+        -mode_ : uint8_t
+    }
+
+    Behavior <|-- BehaviorTest
+}
+
+@enduml

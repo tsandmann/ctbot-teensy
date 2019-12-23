@@ -38,11 +38,18 @@
 
 
 namespace ctbot {
-// FIXME: just for testing purpose
-tests::TaskWaitTest* p_wait_test { nullptr };
+tests::BlinkTest* g_blink_test {};
+tests::LedTest* g_led_test {};
+tests::LcdTest* g_lcd_test {};
+tests::EnaTest* g_ena_test {};
+tests::SensorLcdTest* g_sensor_lcd_test {};
+tests::TftTest* g_tft_test {};
+tests::TouchTest* g_touch_test {};
+tests::ButtonTest* g_button_test {};
+tests::TaskWaitTest* g_wait_test {};
 } // namespace ctbot
 
-static TaskHandle_t g_audio_task { nullptr };
+static TaskHandle_t g_audio_task {};
 
 /**
  * @brief Task to initialize everything
@@ -52,7 +59,8 @@ static void init_task() {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
-    Timer::delay_us(2'000UL * 1'000UL);
+    Timer::delay_us(CtBotConfig::BOOT_DELAY_MS * 1'000UL);
+    ::serial_puts("\r\n");
 
     // ::serial_puts("init_task()");
     // freertos::print_ram_usage();
@@ -63,32 +71,57 @@ static void init_task() {
 
     /* initialize it... */
     // ::serial_puts("calling ctbot.setup()...");
-    ctbot.setup();
-    // ::serial_puts("ctbot.setup() done.");
+    ctbot.setup(true);
+    ::serial_puts("ctbot.setup() done.");
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
-        new tests::BlinkTest(ctbot);
+        g_blink_test = new tests::BlinkTest { ctbot };
+        std::atexit([]() { delete g_blink_test; });
     }
 
     if (CtBotConfig::LED_TEST_AVAILABLE) {
-        new tests::LedTest(ctbot);
+        g_led_test = new tests::LedTest { ctbot };
+        std::atexit([]() { delete g_led_test; });
     }
 
     if (CtBotConfig::LCD_TEST_AVAILABLE) {
-        new tests::LcdTest(ctbot);
+        g_lcd_test = new tests::LcdTest { ctbot };
+        std::atexit([]() { delete g_lcd_test; });
     }
 
     if (CtBotConfig::ENA_TEST_AVAILABLE) {
-        new tests::EnaTest(ctbot);
+        g_ena_test = new tests::EnaTest { ctbot };
+        std::atexit([]() { delete g_ena_test; });
     }
 
     if (CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
-        new tests::SensorLcdTest(ctbot);
+        g_sensor_lcd_test = new tests::SensorLcdTest { ctbot };
+        std::atexit([]() { delete g_sensor_lcd_test; });
+    }
+
+    if (CtBotConfig::TFT_TEST_AVAILABLE) {
+        g_tft_test = new tests::TftTest { ctbot };
+        std::atexit([]() { delete g_tft_test; });
+    }
+
+    if (CtBotConfig::TOUCH_TEST_AVAILABLE) {
+        g_touch_test = new tests::TouchTest { ctbot };
+        std::atexit([]() { delete g_touch_test; });
+    }
+
+    if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
+        g_button_test = new tests::ButtonTest { ctbot };
+        std::atexit([]() {
+            ::serial_puts("deleting g_button_test...");
+            delete g_button_test;
+            ::serial_puts("done.");
+        });
     }
 
     if (CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
-        p_wait_test = new tests::TaskWaitTest(ctbot);
+        g_wait_test = new tests::TaskWaitTest { ctbot };
+        std::atexit([]() { delete g_wait_test; });
     }
 
     // extern unsigned long __bss_end__; // set by linker script
@@ -101,11 +134,12 @@ static void init_task() {
 
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
-        ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, []() {
-            while (true) {
+        ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, [&ctbot]() {
+            while (ctbot.get_ready()) {
                 ::software_isr(); // AudioStream::update_all()
                 ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
             }
+            g_audio_task = nullptr;
         });
         g_audio_task = ::xTaskGetHandle("audio");
     }
@@ -215,12 +249,17 @@ void setup() {
     __disable_irq();
     _VectorsRam[80] = softirq_isr;
 
+    arduino::pinMode(13, 1); // debug LED as output
+    arduino::digitalWriteFast(13, true); // turn debug LED on
+
     freertos::sysview_init();
 
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
     free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), "INIT");
     free_rtos_std::gthr_freertos::set_next_stacksize(last);
+
+    arduino::digitalWriteFast(13, false); // turn debug LED off
 
     ::vTaskStartScheduler();
 
@@ -247,9 +286,14 @@ int _write(int, char* ptr, int len) {
     SerialConnectionTeensy* p_serial { ctbot.get_serial_usb_conn() };
 
     if (p_serial) {
-        return p_serial->send(reinterpret_cast<uint8_t*>(ptr), len);
+        const auto n { p_serial->send(reinterpret_cast<uint8_t*>(ptr), len) };
+        p_serial->flush();
+        return n;
+    } else {
+        const auto n { arduino::Serial.write(reinterpret_cast<uint8_t*>(ptr), len) };
+        arduino::Serial.flush();
+        return n;
     }
-    return -1;
 }
 
 /**

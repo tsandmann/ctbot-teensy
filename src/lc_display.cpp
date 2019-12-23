@@ -25,17 +25,18 @@
 #include "lc_display.h"
 #include "scheduler.h"
 
-#include <LiquidCrystal_I2C.h>
-#include <arduino_fixed.h>
+#include "LiquidCrystal_I2C.h"
+#include "arduino_fixed.h"
+
 #include <cstdarg>
 
 
 namespace ctbot {
 
-LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::LCD_I2C, 0x3f, 2, 1, 0, 4, 5, 6, 7) } {
+LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C { CtBotConfig::LCD_I2C_BUS, 0x3f, 2, 1, 0, 4, 5, 6, 7 } } {
     Scheduler::enter_critical_section();
-    arduino::Wire2.setSDA(CtBotConfig::I2C2_PIN_SDA);
-    arduino::Wire2.setSCL(CtBotConfig::I2C2_PIN_SCL);
+    // arduino::Wire2.setSDA(CtBotConfig::I2C2_PIN_SDA);
+    // arduino::Wire2.setSCL(CtBotConfig::I2C2_PIN_SCL);
 
     p_impl_->begin(LINE_LENGTH, 4);
     p_impl_->setBacklightPin(3, LiquidCrystal_I2C::POSITIVE);
@@ -43,6 +44,10 @@ LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C(CtBotConfig::LCD_I2C, 0
     Scheduler::exit_critical_section();
 
     clear();
+}
+
+LCDisplay::~LCDisplay() {
+    delete p_impl_;
 }
 
 void LCDisplay::clear() const {
@@ -69,14 +74,14 @@ void LCDisplay::set_backlight(const bool status) const {
 
 uint8_t LCDisplay::print(const char c) const {
     Scheduler::enter_critical_section();
-    const uint8_t ret { static_cast<uint8_t>(p_impl_->print(c)) };
+    const uint8_t ret { static_cast<uint8_t>(p_impl_->write(c)) };
     Scheduler::exit_critical_section();
     return ret;
 }
 
-uint8_t LCDisplay::print(const std::string& str) const {
+uint8_t LCDisplay::print(const std::string_view& str) const {
     Scheduler::enter_critical_section();
-    const uint8_t ret { static_cast<uint8_t>(p_impl_->print(str.c_str())) }; // baeh
+    const uint8_t ret { static_cast<uint8_t>(p_impl_->write(str.data(), str.size())) };
     Scheduler::exit_critical_section();
     return ret;
 }
@@ -86,7 +91,7 @@ uint8_t LCDisplay::printf(const char* format, ...) {
     va_start(args, format);
 
     /* read C-string and parse format */
-    uint8_t len(vsnprintf(buffer_, sizeof(buffer_), reinterpret_cast<const char*>(format), args));
+    auto len { std::vsnprintf(buffer_, sizeof(buffer_), reinterpret_cast<const char*>(format), args) };
     va_end(args);
 
     /* truncate to line length */
@@ -97,15 +102,15 @@ uint8_t LCDisplay::printf(const char* format, ...) {
     /* send characters to display */
     const char* ptr(buffer_);
     Scheduler::enter_critical_section();
-    for (uint8_t i { 0U }; i < len; ++i) {
-        p_impl_->print(*ptr++);
+    for (uint8_t i {}; i < len; ++i) {
+        p_impl_->write(*ptr++);
     }
     Scheduler::exit_critical_section();
 
-    return len;
+    return static_cast<uint8_t>(len);
 }
 
-void LCDisplay::set_output(const std::string& out) {
+void LCDisplay::set_output(const std::string_view& out) {
     if (out == "stdout") {
         p_impl_->set_output(stdout);
     } else {

@@ -32,6 +32,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <string_view>
 #include <functional>
 #include <thread>
 #include <mutex>
@@ -60,9 +61,11 @@ protected:
     static constexpr uint8_t DEFAULT_PRIORITY { 4 };
     static constexpr uint32_t DEFAULT_STACK_SIZE { 2 * 1024 }; // byte
 
+    static void* p_main_task_;
+
     uint16_t next_id_; /**< Next task ID to use */
     std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
-    std::mutex task_mutex_;
+    mutable std::mutex task_mutex_;
 
 public:
     static constexpr uint8_t MAX_PRIORITY { 9 };
@@ -93,50 +96,50 @@ public:
 
     /**
      * @brief Add a tasks to the run queue
-     * @param[in] name: Reference to string with name of the task
+     * @param[in] name: Reference to a string_view with name of the task
      * @param[in] period: Execution period of task in ms
      * @param[in] priority: Priority of task
      * @param[in] stack_size: Size of task's stack in byte
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
+    uint16_t task_add(const std::string_view& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
 
     /**
      * @brief Add a tasks to the run queue
-     * @param[in] name: Reference to string with name of the task
+     * @param[in] name: Reference to a string_view with name of the task
      * @param[in] period: Execution period of task in ms
      * @param[in] stack_size: Size of task's stack in byte
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
+    uint16_t task_add(const std::string_view& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, stack_size, std::move(func));
     }
 
     /**
      * @brief Add a tasks to the run queue
-     * @param[in] name: Reference to string with name of the task
+     * @param[in] name: Reference to a string_view with name of the task
      * @param[in] period: Execution period of task in ms
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string& name, const uint16_t period, Task::func_t&& func) {
+    uint16_t task_add(const std::string_view& name, const uint16_t period, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, std::move(func));
     }
 
-    uint16_t task_register(const std::string& name);
+    uint16_t task_register(const std::string_view& name, const bool external = false);
 
-    uint16_t task_register(void* task);
+    uint16_t task_register(void* task, const bool external);
 
     bool task_remove(const uint16_t task);
 
     /**
      * @brief Get the ID of a task given by its name
-     * @param[in] name: Reference to string with task name
+     * @param[in] name: Reference to a string_view with task name
      * @return ID of searched task or 0xffff, if task name is unknown
      */
-    uint16_t task_get(const std::string& name) const;
+    uint16_t task_get(const std::string_view& name) const;
 
     /**
      * @brief Get a pointer to a tasks' control structure (of type Task)
@@ -161,6 +164,8 @@ public:
 
     bool task_join(const uint16_t id);
 
+    bool task_set_finished(const uint16_t id);
+
     /**
      * @brief Print a list of all tasks and their current status
      * @param[in] comm: Reference to CommInterface instance used to print the list
@@ -173,9 +178,9 @@ public:
      */
     void print_ram_usage(CommInterface& comm) const;
 
-    size_t get_free_stack();
+    size_t get_free_stack() const;
 
-    size_t get_free_stack(const uint16_t id);
+    size_t get_free_stack(const uint16_t id) const;
 
     std::unique_ptr<std::vector<std::pair<void*, float>>> get_runtime_stats() const;
 };

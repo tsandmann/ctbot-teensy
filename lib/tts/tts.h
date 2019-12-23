@@ -19,6 +19,7 @@
 #include "AudioStream.h"
 #include "circular_buffer.h"
 #include <string>
+#include <string_view>
 #include <cstdint>
 #include <thread>
 #include <mutex>
@@ -31,7 +32,7 @@ public:
 
     virtual ~TTS();
 
-    bool speak(const std::string& text, const bool block);
+    bool speak(const std::string_view& text, const bool block);
 
     uint8_t get_pitch() const {
         return default_pitch_;

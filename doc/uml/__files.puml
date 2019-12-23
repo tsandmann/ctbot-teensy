@@ -25,4 +25,16 @@
 !include tests.puml
 !include timer.puml
 
+!include behavior/actuator.puml
+!include behavior/behavior.puml
+!include behavior/behavior_drive.puml
+!include behavior/behavior_square.puml
+!include behavior/behavior_test.puml
+!include behavior/behavior_turn.puml
+!include behavior/ctbot_behavior.puml
+!include behavior/pose.puml
+!include behavior/resource.puml
+!include behavior/resource_container.puml
+!include behavior/speed.puml
+
 @enduml

@@ -1,0 +1,27 @@
+@startuml behavior_drive
+
+namespace ctbot {
+    class BehaviorDrive {
+        +BehaviorDrive(const int16_t distance)
+        +BehaviorDrive(const int16_t distance, const uint16_t priority)
+        +{static} Ptr = std::unique_ptr<BehaviorDrive>
+        #run() : void
+        -{static} DEBUG_ = false : constexpr bool
+        -{static} SPEED = 20 : constexpr int16_t
+        -{static} STACK_SIZE = 1024 : constexpr uint32_t
+        -distance_2_ : const int32_t
+        -forward_ : const bool
+        -start_ : Pose
+        -state_ : State
+    }
+
+    class BehaviorDrive::State {
+        +{static} DRIVE : uint8_t
+        +{static} END : uint8_t
+    }
+
+    Behavior <|-- BehaviorDrive
+    BehaviorDrive o-- Pose
+}
+
+@enduml

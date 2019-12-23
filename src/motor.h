@@ -42,7 +42,7 @@ namespace ctbot {
  */
 class Motor {
 protected:
-    static constexpr float PWM_FREQUENCY { 29296.f }; /**< Pwm frequency in Hz */
+    static constexpr float PWM_FREQUENCY { 29'296.f }; /**< Pwm frequency in Hz */
 
     int16_t pwm_;
     const uint8_t pwm_pin_;

@@ -25,6 +25,10 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <string>
+#include <vector>
+#include <map>
+#include <iostream>
 
 
 typedef struct {
@@ -42,44 +46,186 @@ typedef struct {
     volatile uint8_t SLTL;
 } KINETIS_I2C_t;
 
-#define KINETIS_I2C0 (*(KINETIS_I2C_t*) 0x40066000)
-#define KINETIS_I2C1 (*(KINETIS_I2C_t*) 0x40067000)
-#define KINETIS_I2C2 (*(KINETIS_I2C_t*) 0x400E6000)
-#define KINETIS_I2C3 (*(KINETIS_I2C_t*) 0x400E7000)
+static KINETIS_I2C_t i2c_dummy;
+
+#define KINETIS_I2C0 (*(KINETIS_I2C_t*) &i2c_dummy)
+#define KINETIS_I2C1 (*(KINETIS_I2C_t*) &i2c_dummy)
+#define KINETIS_I2C2 (*(KINETIS_I2C_t*) &i2c_dummy)
+#define KINETIS_I2C3 (*(KINETIS_I2C_t*) &i2c_dummy)
 
 
 class TwoWire {
+    static constexpr bool DEBUG_ { false };
+
+    std::map<uint8_t /*addr*/, std::vector<uint8_t>> data_;
+    std::map<uint8_t /*addr*/, uint8_t> addr_width_;
+    uint8_t addr_;
+    uint16_t reg_;
+    uint8_t mode_;
+    int available_;
+
 public:
+    TwoWire() : addr_ {}, reg_ {}, mode_ {}, available_ { -1 } {}
+
     void begin() {}
-    void setSDA(uint8_t pin) {
-        (void) pin;
-    }
-    void setSCL(uint8_t pin) {
-        (void) pin;
-    }
-    void setClock(uint32_t frequency) {
-        (void) frequency;
-    }
+    void setSDA(uint8_t) {}
+    void setSCL(uint8_t) {}
+    void setClock(uint32_t) {}
+
     void beginTransmission(uint8_t address) {
-        (void) address;
+        if (address >= 8 && address < 120) {
+            addr_ = address;
+            mode_ = 1; // reg addr low follows
+            if (DEBUG_) {
+                std::cout << "TwoWire::beginTransmission(): address set to 0x" << std::hex << static_cast<uint32_t>(addr_) << std::dec << "\n";
+            }
+        } else {
+            if (DEBUG_) {
+                std::cout << "TwoWire::beginTransmission(): invalid address: 0x" << std::hex << static_cast<uint32_t>(address) << std::dec << "\n";
+            }
+        }
     }
-    uint8_t endTransmission() {
+
+    uint8_t endTransmission(uint8_t sendStop = 1) {
+        (void) sendStop;
+        mode_ = 3; // data follows
         return 0;
     }
+
     virtual size_t write(uint8_t data) {
-        (void) data;
-        return 0;
+        if (mode_ == 1) {
+            reg_ = data;
+            if (DEBUG_) {
+                std::cout << "TwoWire::write(): mode=" << static_cast<uint32_t>(mode_) << " reg_=0x" << std::hex << static_cast<uint32_t>(reg_) << std::dec
+                          << "\n";
+            }
+            if (addr_width_[addr_] == 2) {
+                mode_ = 2;
+            } else {
+                mode_ = 3;
+            }
+        } else if (mode_ == 2) {
+            reg_ |= data << 8;
+            if (DEBUG_) {
+                std::cout << "TwoWire::write(): mode=" << static_cast<uint32_t>(mode_) << " reg_=0x" << std::hex << static_cast<uint32_t>(reg_) << std::dec
+                          << "\n";
+            }
+            mode_ = 3;
+        } else if (mode_ == 3) {
+            auto& data_vec { data_[addr_] };
+            if (data_vec.size() < 65'535) {
+                data_vec.resize(65'535, 0);
+                if (DEBUG_) {
+                    std::cout << "TwoWire::write(): vector resized to 65535.\n";
+                }
+            }
+            if (DEBUG_) {
+                std::cout << "TwoWire::write(): [0x" << std::hex << static_cast<uint32_t>(reg_) << "] = 0x" << static_cast<uint32_t>(data) << std::dec << "\n";
+            }
+            data_vec[reg_++] = data;
+        } else {
+            if (DEBUG_) {
+                std::cout << "TwoWire::write(): invalid mode " << static_cast<uint32_t>(mode_) << "\n";
+            }
+            return 0;
+        }
+
+        return 1;
     }
-    uint8_t requestFrom(int address, int quantity) {
-        (void) address;
-        (void) quantity;
-        return 0;
+
+    uint8_t requestFrom(int address, int quantity, uint8_t sendStop = 1) {
+        (void) sendStop;
+
+        if (address >= 8 && address < 120) {
+            addr_ = address;
+            mode_ = 3;
+            available_ = quantity;
+            if (DEBUG_) {
+                std::cout << "TwoWire::requestFrom(): address 0x" << std::hex << static_cast<int32_t>(address) << std::dec << " quantity=" << available_
+                          << "\n";
+            }
+        } else {
+            if (DEBUG_) {
+                std::cout << "TwoWire::requestFrom(): invalid address 0x" << std::hex << static_cast<int32_t>(address) << std::dec << "\n";
+            }
+        }
+
+        return available_;
     }
+
     virtual int available() {
+        return available_;
+    }
+
+    virtual int read() {
+        if (mode_ == 3) {
+            auto& data_vec { data_[addr_] };
+            if (data_vec.size() < 65'535) {
+                data_vec.resize(65'535, 0);
+                if (DEBUG_) {
+                    std::cout << "TwoWire::read(): vector resized to 65535.\n";
+                }
+            }
+            if (DEBUG_) {
+                std::cout << "TwoWire::read(): [0x" << std::hex << static_cast<uint32_t>(reg_) << "] = 0x" << static_cast<uint32_t>(data_vec[reg_]) << std::dec
+                          << "\n";
+            }
+            return data_vec[reg_++];
+        }
+
+        if (DEBUG_) {
+            std::cout << "TwoWire::read(): invalid mode " << static_cast<uint32_t>(mode_) << "\n";
+        }
+        return -1;
+    }
+
+    size_t readBytes(uint8_t* buffer, size_t length) {
+        if (mode_ == 3) {
+            size_t n { length };
+            if (static_cast<int>(n) > available_) {
+                n = std::max<size_t>(0, available_);
+            }
+
+            auto& data_vec { data_[addr_] };
+            if (data_vec.size() < 65'535) {
+                data_vec.resize(65'535, 0);
+                if (DEBUG_) {
+                    std::cout << "TwoWire::readBytes(): vector resized to 65535.\n";
+                }
+            }
+            for (size_t i {}; i < n; ++i) {
+                buffer[i] = data_vec[reg_++];
+            }
+
+            return n;
+        }
+
         return 0;
     }
-    virtual int read() {
-        return -1;
+
+    size_t write(const uint8_t* buffer, size_t length) {
+        if (mode_ == 3) {
+            auto& data_vec { data_[addr_] };
+            if (data_vec.size() < 65'535) {
+                data_vec.resize(65'535, 0);
+                if (DEBUG_) {
+                    std::cout << "TwoWire::write(): vector resized to 65535.\n";
+                }
+            }
+            for (size_t i {}; i < length; ++i) {
+                data_vec[reg_++] = buffer[i];
+            }
+
+            return length;
+        }
+
+        return 0;
+    }
+
+    void set_addr_width(const uint8_t addr, const uint8_t width) {
+        if (addr >= 8 && addr < 120) {
+            addr_width_[addr] = width;
+        }
     }
 };
 

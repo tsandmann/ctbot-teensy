@@ -36,7 +36,7 @@ std::list<SpeedControl*> SpeedControl::controller_list_;
 
 SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     : direction_ { true }, setpoint_ {}, input_ {}, output_ {}, kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f },
-      p_pid_controller_ { new Pid(input_, output_, setpoint_, kp_, ki_, kd_, true) }, wheel_encoder_ { wheel_enc }, motor_ { motor } {
+      p_pid_controller_ { new Pid { input_, output_, setpoint_, kp_, ki_, kd_, true } }, wheel_encoder_ { wheel_enc }, motor_ { motor } {
     if (!p_pid_controller_) {
         return;
     }
@@ -48,7 +48,7 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, 7, 768UL, &controller);
+        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, 8, 768UL, &controller);
     }
 }
 

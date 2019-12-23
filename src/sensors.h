@@ -24,12 +24,13 @@
 
 #pragma once
 
-#include "ena.h"
 #include "digital_sensors.h"
 #include "analog_sensors.h"
 
 
 namespace ctbot {
+
+class CtBot;
 
 /**
  * @brief Collection of all c't-Bot sensors
@@ -41,26 +42,37 @@ namespace ctbot {
  * @enduml
  */
 class Sensors : public DigitalSensors, public AnalogSensors {
+    static constexpr bool DEBUG_ { false };
+
 protected:
-    Ena ena_;
+    CtBot& ctbot_;
 
 public:
     /**
      * @brief Construct a new Sensors object
+     * @param[in] ctbot: Reference to CtBot instance
      */
-    Sensors();
+    Sensors(CtBot& ctbot);
 
     /**
      * @brief Update all sensors by calling the underlying update()-methods
      */
-    void update();
+    bool update();
 
     /**
-     * @brief Disable all sensors by disabling their enable transistor
+     * @brief Enable sensors that can be disabled for power-saving reasons
      */
-    void disable_all() {
-        ena_.set(EnaTypes::NONE);
-    }
+    bool enable_sensors();
+
+    /**
+     * @brief Disable sensors that can be disabled for power-saving reasons
+     */
+    bool disable_sensors();
+
+    /**
+     * @brief Disable/shutdown all sensors
+     */
+    bool disable_all();
 
     /**
      * @return The current time in ms

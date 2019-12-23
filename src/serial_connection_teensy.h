@@ -25,8 +25,10 @@
 #pragma once
 
 #include "arduino_fixed.h"
+
 #include <streambuf>
 #include <mutex>
+#include <string_view>
 
 
 namespace ctbot {
@@ -56,7 +58,7 @@ public:
      * @param[in] serial_port: ID of underlying serial port to use; 0 for USB serial port emulation
      * @param[in] baud_rate: Baud rate of serial port to use, if serial_port > 0
      */
-    SerialConnectionTeensy(const uint8_t serial_port, const uint32_t baud_rate) : SerialConnectionTeensy(serial_port, 255U, 255U, baud_rate) {}
+    SerialConnectionTeensy(const uint8_t serial_port, const uint32_t baud_rate) : SerialConnectionTeensy { serial_port, 255U, 255U, baud_rate } {}
 
     /**
      * @brief Construct a new SerialConnectionTeensy object
@@ -175,6 +177,13 @@ public:
      * @return Number of bytes actually written
      */
     size_t send(const void* data, const size_t size);
+
+    /**
+     * @brief Write size bytes to connection from a string_view
+     * @param[in] sv: Reference to string_view to read from
+     * @return Number of bytes actually written
+     */
+    size_t send(const std::string_view& sv);
 
     /**
      * @brief Write size bytes to connection from a streambuffer

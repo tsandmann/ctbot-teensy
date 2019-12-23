@@ -105,7 +105,7 @@ void this_thread::__sleep_for(chrono::seconds sec, chrono::nanoseconds nsec) {
         ms = 1; // round up to 1 ms => if sleep time != 0, sleep at least 1ms
     }
 
-    vTaskDelay(pdMS_TO_TICKS(chrono::milliseconds(sec).count() + ms));
+    ::vTaskDelay(pdMS_TO_TICKS(chrono::milliseconds(sec).count() + ms));
 }
 
 } // namespace std

@@ -113,7 +113,9 @@ using ::TwoWire;
 using ::Wire;
 using ::Wire1;
 using ::Wire2;
-// using ::Wire3; //FIXME: activate I2C_3
+#ifdef WIRE_IMPLEMENT_WIRE3
+using ::Wire3;
+#endif
 
 using ::String;
 

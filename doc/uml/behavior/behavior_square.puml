@@ -1,0 +1,25 @@
+@startuml behavior_square
+
+namespace ctbot {
+    class BehaviorSquare {
+        +BehaviorSquare()
+        +BehaviorSquare(const uint16_t priority)
+        +{static} Ptr = std::unique_ptr<BehaviorSquare>
+        #run() : void
+        -{static} DEBUG_ = false : constexpr bool
+        -{static} STACK_SIZE = 1024 : constexpr uint32_t
+        -counter_ : uint8_t
+        -state_ : State
+        -sub_beh_ : BasePtr
+    }
+
+    class BehaviorSquare::State {
+        +{static} DRIVE : uint8_t
+        +{static} TURN : uint8_t
+        +{static} END : uint8_t
+    }
+
+    Behavior <|-- BehaviorSquare
+}
+
+@enduml

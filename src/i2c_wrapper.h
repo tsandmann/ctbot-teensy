@@ -27,41 +27,63 @@
 #include "arduino_fixed.h"
 
 #include <cstdint>
+#include <array>
+#include <mutex>
 
 
 namespace ctbot {
 
-class I2C_Wrapper {
-    static arduino::TwoWire* p_i2c_;
-    static uint8_t bus_;
-    static uint8_t addr_;
+class I2C_Wrapper { // FIXME: implement as OS service?
+    static constexpr bool DEBUG_ { false };
+
+    arduino::TwoWire* p_i2c_;
+    uint8_t bus_;
+    uint8_t addr_;
+    uint32_t freq_;
+    static std::array<std::mutex, 4> mutex_;
+
+    uint32_t get_freq_internal() const;
 
 public:
-    static uint8_t get_bus() {
+    I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq);
+
+    I2C_Wrapper(const uint8_t bus, const uint8_t addr) : I2C_Wrapper { bus, addr, 100'000 } {}
+
+    I2C_Wrapper(const uint8_t bus) : I2C_Wrapper { bus, 255, 100'000 } {}
+
+    uint8_t get_bus() const {
         return bus_;
     }
 
-    static bool set_bus(const uint8_t bus_id, const uint16_t freq = 100);
+    bool init();
 
-    static uint16_t get_freq();
+    bool init(const uint8_t bus_id, const uint32_t freq);
 
-    static uint8_t get_address() {
+    uint32_t get_freq() const {
+        return freq_;
+    }
+
+    uint8_t get_address() const {
         return addr_;
     }
 
-    static void set_address(const uint8_t addr);
+    void set_address(const uint8_t addr);
 
-    static uint8_t read_reg8(const uint8_t reg, uint8_t& data);
-    static uint8_t read_reg8(const uint16_t reg, uint8_t& data);
-    static uint8_t read_reg16(const uint8_t reg, uint16_t& data);
-    static uint8_t read_reg32(const uint8_t reg, uint32_t& data);
+    uint8_t read_reg8(const uint8_t reg, uint8_t& data) const;
+    uint8_t read_reg8(const uint16_t reg, uint8_t& data) const;
+    uint8_t read_reg16(const uint8_t reg, uint16_t& data) const;
+    uint8_t read_reg32(const uint8_t reg, uint32_t& data) const;
+    uint8_t read_bytes(const uint8_t addr, void* p_data, const uint8_t length) const;
 
-    static uint8_t write_reg8(const uint8_t reg, const uint8_t value);
-    static uint8_t write_reg8(const uint16_t reg, const uint8_t value);
-    static uint8_t write_reg16(const uint8_t reg, const uint16_t value);
-    static uint8_t write_reg32(const uint8_t reg, const uint32_t value);
+    uint8_t write_reg8(const uint8_t reg, const uint8_t value) const;
+    uint8_t write_reg8(const uint16_t reg, const uint8_t value) const;
+    uint8_t write_reg16(const uint8_t reg, const uint16_t value) const;
+    uint8_t write_reg32(const uint8_t reg, const uint32_t value) const;
+    uint8_t write_bytes(const uint8_t addr, const void* p_data, const uint8_t length) const;
 
-    static uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value);
+    uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value) const;
+
+    bool test(const uint8_t addr);
 };
 
 } // namespace ctbot

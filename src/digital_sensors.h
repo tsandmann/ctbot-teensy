@@ -24,16 +24,23 @@
 
 #pragma once
 
-#include "ena.h"
 #include "encoder.h"
 #include "rc5_int.h"
 #include "remote_control.h"
 #include "ctbot_config.h"
+#include "ena_i2c.h"
+#include "leds_i2c.h"
 
 #include <cstdint>
+#include <array>
 
 
 namespace ctbot {
+class CtBot;
+class EnaI2c;
+class VL53L0X;
+class VL6180X;
+class MPU6050;
 
 /**
  * @brief Abstraction layer for (simple) digital sensors
@@ -46,15 +53,34 @@ namespace ctbot {
  */
 class DigitalSensors {
 protected:
-    static constexpr auto ENA_MASK = EnaTypes::SHUTTER | EnaTypes::TRANSPORT;
+    static constexpr bool DEBUG_ { false };
 
-    bool shutter_;
-    bool transport_;
+    static constexpr auto ENA_MASK_INIT = EnaI2cTypes::NONE; /*EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT; */
+    static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
+    static constexpr auto ENA_MASK_PWM = LedTypesEna::NONE;
+    static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna::ENC_L | LedTypesEna::ENC_R;
+
+    CtBot& ctbot_;
+    EnaI2c& ena_;
+
+    uint8_t transport_;
 
     Encoder enc_l_;
     Encoder enc_r_;
     Rc5 rc5_;
     RemoteControl remote_control_;
+    std::array<uint16_t, 2> distance_;
+    uint32_t dist_last_update_;
+    uint32_t trans_last_update_;
+    VL53L0X* p_dist_l;
+    VL53L0X* p_dist_r;
+    VL6180X* p_trans_;
+    MPU6050* p_mpu_6050_;
+
+    /**
+     * @brief Construct a new DigitalSensors object
+     */
+    DigitalSensors(CtBot& ctbot);
 
     /**
      * @brief Read all the current pin values
@@ -65,22 +91,33 @@ public:
     static uint32_t enc_data_l_[], enc_data_r_[]; /**< Raw input data buffers for both wheel encoders */
     static volatile uint8_t enc_l_idx_, enc_r_idx_; /**< Current indices in input data buffers, pointing to each latest entry */
 
-    /**
-     * @brief Construct a new DigitalSensors object
-     */
-    DigitalSensors();
+    ~DigitalSensors();
 
     /**
-     * @return The last value of shutter sensor
+     * @return The last value of left distance sensor
      */
-    auto get_shutter() const {
-        return shutter_;
+    auto get_distance_l() const {
+        return distance_[0];
+    }
+
+    /**
+     * @return The last value of right distance sensor
+     */
+    auto get_distance_r() const {
+        return distance_[1];
     }
 
     /**
      * @return The last value of transport pocket occupancy
      */
     auto get_transport() const {
+        return transport_ < 40U;
+    }
+
+    /**
+     * @return The last sensor range of transport pocket
+     */
+    auto get_transport_mm() const {
         return transport_;
     }
 
@@ -96,6 +133,10 @@ public:
      */
     auto& get_enc_r() {
         return enc_r_;
+    }
+
+    auto get_mpu6050() {
+        return p_mpu_6050_;
     }
 
     /**
