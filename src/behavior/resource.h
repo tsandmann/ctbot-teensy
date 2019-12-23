@@ -32,13 +32,13 @@
 
 
 #if __cpp_exceptions
-#define __try try
-#define __catch(X) catch (X)
-#define __throw_exception_again throw
+#define _try try
+#define _catch(X) catch (X)
+#define _throw_exception_again throw
 #else
-#define __try if (true)
-#define __catch(X) if (false)
-#define __throw_exception_again
+#define _try if (true)
+#define _catch(X) if (false)
+#define _throw_exception_again
 #endif
 
 
@@ -109,10 +109,10 @@ public:
     bool notify() const noexcept {
         bool ret { true };
         for (auto& func : listeners_) {
-            __try {
+            _try {
                 std::get<0>(func)(*this);
             }
-            __catch(...) {
+            _catch(...) {
                 ret = false;
             }
         }
