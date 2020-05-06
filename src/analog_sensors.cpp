@@ -38,6 +38,7 @@ AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, ldr_ { 0, 0 }
     arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
+    arduino::analogReference(0);
     Scheduler::exit_critical_section();
 }
 

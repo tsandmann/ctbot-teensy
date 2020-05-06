@@ -273,6 +273,8 @@ void* sbrk(ptrdiff_t incr) {
     return ptr;
 }
 
+int __wrap__gettimeofday(timeval* tv, void*) __attribute__((used));
+
 int __wrap__gettimeofday(timeval* tv, void*) {
     const auto now_us { freertos::get_us() };
     *tv = timeval { static_cast<time_t>(now_us / 1'000'000U), static_cast<suseconds_t>(now_us % 1'000'000U) };

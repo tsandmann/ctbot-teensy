@@ -53,7 +53,7 @@ public:
     static constexpr bool TASKWAIT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate task wait test */
     static constexpr bool TFT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate TFT test */
     static constexpr bool TOUCH_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen test */
-    static constexpr bool BUTTON_TEST_AVAILABLE { true }; /**< Statically activate or deactivate touchscreen button test */
+    static constexpr bool BUTTON_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen button test */
 
     /* features/modules available */
     static constexpr bool LCD_AVAILABLE { false }; /**< Statically activate or deactivate LC display */
@@ -76,7 +76,7 @@ public:
     static constexpr uint8_t UART5_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart 5 */
     static constexpr uint8_t UART5_PIN_TX { 33 }; /**< Number of pin to use for TX line for Uart 5 */
     static constexpr uint32_t UART5_BAUDRATE { 2'000'000 }; /**< Baud rate used for Uart 5 */
-    static constexpr uint8_t UART_FOR_CMD { 5 }; /**< Number of UART to use for command line interface */
+    static constexpr uint8_t UART_FOR_CMD { 0 }; /**< Number of UART to use for command line interface */
 
     /* i2c */
     static constexpr uint8_t I2C0_PIN_SCL { 7 }; /**< Pin number of SCL for I2C 0 */

@@ -108,7 +108,7 @@ protected:
      */
     bool update() const {
         if (init_) {
-            return i2c_.write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_));
+            return i2c_.write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_)) == 0;
         }
 
         return false;
