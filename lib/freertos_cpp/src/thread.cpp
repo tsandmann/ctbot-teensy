@@ -34,6 +34,9 @@
 ///
 
 #include "FreeRTOS.h"
+#ifndef _GLIBCXX_HAS_GTHREADS
+#define _GLIBCXX_HAS_GTHREADS
+#endif
 #include <thread>
 #include <system_error>
 #include <cerrno>
