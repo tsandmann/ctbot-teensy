@@ -219,9 +219,7 @@ void sysview_init() {
 
 
 extern "C" {
-// override _sbrk() - you have to link with option: "-Wl,--wrap=_sbrk"
-void* _sbrk(ptrdiff_t);
-void* __wrap__sbrk(ptrdiff_t incr) {
+void* _sbrk(ptrdiff_t incr) {
     static_assert(portSTACK_GROWTH == -1, "Stack growth down assumed");
 
     // Serial.print("_sbrk(");
@@ -273,9 +271,9 @@ void* sbrk(ptrdiff_t incr) {
     return ptr;
 }
 
-int __wrap__gettimeofday(timeval* tv, void*) __attribute__((used));
+int _gettimeofday(timeval* tv, void*);
 
-int __wrap__gettimeofday(timeval* tv, void*) {
+int _gettimeofday(timeval* tv, void*) {
     const auto now_us { freertos::get_us() };
     *tv = timeval { static_cast<time_t>(now_us / 1'000'000U), static_cast<suseconds_t>(now_us % 1'000'000U) };
     return 0;
