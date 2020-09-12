@@ -269,4 +269,8 @@ int _write(int, char* ptr, int len) {
     }
 }
 
+uint8_t get_debug_led_pin() __attribute__((section(".flashmem")));
+uint8_t get_debug_led_pin() {
+    return ctbot::CtBotConfig::DEBUG_LED_PIN;
+}
 } // extern C
