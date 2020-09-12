@@ -244,7 +244,7 @@ void CtBot::setup(const bool set_ready) {
             configASSERT(*p_audio_conn_.rbegin());
         }
 
-        AudioMemory(CtBotConfig::AUDIO_CHANNELS * 2 + 2);
+        AudioMemory(CtBotConfig::AUDIO_CHANNELS * 2 + CtBotConfig::AUDIO_TEST_AVAILABLE ? 4 : 2);
 
         ::attachInterruptVector(IRQ_SOFTWARE, []() {
             if (ctbot::CtBotConfig::AUDIO_AVAILABLE && audio_task_) {
