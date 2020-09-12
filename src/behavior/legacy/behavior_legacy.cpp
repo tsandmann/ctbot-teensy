@@ -103,11 +103,12 @@ const int legacy::SENS_IR_INFINITE { 9999 };
 const int legacy::SENS_IR_SAFE_DIST { 120 };
 const int legacy::BORDER_DANGEROUS { 0x3da };
 const int legacy::LINE_SENSE { 0x350 };
+const int legacy::MAX_PILLAR_DISTANCE { 300 };
 
 const int16_t legacy::BOT_SPEED_IGNORE { 9'999 }; /**< wird verwendet um einen Eintrag zu ignorieren */
 const int16_t legacy::BOT_SPEED_STOP { 0 }; /**< Motor aus */
-const int16_t legacy::BOT_SPEED_MIN { 50 }; /**< langsamste Fahrt in mm/s */
-const int16_t legacy::BOT_SPEED_SLOW { 50 }; /**< langsame Fahrt in mm/s */
+const int16_t legacy::BOT_SPEED_MIN { 10 }; /**< langsamste Fahrt in mm/s */
+const int16_t legacy::BOT_SPEED_SLOW { 30 }; /**< langsame Fahrt in mm/s */
 const int16_t legacy::BOT_SPEED_FOLLOW { 70 }; /**< vorsichtige Fahrt, fuer Folgeverhalten in mm/s */
 const int16_t legacy::BOT_SPEED_MEDIUM { 100 }; /**< mittlere Fahrt in mm/s */
 const int16_t legacy::BOT_SPEED_NORMAL { 150 }; /**< normale Fahrt in mm/s  */

@@ -490,6 +490,25 @@ static inline int32_t get_dist(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
     return (int32_t)((int32_t) xt * (int32_t) xt) + (int32_t)((int32_t) yt * (int32_t) yt);
 }
 
+/**
+ * Ermittelt die Koordinaten eines Punktes, der um dx mm in x- und
+ * dy mm in y-Richtung gegenueber der aktuellen Bot-Position verschoben ist.
+ * \param alpha	Winkel zum Punkt [Grad]
+ * \param dx	x-Komponente des Verschiebungsvektors [mm]
+ * \param dy	y-Komponente des Verschiebungsvektors [mm]
+ * \return		Gesuchter Punkt
+ */
+static inline position_t calc_point_in_distance(float alpha, int16_t dx, int16_t dy) {
+    float h = rad(alpha);
+    float cos_h = cosf(h);
+    float sin_h = sinf(h);
+
+    position_t dest;
+    dest.x = x_pos + (int16_t)((dx * cos_h) - (dy * sin_h));
+    dest.y = y_pos + (int16_t)((dy * cos_h) + (dx * sin_h));
+    return dest;
+}
+
 #endif // __cplusplus
 
 extern const float WHEEL_TO_WHEEL_DIAMETER;
@@ -509,6 +528,7 @@ extern const int SENS_IR_SAFE_DIST;
 
 extern const int BORDER_DANGEROUS;
 extern const int LINE_SENSE;
+extern const int MAX_PILLAR_DISTANCE;
 
 extern const int16_t BOT_SPEED_IGNORE; /**< wird verwendet um einen Eintrag zu ignorieren */
 extern const int16_t BOT_SPEED_STOP; /**< Motor aus */

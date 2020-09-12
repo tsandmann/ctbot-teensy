@@ -129,6 +129,33 @@ protected:
     FLASHMEM virtual void start() override;
 };
 
+class BehaviorCatchPillarLegacy : public BehaviorLegacyWrapper {
+    static constexpr bool DEBUG_ { true };
+    static Registry reg1_;
+    static Registry reg2_;
+
+public:
+    BehaviorCatchPillarLegacy(uint8_t mode);
+    BehaviorCatchPillarLegacy(uint8_t mode, int16_t max_turn);
+
+protected:
+    const uint8_t mode_;
+    const int16_t max_turn_;
+
+    FLASHMEM virtual void start() override;
+};
+
+class BehaviorUnloadPillarLegacy : public BehaviorLegacyWrapper {
+    static constexpr bool DEBUG_ { true };
+    static Registry reg1_;
+
+public:
+    BehaviorUnloadPillarLegacy();
+
+protected:
+    FLASHMEM virtual void start() override;
+};
+
 class BehaviorAdventcal : public BehaviorLegacyWrapper {
     static constexpr bool DEBUG_ { true };
     static Registry reg_;

@@ -207,6 +207,38 @@ void BehaviorDriveSquareLegacy::start() {
 #endif // BEHAVIOUR_DRIVE_SQUARE_AVAILABLE
 
 
+#ifdef BEHAVIOUR_CATCH_PILLAR_AVAILABLE
+decltype(BehaviorCatchPillarLegacy::reg1_) BehaviorCatchPillarLegacy::reg1_ { REGISTRY_HELPER(
+    "CatchPillar", [](const uint8_t mode) { return INIT<BehaviorCatchPillarLegacy, uint8_t>(mode); }) };
+
+decltype(BehaviorCatchPillarLegacy::reg2_) BehaviorCatchPillarLegacy::reg2_ { REGISTRY_HELPER(
+    "CatchPillarTurn", [](const uint8_t mode, const int16_t max_turn) { return INIT<BehaviorCatchPillarLegacy, uint8_t, int16_t>(mode, max_turn); }) };
+
+BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(uint8_t mode, int16_t max_turn)
+    : BehaviorLegacyWrapper { "CatchPillarTurnBeh", legacy::bot_catch_pillar_behaviour }, mode_ { mode }, max_turn_ { max_turn } {
+    debug_printf<DEBUG_>(PP_ARGS("BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy({}, {}).\r\n", mode_, max_turn_));
+}
+
+BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(const uint8_t mode) : BehaviorCatchPillarLegacy(mode, 360) {}
+
+void BehaviorCatchPillarLegacy::start() {
+    legacy::bot_catch_pillar(nullptr, mode_);
+}
+
+
+decltype(BehaviorUnloadPillarLegacy::reg1_) BehaviorUnloadPillarLegacy::reg1_ { REGISTRY_HELPER(
+    "UnloadPillar", []() { return INIT<BehaviorUnloadPillarLegacy>(); }) };
+
+BehaviorUnloadPillarLegacy::BehaviorUnloadPillarLegacy() : BehaviorLegacyWrapper { "UnloadPillarBeh", legacy::bot_unload_pillar_behaviour } {
+    debug_printf<DEBUG_>(PP_ARGS("BehaviorUnloadPillarLegacy::BehaviorUnloadPillarLegacy().\r\n"));
+}
+
+void BehaviorUnloadPillarLegacy::start() {
+    legacy::bot_unload_pillar(nullptr);
+}
+#endif // BEHAVIOUR_CATCH_PILLAR_AVAILABLE
+
+
 #ifdef BEHAVIOUR_ADVENTCAL_AVAILABLE
 decltype(BehaviorAdventcal::reg_) BehaviorAdventcal::reg_ { REGISTRY_HELPER("Advent", []() { return INIT<BehaviorAdventcal>(); }) };
 
