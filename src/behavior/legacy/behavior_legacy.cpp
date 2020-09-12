@@ -162,7 +162,7 @@ legacy::Behaviour_t* get_behaviour(legacy::BehaviourFunc_t function) {
     return BehaviorLegacy::get_instance()->get_behavior(function);
 }
 
-int8_t register_emergency_proc(void (*function)()) {
+FLASHMEM int8_t register_emergency_proc(void (*function)()) {
     return BehaviorLegacy::get_instance()->register_emergency_proc(function);
 }
 
@@ -306,7 +306,7 @@ void display_cursor(int16_t row, int16_t column) {
     return BehaviorLegacy::get_instance()->display_cursor(row, column);
 }
 
-uint8_t display_printf(const char* format, ...) {
+FLASHMEM uint8_t display_printf(const char* format, ...) {
     va_list args;
     va_start(args, format);
     const auto res { BehaviorLegacy::get_instance()->display_printf(format, args) };
@@ -315,11 +315,11 @@ uint8_t display_printf(const char* format, ...) {
     return res;
 }
 
-uint8_t display_puts(const char* text) {
+FLASHMEM uint8_t display_puts(const char* text) {
     return BehaviorLegacy::get_instance()->display_puts(text);
 }
 
-size_t log_error(const char* format, ...) {
+FLASHMEM size_t log_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
     const auto n { BehaviorLegacy::print_log("ERROR: ", BehaviorLegacy::length_helper("ERROR: "), format, args) };
@@ -327,7 +327,7 @@ size_t log_error(const char* format, ...) {
     return n;
 }
 
-size_t log_info(const char* format, ...) {
+FLASHMEM size_t log_info(const char* format, ...) {
     va_list args;
     va_start(args, format);
     const auto n { BehaviorLegacy::print_log("INFO: ", BehaviorLegacy::length_helper("INFO: "), format, args) };
@@ -335,7 +335,7 @@ size_t log_info(const char* format, ...) {
     return n;
 }
 
-size_t log_debug(const char* format, ...) {
+FLASHMEM size_t log_debug(const char* format, ...) {
     if (BehaviorLegacy::GET_DEBUG()) {
         va_list args;
         va_start(args, format);
@@ -349,11 +349,11 @@ size_t log_debug(const char* format, ...) {
 } // extern C
 
 
-size_t BehaviorLegacy::print_log(const char* type, const size_t type_len, const char* format, va_list vlist) {
+FLASHMEM size_t BehaviorLegacy::print_log(const char* type, const size_t type_len, const char* format, va_list vlist) {
     va_list args;
     va_copy(args, vlist);
     const auto size { std::vsnprintf(nullptr, 0, format, vlist) + type_len };
-    auto p_str { std::make_unique<std::string>(size + 3, '\0') };
+    auto p_str { new std::string(size + 3, '\0') };
     std::strncpy(p_str->data(), type, type_len + 1);
     std::vsnprintf(p_str->data() + type_len, p_str->size() - type_len, format, args);
     va_end(args);
@@ -361,7 +361,7 @@ size_t BehaviorLegacy::print_log(const char* type, const size_t type_len, const 
     p_str->data()[size] = '\r';
     p_str->data()[size + 1] = '\n';
 
-    return CtBotBehavior::get_instance().get_comm()->debug_print(std::move(p_str), true);
+    return CtBotBehavior::get_instance().get_comm()->debug_print(p_str, true);
 }
 
 BehaviorLegacy::BehaviorLegacy(const std::string& name)
@@ -983,6 +983,7 @@ void BehaviorLegacy::servo_set(uint8_t servo, uint8_t pos) noexcept {
         return;
     }
 
+    // FIXME: check get_servos() for nullptr
     if (pos == legacy::SERVO_OFF) {
         get_ctbot()->get_servos()[servo - 1]->disable();
         return;
@@ -996,6 +997,7 @@ uint8_t BehaviorLegacy::servo_get_pos(uint8_t servo) const noexcept {
         return 255;
     }
 
+    // FIXME: check get_servos() for nullptr
     return get_ctbot()->get_servos()[servo - 1]->get_position();
 }
 
@@ -1004,6 +1006,7 @@ uint8_t BehaviorLegacy::servo_get_active(uint8_t servo) const noexcept {
         return 0;
     }
 
+    // FIXME: check get_servos() for nullptr
     return get_ctbot()->get_servos()[servo - 1]->get_active();
 }
 

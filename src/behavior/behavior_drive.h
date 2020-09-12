@@ -44,11 +44,11 @@ class BehaviorDrive : public Behavior {
 public:
     using Ptr = std::unique_ptr<BehaviorDrive>;
 
-    BehaviorDrive(const int16_t distance, const uint16_t priority);
+    FLASHMEM BehaviorDrive(const int16_t distance, const uint16_t priority);
 
     BehaviorDrive(const int16_t distance) : BehaviorDrive { distance, DEFAULT_PRIORITY } {}
 
-    virtual ~BehaviorDrive() override;
+    FLASHMEM virtual ~BehaviorDrive() override;
 
 protected:
     virtual void run() override;
@@ -58,7 +58,7 @@ private:
     static constexpr int16_t SPEED { 20 };
     static constexpr uint32_t STACK_SIZE { 2048 };
 
-    static Registry reg_;
+    static PROGMEM const Registry reg_;
 
     enum class State : uint8_t {
         DRIVE,

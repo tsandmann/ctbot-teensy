@@ -59,7 +59,7 @@ protected:
     bool std_thread_;
     bool external_;
     union {
-        void* p_freertos_handle;
+        TaskHandle_t p_freertos_handle;
         std::thread* p_thread; /**< Thread of task */
     } handle_; // FIXME: think about this
     Scheduler& scheduler_; /**< Reference to scheduler for this task */
@@ -70,7 +70,9 @@ public:
      * @brief Construct a new Task object
      * @param[in] id: ID of task
      * @param[in] name: Name of task
+     * @param[in] external: If task is external, its handle won't be deleted when this instance is destroyed
      * @param[in] period: Execution period of task in ms
+     * @param[in] priority: Priority of the task
      * @param[in] func: Function wrapper for the task's implementation
      */
     Task(Scheduler& scheduler, const uint16_t id, const std::string_view& name, const bool external, const uint16_t period, const uint8_t priority,
@@ -96,7 +98,7 @@ public:
      * @brief Print task information to a CommInterface
      * @param[in] comm: Reference to CommInterface instance to print to
      */
-    void print(CommInterface& comm) const;
+    FLASHMEM void print(CommInterface& comm) const;
 };
 
 } // namespace ctbot

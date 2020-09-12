@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "avr/pgmspace.h"
+
 #ifdef __cplusplus
 #include <cstdint>
 #else
@@ -297,24 +299,36 @@ uint8_t display_puts(const char* text);
 /**
  * Allgemeines Debugging (Methode DiesUndDas wurde mit Parameter SoUndSo aufgerufen ...)
  */
-#define LOG_DEBUG(...) log_debug(__VA_ARGS__)
+#define LOG_DEBUG(format, ...)                      \
+    {                                               \
+        static const char _data[] PROGMEM = format; \
+        log_debug(_data, ##__VA_ARGS__);            \
+    }
 
 /**
  * Allgemeine Informationen (Programm gestartet, Programm beendet, Verbindung zu Host Foo aufgebaut, Verarbeitung dauerte SoUndSoviel Sekunden ...)
  */
-#define LOG_INFO(...) log_info(__VA_ARGS__)
+#define LOG_INFO(format, ...)                       \
+    {                                               \
+        static const char _data[] PROGMEM = format; \
+        log_info(_data, ##__VA_ARGS__);             \
+    }
 
 /**
  * Fehler aufgetreten, Bearbeitung wurde alternativ fortgesetzt.
  */
-#define LOG_ERROR(...) log_error(__VA_ARGS__)
+#define LOG_ERROR(format, ...)                      \
+    {                                               \
+        static const char _data[] PROGMEM = format; \
+        log_error(_data, ##__VA_ARGS__);            \
+    }
 
 #define LOG_WARN LOG_INFO
 #define LOG_FATAL LOG_ERROR
 
-size_t log_error(const char* format, ...) __attribute__((format(printf, 1, 2)));
-size_t log_info(const char* format, ...) __attribute__((format(printf, 1, 2)));
-size_t log_debug(const char* format, ...) __attribute__((format(printf, 1, 2)));
+FLASHMEM size_t log_error(const char* format, ...) __attribute__((format(printf, 1, 2)));
+FLASHMEM size_t log_info(const char* format, ...) __attribute__((format(printf, 1, 2)));
+FLASHMEM size_t log_debug(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 /**
  * Makro zur Umrechnung von Ticks in ms

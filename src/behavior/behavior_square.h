@@ -47,7 +47,7 @@ public:
      *
      * @param[in] priority Custom priority to use for behavior task
      */
-    BehaviorSquare(const uint16_t priority);
+    FLASHMEM BehaviorSquare(const uint16_t priority);
 
     /**
      * @brief Constructor of BehaviorSquare class using default priority
@@ -66,7 +66,7 @@ private:
     static constexpr bool DEBUG_ { true }; /**< switch for debug outputs to console */
     static constexpr uint32_t STACK_SIZE { 2048 }; /**< stack size in byte for behavior task */
 
-    static Registry reg_; /**< helper object for global behavior registry */
+    static PROGMEM const Registry reg_; /**< helper object for global behavior registry */
 
     /**
      * @brief All possible states of this behavior

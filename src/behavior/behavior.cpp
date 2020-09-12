@@ -28,7 +28,7 @@
 #include "speed.h"
 
 #include "pprintpp.hpp"
-#include "FreeRTOS.h"
+#include "arduino_freertos.h"
 
 #include <thread>
 #include <chrono>
@@ -38,7 +38,7 @@ namespace ctbot {
 
 Behavior::Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size)
     : name_ { name }, finished_ {}, p_ctbot_ { &CtBotBehavior::get_instance() },
-      p_sensors_ { (configASSERT(p_ctbot_), get_ctbot()->get_sensors()) }, p_left_ {}, p_right_ {}, p_pose_ {}, p_speed_ {}, abort_request_ {} {
+      p_sensors_ { get_ctbot()->get_sensors() }, p_left_ {}, p_right_ {}, p_pose_ {}, p_speed_ {}, abort_request_ {} {
     configASSERT(p_sensors_); // FIXME: wrapper for assert
 
     /* initialize actuator and data pointers */

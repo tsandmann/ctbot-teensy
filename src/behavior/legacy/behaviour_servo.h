@@ -48,7 +48,7 @@ void bot_servo_behaviour(Behaviour_t* data);
  * \param pos       Zielposition des Servos
  * \return          Zeigen auf Verhaltensdatensatz
  */
-Behaviour_t* bot_servo(Behaviour_t* caller, uint8_t servo, uint8_t pos);
+FLASHMEM Behaviour_t* bot_servo(Behaviour_t* caller, uint8_t servo, uint8_t pos);
 
 #endif // BEHAVIOUR_SERVO_AVAILABLE
 #endif // BEHAVIOUR_SIMPLE_H_

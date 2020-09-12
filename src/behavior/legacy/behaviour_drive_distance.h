@@ -59,9 +59,9 @@ void bot_drive_distance_behaviour(Behaviour_t* data);
  * rechts) \param speed Gibt an, wie schnell der Bot fahren soll. Negative Werte lassen den Bot rueckwaerts fahren. \param cm Gibt an, wie weit der Bot fahren
  * soll. In cm :-) Die Strecke muss positiv sein, die Fahrtrichtung wird ueber speed geregelt. \return Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm);
+FLASHMEM Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm);
 
-static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir) {
+FLASHMEM static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir) {
     return bot_drive_distance(caller, 0, dir < 0 ? -BOT_SPEED_NORMAL : BOT_SPEED_NORMAL, distance / 10);
 }
 
@@ -69,9 +69,9 @@ static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, 
 /* wenn goto_pos() vorhanden ist und USE_GOTO_POS_DIST an, leiten wir alle drive_distance()-Aufurfe dorthin um */
 #undef BEHAVIOUR_DRIVE_DISTANCE_AVAILABLE
 
-static Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir);
+FLASHMEM static Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir);
 
-static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve __attribute__((unused)), const int16_t speed, const int16_t cm) {
+FLASHMEM static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve __attribute__((unused)), const int16_t speed, const int16_t cm) {
     return bot_goto_dist(caller, (int16_t)(cm * 10), (int8_t)(speed < 0 ? -1 : 1));
 }
 #endif // USE_GOTO_POS_DIST
@@ -83,6 +83,6 @@ static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve 
  * Es handelt sich hierbei nicht im eigentlichen Sinn um ein Verhalten, sondern ist nur eine Abstraktion der Motorkontrollen.
  * \param curve Gibt an, ob der Bot eine Kurve fahren soll. Werte von -127 (So scharf wie moeglich links) ueber 0 (gerade aus) bis 127 (so scharf wie moeglich
  * rechts) \param speed Gibt an, wie schnell der Bot fahren soll. */
-void bot_drive(int8_t curve, int16_t speed);
+FLASHMEM void bot_drive(int8_t curve, int16_t speed);
 #endif // BEHAVIOUR_DRIVE_DISTANCE_AVAILABLE || BEHAVIOUR_OLYMPIC_AVAILABLE
 #endif // BEHAVIOUR_DRIVE_DISTANCE_H_

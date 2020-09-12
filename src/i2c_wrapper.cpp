@@ -33,7 +33,7 @@ namespace ctbot {
 
 decltype(I2C_Wrapper::mutex_) I2C_Wrapper::mutex_;
 
-I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : bus_ { bus }, addr_ { addr }, freq_ { freq } {}
+I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : p_i2c_ {}, bus_ { bus }, addr_ { addr }, freq_ { freq } {}
 
 bool I2C_Wrapper::init() {
     return init(bus_, freq_);
@@ -72,7 +72,7 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
             break;
         }
 
-#ifdef WIRE_IMPLEMENT_WIRE3
+#if defined TwoWireKinetis_h && defined WIRE_IMPLEMENT_WIRE3
         case 3: {
             p_i2c_ = &arduino::Wire3;
             pin_sda = CtBotConfig::I2C3_PIN_SDA;
@@ -98,6 +98,9 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
 }
 
 uint32_t I2C_Wrapper::get_freq_internal() const {
+#if defined(__IMXRT1052__) || defined(__IMXRT1062__)
+    return freq_;
+#else
     switch (bus_) {
         case 0: {
             switch (KINETIS_I2C0.F) {
@@ -132,6 +135,7 @@ uint32_t I2C_Wrapper::get_freq_internal() const {
             break;
         }
     }
+#endif
     return 0;
 }
 

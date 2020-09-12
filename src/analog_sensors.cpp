@@ -25,7 +25,7 @@
 #include "analog_sensors.h"
 #include "scheduler.h"
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 
 namespace ctbot {
@@ -34,10 +34,15 @@ AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, ldr_ { 0, 0 }
     Scheduler::enter_critical_section();
     arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LINE_R_PIN, arduino::INPUT);
-    arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
-    arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
+    if (CtBotConfig::LDR_L_PIN != 255) {
+        arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
+    }
+    if (CtBotConfig::LDR_R_PIN != 255) {
+        arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
+    }
     arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
+    arduino::pinMode(CtBotConfig::BAT_VOLTAGE_PIN, arduino::INPUT);
     arduino::analogReference(0);
     Scheduler::exit_critical_section();
 }
@@ -49,11 +54,14 @@ void AnalogSensors::update() {
     ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
     border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
     border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
-    bat_voltage_ =
-        analog_read(CtBotConfig::BAT_VOLTAGE_PIN, 16, 8) * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / 65'535.f);
+    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 8)
+        * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / static_cast<float>((1 << BAT_ADC_RES) - 1));
 }
 
 uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
+    if (pin >= 128) {
+        return 0;
+    }
     if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
         last_adc_res_ = resolution;
         Scheduler::enter_critical_section();

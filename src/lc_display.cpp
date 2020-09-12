@@ -26,7 +26,7 @@
 #include "scheduler.h"
 
 #include "LiquidCrystal_I2C.h"
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <cstdarg>
 

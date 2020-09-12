@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#define DEBUG
+//#define DEBUG
 
 /* bot_save_waypos()-Parameter */
 #define STACK_SIZE 64 /**< Groesse des Positionsspeichers */

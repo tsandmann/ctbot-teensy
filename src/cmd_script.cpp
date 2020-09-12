@@ -29,7 +29,7 @@
 #include "pprintpp.hpp"
 #include "SD.h"
 #include "SPI.h"
-#include "arduino_fixed.h" // cleanup of ugly macro stuff etc.
+#include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 
 
 namespace ctbot {

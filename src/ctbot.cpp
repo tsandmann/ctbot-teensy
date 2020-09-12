@@ -43,9 +43,7 @@
 #include "i2c_wrapper.h"
 #include "tests.h"
 
-#include "FreeRTOS.h"
 #include "timers.h"
-#include "arm_kinetis_debug.h"
 #include "pprintpp.hpp"
 #include "portable/teensy.h"
 #include "lua_wrapper.h"
@@ -70,9 +68,11 @@
 #include "Audio.h"
 #include "SD.h"
 #include "SPI.h"
-#include "arduino_fixed.h" // cleanup of ugly macro stuff etc.
+#include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 #include "tts.h"
 
+
+void software_isr();
 
 extern "C" {
 static int lua_wrapper_print(lua_State* L) {
@@ -87,7 +87,7 @@ static int lua_wrapper_print(lua_State* L) {
         size_t l;
         const char* s = lua_tolstring(L, -1, &l); /* get result */
         if (s == nullptr) {
-            return luaL_error(L, "'tostring' must return a string to 'print'");
+            return luaL_error(L, PSTR("'tostring' must return a string to 'print'"));
         }
         if (i > 1) {
             p_comm->debug_print('\t', true);
@@ -95,13 +95,15 @@ static int lua_wrapper_print(lua_State* L) {
         p_comm->debug_print(s, true);
         lua_pop(L, 1); /* pop result */
     }
-    p_comm->debug_print("\r\n", true);
+    p_comm->debug_print(PSTR("\r\n"), true);
     return 0;
 }
 }
 
 
 namespace ctbot {
+TaskHandle_t CtBot::audio_task_ {};
+
 CtBot& CtBot::get_instance() {
     static CtBot* p_instance { CtBotConfig::BEHAVIOR_MODEL_AVAILABLE ? new CtBotBehavior : new CtBot };
     return *p_instance;
@@ -109,22 +111,30 @@ CtBot& CtBot::get_instance() {
 
 CtBot::CtBot()
     // initializes serial connection here for debug purpose
-    : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr }, p_speedcontrols_ { nullptr, nullptr },
-      p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_serial_usb_ { new SerialConnectionTeensy {
-                                                                                                      0, CtBotConfig::UART0_BAUDRATE } },
-      p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_i2c_ {}, p_parameter_ {}, p_swd_debugger_ {}, p_audio_output_ {}, p_play_wav_ {}, p_tts_ {},
-      p_audio_conn_ { nullptr, nullptr, nullptr, nullptr }, p_audio_mixer_ {}, p_watch_timer_ {}, p_lua_ {} {
+    : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
+      p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {},
+      p_serial_usb_ { new SerialConnectionTeensy { 0, CtBotConfig::UART0_BAUDRATE } }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_i2c_ {}, p_parameter_ {},
+      p_audio_output_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {
     std::atexit([]() {
+        if (DEBUG) {
+            ::serial_puts(PSTR("exit()"));
+        }
+
         CtBot* ptr = &get_instance();
         delete ptr;
-        freertos::print_ram_usage();
-        ::serial_puts("exit(): stopping scheduler, bye.");
+
+        if (DEBUG) {
+            ::serial_puts(PSTR("exit(): stopping scheduler, bye."));
+        }
+
         Scheduler::stop();
     });
 }
 
 CtBot::~CtBot() {
-    ::serial_puts("CtBot::~CtBot(): destroying CtBot instance.");
+    if (DEBUG) {
+        ::serial_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance."));
+    }
 }
 
 void CtBot::stop() {
@@ -134,12 +144,19 @@ void CtBot::stop() {
 void CtBot::setup(const bool set_ready) {
     p_scheduler_ = new Scheduler;
     task_id_ = p_scheduler_->task_add("main", TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
-    p_scheduler_->task_register("Tmr Svc");
+    p_scheduler_->task_register(PSTR("Tmr Svc"));
+    p_scheduler_->task_register(PSTR("EVENT"));
 
     p_parser_ = new CmdParser;
-    p_serial_wifi_ = new SerialConnectionTeensy { 5, CtBotConfig::UART5_PIN_RX, CtBotConfig::UART5_PIN_TX, CtBotConfig::UART5_BAUDRATE };
-    p_comm_ = new CommInterfaceCmdParser { CtBotConfig::UART_FOR_CMD == 5 ? *p_serial_wifi_ : *p_serial_usb_, *p_parser_, true };
     configASSERT(p_parser_);
+    if (CtBotConfig::UART_FOR_CMD != 0) {
+        p_serial_wifi_ = new SerialConnectionTeensy { CtBotConfig::UART_FOR_CMD, CtBotConfig::UART_WIFI_PIN_RX, CtBotConfig::UART_WIFI_PIN_TX,
+            CtBotConfig::UART_WIFI_BAUDRATE };
+        configASSERT(p_serial_wifi_);
+        p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
+    } else {
+        p_comm_ = new CommInterfaceCmdParser { *p_serial_usb_, *p_parser_, true };
+    }
     configASSERT(p_comm_);
 
     p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS, CtBotConfig::ENA_I2C_ADDR,
@@ -163,7 +180,9 @@ void CtBot::setup(const bool set_ready) {
     p_speedcontrols_[1] = new SpeedControl { p_sensors_->get_enc_r(), *p_motors_[1] };
 
     p_servos_[0] = new Servo { CtBotConfig::SERVO_1_PIN };
-    p_servos_[1] = new Servo { CtBotConfig::SERVO_2_PIN };
+    if (CtBotConfig::SERVO_2_PIN != 255) {
+        p_servos_[1] = new Servo { CtBotConfig::SERVO_2_PIN };
+    }
 
     p_leds_ = new LedsI2c { CtBotConfig::LED_I2C_BUS, CtBotConfig::LED_I2C_ADDR,
         CtBotConfig::LED_I2C_BUS == 0 ?
@@ -184,43 +203,14 @@ void CtBot::setup(const bool set_ready) {
         configASSERT(p_i2c_);
     }
 
+#ifdef BUILTIN_SDCARD
     if (!(SD.begin(BUILTIN_SDCARD))) {
-        p_comm_->debug_print("SD.begin() failed.\r\n", false);
+        p_comm_->debug_print(PSTR("SD.begin() failed.\r\n"), false);
     }
+#endif
 
     p_parameter_ = new ParameterStorage { "ctbot.jsn" };
     configASSERT(p_parameter_);
-
-    if (CtBotConfig::SWD_DEBUGGER_AVAILABLE) {
-        p_swd_debugger_ = new ARMKinetisDebug { CtBotConfig::SWD_CLOCK_PIN, CtBotConfig::SWD_DATA_PIN, ARMDebug::LOG_NORMAL };
-        if (p_swd_debugger_->begin()) {
-            p_comm_->debug_print("p_swd_debugger_->begin() successfull.\r\n", true);
-
-            if (p_swd_debugger_->detect()) {
-                p_comm_->debug_print("p_swd_debugger_->detect() successfull.\r\n", true);
-
-                // if (p_swd_debugger_->reset(false)) {
-                //     p_comm_->debug_print("p_swd_debugger_->reset() successfull.\r\n", true);
-
-                if (CtBotConfig::SWD_DEBUGGER_ENABLE_ON_BOOT) {
-                    arduino::delayMicroseconds(2'000'000UL);
-                    if (p_swd_debugger_->sys_reset_request()) {
-                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() successfull.\r\n", true);
-                    } else {
-                        p_comm_->debug_print("p_swd_debugger_->sys_reset_request() failed.\r\n", true);
-                    }
-                }
-
-                // } else {
-                //     p_comm_->debug_print("p_swd_debugger_->reset() failed.\r\n", true);
-                // }
-            } else {
-                p_comm_->debug_print("p_swd_debugger_->detect() failed.\r\n", true);
-            }
-        } else {
-            p_comm_->debug_print("p_swd_debugger_->begin() failed.\r\n", true);
-        }
-    }
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
         Scheduler::enter_critical_section();
@@ -228,16 +218,53 @@ void CtBot::setup(const bool set_ready) {
         configASSERT(p_play_wav_);
         p_tts_ = new TTS;
         configASSERT(p_tts_);
-        p_audio_output_ = new AudioOutputAnalog;
+        p_audio_output_ = new AudioOutputI2S;
         configASSERT(p_audio_output_);
-        p_audio_mixer_ = new AudioMixer4;
-        configASSERT(p_audio_mixer_);
-        p_audio_conn_[0] = new AudioConnection { *p_play_wav_, 0, *p_audio_mixer_, 0 };
-        p_audio_conn_[1] = new AudioConnection { *p_tts_, 0, *p_audio_mixer_, 1 };
-        p_audio_conn_[3] = new AudioConnection { *p_audio_mixer_, *p_audio_output_ };
-        configASSERT(p_audio_conn_[0] && p_audio_conn_[1] && p_audio_conn_[3]);
-        AudioMemory(8);
+        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+            p_audio_sine_ = new AudioSynthWaveformSine;
+            configASSERT(p_audio_sine_);
+            p_audio_sine_->frequency(0.f);
+            p_audio_sine_->amplitude(.5f);
+        }
+
+        for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
+            p_audio_mixer_.push_back(new AudioMixer4);
+            configASSERT(*p_audio_mixer_.rbegin());
+        }
+
+        for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
+            p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, i, *p_audio_mixer_[i], 0 });
+            configASSERT(*p_audio_conn_.rbegin());
+            p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_, i });
+            configASSERT(*p_audio_conn_.rbegin());
+        }
+        p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[0], 1 });
+        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+            p_audio_conn_.push_back(new AudioConnection { *p_audio_sine_, 0, *p_audio_mixer_[0], 2 });
+            configASSERT(*p_audio_conn_.rbegin());
+        }
+
+        AudioMemory(CtBotConfig::AUDIO_CHANNELS * 4);
+
+        ::attachInterruptVector(IRQ_SOFTWARE, []() {
+            if (ctbot::CtBotConfig::AUDIO_AVAILABLE && audio_task_) {
+                ::xTaskNotifyFromISR(audio_task_, 0, eNoAction, nullptr);
+                portYIELD_FROM_ISR(true);
+            }
+        });
         Scheduler::exit_critical_section();
+
+        get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, [this]() {
+            while (get_ready()) {
+                ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
+                ::software_isr(); // AudioStream::update_all()
+            }
+            if (shutdown_) {
+                audio_task_ = nullptr;
+            }
+        });
+        audio_task_ = ::xTaskGetHandle("audio");
+
         p_scheduler_->task_register("speak", true);
     }
 
@@ -271,42 +298,67 @@ void CtBot::setup(const bool set_ready) {
         },
         false);
 
-    p_comm_->debug_print("\r\n*** c't-Bot init done. ***\n\r\nType \"help\" (or \"h\") to print help message\n\r\n", true);
+    p_comm_->debug_print(PSTR("\r\n*** c't-Bot init done. ***\n\r\nType \"help\" (or \"h\") to print help message\n\r\n"), true);
     p_comm_->flush();
 
     ready_ = set_ready;
+
+    // auto p_er = new EventResponder;
+    // auto p_mt = new MillisTimer;
+    // p_mt->beginRepeating(3'000, *p_er);
+    // p_er->attach([](EventResponder&) {
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered by yield.\n\rtask: \""), true);
+    //     TaskStatus_t status;
+    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
+    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
+    // });
+    // p_er->attachImmediate([](EventResponder&) {
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered imm.\n\rtask: \""), true);
+    //     TaskStatus_t status;
+    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
+    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
+    // });
+    // p_er->attachInterrupt([](EventResponder&) {
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered int.\n\rtask: \""), true);
+    //     TaskStatus_t status;
+    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
+    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
+    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
+    // });
 }
 
 void CtBot::init_parser() {
     CtBotHelpTexts::init();
-    p_parser_->register_cmd("help", 'h', [this](const std::string_view&) {
+    p_parser_->register_cmd(PSTR("help"), 'h', [this](const std::string_view&) {
         CtBotHelpTexts::print(*p_comm_);
         return true;
     });
 
-    p_parser_->register_cmd("halt", [this](const std::string_view&) {
+    p_parser_->register_cmd(PSTR("halt"), [this](const std::string_view&) {
         stop();
         return true;
     });
 
-    p_parser_->register_cmd("watch", 'w', [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("watch"), 'w', [this](const std::string_view& args) {
         if (args.size()) {
             auto p_cmd { new std::string { args } };
-            p_watch_timer_ = xTimerCreate("watch_t", pdMS_TO_TICKS(1'000UL), true, p_cmd, [](TimerHandle_t handle) {
+            p_watch_timer_ = ::xTimerCreate(PSTR("watch_t"), pdMS_TO_TICKS(1'000UL), true, p_cmd, [](TimerHandle_t handle) {
                 CtBot& ctbot { CtBot::get_instance() };
-                auto ptr { static_cast<std::string*>(pvTimerGetTimerID(handle)) };
+                auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(handle)) };
                 ctbot.get_cmd_parser()->execute_cmd(*ptr, *ctbot.get_comm());
             });
             if (!p_watch_timer_) {
                 delete p_cmd;
                 return false;
             }
-            xTimerStart(p_watch_timer_, 0);
+            ::xTimerStart(p_watch_timer_, 0);
         } else {
             if (!p_watch_timer_) {
                 return false;
             }
-            auto ptr { static_cast<std::string*>(pvTimerGetTimerID(p_watch_timer_)) };
+            auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(p_watch_timer_)) };
             xTimerStop(p_watch_timer_, 0);
             delete ptr;
             xTimerDelete(p_watch_timer_, 0);
@@ -315,12 +367,12 @@ void CtBot::init_parser() {
         return true;
     });
 
-    p_parser_->register_cmd("config", 'c', [this](const std::string_view& args) {
-        if (args.find("echo") == 0) {
+    p_parser_->register_cmd(PSTR("config"), 'c', [this](const std::string_view& args) {
+        if (args.find(PSTR("echo")) == 0) {
             uint8_t v {};
             CmdParser::split_args(args, v);
             p_comm_->set_echo(v);
-        } else if (args.find("task") == 0) {
+        } else if (args.find(PSTR("task")) == 0) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const uint16_t task_id { get_scheduler()->task_get(args.substr(s, e - s)) };
@@ -336,7 +388,7 @@ void CtBot::init_parser() {
             } else {
                 return false;
             }
-        } else if (args.find("prehook") == 0) {
+        } else if (args.find(PSTR("prehook")) == 0) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const std::string_view hookname { args.substr(s, e - s) };
@@ -348,7 +400,7 @@ void CtBot::init_parser() {
             } else {
                 return false;
             }
-        } else if (args.find("posthook") == 0) { // FIXME: unify with above?
+        } else if (args.find(PSTR("posthook")) == 0) { // FIXME: unify with above?
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const std::string_view hookname { args.substr(s, e - s) };
@@ -364,17 +416,17 @@ void CtBot::init_parser() {
                 }
                 return false;
             }
-        } else if (args.find("kp") == 0) {
+        } else if (args.find(PSTR("kp")) == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(static_cast<float>(left), p_speedcontrols_[0]->get_ki(), p_speedcontrols_[0]->get_kd());
             p_speedcontrols_[1]->set_parameters(static_cast<float>(right), p_speedcontrols_[1]->get_ki(), p_speedcontrols_[1]->get_kd());
-        } else if (args.find("ki") == 0) {
+        } else if (args.find(PSTR("ki")) == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), static_cast<float>(left), p_speedcontrols_[0]->get_kd());
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), static_cast<float>(right), p_speedcontrols_[1]->get_kd());
-        } else if (args.find("kd") == 0) {
+        } else if (args.find(PSTR("kd")) == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
@@ -383,33 +435,21 @@ void CtBot::init_parser() {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             p_lcd_->set_output(args.substr(s, e - s));
-        } else if (args.find("led") == 0) {
+        } else if (args.find(PSTR("led")) == 0) {
             uint8_t mask {}, pwm {};
             CmdParser::split_args(args, mask, pwm);
             p_leds_->set_pwm(static_cast<LedTypes>(mask), pwm);
-        } else if (args.find("enapwm") == 0) {
+        } else if (args.find(PSTR("enapwm")) == 0) {
             uint8_t mask {}, pwm {};
             CmdParser::split_args(args, mask, pwm);
             p_ena_pwm_->set_pwm(static_cast<LedTypesEna>(mask), pwm);
-        } else if (CtBotConfig::SWD_DEBUGGER_AVAILABLE && args.find("swd") == 0) {
-            uint8_t v {};
-            CmdParser::split_args(args, v);
-            if (v) {
-                if (!p_swd_debugger_->sys_reset_request()) {
-                    return false;
-                }
-            } else {
-                if (!p_swd_debugger_->reset(false)) {
-                    return false;
-                }
-            }
         } else {
             return false;
         }
         return true;
     });
 
-    p_parser_->register_cmd("get", 'g', [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("get"), 'g', [this](const std::string_view& args) {
         if (args.find("dist") == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
         } else if (args.find("enc") == 0) {
@@ -432,7 +472,9 @@ void CtBot::init_parser() {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_motors_[0]->get(), p_motors_[1]->get()));
         } else if (args.find("servo") == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{}[{s}] ", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? "on " : "off"));
-            p_comm_->debug_printf<true>(PP_ARGS("{}[{s}]", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? "on" : "off"));
+            if (p_servos_[1]) {
+                p_comm_->debug_printf<true>(PP_ARGS("{}[{s}]", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? "on" : "off"));
+            }
         } else if (args.find("rc5") == 0) {
             p_comm_->debug_printf<true>(
                 PP_ARGS("{} {} {}", p_sensors_->get_rc5().get_addr(), p_sensors_->get_rc5().get_cmd(), p_sensors_->get_rc5().get_toggle()));
@@ -494,7 +536,7 @@ void CtBot::init_parser() {
         return true;
     });
 
-    p_parser_->register_cmd("set", 's', [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("set"), 's', [this](const std::string_view& args) {
         if (args.find("speed") == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
@@ -525,10 +567,12 @@ void CtBot::init_parser() {
             } else {
                 p_servos_[0]->disable();
             }
-            if (s2 <= 180) {
-                p_servos_[1]->set(s2);
-            } else {
-                p_servos_[1]->disable();
+            if (p_servos_[1]) {
+                if (s2 <= 180) {
+                    p_servos_[1]->set(s2);
+                } else {
+                    p_servos_[1]->disable();
+                }
             }
         } else if (args.find("enapwm") == 0) {
             uint8_t pin {};
@@ -629,7 +673,7 @@ void CtBot::init_parser() {
     });
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
-        p_parser_->register_cmd("audio", 'a', [this](const std::string_view& args) {
+        p_parser_->register_cmd(PSTR("audio"), 'a', [this](const std::string_view& args) {
             if (args.find("play") == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
@@ -643,9 +687,12 @@ void CtBot::init_parser() {
                     return false;
                 }
                 const float volume { std::strtof(args.data() + n, nullptr) };
-                p_audio_mixer_->gain(0, volume);
-                p_audio_mixer_->gain(1, volume);
-                p_audio_mixer_->gain(2, volume);
+                for (auto& e : p_audio_mixer_) {
+                    e->gain(0, volume);
+                    e->gain(1, volume);
+                    e->gain(2, volume);
+                }
+
             } else if (args.find("pitch") == 0) {
                 uint8_t pitch {};
                 CmdParser::split_args(args, pitch);
@@ -660,6 +707,17 @@ void CtBot::init_parser() {
                     get_ena()->on(EnaI2cTypes::AUDIO);
                     return p_tts_->speak(args.substr(s + 1), true);
                 }
+            } else if (CtBotConfig::AUDIO_TEST_AVAILABLE && args.find("sine") == 0) {
+                const auto n { args.find(' ') };
+                if (n == args.npos) {
+                    return false;
+                }
+                const float freq { std::strtof(args.data() + n, nullptr) };
+                get_ena()->on(EnaI2cTypes::AUDIO);
+                p_audio_sine_->frequency(freq);
+                if (freq <= 0.f) {
+                    get_ena()->off(EnaI2cTypes::AUDIO);
+                }
             } else {
                 return false;
             }
@@ -667,7 +725,7 @@ void CtBot::init_parser() {
         });
     }
 
-    p_parser_->register_cmd("fs", 'f', [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("fs"), 'f', [this](const std::string_view& args) {
         if (args.find("ls") == 0) {
             const auto s { args.find(' ') };
             std::string dir;
@@ -702,15 +760,21 @@ void CtBot::init_parser() {
         return false;
     });
 
-    p_parser_->register_cmd("sleep", [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
         uint32_t duration {};
         CmdParser::split_args(args, duration);
         std::this_thread::sleep_for(std::chrono::milliseconds(duration));
         return true;
     });
 
+    p_parser_->register_cmd(PSTR("crash"), [](const std::string_view&) {
+        uint8_t* ptr = nullptr;
+        *ptr = 42;
+        return true;
+    });
+
     if (CtBotConfig::PROG_AVAILABLE) {
-        p_parser_->register_cmd("prog", 'p', [this](const std::string_view& args) {
+        p_parser_->register_cmd(PSTR("prog"), 'p', [this](const std::string_view& args) {
             if (args.find("run") == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
@@ -741,7 +805,7 @@ void CtBot::init_parser() {
     }
 
     if (CtBotConfig::I2C_TOOLS_AVAILABLE) {
-        p_parser_->register_cmd("i2c", 'i', [this](const std::string_view& args) {
+        p_parser_->register_cmd(PSTR("i2c"), 'i', [this](const std::string_view& args) {
             if (args.find("select") == 0) {
                 uint8_t bus {};
                 uint16_t freq {};
@@ -851,7 +915,8 @@ void CtBot::init_parser() {
                             PP_ARGS("bus {} @ {} kHz: dev {#x} found.\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address()));
                     } else {
                         // p_comm_->debug_printf<true>(
-                        //     PP_ARGS("bus {} @ {} kHz: dev {#x} NOT found.\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address()));
+                        //     PP_ARGS("bus {} @ {} kHz: dev {#x} NOT found.\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL,
+                        //     p_i2c_->get_address()));
                     }
                 }
             } else {
@@ -876,20 +941,20 @@ void CtBot::run() {
 
     p_sensors_->update();
 
-    if (CtBotConfig::LUA_AVAILABLE && p_lua_) {
-        static uint32_t last_lua {};
-        const auto now { Timer::get_ms() };
-        if (now - last_lua > 2000U) {
-            last_lua = now;
+    // if (CtBotConfig::LUA_AVAILABLE && p_lua_) {
+    //     static uint32_t last_lua {};
+    //     const auto now { Timer::get_ms() };
+    //     if (now - last_lua > 2000U) {
+    //         last_lua = now;
 
-            const auto ret { p_lua_->Lua_dostring("print('Hello world!', 42)") };
-            if (ret.length()) {
-                p_comm_->debug_print(ret, true);
-                p_comm_->debug_print("\r\n", true);
-            }
-            lua_gc(p_lua_->get_state(), 2, 0);
-        }
-    }
+    //         const auto ret { p_lua_->Lua_dostring("print('Hello world!', 42)") };
+    //         if (ret.length()) {
+    //             p_comm_->debug_print(ret, true);
+    //             p_comm_->debug_print("\r\n", true);
+    //         }
+    //         lua_gc(p_lua_->get_state(), 2, 0);
+    //     }
+    // }
 
     for (const auto& e : post_hooks_) {
         if (std::get<1>(e.second)) {
@@ -935,7 +1000,7 @@ bool CtBot::play_wav(const std::string_view& filename) {
 }
 
 void CtBot::shutdown() {
-    static constexpr bool DEBUG { false };
+    ready_ = false;
 
     if (CtBotConfig::LUA_AVAILABLE) {
         delete p_lua_;
@@ -945,9 +1010,11 @@ void CtBot::shutdown() {
         p_play_wav_->stop();
     }
 
-    p_comm_->debug_print("System shutting down...\r\n", false);
+    p_comm_->debug_print(PSTR("System shutting down...\r\n"), false);
     p_comm_->flush();
-    p_serial_wifi_->flush();
+    if (p_serial_wifi_) {
+        p_serial_wifi_->flush();
+    }
     p_serial_usb_->flush();
 
     p_speedcontrols_[0]->set_speed(0.f);
@@ -955,9 +1022,11 @@ void CtBot::shutdown() {
     p_motors_[0]->set(0);
     p_motors_[1]->set(0);
     p_servos_[0]->disable();
-    p_servos_[1]->disable();
+    if (p_servos_[1]) {
+        p_servos_[1]->disable();
+    }
     if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
-        p_scheduler_->task_remove(p_scheduler_->task_get("TFT-Test"));
+        p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("TFT-Test")));
     }
     if (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_->clear();
@@ -971,104 +1040,105 @@ void CtBot::shutdown() {
     p_sensors_->disable_all();
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
+        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+            delete p_audio_sine_;
+            if (DEBUG) {
+                ::serial_puts(PSTR("CtBot::shutdown(): p_audio_sine_ deleted."));
+            }
+        }
         p_scheduler_->task_remove(p_scheduler_->task_get("audio"));
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): audio task removed.");
+            ::serial_puts(PSTR("CtBot::shutdown(): audio task removed."));
         }
-        delete p_audio_conn_[0];
-        delete p_audio_conn_[1];
-        delete p_audio_conn_[3];
+        for (auto& e : p_audio_conn_) {
+            delete e;
+        }
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_audio_conn_ deleted.");
+            ::serial_puts(PSTR("CtBot::shutdown(): p_audio_conn_ deleted."));
         }
 
-        delete p_audio_mixer_;
+        for (auto& e : p_audio_mixer_) {
+            delete e;
+        }
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_audio_mixer_ deleted.");
+            ::serial_puts(PSTR("CtBot::shutdown(): p_audio_mixer_ deleted."));
         }
 
         delete p_audio_output_;
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_audio_output_ deleted.");
+            ::serial_puts(PSTR("CtBot::shutdown(): p_audio_output_ deleted."));
         }
 
         delete p_tts_;
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_tts_ deleted.");
+            ::serial_puts(PSTR("CtBot::shutdown(): p_tts_ deleted."));
         }
 
         delete p_play_wav_;
         if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_play_wav_ deleted.");
-        }
-    }
-
-    if (CtBotConfig::SWD_DEBUGGER_AVAILABLE) {
-        delete p_swd_debugger_;
-        if (DEBUG) {
-            ::serial_puts("CtBot::shutdown(): p_swd_debugger_ deleted.");
+            ::serial_puts(PSTR("CtBot::shutdown(): p_play_wav_ deleted."));
         }
     }
 
     delete p_parameter_;
     if (DEBUG) {
-        ::serial_puts("p_parameter_ deleted.");
+        ::serial_puts(PSTR("p_parameter_ deleted."));
     }
     if (CtBotConfig::TFT_AVAILABLE) {
         delete p_tft_;
         if (DEBUG) {
-            ::serial_puts("p_tft_ deleted.");
+            ::serial_puts(PSTR("p_tft_ deleted."));
         }
     }
     if (CtBotConfig::LCD_AVAILABLE) {
         delete p_lcd_;
         if (DEBUG) {
-            ::serial_puts("p_lcd_ deleted.");
+            ::serial_puts(PSTR("p_lcd_ deleted."));
         }
     };
     delete p_leds_;
     if (DEBUG) {
-        ::serial_puts("p_leds_ deleted.");
+        ::serial_puts(PSTR("p_leds_ deleted."));
     }
     delete p_servos_[0];
     delete p_servos_[1];
     if (DEBUG) {
-        ::serial_puts("p_servos_ deleted.");
+        ::serial_puts(PSTR("p_servos_ deleted."));
     }
     delete p_speedcontrols_[0];
     delete p_speedcontrols_[1];
     if (DEBUG) {
-        ::serial_puts("p_speedcontrols_ deleted.");
+        ::serial_puts(PSTR("p_speedcontrols_ deleted."));
     }
     delete p_motors_[0];
     delete p_motors_[1];
     if (DEBUG) {
-        ::serial_puts("p_motors_ deleted.");
+        ::serial_puts(PSTR("p_motors_ deleted."));
     }
     delete p_sensors_;
     if (DEBUG) {
-        ::serial_puts("p_sensors_ deleted.");
+        ::serial_puts(PSTR("p_sensors_ deleted."));
     }
     delete p_comm_;
     if (DEBUG) {
-        ::serial_puts("p_comm_ deleted.");
+        ::serial_puts(PSTR("p_comm_ deleted."));
     }
     delete p_serial_wifi_;
     if (DEBUG) {
-        ::serial_puts("p_serial_wifi_ deleted.");
+        ::serial_puts(PSTR("p_serial_wifi_ deleted."));
     }
     delete p_parser_;
     if (DEBUG) {
-        ::serial_puts("p_parser_ deleted.");
+        ::serial_puts(PSTR("p_parser_ deleted."));
     }
     delete p_scheduler_;
     if (DEBUG) {
-        ::serial_puts("p_scheduler_ deleted.");
+        ::serial_puts(PSTR("p_scheduler_ deleted."));
     }
     delete p_serial_usb_;
     p_serial_usb_ = nullptr;
     if (DEBUG) {
-        ::serial_puts("p_serial_usb_ deleted.");
+        ::serial_puts(PSTR("p_serial_usb_ deleted."));
     }
 
     free_rtos_std::gthr_freertos::set_next_stacksize(384);

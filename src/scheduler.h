@@ -61,7 +61,7 @@ protected:
     static constexpr uint8_t DEFAULT_PRIORITY { 4 };
     static constexpr uint32_t DEFAULT_STACK_SIZE { 2 * 1024 }; // byte
 
-    static void* p_main_task_;
+    static TaskHandle_t p_main_task_;
 
     uint16_t next_id_; /**< Next task ID to use */
     std::map<uint16_t /*ID*/, Task* /*task pointer*/> tasks_; /**< Map containing pointer to the tasks, using task ID as key */
@@ -74,7 +74,7 @@ public:
      * @brief Stop (exit) the scheduler
      * @note Calls FreeRTOS' vTaskEndScheduler()
      */
-    static void stop();
+    FLASHMEM static void stop();
 
     static inline void enter_critical_section() {
         vTaskSuspendAll();
@@ -87,12 +87,12 @@ public:
     /**
      * @brief Construct a new Scheduler object
      */
-    Scheduler();
+    FLASHMEM Scheduler();
 
     /**
      * @brief Destroy the Scheduler object
      */
-    ~Scheduler();
+    FLASHMEM ~Scheduler();
 
     /**
      * @brief Add a tasks to the run queue
@@ -130,7 +130,7 @@ public:
 
     uint16_t task_register(const std::string_view& name, const bool external = false);
 
-    uint16_t task_register(void* task, const bool external);
+    uint16_t task_register(TaskHandle_t task, const bool external);
 
     bool task_remove(const uint16_t task);
 
@@ -170,19 +170,19 @@ public:
      * @brief Print a list of all tasks and their current status
      * @param[in] comm: Reference to CommInterface instance used to print the list
      */
-    void print_task_list(CommInterface& comm) const;
+    FLASHMEM void print_task_list(CommInterface& comm) const;
 
     /**
      * @brief Print amount of used and free (heap) RAM in byte
      * @param[in] comm: Reference to CommInterface instance used to print with
      */
-    void print_ram_usage(CommInterface& comm) const;
+    FLASHMEM void print_ram_usage(CommInterface& comm) const;
 
-    size_t get_free_stack() const;
+    FLASHMEM size_t get_free_stack() const;
 
-    size_t get_free_stack(const uint16_t id) const;
+    FLASHMEM size_t get_free_stack(const uint16_t id) const;
 
-    std::unique_ptr<std::vector<std::pair<void*, float>>> get_runtime_stats() const;
+    FLASHMEM std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> get_runtime_stats() const;
 };
 
 } // namespace ctbot

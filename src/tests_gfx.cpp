@@ -29,7 +29,7 @@
 #include "tft_display.h"
 
 #include "Adafruit_GFX.h"
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 #include "pprintpp.hpp"
 
 #include <thread>

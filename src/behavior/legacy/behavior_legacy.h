@@ -52,7 +52,7 @@ namespace legacy {
 
 class BehaviorLegacy : public Behavior {
     static constexpr bool DEBUG_ { true };
-    static constexpr uint32_t STACK_SIZE { 4096 };
+    static constexpr uint32_t STACK_SIZE { 2048 };
 
     static Sensors* p_sensors_;
     static const Pose* p_pose_;
@@ -65,7 +65,7 @@ protected:
     legacy::Behaviour_t* behavior_; /**< Liste mit allen Verhalten */
     std::vector<void (*)()> emerg_functions_; /**< hier liegen die Zeiger auf die auszufuehrenden Notfall-Funktionen */
 
-    BehaviorLegacy(const std::string& name);
+    FLASHMEM BehaviorLegacy(const std::string& name);
 
     virtual void run() override;
 
@@ -77,13 +77,13 @@ protected:
     /**
      * Initialisiert alle Verhalten
      */
-    void bot_behave_init() noexcept;
+    FLASHMEM void bot_behave_init() noexcept;
 
     /**
      * Fuegt ein Verhalten der Verhaltenliste anhand der Prioritaet ein.
      * @param *behave   Zeiger auf einzufuegendes Verhalten
      */
-    void insert_behavior_to_list(legacy::Behaviour_t* behave) noexcept;
+    FLASHMEM void insert_behavior_to_list(legacy::Behaviour_t* behave) noexcept;
 
     /**
      * Erzeugt ein neues Verhalten
@@ -92,14 +92,14 @@ protected:
      * @param active    Boolean, ob das Verhalten aktiv oder inaktiv erstellt wird
      * @return          Zeiger auf erzeugten Verhaltensdatensatz, oder NULL im Fehlerfall
      */
-    legacy::Behaviour_t* new_behavior(uint8_t priority, void (*work)(legacy::Behaviour_t*), uint8_t active) const noexcept;
+    FLASHMEM legacy::Behaviour_t* new_behavior(uint8_t priority, void (*work)(legacy::Behaviour_t*), uint8_t active) const noexcept;
 
     /**
      * Gibt das naechste Verhalten der Liste zurueck
      * @param *beh	Zeiger auf Verhalten, dessen Nachfolger gewuenscht ist, NULL fuer Listenanfang
      * @return		Zeiger auf Nachfolger von beh
      */
-    legacy::Behaviour_t* get_next_behavior(legacy::Behaviour_t* beh) const noexcept;
+    FLASHMEM legacy::Behaviour_t* get_next_behavior(legacy::Behaviour_t* beh) const noexcept;
 
     /**
      * liefert !=0 zurueck, wenn function ueber eine beliebige Kette (job->caller->caller ....) von anderen Verhalten job aufgerufen hat
@@ -107,7 +107,7 @@ protected:
      * @param *caller_beh   Das Verhalten, das urspruenglich aufgerufen hat
      * @return              0 wenn keine Call-Abhaengigkeit besteht, ansonsten die Anzahl der Stufen
      */
-    uint8_t is_in_call_hierarchy(legacy::Behaviour_t* job, legacy::Behaviour_t* caller_beh) const noexcept;
+    FLASHMEM uint8_t is_in_call_hierarchy(legacy::Behaviour_t* job, legacy::Behaviour_t* caller_beh) const noexcept;
 
     /**
      * @brief Direkter Zugriff auf die Motoren
@@ -126,7 +126,7 @@ protected:
      * Legt einen neuen Display-Screen an und haengt eine Anzeigefunktion ein.
      * Diese Funktion kann auch RC5-Kommandos behandeln. Wurde eine Taste ausgewertet, setzt man RC5_Code auf 0.
      */
-    int8_t register_screen(void (*function)(), void (*keyhandler)(int16_t* const)) const noexcept;
+    FLASHMEM int8_t register_screen(void (*function)(), void (*keyhandler)(int16_t* const)) const noexcept;
 
 public:
     static constexpr auto BEHAVIOUR_INACTIVE { 0 }; /**< Verhalten ist aus */
@@ -150,7 +150,7 @@ public:
 
     BehaviorLegacy(const BehaviorLegacy&) = delete;
     BehaviorLegacy& operator=(const BehaviorLegacy&) = delete;
-    virtual ~BehaviorLegacy();
+    FLASHMEM virtual ~BehaviorLegacy();
 
     static auto get_instance() {
         static BehaviorLegacy* p_instance { new BehaviorLegacy("legacy") };
@@ -193,11 +193,11 @@ public:
         return N - 1;
     }
 
-    static void init() noexcept;
+    FLASHMEM static void init() noexcept;
 
     static void update_global_data() noexcept;
 
-    static size_t print_log(const char* type, const size_t type_len, const char* format, va_list vlist);
+    FLASHMEM static size_t print_log(const char* type, const size_t type_len, const char* format, va_list vlist);
 
     void abort_behavior(legacy::Behaviour_t* caller);
 
@@ -280,7 +280,7 @@ public:
      * @param *func  Die zu registrierende Routine, welche aufzurufen ist
      * @return       Index, den die Routine im Array einnimmt, bei -1 ist alles voll
      */
-    int8_t register_emergency_proc(void (*function)()) noexcept;
+    FLASHMEM int8_t register_emergency_proc(void (*function)()) noexcept;
 
     /**
      * Beim Ausloesen eines Notfalls wird diese Routine angesprungen
@@ -374,14 +374,14 @@ public:
     /**
      * Loescht das ganze Display
      */
-    void display_clear() const noexcept;
+    FLASHMEM void display_clear() const noexcept;
 
     /**
      * Positioniert den Cursor
      * @param row    Zeile
      * @param column Spalte
      */
-    void display_cursor(int16_t row, int16_t column) const noexcept;
+    FLASHMEM void display_cursor(int16_t row, int16_t column) const noexcept;
 
     /**
      * Schreibt einen String auf das Display.
@@ -389,14 +389,14 @@ public:
      * @param args       Variable Argumentenliste, wie beim printf
      * @return           Anzahl der geschriebenen Zeichen
      */
-    uint8_t display_printf(const char* format, va_list args) const noexcept;
+    FLASHMEM uint8_t display_printf(const char* format, va_list args) const noexcept;
 
     /**
      * Gibt einen String auf dem Display aus
      * @param *text  Zeiger auf den auszugebenden String
      * @return       Anzahl der geschriebenen Zeichen
      */
-    uint8_t display_puts(const char* text) const noexcept;
+    FLASHMEM uint8_t display_puts(const char* text) const noexcept;
 };
 
 } /* namespace ctbot */

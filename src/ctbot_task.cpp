@@ -27,9 +27,7 @@
 #include "comm_interface.h"
 
 #include "pprintpp.hpp"
-#include "arduino_fixed.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#include "arduino_freertos.h"
 #include "portable/teensy.h"
 
 #include <algorithm>

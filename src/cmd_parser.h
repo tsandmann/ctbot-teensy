@@ -61,14 +61,14 @@ public:
     /**
      * @brief Construct a new CmdParser object
      */
-    CmdParser();
+    FLASHMEM CmdParser();
 
     /**
      * @brief Register a new command given as a string_view
      * @param[in] cmd: Pointer to of command
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, func_t&& func);
+    FLASHMEM void register_cmd(const std::string& cmd, func_t&& func);
 
     /**
      * @brief Register a new command given as a string_view
@@ -76,7 +76,7 @@ public:
      * @param[in] cmd_short: Shortcut for command as a single character
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
+    FLASHMEM void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered

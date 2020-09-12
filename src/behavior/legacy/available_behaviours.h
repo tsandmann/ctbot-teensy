@@ -26,7 +26,7 @@
 
 /* Demo-Verhalten */
 // #define BEHAVIOUR_SIMPLE_AVAILABLE /**< Beispielverhalten */
-// #define BEHAVIOUR_DRIVE_SQUARE_AVAILABLE /**< Demoverhalten im Quadrat fahren */
+#define BEHAVIOUR_DRIVE_SQUARE_AVAILABLE /**< Demoverhalten im Quadrat fahren */
 
 /* Notfall-Verhalten */
 // #define BEHAVIOUR_AVOID_BORDER_AVAILABLE /**< Abgruenden ausweichen */

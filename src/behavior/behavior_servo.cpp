@@ -44,7 +44,7 @@ BehaviorServo::BehaviorServo(uint8_t servo, uint8_t position, bool auto_stop)
 void BehaviorServo::run() {
     using namespace std::chrono_literals;
 
-    if (active_[servo_nr_]) {
+    if (!p_servo_ || active_[servo_nr_]) {
         exit();
         return;
     }

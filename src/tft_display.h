@@ -83,10 +83,17 @@ protected:
     uint16_t width_;
     uint16_t height_;
 
-public:
-    TFTDisplay();
+    /**
+     * @brief Write a message out to a SerialConnection
+     * @param[in] p_str: Message as pointer to std::string
+     * @return Number of characters written
+     */
+    FLASHMEM uint8_t print(const std::string* p_str, bool clear = false) const;
 
-    ~TFTDisplay();
+public:
+    FLASHMEM TFTDisplay();
+
+    FLASHMEM ~TFTDisplay();
 
     auto get_width() const {
         return width_;
@@ -127,21 +134,14 @@ public:
      * @param[in] c: Character to write
      * @return Number of written chars (1)
      */
-    uint8_t print(const char c, bool clear = false) const;
+    FLASHMEM uint8_t print(const char c, bool clear = false) const;
 
     /**
      * @brief Write a string to the display, starting at the current position
      * @param[in] str: Reference to the string
      * @return Number of written chars
      */
-    uint8_t print(const std::string& str, bool clear = false) const;
-
-    /**
-     * @brief Write a message out to a SerialConnection
-     * @param[in] p_str: Message as std::unique_ptr of std::string
-     * @return Number of characters written
-     */
-    uint8_t print(std::unique_ptr<std::string>&& p_str, bool clear = false) const;
+    FLASHMEM uint8_t print(const std::string& str, bool clear = false) const;
 
     /**
      * @brief Write an formatted string (like std::printf) out to display
@@ -150,7 +150,7 @@ public:
      * @return Number of characters written
      */
     template <typename... Args>
-    uint8_t printf(const char* format, const Args&... args) const {
+    FLASHMEM uint8_t printf(const char* format, const Args&... args) const {
         return print(CommInterface::string_format(format, args...));
     }
 
@@ -158,23 +158,23 @@ public:
 
     int16_t get_cursor_y() const;
 
-    void get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
+    FLASHMEM void get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
 
-    void fill_screen(const uint16_t color) const;
+    FLASHMEM void fill_screen(const uint16_t color) const;
 
-    void fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    FLASHMEM void fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
 
-    void draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const;
+    FLASHMEM void draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const;
 
-    void draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    FLASHMEM void draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
 
-    void draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
+    FLASHMEM void draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
 
-    void draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
+    FLASHMEM void draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
 
     bool touched() const;
 
-    bool get_touch_point(int16_t& x, int16_t& y, int16_t& z) const;
+    FLASHMEM bool get_touch_point(int16_t& x, int16_t& y, int16_t& z) const;
 
     Adafruit_GFX* get_context() const {
         return reinterpret_cast<Adafruit_GFX*>(p_display_);

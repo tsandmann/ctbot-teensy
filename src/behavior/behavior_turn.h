@@ -44,7 +44,7 @@ class BehaviorTurn : public Behavior {
 public:
     using Ptr = std::unique_ptr<BehaviorTurn>;
 
-    BehaviorTurn(const int16_t degrees, const uint16_t priority, const uint16_t min_speed, const uint16_t max_speed);
+    FLASHMEM BehaviorTurn(const int16_t degrees, const uint16_t priority, const uint16_t min_speed, const uint16_t max_speed);
 
     BehaviorTurn(const int16_t degrees, const uint16_t min_speed, const uint16_t max_speed)
         : BehaviorTurn { degrees, DEFAULT_PRIORITY, min_speed, max_speed } {}
@@ -53,7 +53,7 @@ public:
 
     BehaviorTurn(const int16_t degrees) : BehaviorTurn { degrees, DEFAULT_PRIORITY } {}
 
-    virtual ~BehaviorTurn() override;
+    FLASHMEM virtual ~BehaviorTurn() override;
 
 protected:
     virtual void run() override;
@@ -62,7 +62,7 @@ private:
     static constexpr bool DEBUG_ { true };
     static constexpr uint32_t STACK_SIZE { 4096 };
 
-    static Registry reg_;
+    static PROGMEM const Registry reg_;
 
     enum class State : uint8_t {
         TURN,

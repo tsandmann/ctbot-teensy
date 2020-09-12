@@ -239,7 +239,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
                     auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
 
                     CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1->get_position()),
-                        static_cast<int16_t>(p_servo_2->get_position()), bot_addr_ };
+                        p_servo_2 ? static_cast<int16_t>(p_servo_2->get_position()) : 0, bot_addr_ };
 
                     send_cmd(cmd);
                 }

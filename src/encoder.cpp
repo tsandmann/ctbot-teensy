@@ -28,7 +28,7 @@
 #include "scheduler.h"
 #include "ctbot.h"
 
-#include <portable/teensy.h>
+//#include <portable/teensy.h>
 
 
 namespace ctbot {
@@ -41,22 +41,10 @@ Encoder::Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
     // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
         arduino::attachInterrupt(
-            pin,
-            []() {
-                freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
-                isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_);
-                freertos::trace_isr_exit();
-            },
-            arduino::CHANGE);
+            pin, []() { isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_); }, arduino::CHANGE);
     } else if (pin == CtBotConfig::ENC_R_PIN) {
         arduino::attachInterrupt(
-            pin,
-            []() {
-                freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
-                isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_);
-                freertos::trace_isr_exit();
-            },
-            arduino::CHANGE);
+            pin, []() { isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_); }, arduino::CHANGE);
     }
     Scheduler::exit_critical_section();
 }

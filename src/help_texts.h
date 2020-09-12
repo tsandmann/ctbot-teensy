@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "avr/pgmspace.h"
+
 #include <string_view>
 #include <vector>
 
@@ -35,20 +37,20 @@ class CommInterface;
 class CtBotHelpTexts {
     static std::vector<std::string_view> texts_;
 
-    static const char general_[];
-    static const char config_[];
-    static const char get_[];
-    static const char set_[];
-    static const char audio_[];
-    static const char filesystem_[];
-    static const char prog_[];
-    static const char i2c_[];
+    PROGMEM static const char general_[];
+    PROGMEM static const char config_[];
+    PROGMEM static const char get_[];
+    PROGMEM static const char set_[];
+    PROGMEM static const char audio_[];
+    PROGMEM static const char filesystem_[];
+    PROGMEM static const char prog_[];
+    PROGMEM static const char i2c_[];
 
-    static std::string_view create_sv(const char* str);
+    FLASHMEM static std::string_view create_sv(const char* str);
 
 public:
-    static void init();
+    FLASHMEM static void init();
 
-    static void print(CommInterface& comm);
+    FLASHMEM static void print(CommInterface& comm);
 };
 } // namespace ctbot

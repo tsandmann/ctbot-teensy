@@ -154,7 +154,7 @@ public:
      * @return Pointer to created instance or nullptr, if add_resource() failed
      */
     template <typename... Args>
-    T* create_actuator(const char* name, bool active, Args&&... args) {
+    FLASHMEM T* create_actuator(const char* name, bool active, Args&&... args) {
         std::unique_ptr<T> p_res { std::make_unique<T>(std::forward<Args>(args)...) };
         T* ptr { p_res.get() };
         if (add_resource(name, std::move(p_res), active)) {

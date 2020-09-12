@@ -43,8 +43,7 @@ const char CtBotHelpTexts::config_[] { "config (c)\r\n"
                                        "\ttask ledtest [0|1]\tstart/stop LED test\r\n"
                                        "\ttask sctrl [0|1]\tstart/stop speed controller task\r\n"
                                        "\ttask [taskname] [0|1]\tstart/stop a task\r\n"
-                                       "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\r\n"
-                                       "\tswd [0|1]\t\tactivate (1) or deactivate (0) SWD debug port\r\n" };
+                                       "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\r\n" };
 
 const char CtBotHelpTexts::get_[] { "get (g)\r\n"
                                     "\tdist\t\t\tprint current distance sensor's values\r\n"

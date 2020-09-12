@@ -42,7 +42,7 @@
 #include "behavior_follow_line.h"
 
 #include "pprintpp.hpp"
-#include "FreeRTOS.h"
+#include "arduino_freertos.h"
 
 #include <cmath>
 

@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "avr/pgmspace.h"
+
 #include <cstdint>
 
 
@@ -66,7 +68,7 @@ public:
      * @param[in] kd: (D)erivative tuning parameter
      * @param[in] direction: true: output will increase when error is positive; false: the opposite
      */
-    Pid(pid_t& input, pid_t& output, pid_t& setpoint, const pid_t kp, const pid_t ki, const pid_t kd, const bool direction);
+    FLASHMEM Pid(pid_t& input, pid_t& output, pid_t& setpoint, const pid_t kp, const pid_t ki, const pid_t kd, const bool direction);
 
     /**
      * @brief Performs the PID calculation
@@ -180,5 +182,5 @@ private:
     /**
      * @brief Does all the things that need to happen to ensure a bumpless transfer from manual to automatic mode
      */
-    void initialize();
+    FLASHMEM void initialize();
 };

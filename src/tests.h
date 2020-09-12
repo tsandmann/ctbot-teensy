@@ -80,20 +80,20 @@ protected:
      *  deactivate BlinkTest
      * @enduml
      */
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the task, that implements the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    BlinkTest(CtBot& ctbot);
+    FLASHMEM BlinkTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    ~BlinkTest() = default;
+    FLASHMEM ~BlinkTest() = default;
 };
 
 
@@ -140,20 +140,20 @@ protected:
      *  deactivate LedTest
      * @enduml
      */
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the task, that implements the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    LedTest(CtBot& ctbot);
+    FLASHMEM LedTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    ~LedTest() = default;
+    FLASHMEM ~LedTest() = default;
 };
 
 
@@ -231,20 +231,20 @@ protected:
      *  deactivate LcdTest
      * @enduml
      */
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the task, that implements the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    LcdTest(CtBot& ctbot);
+    FLASHMEM LcdTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    ~LcdTest() = default;
+    FLASHMEM ~LcdTest() = default;
 };
 
 
@@ -287,20 +287,20 @@ protected:
      *  deactivate EnaTest
      * @enduml
      */
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the task, that implements the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    EnaTest(CtBot& ctbot);
+    FLASHMEM EnaTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    ~EnaTest() = default;
+    FLASHMEM ~EnaTest() = default;
 };
 
 
@@ -376,20 +376,20 @@ protected:
      *  deactivate SensorLcdTest
      * @enduml
      */
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the task, that implements the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    SensorLcdTest(CtBot& ctbot);
+    FLASHMEM SensorLcdTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    ~SensorLcdTest() = default;
+    FLASHMEM ~SensorLcdTest() = default;
 };
 
 
@@ -422,15 +422,15 @@ public:
      * @brief Constructor, creates the tasks, that implement the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    TaskWaitTest(CtBot& ctbot);
+    FLASHMEM TaskWaitTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy tasks
      * @note Never called in current setup
      */
-    ~TaskWaitTest();
+    FLASHMEM ~TaskWaitTest();
 
-    void stop() {
+    FLASHMEM void stop() {
         running_ = false;
     }
 };
@@ -447,42 +447,42 @@ protected:
     void operator=(const TftTest&) = delete;
     TftTest(TftTest&&) = delete;
 
-    void run();
+    FLASHMEM void run();
 
-    unsigned long testText();
+    FLASHMEM unsigned long testText();
 
-    unsigned long testLines(uint16_t color);
+    FLASHMEM unsigned long testLines(uint16_t color);
 
-    unsigned long testFastLines(uint16_t color1, uint16_t color2);
+    FLASHMEM unsigned long testFastLines(uint16_t color1, uint16_t color2);
 
-    unsigned long testRects(uint16_t color);
+    FLASHMEM unsigned long testRects(uint16_t color);
 
-    unsigned long testFilledRects(uint16_t color1, uint16_t color2);
+    FLASHMEM unsigned long testFilledRects(uint16_t color1, uint16_t color2);
 
-    unsigned long testFilledCircles(uint8_t radius, uint16_t color);
+    FLASHMEM unsigned long testFilledCircles(uint8_t radius, uint16_t color);
 
-    unsigned long testCircles(uint8_t radius, uint16_t color);
+    FLASHMEM unsigned long testCircles(uint8_t radius, uint16_t color);
 
-    unsigned long testTriangles();
+    FLASHMEM unsigned long testTriangles();
 
-    unsigned long testFilledTriangles();
+    FLASHMEM unsigned long testFilledTriangles();
 
-    unsigned long testRoundRects();
+    FLASHMEM unsigned long testRoundRects();
 
-    unsigned long testFilledRoundRects();
+    FLASHMEM unsigned long testFilledRoundRects();
 
 public:
     /**
      * @brief Constructor, creates the tasks, that implement the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    TftTest(CtBot& ctbot);
+    FLASHMEM TftTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy tasks
      * @note Never called in current setup
      */
-    ~TftTest();
+    FLASHMEM ~TftTest();
 };
 
 class TouchTest {
@@ -497,20 +497,20 @@ protected:
     void operator=(const TouchTest&) = delete;
     TouchTest(TouchTest&&) = delete;
 
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the tasks, that implement the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    TouchTest(CtBot& ctbot);
+    FLASHMEM TouchTest(CtBot& ctbot);
 
     /**
      * @brief Destructor to destroy tasks
      * @note Never called in current setup
      */
-    ~TouchTest();
+    FLASHMEM ~TouchTest();
 };
 
 class ButtonTest {
@@ -541,27 +541,27 @@ protected:
     void operator=(const ButtonTest&) = delete;
     ButtonTest(ButtonTest&&) = delete;
 
-    void initialize_buttons();
-    void draw_buttons();
-    Buttons button_release();
-    void center_cursor_set(const std::string& str, const int16_t x, const int16_t y);
-    void center_print(const std::string& str, bool clear = true);
-    void test_lines(uint16_t color);
-    void test_rects(uint16_t color);
-    void test_circles(uint8_t radius, uint16_t color);
-    void test_triangles();
-    void display_tasks();
+    FLASHMEM void initialize_buttons();
+    FLASHMEM void draw_buttons();
+    FLASHMEM Buttons button_release();
+    FLASHMEM void center_cursor_set(const std::string& str, const int16_t x, const int16_t y);
+    FLASHMEM void center_print(const std::string& str, bool clear = true);
+    FLASHMEM void test_lines(uint16_t color);
+    FLASHMEM void test_rects(uint16_t color);
+    FLASHMEM void test_circles(uint8_t radius, uint16_t color);
+    FLASHMEM void test_triangles();
+    FLASHMEM void display_tasks();
 
-    void run();
+    FLASHMEM void run();
 
 public:
     /**
      * @brief Constructor, creates the tasks, that implement the actual functionality
      * @param[in] ctbot: Reference to CtBot instance
      */
-    ButtonTest(CtBot& ctbot);
+    FLASHMEM ButtonTest(CtBot& ctbot);
 
-    ~ButtonTest();
+    FLASHMEM ~ButtonTest();
 };
 
 } // namespace tests

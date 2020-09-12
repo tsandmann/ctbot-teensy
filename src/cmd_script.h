@@ -45,16 +45,16 @@ class CmdScript {
     CmdParser& cmd_parser_;
     std::string filename_;
 
-    bool process_script(std::function<bool(const std::string_view&)> func);
+    FLASHMEM bool process_script(std::function<bool(const std::string_view&)> func);
 
 public:
-    CmdScript(const std::string_view& filename, CommInterface& comm_interface, CmdParser& parser);
+    FLASHMEM CmdScript(const std::string_view& filename, CommInterface& comm_interface, CmdParser& parser);
 
-    bool exec_script();
+    FLASHMEM bool exec_script();
 
-    bool print_script();
+    FLASHMEM bool print_script();
 
-    bool create_script(const size_t history_depth);
+    FLASHMEM bool create_script(const size_t history_depth);
 };
 
 } // namespace ctbot

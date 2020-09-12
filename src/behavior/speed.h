@@ -135,7 +135,7 @@ public:
      *
      * @param[in] comm Reference to communication interface to use
      */
-    void print(CommInterface& comm) const;
+    FLASHMEM void print(CommInterface& comm) const;
 };
 
 } // namespace ctbot

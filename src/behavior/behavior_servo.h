@@ -44,7 +44,7 @@ public:
     static constexpr uint8_t POS_CLOSE { 10 }; // FIXME: correct value
     static constexpr uint8_t POS_OPEN { 100 }; // FIXME: correct value
 
-    BehaviorServo(uint8_t servo, uint8_t position, bool auto_stop = true);
+    FLASHMEM BehaviorServo(uint8_t servo, uint8_t position, bool auto_stop = true);
 
 protected:
     static bool active_[2];

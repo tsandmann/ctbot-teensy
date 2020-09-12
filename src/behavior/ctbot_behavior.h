@@ -57,7 +57,7 @@ class CtBotBehavior : public CtBot {
 protected:
     friend class CtBot; // allows protected constructor to enforce singleton pattern
 
-    static const char usage_text_beh[]; /**< C-String containing the usage / help message */
+    PROGMEM static const char usage_text_beh[]; /**< C-String containing the usage / help message */
 
     ResourceContainer::Ptr p_data_; /**< Top level resource container for sensor models */
     ResourceContainer::Ptr p_actuators_; /**< Top level resource container for for actuators */
@@ -74,7 +74,7 @@ protected:
      * @brief Constructor of main class
      * @note Constructor is protected to enforce singleton pattern
      */
-    CtBotBehavior();
+    FLASHMEM CtBotBehavior();
 
     /* enforce singleton */
     CtBotBehavior(const CtBotBehavior&) = delete;
@@ -86,7 +86,7 @@ protected:
      */
     virtual void run() override;
 
-    virtual void shutdown() override;
+    FLASHMEM virtual void shutdown() override;
 
     /**
      * @brief Update pose and speed based on new wheel encoder data
@@ -108,17 +108,18 @@ public:
     /**
      * @see CtBot::setup()
      */
-    virtual void setup(const bool set_ready) override;
+    FLASHMEM virtual void setup(const bool set_ready) override;
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>()> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>()> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t)> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t)> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)> initializer);
+    FLASHMEM void register_behavior(
+        const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)> initializer);
 
-    void register_behavior(
+    FLASHMEM void register_behavior(
         const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)> initializer);
 
     /**

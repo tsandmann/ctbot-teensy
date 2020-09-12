@@ -47,7 +47,7 @@ void bot_behaviour_cancel_behaviour(Behaviour_t* data);
  * @param *check        Zeiger auf die Abbruchfunktion; liefert diese True, wird das Verhalten beendet
  * @return              Zeiger auf den eigenen Verhaltensdatensatz oder NULL im Fehlerfall
  */
-Behaviour_t* bot_add_behaviour_to_cancel(Behaviour_t* caller, Behaviour_t* behaviour, uint8_t (*check)(void));
+FLASHMEM Behaviour_t* bot_add_behaviour_to_cancel(Behaviour_t* caller, Behaviour_t* behaviour, uint8_t (*check)(void));
 
 /**
  * Botenfunktion zum Deaktivieren eines Verhaltens, wenn die Abbruchbedingung erfuellt ist.
@@ -57,7 +57,7 @@ Behaviour_t* bot_add_behaviour_to_cancel(Behaviour_t* caller, Behaviour_t* behav
  * @param *check    Zeiger auf die Abbruchfunktion; liefert diese True, wird das Verhalten beendet
  * @return          Zeiger auf den eigenen Verhaltensdatensatz oder NULL im Fehlerfall
  */
-Behaviour_t* bot_cancel_behaviour(Behaviour_t* caller, BehaviourFunc_t behaviour, uint8_t (*check)(void));
+FLASHMEM Behaviour_t* bot_cancel_behaviour(Behaviour_t* caller, BehaviourFunc_t behaviour, uint8_t (*check)(void));
 
 #endif // BEHAVIOUR_CANCEL_BEHAVIOUR_AVAILABLE
 #endif // BEHAVIOUR_CANCEL_H_

@@ -79,12 +79,12 @@ public:
      * @param[in] wheel_enc: Reference to wheel encoder to use for controller input (speed)
      * @param[in] motor: Reference to motor driver to use for controller output (PWM duty cycle)
      */
-    SpeedControl(Encoder& wheel_enc, Motor& motor);
+    FLASHMEM SpeedControl(Encoder& wheel_enc, Motor& motor);
 
     /**
      * @brief Destroy the Speed Control object
      */
-    ~SpeedControl();
+    FLASHMEM ~SpeedControl();
 
     /**
      * @brief Set a new desired speed
@@ -140,7 +140,7 @@ public:
      * @param[in] ki: Integral tuning parameter
      * @param[in] kd: Derivative tuning parameter
      */
-    void set_parameters(const float kp, const float ki, const float kd);
+    FLASHMEM void set_parameters(const float kp, const float ki, const float kd);
 };
 
 } // namespace ctbot

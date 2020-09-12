@@ -59,7 +59,7 @@ public:
      * @param[in] rc5: Reference to RC5 decoder instance
      * @param[in] rc5_address: RC5 address of remote control for filtering
      */
-    RemoteControl(Rc5& rc5, const uint8_t rc5_address);
+    FLASHMEM RemoteControl(Rc5& rc5, const uint8_t rc5_address);
 
     /**
      * @brief Register a RC5 command with an action to be executed when receiving this command

@@ -16,6 +16,7 @@
 
 #include "english.h"
 
+#include "arduino_freertos.h"
 #include "AudioStream.h"
 #include "circular_buffer.h"
 #include <string>
@@ -28,9 +29,9 @@
 
 class TTS : public AudioStream {
 public:
-    TTS();
+    FLASHMEM TTS();
 
-    virtual ~TTS();
+    FLASHMEM virtual ~TTS();
 
     bool speak(const std::string_view& text, const bool block);
 
@@ -70,15 +71,15 @@ private:
 
     void audio_processing();
 
-    bool say_text(const char* text);
+    FLASHMEM bool say_text(const char* text);
 
-    bool say_phonemes(const char* phonemes);
+    FLASHMEM bool say_phonemes(const char* phonemes);
 
-    bool text_to_phonemes(const char* src, const VOCAB* vocab, char* dest) const;
+    FLASHMEM bool text_to_phonemes(const char* src, const VOCAB* vocab, char* dest) const;
 
-    bool phonemes_to_data(const char* textp, const PHONEME* phoneme);
+    FLASHMEM bool phonemes_to_data(const char* textp, const PHONEME* phoneme);
 
-    size_t copy_token(char token, char* dest, size_t x, const VOCAB* vocab) const;
+    FLASHMEM size_t copy_token(char token, char* dest, size_t x, const VOCAB* vocab) const;
 
     void play(uint8_t duration, uint8_t soundNumber);
 

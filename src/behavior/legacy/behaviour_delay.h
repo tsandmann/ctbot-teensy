@@ -73,7 +73,7 @@
  * @param ticks     Die Verzoegerungszeit in ticks
  * @return          -1 wenn was schief gelaufen ist, sonst 0
  */
-int8_t bot_delay_ticks(Behaviour_t* caller, uint16_t ticks);
+FLASHMEM int8_t bot_delay_ticks(Behaviour_t* caller, uint16_t ticks);
 
 /**
  * Verhalten fuer Delays

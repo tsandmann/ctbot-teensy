@@ -29,10 +29,9 @@
 #include "serial_connection_teensy.h"
 #include "tests.h"
 
-#include "arduino_fixed.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#include "arduino_freertos.h"
 #include "portable/teensy.h"
+
 #include <thread>
 #include <memory>
 
@@ -49,30 +48,28 @@ tests::ButtonTest* g_button_test {};
 tests::TaskWaitTest* g_wait_test {};
 } // namespace ctbot
 
-static TaskHandle_t g_audio_task {};
-
 /**
  * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
  */
-static void init_task() {
+static FLASHMEM void init_task() {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
     Timer::delay_us(CtBotConfig::BOOT_DELAY_MS * 1'000UL);
-    ::serial_puts("\r\n");
+    ::serial_puts(PSTR("\r\n"));
 
-    // ::serial_puts("init_task()");
+    // ::serial_puts(PSTR("init_task()"));
     // freertos::print_ram_usage();
 
     /* create CtBot singleton instance... */
-    // ::serial_puts("creating CtBot instance...");
+    // ::serial_puts(PSTR("creating CtBot instance..."));
     CtBot& ctbot { CtBot::get_instance() };
 
     /* initialize it... */
-    // ::serial_puts("calling ctbot.setup()...");
+    // ::serial_puts(PSTR("calling ctbot.setup()..."));
     ctbot.setup(true);
-    ::serial_puts("ctbot.setup() done.");
+    ::serial_puts(PSTR("ctbot.setup() done."));
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
@@ -113,9 +110,9 @@ static void init_task() {
     if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
         g_button_test = new tests::ButtonTest { ctbot };
         std::atexit([]() {
-            ::serial_puts("deleting g_button_test...");
+            ::serial_puts(PSTR("deleting g_button_test..."));
             delete g_button_test;
-            ::serial_puts("done.");
+            ::serial_puts(PSTR("done."));
         });
     }
 
@@ -124,34 +121,14 @@ static void init_task() {
         std::atexit([]() { delete g_wait_test; });
     }
 
-    // extern unsigned long __bss_end__; // set by linker script
-    // extern unsigned long _estack; // set by linker script
-    // Serial.print("__bss_end__=0x");
-    // Serial.println(reinterpret_cast<uintptr_t>(&__bss_end__), 16);
-    // Serial.print("_estack=0x");
-    // Serial.println(reinterpret_cast<uintptr_t>(&_estack), 16);
     freertos::print_ram_usage();
 
-
-    if (CtBotConfig::AUDIO_AVAILABLE) {
-        ctbot.get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, [&ctbot]() {
-            while (ctbot.get_ready()) {
-                ::software_isr(); // AudioStream::update_all()
-                ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
-            }
-            g_audio_task = nullptr;
-        });
-        g_audio_task = ::xTaskGetHandle("audio");
-    }
-
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
-    // ::serial_puts("deleting init task...");
+    // ::serial_puts(PSTR("deleting init task..."));
     ::vTaskDelete(nullptr);
 }
 
 extern "C" {
-void softirq_isr();
-
 /**
  * @brief Entry point for c't-Bot initialization
  *
@@ -246,20 +223,16 @@ void softirq_isr();
  * @enduml
  */
 void setup() {
-    __disable_irq();
-    _VectorsRam[80] = softirq_isr;
-
-    arduino::pinMode(13, 1); // debug LED as output
-    arduino::digitalWriteFast(13, true); // turn debug LED on
-
-    freertos::sysview_init();
+    using namespace ctbot;
+    arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
+    arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
-    free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), "INIT");
+    free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), PSTR("INIT"));
     free_rtos_std::gthr_freertos::set_next_stacksize(last);
 
-    arduino::digitalWriteFast(13, false); // turn debug LED off
+    arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
 
     ::vTaskStartScheduler();
 
@@ -293,38 +266,6 @@ int _write(int, char* ptr, int len) {
         const auto n { arduino::Serial.write(reinterpret_cast<uint8_t*>(ptr), len) };
         arduino::Serial.flush();
         return n;
-    }
-}
-
-/**
- * @brief Hard fault - blink four short flash every two seconds
- */
-void hard_fault_isr() {
-    freertos::error_blink(4);
-}
-
-/**
- * @brief Bus fault - blink five short flashes every two seconds
- */
-void bus_fault_isr() {
-    freertos::error_blink(5);
-}
-
-/**
- * @brief Usage fault - blink six short flashes every two seconds
- */
-void usage_fault_isr() {
-    freertos::error_blink(6);
-}
-
-void softirq_isr() {
-    if (ctbot::CtBotConfig::AUDIO_AVAILABLE) {
-        freertos::trace_isr_enter();
-        if (g_audio_task) {
-            ::xTaskNotifyFromISR(g_audio_task, 0, eNoAction, nullptr);
-            portYIELD_FROM_ISR(true);
-        }
-        freertos::trace_isr_exit();
     }
 }
 

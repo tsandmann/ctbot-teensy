@@ -27,7 +27,7 @@
 
 #include "Adafruit_ILI9341.h"
 #include "XPT2046_Touchscreen.h"
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 
 namespace ctbot {
@@ -134,8 +134,10 @@ uint8_t TFTDisplay::print(const std::string& str, bool clear) const {
     return p_display_->Print::write(str.data(), str.length());
 }
 
-uint8_t TFTDisplay::print(std::unique_ptr<std::string>&& p_str, bool clear) const {
-    return print(*p_str, clear);
+uint8_t TFTDisplay::print(const std::string* p_str, bool clear) const {
+    const auto ret { print(*p_str, clear) };
+    delete p_str;
+    return ret;
 }
 
 int16_t TFTDisplay::get_cursor_x() const {

@@ -25,8 +25,12 @@
 #pragma once
 
 #include "circular_buffer.h"
+#include "memory_pool.hpp"
+#include "static_allocator.hpp"
+#include "namespace_alias.hpp"
 
 #include <cstdint>
+#include <array>
 #include <string>
 #include <string_view>
 #include <memory>
@@ -56,6 +60,7 @@ protected:
 
     static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
     static constexpr size_t OUTPUT_QUEUE_SIZE { 64 }; /**< Size of output queue in number of elements */
+    static constexpr size_t BUFFER_CHUNK_SIZE { 4 };
     static constexpr uint16_t INPUT_TASK_PERIOD_MS { 50 }; /**< Scheduling period of input task in ms */
     static constexpr uint8_t INPUT_TASK_PRIORITY { 2 }; /**< Priority of input task */
     static constexpr uint32_t INPUT_TASK_STACK_SIZE { 1536 }; /**< stack size of input task */
@@ -64,10 +69,13 @@ protected:
     static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 1024 }; /**< stack size of output task */
 
     struct OutBufferElement {
+        const std::string* p_str_;
         char character_;
-        std::unique_ptr<std::string> p_str_;
-    };
+    } __attribute__((packed));
 
+    DMAMEM static memory::static_allocator_storage<INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) + 16> buffer_storage_;
+    using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
+    static static_pool_t mem_pool_;
 
     SerialConnectionTeensy& io_;
     bool echo_;
@@ -76,7 +84,7 @@ protected:
     CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> output_queue_;
     uint16_t input_task_;
     uint16_t output_task_;
-    char input_buffer_[INPUT_BUFFER_SIZE]; // FIXME: std::array?
+    std::array<char, INPUT_BUFFER_SIZE>* p_input_buffer_;
 
     /**
      * @brief Worker task implementation that processes incoming data
@@ -86,21 +94,21 @@ protected:
 
     void run_output();
 
-    size_t queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block);
+    FLASHMEM size_t queue_debug_msg(const char c, const std::string* p_str, const bool block);
 
-    static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
+    FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
-    static std::unique_ptr<std::string> create_formatted_string(const size_t size, const char* format, ...);
+    FLASHMEM static std::string* create_formatted_string(const size_t size, const char* format, ...);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
     template <typename... Args>
-    static auto string_format(const char* format, const Args&... args) {
+    FLASHMEM static std::string* string_format(const char* format, const Args&... args) {
         const auto size { get_format_size(format, args...) + 1 };
         if (size > 0) {
             return create_formatted_string(size, format, args...);
         } else {
-            return std::unique_ptr<std::string> {};
+            return nullptr;
         }
     }
 #pragma GCC diagnostic pop
@@ -130,12 +138,12 @@ public:
      * @param[in] io_connection: Reference to SerialConnection to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo = false);
+    FLASHMEM CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterface object
      */
-    virtual ~CommInterface();
+    FLASHMEM virtual ~CommInterface();
 
     /**
      * @return Current character echo mode setting
@@ -163,7 +171,7 @@ public:
      * @param[in] value: true to activate character echo on console, false otherwise
      * @note Pure virtual method, override for specialized implementations
      */
-    virtual void set_echo(bool value) = 0;
+    FLASHMEM virtual void set_echo(bool value) = 0;
 
     void set_color(const Color fg, const Color bg);
 
@@ -175,7 +183,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(const char c, const bool block) {
+    FLASHMEM size_t debug_print(const char c, const bool block) {
         return queue_debug_msg(c, nullptr, block);
     }
 
@@ -185,15 +193,15 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(const char* str, const bool block);
+    FLASHMEM size_t debug_print(const char* str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
-     * @param[in] p_str: Message as std::unique_ptr of std::string
+     * @param[in] p_str: Message as pointer to std::string, memory will be released after print
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(std::unique_ptr<std::string>&& p_str, const bool block);
+    FLASHMEM size_t debug_print(const std::string* p_str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -201,7 +209,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(const std::string& str, const bool block);
+    FLASHMEM size_t debug_print(const std::string& str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -209,7 +217,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(std::string&& str, const bool block);
+    FLASHMEM size_t debug_print(std::string&& str, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -217,7 +225,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    size_t debug_print(const std::string_view& str, const bool block);
+    FLASHMEM size_t debug_print(const std::string_view& str, const bool block);
 
     /**
      * @brief Write an integer or float out to SerialConnection
@@ -227,7 +235,7 @@ public:
      * @return Number of characters written
      */
     template <typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
-    size_t debug_print(const T v, const bool block) {
+    FLASHMEM size_t debug_print(const T v, const bool block) {
         return debug_print(std::to_string(v), block);
     }
 
@@ -239,14 +247,14 @@ public:
      * @return Number of characters written
      */
     template <bool BLOCK = false, typename... Args>
-    size_t debug_printf(const char* format, const Args&... args) {
+    FLASHMEM size_t debug_printf(const char* format, const Args&... args) {
         return debug_print(string_format(format, args...), BLOCK);
     }
 
     /**
      * @brief Wait for any outstanding transmission on the serial connection to complete
      */
-    void flush();
+    FLASHMEM void flush();
 };
 
 
@@ -269,10 +277,10 @@ protected:
      * @details The incoming data is parsed with the associated CmdParser and
      * registered commands are executed accordingly.
      */
-    virtual void run_input() override;
+    FLASHMEM virtual void run_input() override;
 
-    void clear_line();
-    void update_line(const std::string_view& line);
+    FLASHMEM void clear_line();
+    FLASHMEM void update_line(const std::string_view& line);
 
 public:
     /**
@@ -281,7 +289,7 @@ public:
      * @param[in] parser: Reference to CmdParser to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo = false);
+    FLASHMEM CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterfaceCmdParser object
