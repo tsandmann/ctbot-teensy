@@ -148,7 +148,7 @@ public:
     static constexpr uint8_t SERVO_2_PIN { 255 }; /**< Pin number of servo 2 pwm signal */
 
     /* audio output channels */
-    static constexpr uint8_t AUDIO_CHANNELS { 2 };
+    static constexpr uint8_t AUDIO_CHANNELS { 1 };
 
     /* lcd */
     static constexpr uint8_t LCD_I2C_BUS { 0 }; /**< Number of I2C bus to use for lcd controller */
