@@ -186,9 +186,9 @@ public:
 
     void reset_update_states();
 
-    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
+    void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
 
-    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func) {
+    void register_listener(std::function<void(const ResourceContainer&)> func) {
         register_listener(func, nullptr);
     }
 
