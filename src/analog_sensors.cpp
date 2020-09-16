@@ -54,7 +54,7 @@ void AnalogSensors::update() {
     ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
     border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
     border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
-    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 8)
+    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 16)
         * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / static_cast<float>((1 << BAT_ADC_RES) - 1));
 }
 
