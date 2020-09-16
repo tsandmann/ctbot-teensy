@@ -107,8 +107,8 @@ const int legacy::MAX_PILLAR_DISTANCE { 300 };
 
 const int16_t legacy::BOT_SPEED_IGNORE { 9'999 }; /**< wird verwendet um einen Eintrag zu ignorieren */
 const int16_t legacy::BOT_SPEED_STOP { 0 }; /**< Motor aus */
-const int16_t legacy::BOT_SPEED_MIN { 10 }; /**< langsamste Fahrt in mm/s */
-const int16_t legacy::BOT_SPEED_SLOW { 30 }; /**< langsame Fahrt in mm/s */
+const int16_t legacy::BOT_SPEED_MIN { 32 }; /**< langsamste Fahrt in mm/s */
+const int16_t legacy::BOT_SPEED_SLOW { 50 }; /**< langsame Fahrt in mm/s */
 const int16_t legacy::BOT_SPEED_FOLLOW { 70 }; /**< vorsichtige Fahrt, fuer Folgeverhalten in mm/s */
 const int16_t legacy::BOT_SPEED_MEDIUM { 100 }; /**< mittlere Fahrt in mm/s */
 const int16_t legacy::BOT_SPEED_NORMAL { 150 }; /**< normale Fahrt in mm/s  */
@@ -208,7 +208,8 @@ legacy::BehaviourFunc_t bot_servo_behaviour = legacy_abort_helper;
  * @param[in] maxspeed  maximale Drehgeschwindigkeit [mm/s]
  */
 legacy::Behaviour_t* bot_turn_speed_wrapper(legacy::Behaviour_t* caller, int16_t degrees, int16_t minspeed, int16_t maxspeed) {
-    return BehaviorLegacy::get_instance()->call<BehaviorTurn>(caller, degrees, minspeed, maxspeed);
+    return BehaviorLegacy::get_instance()->call<BehaviorTurn>(
+        caller, degrees, (100.f / legacy::BOT_SPEED_MAX) * minspeed, (100.f / legacy::BOT_SPEED_MAX) * maxspeed);
 }
 
 /**
@@ -216,7 +217,7 @@ legacy::Behaviour_t* bot_turn_speed_wrapper(legacy::Behaviour_t* caller, int16_t
  * @param degrees   Grad, um die der Bot gedreht wird zwischen -360 und +360. Negative Zahlen drehen im (mathematisch negativen) Uhrzeigersinn.
  */
 legacy::Behaviour_t* bot_turn_wrapper(legacy::Behaviour_t* caller, int16_t degrees) {
-    return bot_turn_speed_wrapper(caller, degrees, 8, 38);
+    return bot_turn_speed_wrapper(caller, degrees, legacy::BOT_SPEED_MIN, legacy::BOT_SPEED_SLOW);
 }
 
 /**
@@ -225,7 +226,7 @@ legacy::Behaviour_t* bot_turn_wrapper(legacy::Behaviour_t* caller, int16_t degre
  * @param speed     maximale Drehgeschwindigkeit [mm/s]
  */
 legacy::Behaviour_t* bot_turn_maxspeed_wrapper(legacy::Behaviour_t* caller, int16_t degrees, int16_t speed) {
-    return bot_turn_speed_wrapper(caller, degrees, 8, speed);
+    return bot_turn_speed_wrapper(caller, degrees, legacy::BOT_SPEED_MIN, speed);
 }
 
 #ifndef BEHAVIOUR_TURN_AVAILABLE
