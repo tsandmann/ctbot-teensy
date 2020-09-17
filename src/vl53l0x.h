@@ -60,6 +60,8 @@
 namespace ctbot {
 class VL53L0X {
     static constexpr bool DEBUG_ { false };
+    static constexpr uint16_t MIN_DISTANCE_ { 40 }; // mm
+    static constexpr uint16_t MAX_DISTANCE_ { 900 }; // mm
 
     struct SequenceStepEnables {
         bool tcc, msrc, dss, pre_range, final_range;

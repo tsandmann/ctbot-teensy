@@ -628,7 +628,7 @@ bool VL53L0X::get_dist_range(uint16_t& range_mm) const {
         if (data & 7) {
             uint16_t mm;
             if (!i2c_.read_reg16(static_cast<uint8_t>(RESULT_RANGE_STATUS_REG + 10), mm)) {
-                range_mm = mm < 900 ? mm : 9999;
+                range_mm = mm >= MIN_DISTANCE_ && mm <= MAX_DISTANCE_ ? mm : 9999;
             } else if (DEBUG_) {
                 CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_dist_range(): i2c error 2\r\n", true);
             }
