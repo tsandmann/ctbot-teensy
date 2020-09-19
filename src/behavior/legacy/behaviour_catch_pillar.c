@@ -35,6 +35,7 @@
     3 /**< Version 1: Altes Verfahren; Version 2: Ermittlung der Objektkoordinaten mit measure_distance(); Version 3: Ermittlung der Objektkoordinaten aus dem \
          Drehwinkel */
 #define OBJECT_WIDTH 30
+#define BEAM_WIDTH 4.f
 
 #define DEBUG_CATCH_PILLAR
 
@@ -68,6 +69,10 @@ static uint8_t unload_pillar_state = START; /**< Statusvariable fuer das Auslade
 #define CATCH_PILLAR_VERSION 1
 #endif
 
+#ifdef PC
+#undef BEAM_WIDTH
+#define BEAM_WIDTH 1.5f
+#endif
 
 #if CATCH_PILLAR_VERSION == 1
 
@@ -362,8 +367,6 @@ void bot_catch_pillar(Behaviour_t* caller) {
 }
 
 #elif CATCH_PILLAR_VERSION == 3
-
-#define BEAM_WIDTH 4.f
 
 #define OBJECT_FOUND 5
 #define OPEN_DOOR 6
