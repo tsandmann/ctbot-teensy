@@ -70,6 +70,7 @@ static FLASHMEM void init_task() {
     // ::serial_puts(PSTR("calling ctbot.setup()..."));
     ctbot.setup(true);
     ::serial_puts(PSTR("ctbot.setup() done."));
+    ::serial_puts(PSTR("running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\n\r"));
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
@@ -122,6 +123,7 @@ static FLASHMEM void init_task() {
     }
 
     freertos::print_ram_usage();
+    ::serial_puts(PSTR(""));
 
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
     // ::serial_puts(PSTR("deleting init task..."));
