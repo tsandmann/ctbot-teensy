@@ -67,8 +67,10 @@ static constexpr arduino::Stream& get_serial_port(const uint8_t serial_port) {
         return arduino::Serial6;
     } else if (serial_port == 7) {
         return arduino::Serial7;
+#ifdef ARDUINO_TEENSY41
     } else if (serial_port == 8) {
         return arduino::Serial8;
+#endif
     } else {
         return arduino::Serial;
     }
