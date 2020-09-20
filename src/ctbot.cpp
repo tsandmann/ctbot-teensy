@@ -248,7 +248,7 @@ void CtBot::setup(const bool set_ready) {
 
         ::attachInterruptVector(IRQ_SOFTWARE, []() {
             if (ctbot::CtBotConfig::AUDIO_AVAILABLE && audio_task_) {
-                ::xTaskNotifyFromISR(audio_task_, 0, eNoAction, nullptr);
+                ::xTaskNotifyIndexedFromISR(audio_task_, 1, 0, eNoAction, nullptr);
                 portYIELD_FROM_ISR(true);
             }
         });
@@ -256,7 +256,7 @@ void CtBot::setup(const bool set_ready) {
 
         get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, [this]() {
             while (get_ready()) {
-                ::xTaskNotifyWait(0, 0, nullptr, portMAX_DELAY);
+                ::xTaskNotifyWaitIndexed(1, 0, 0, nullptr, portMAX_DELAY);
                 ::software_isr(); // AudioStream::update_all()
             }
             if (shutdown_) {
