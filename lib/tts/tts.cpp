@@ -22,8 +22,7 @@
 #include <thread>
 
 
-TTS::TTS()
-    : AudioStream(0, nullptr), default_pitch_ { 4 }, task_running_ { true }, text_queue_ { nullptr }, out_queue_ { nullptr }, buffer_ {}, last_sample_ {} {
+TTS::TTS() : AudioStream(0, nullptr), default_pitch_ { 4 }, task_running_ { true }, text_queue_ {}, out_queue_ {}, buffer_ {}, last_sample_ {} {
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(TTS_TASK_STACK_SIZE) };
     task_handle_ = new std::thread([this]() { audio_processing(); });
     free_rtos_std::gthr_freertos::set_next_stacksize(last);

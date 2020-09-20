@@ -52,6 +52,8 @@ public:
         }
     }
 
+    explicit CircularBuffer() : CircularBuffer { nullptr } {}
+
     ~CircularBuffer() {
         if (mem_allocated_) {
             delete p_buf_;
