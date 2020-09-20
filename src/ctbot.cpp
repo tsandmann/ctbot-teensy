@@ -231,6 +231,11 @@ void CtBot::setup(const bool set_ready) {
             p_audio_mixer_.push_back(new AudioMixer4);
             configASSERT(*p_audio_mixer_.rbegin());
         }
+        for (auto& e : p_audio_mixer_) {
+            e->gain(0, 0.1f);
+            e->gain(1, 0.1f);
+            e->gain(2, 0.1f);
+        }
 
         for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
             p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, i, *p_audio_mixer_[i], 0 });
@@ -678,9 +683,16 @@ void CtBot::init_parser() {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
                 return play_wav(args.substr(s, e - s));
-            } else if (args.find("stop") == 0) {
-                p_play_wav_->stop();
+            } else if (args.find("on") == 0) {
+                get_ena()->on(EnaI2cTypes::AUDIO);
+                using namespace std::chrono_literals;
+                std::this_thread::sleep_for(1'500ms);
+            } else if (args.find("off") == 0) {
                 get_ena()->off(EnaI2cTypes::AUDIO);
+                p_play_wav_->stop();
+                if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+                    p_audio_sine_->frequency(0.f);
+                }
             } else if (args.find("vol") == 0) {
                 const auto n { args.find(' ') };
                 if (n == args.npos) {
@@ -704,7 +716,6 @@ void CtBot::init_parser() {
 
                 const size_t s { args.find(' ') };
                 if (s != args.npos) {
-                    get_ena()->on(EnaI2cTypes::AUDIO);
                     return p_tts_->speak(args.substr(s + 1), true);
                 }
             } else if (CtBotConfig::AUDIO_TEST_AVAILABLE && args.find("sine") == 0) {
@@ -713,11 +724,7 @@ void CtBot::init_parser() {
                     return false;
                 }
                 const float freq { std::strtof(args.data() + n, nullptr) };
-                get_ena()->on(EnaI2cTypes::AUDIO);
                 p_audio_sine_->frequency(freq);
-                if (freq <= 0.f) {
-                    get_ena()->off(EnaI2cTypes::AUDIO);
-                }
             } else {
                 return false;
             }
@@ -980,16 +987,12 @@ bool CtBot::play_wav(const std::string_view& filename) {
             return false;
         }
 
-        get_ena()->on(EnaI2cTypes::AUDIO);
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(200ms);
         const std::string file { filename.substr(str_begin) };
         const bool res { p_play_wav_->play(file.c_str()) };
 
         if (res) {
             p_comm_->debug_printf<false>(PP_ARGS("CtBot::play_wav(): Playing file \"{s}\"\r\n", file.c_str()));
         } else {
-            get_ena()->off(EnaI2cTypes::AUDIO);
             p_comm_->debug_printf<false>(PP_ARGS("CtBot::play_wav(): File \"{s}\" not found\r\n", file.c_str()));
         }
 
