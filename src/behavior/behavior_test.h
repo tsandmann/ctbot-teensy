@@ -52,7 +52,7 @@ protected:
     FLASHMEM virtual void run() override;
 
 private:
-    static PROGMEM const Registry reg_;
+    static const Registry reg_;
     uint8_t mode_;
 };
 

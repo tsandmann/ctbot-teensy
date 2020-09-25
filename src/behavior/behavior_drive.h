@@ -58,7 +58,7 @@ private:
     static constexpr int16_t SPEED { 20 };
     static constexpr uint32_t STACK_SIZE { 2048 };
 
-    static PROGMEM const Registry reg_;
+    static const Registry reg_;
 
     enum class State : uint8_t {
         DRIVE,

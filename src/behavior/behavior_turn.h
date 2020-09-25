@@ -62,7 +62,7 @@ private:
     static constexpr bool DEBUG_ { true };
     static constexpr uint32_t STACK_SIZE { 4096 };
 
-    static PROGMEM const Registry reg_;
+    static const Registry reg_;
 
     enum class State : uint8_t {
         TURN,

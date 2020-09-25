@@ -128,7 +128,7 @@ protected:
     }
 
     template <bool ENABLED = true, typename... Args>
-    FLASHMEM auto debug_print(Args... args) const {
+    __attribute__((section(".flashmem.template"))) auto debug_print(Args... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_print(args..., false);
         } else {

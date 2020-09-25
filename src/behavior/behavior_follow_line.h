@@ -71,7 +71,7 @@ private:
     static constexpr int16_t SPEED_ON_LINE { 10 }; /**< max. speed in percentage terms for wheels, if bot is drivin on the line */
     static constexpr int16_t SPEED_OFF_LINE { 20 }; /**< max. speed in percentage terms for wheels, if bot is drivin next to the line */
 
-    static PROGMEM const Registry reg_; /**< helper object for global behavior registry */
+    static const Registry reg_; /**< helper object for global behavior registry */
 
     int16_t last_speed_l_, last_speed_r_;
 };
