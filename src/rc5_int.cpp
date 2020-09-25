@@ -75,9 +75,9 @@ bool Rc5::update() {
     if (diff_rc5) {
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_print("\r\ndiff_rc5=", false);
+            ctbot.get_comm()->debug_print(PSTR("\r\ndiff_rc5="), false);
             ctbot.get_comm()->debug_print(diff_rc5, false);
-            ctbot.get_comm()->debug_print("\r\n", false);
+            ctbot.get_comm()->debug_print(PSTR("\r\n"), false);
         }
 
         for (auto i { last_idx_ }; i != idx; i = (i + 1) % DATA_ARRAY_SIZE) {

@@ -97,7 +97,7 @@ protected:
      */
     bool update_enc(Pose& pose, Speed& speed);
 
-    void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
+    FLASHMEM void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
 
 public:
     /**
@@ -148,15 +148,6 @@ public:
         return p_actuators_.get();
     }
 
-    void wait_for_model_update(std::atomic<bool>& abort) {
-        using namespace std::chrono_literals;
-
-        std::unique_lock<std::mutex> lk(model_mutex_);
-        while (model_cond_.wait_for(lk, 10ms) == std::cv_status::timeout) {
-            if (abort) {
-                return;
-            }
-        }
-    }
+    FLASHMEM void wait_for_model_update(std::atomic<bool>& abort);
 };
 } // namespace ctbot

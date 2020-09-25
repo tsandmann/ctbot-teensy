@@ -38,7 +38,7 @@ RemoteControl::RemoteControl(Rc5& rc5, uint8_t rc5_address)
     register_cmd(0x35 /* play */, [this](uint8_t) {
         /* Hello World */
         CtBot* const p_ctbot { &CtBot::get_instance() };
-        p_ctbot->get_comm()->debug_printf<false>("Hello World!\r\naddr_=0x%x\r\n", addr_);
+        p_ctbot->get_comm()->debug_printf<false>(PSTR("Hello World!\r\naddr_=0x%x\r\n"), addr_);
         return true;
     });
 

@@ -54,7 +54,7 @@ public:
     static constexpr bool TFT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate TFT test */
     static constexpr bool TOUCH_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen test */
     static constexpr bool BUTTON_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen button test */
-    static constexpr bool AUDIO_TEST_AVAILABLE { true }; /**< Statically activate or deactivate audio sine wave test */
+    static constexpr bool AUDIO_TEST_AVAILABLE { false }; /**< Statically activate or deactivate audio sine wave test */
 
     /* features/modules available */
     static constexpr bool LCD_AVAILABLE { false }; /**< Statically activate or deactivate LC display */
@@ -74,7 +74,7 @@ public:
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
     static constexpr uint8_t UART_WIFI_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart to WiFi */
     static constexpr uint8_t UART_WIFI_PIN_TX { 35 }; /**< Number of pin to use for TX line for Uart to WiFi */
-    static constexpr uint32_t UART_WIFI_BAUDRATE { 2'000'000 }; /**< Baud rate used for Uart to WiFi */
+    static constexpr uint32_t UART_WIFI_BAUDRATE { 1'000'000 }; /**< Baud rate used for Uart to WiFi */
     static constexpr uint8_t UART_FOR_CMD { 0 }; /**< Number of UART to use for command line interface */
 
     /* i2c */

@@ -53,11 +53,11 @@ CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_
         p_input_ = p_input_buffer_->begin();
 
         input_task_ = CtBot::get_instance().get_scheduler()->task_add(
-            "commIN", INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
+            PSTR("commIN"), INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
     }
 
     output_task_ = CtBot::get_instance().get_scheduler()->task_add(
-        "commOUT", OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
+        PSTR("commOUT"), OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
 }
 
 CommInterface::~CommInterface() {
@@ -100,11 +100,11 @@ std::string* CommInterface::create_formatted_string(const size_t size, const cha
 }
 
 void CommInterface::set_color(const Color fg, const Color bg) {
-    debug_printf<true>("\x1b[%u;%um", static_cast<uint16_t>(fg) + 30, static_cast<uint16_t>(bg) + 40);
+    debug_printf<true>(PSTR("\x1b[%u;%um"), static_cast<uint16_t>(fg) + 30, static_cast<uint16_t>(bg) + 40);
 }
 
 void CommInterface::set_attribute(const Attribute a) {
-    debug_printf<true>("\x1b[%um", static_cast<uint16_t>(a));
+    debug_printf<true>(PSTR("\x1b[%um"), static_cast<uint16_t>(a));
 }
 
 size_t CommInterface::debug_print(const char* str, const bool block) {
@@ -185,7 +185,7 @@ void CommInterfaceCmdParser::run_input() {
             }
             *p_input_ = 0;
             if (echo_) {
-                io_.send("\r\n", 2);
+                io_.send(PSTR("\r\n"), 2);
             }
             const std::string_view str { p_input_buffer_->begin(), static_cast<size_t>(p_input_ - p_input_buffer_->begin()) };
             cmd_parser_.parse(str, *this);
@@ -197,7 +197,7 @@ void CommInterfaceCmdParser::run_input() {
             if (p_input_ > p_input_buffer_->begin()) {
                 --p_input_;
                 if (echo_) {
-                    const char tmp[] { "\b \b" };
+                    const char tmp[] { PSTR("\b \b") };
                     io_.send(tmp, sizeof(tmp) - 1);
                 }
             }

@@ -37,7 +37,7 @@ namespace ctbot {
 
 decltype(BehaviorTest::reg_) BehaviorTest::reg_ { "test", []() { return INIT<BehaviorTest>(); } };
 
-BehaviorTest::BehaviorTest() : Behavior { "TestBeh" }, mode_ {} {}
+BehaviorTest::BehaviorTest() : Behavior { PSTR("TestBeh") }, mode_ {} {}
 
 void BehaviorTest::run() {
     using namespace std::chrono_literals;

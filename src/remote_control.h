@@ -66,7 +66,7 @@ public:
      * @param[in] cmd: RC5 command to register an action for
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const uint8_t cmd, func_t&& func);
+    FLASHMEM void register_cmd(const uint8_t cmd, func_t&& func);
 
     /**
      * @brief Check for new RC5 data and execute a registered handler for a received command (if any)

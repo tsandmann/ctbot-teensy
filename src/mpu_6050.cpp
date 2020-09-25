@@ -41,41 +41,41 @@ MPU6050::MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i
 
 bool MPU6050::begin() {
     if (!i2c_.init()) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): i2c_.init() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): i2c_.init() failed.\r\n"), true);
         return false;
     }
 
     if (i2c_.write_reg8(PWR_MGMT_1_REG, 1 << 7)) { // reset sensor
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(PWR_MGMT_1_REG, 0x80) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(PWR_MGMT_1_REG, 0x80) failed.\r\n"), true);
         return false;
     }
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(100ms);
     if (i2c_.write_reg8(SIGNAL_PATH_RESET_REG, 7)) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(SIGNAL_PATH_RESET_REG, 7) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(SIGNAL_PATH_RESET_REG, 7) failed.\r\n"), true);
         return false;
     }
     std::this_thread::sleep_for(100ms);
     if (i2c_.write_reg8(PWR_MGMT_1_REG, 1)) { // clk source
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(PWR_MGMT_1_REG, 1) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(PWR_MGMT_1_REG, 1) failed.\r\n"), true);
         return false;
     }
     std::this_thread::sleep_for(100ms);
 
     if (i2c_.write_reg8(SMPLRT_DIV_REG, 0)) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(SMPLRT_DIV_REG, 0) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(SMPLRT_DIV_REG, 0) failed.\r\n"), true);
         return false;
     }
     if (i2c_.write_reg8(CONFIG_REG, 0)) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(CONFIG_REG, 0) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(CONFIG_REG, 0) failed.\r\n"), true);
         return false;
     }
     if (i2c_.write_reg8(GYRO_CONFIG_REG, 8)) { // FIXME: check value
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(GYRO_CONFIG_REG, 8) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(GYRO_CONFIG_REG, 8) failed.\r\n"), true);
         return false;
     }
     if (i2c_.write_reg8(ACCEL_CONFIG_REG, 0)) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::begin(): write(ACCEL_CONFIG_REG, 0) failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::begin(): write(ACCEL_CONFIG_REG, 0) failed.\r\n"), true);
         return false;
     }
 
@@ -91,7 +91,7 @@ bool MPU6050::begin() {
 
 bool MPU6050::calc_gyro_offset(const bool debug_out) {
     if (debug_out) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::calc_gyro_offset(): Calculating gyro offsets... DO NOT MOVE SENSOR\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::calc_gyro_offset(): Calculating gyro offsets... DO NOT MOVE SENSOR\r\n"), true);
     }
 
     float x {}, y {}, z {};
@@ -101,7 +101,7 @@ bool MPU6050::calc_gyro_offset(const bool debug_out) {
         }
         std::array<uint8_t, 6> buf;
         if (i2c_.read_bytes(GYRO_XOUT_H_REG, buf.data(), buf.size())) {
-            CtBot::get_instance().get_comm()->debug_print("\r\nMPU6050::calc_gyro_offset(): i2c error\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("\r\nMPU6050::calc_gyro_offset(): i2c error\r\n"), true);
             return false;
         }
 
@@ -132,7 +132,7 @@ bool MPU6050::calc_gyro_offset(const bool debug_out) {
 bool MPU6050::update_gyro() {
     std::array<uint8_t, 6> buf;
     if (i2c_.read_bytes(GYRO_XOUT_H_REG, buf.data(), buf.size())) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::update_gyro(): i2c error\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::update_gyro(): i2c error\r\n"), true);
         return false;
     }
     using namespace std::chrono;
@@ -170,7 +170,7 @@ bool MPU6050::update_gyro() {
 bool MPU6050::update_acc() {
     std::array<uint8_t, 6> buf;
     if (i2c_.read_bytes(ACCEL_XOUT_H_REG, buf.data(), buf.size())) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::update_acc(): i2c error\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::update_acc(): i2c error\r\n"), true);
         return false;
     }
     const int16_t raw_x { static_cast<int16_t>(buf[0] << 8 | buf[1]) };
@@ -190,7 +190,7 @@ bool MPU6050::update_acc() {
 bool MPU6050::update_temp() {
     std::array<uint8_t, 2> buf;
     if (i2c_.read_bytes(TEMP_H_REG, buf.data(), buf.size())) {
-        CtBot::get_instance().get_comm()->debug_print("MPU6050::update_temp(): i2c error\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("MPU6050::update_temp(): i2c error\r\n"), true);
         return false;
     }
 

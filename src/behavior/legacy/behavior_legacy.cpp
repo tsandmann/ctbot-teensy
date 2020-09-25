@@ -251,7 +251,7 @@ legacy::BehaviourFunc_t bot_drive_square_behaviour = legacy_abort_helper;
 
 legacy::Behaviour_t* bot_follow_line_wrapper(legacy::Behaviour_t* caller, uint8_t search) {
     if (search) {
-        legacy::log_error("bot_follow_line_wrapper(): search not implemented.");
+        legacy::log_error(PSTR("bot_follow_line_wrapper(): search not implemented."));
     }
     return BehaviorLegacy::get_instance()->call<BehaviorFollowLine>(caller);
 }
@@ -324,7 +324,7 @@ FLASHMEM uint8_t display_puts(const char* text) {
 FLASHMEM size_t log_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    const auto n { BehaviorLegacy::print_log("ERROR: ", BehaviorLegacy::length_helper("ERROR: "), format, args) };
+    const auto n { BehaviorLegacy::print_log(PSTR("ERROR: "), BehaviorLegacy::length_helper("ERROR: "), format, args) };
     va_end(args);
     return n;
 }
@@ -332,7 +332,7 @@ FLASHMEM size_t log_error(const char* format, ...) {
 FLASHMEM size_t log_info(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    const auto n { BehaviorLegacy::print_log("INFO: ", BehaviorLegacy::length_helper("INFO: "), format, args) };
+    const auto n { BehaviorLegacy::print_log(PSTR("INFO: "), BehaviorLegacy::length_helper("INFO: "), format, args) };
     va_end(args);
     return n;
 }
@@ -341,7 +341,7 @@ FLASHMEM size_t log_debug(const char* format, ...) {
     if (BehaviorLegacy::GET_DEBUG()) {
         va_list args;
         va_start(args, format);
-        const auto n { BehaviorLegacy::print_log("DEBUG: ", BehaviorLegacy::length_helper("DEBUG: "), format, args) };
+        const auto n { BehaviorLegacy::print_log(PSTR("DEBUG: "), BehaviorLegacy::length_helper("DEBUG: "), format, args) };
         va_end(args);
         return n;
     } else {
@@ -374,7 +374,7 @@ BehaviorLegacy::BehaviorLegacy(const std::string& name)
 }
 
 BehaviorLegacy::~BehaviorLegacy() {
-    debug_print<DEBUG_>("BehaviorLegacy::~BehaviorLegacy().\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacy::~BehaviorLegacy().\r\n"));
     // debug_flush<DEBUG_>();
 
     abort_beh();
@@ -390,7 +390,7 @@ BehaviorLegacy::~BehaviorLegacy() {
 
 void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
     if (!data->caller) {
-        debug_print<DEBUG_>("BehaviorLegacy::legacy_caller_behaviour(): no caller found, abort.\r\n");
+        debug_print<DEBUG_>(PSTR("BehaviorLegacy::legacy_caller_behaviour(): no caller found, abort.\r\n"));
         // debug_flush<DEBUG_>();
 
         running_ = false;
@@ -400,7 +400,7 @@ void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
 
     const auto it { called_behaviors_.find(data->caller) };
     if (it == called_behaviors_.end()) {
-        debug_print<DEBUG_>("BehaviorLegacy::legacy_caller_behaviour(): no behavior with valid caller found, abort.\r\n");
+        debug_print<DEBUG_>(PSTR("BehaviorLegacy::legacy_caller_behaviour(): no behavior with valid caller found, abort.\r\n"));
         // debug_flush<DEBUG_>();
 
         running_ = false;
@@ -439,12 +439,12 @@ void BehaviorLegacy::abort_behavior(legacy::Behaviour_t* caller) {
         called_behaviors_[caller]->abort_beh();
     }
 
-    debug_print<DEBUG_>("BehaviorLegacy::abort_behavior() done.\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacy::abort_behavior() done.\r\n"));
     // debug_flush<DEBUG_>();
 }
 
 void BehaviorLegacy::run() {
-    debug_print<DEBUG_>("BehaviorLegacy::run().\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacy::run().\r\n"));
     // debug_flush<DEBUG_>();
 
     while (!finished() && get_ctbot()->get_ready()) {
@@ -469,7 +469,7 @@ void BehaviorLegacy::run() {
         // set_priority(max_active_priority_); // FIXME: set_priority() not implemented yet
     }
 
-    debug_print<DEBUG_>("BehaviorLegacy::run(): finished.\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacy::run(): finished.\r\n"));
     // debug_flush<DEBUG_>();
 
     exit();
@@ -477,8 +477,8 @@ void BehaviorLegacy::run() {
 
 void BehaviorLegacy::init() noexcept {
     p_sensors_ = CtBotBehavior::get_instance().get_sensors();
-    p_pose_ = CtBotBehavior::get_instance().get_data()->get_res_ptr<Pose>("model.pose_enc");
-    p_speed_ = CtBotBehavior::get_instance().get_data()->get_res_ptr<Speed>("model.speed_enc");
+    p_pose_ = CtBotBehavior::get_instance().get_data()->get_res_ptr<Pose>(PSTR("model.pose_enc"));
+    p_speed_ = CtBotBehavior::get_instance().get_data()->get_res_ptr<Speed>(PSTR("model.speed_enc"));
 }
 
 void BehaviorLegacy::update_global_data() noexcept {
@@ -675,7 +675,7 @@ void BehaviorLegacy::bot_behave_init() noexcept {
     insert_behavior_to_list(new_behavior(32, legacy::bot_scan_beacons_behaviour, BEHAVIOUR_INACTIVE));
 #endif
 
-    debug_print<DEBUG_>("BehaviorLegacy::bot_behave_init() done.\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacy::bot_behave_init() done.\r\n"));
 }
 
 legacy::Behaviour_t* BehaviorLegacy::new_behavior(uint8_t priority, void (*work)(legacy::Behaviour_t*), uint8_t active) const noexcept {

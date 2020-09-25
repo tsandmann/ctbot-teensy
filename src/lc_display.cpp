@@ -111,7 +111,7 @@ uint8_t LCDisplay::printf(const char* format, ...) {
 }
 
 void LCDisplay::set_output(const std::string_view& out) {
-    if (out == "stdout") {
+    if (out == PSTR("stdout")) {
         p_impl_->set_output(stdout);
     } else {
         p_impl_->set_output(nullptr);

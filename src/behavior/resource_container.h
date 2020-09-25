@@ -166,29 +166,15 @@ public:
         return resources_;
     }
 
-    bool set_update_state(const std::string_view& name) {
-        std::unique_lock<std::mutex> lock(mutex_);
-
-        const uint32_t id { get_id(name) };
-        if (!id) {
-            return false;
-        }
-        resource_updates_[id] = true;
-        if (resource_updates_.size() == resources_active_.size()) {
-            lock.unlock();
-            call_listener();
-            return true;
-        }
-        return false;
-    }
+    FLASHMEM bool set_update_state(const std::string_view& name);
 
     void set_active(const std::string_view& name, bool active);
 
     void reset_update_states();
 
-    void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
+    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
 
-    void register_listener(std::function<void(const ResourceContainer&)> func) {
+    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func) {
         register_listener(func, nullptr);
     }
 

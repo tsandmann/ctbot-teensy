@@ -42,14 +42,14 @@ Behavior::Behavior(const std::string& name, const uint16_t priority, const uint1
     configASSERT(p_sensors_); // FIXME: wrapper for assert
 
     /* initialize actuator and data pointers */
-    init_actuator("speed.left", p_left_); // PID controlled speed for left wheel
+    init_actuator(PSTR("speed.left"), p_left_); // PID controlled speed for left wheel
     configASSERT(p_left_);
-    init_actuator("speed.right", p_right_); // PID controlled speed for right wheel
+    init_actuator(PSTR("speed.right"), p_right_); // PID controlled speed for right wheel
     configASSERT(p_right_);
 
-    init_data_ptr("model.pose_enc", p_pose_); // current pose based on wheel encoder data
+    init_data_ptr(PSTR("model.pose_enc"), p_pose_); // current pose based on wheel encoder data
     configASSERT(p_pose_);
-    init_data_ptr("model.speed_enc", p_speed_); // current speed based on wheel encoder data
+    init_data_ptr(PSTR("model.speed_enc"), p_speed_); // current speed based on wheel encoder data
     configASSERT(p_speed_);
 
     task_id_ = get_ctbot()->get_scheduler()->task_add(name, cycle_time_ms, priority, stack_size, [this]() {
@@ -66,7 +66,7 @@ Behavior::Behavior(const std::string& name) : Behavior { name, DEFAULT_PRIORITY,
 
 Behavior::~Behavior() {
     debug_printf<DEBUG_>(PP_ARGS("Behavior::~Behavior() for \"{s}\": removing task {#x}...\r\n", get_name().c_str(), task_id_));
-    debug_flush<DEBUG_>();
+    // debug_flush<DEBUG_>();
 
     if (get_ctbot()->get_scheduler()->task_remove(task_id_)) {
         debug_printf<DEBUG_>(PP_ARGS("Behavior::~Behavior() for \"{s}\": task removed.\r\n", get_name().c_str()));
@@ -82,7 +82,7 @@ uint16_t Behavior::get_priority() const {
 
 void Behavior::wait() {
     debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): waiting for exit of \"{s}\"...\r\n", get_name().c_str()));
-    debug_flush<DEBUG_>();
+    // debug_flush<DEBUG_>();
 
     while (!finished_) {
         {
@@ -91,14 +91,14 @@ void Behavior::wait() {
         }
         if (!finished_) {
             debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" woke up, but not finished. Probably a BUG.\r\n", get_name().c_str()));
-            debug_flush<DEBUG_>();
+            // debug_flush<DEBUG_>();
 
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(100ms);
         }
     }
     debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" finished.\r\n", get_name().c_str()));
-    debug_flush<DEBUG_>();
+    // debug_flush<DEBUG_>();
 }
 
 void Behavior::wait_for_model_update() {
@@ -110,14 +110,14 @@ bool Behavior::exit() {
         finished_ = true;
 
         debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": notifying caller...\r\n", get_name().c_str()));
-        debug_flush<DEBUG_>();
+        // debug_flush<DEBUG_>();
 
         caller_cv_.notify_all();
         return true;
     }
 
     debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": called, but already finished!\r\n", get_name().c_str()));
-    debug_flush<DEBUG_>();
+    // debug_flush<DEBUG_>();
     return false;
 }
 
@@ -126,7 +126,7 @@ void Behavior::print_pose(const bool moving) const {
         get_pose()->print(*get_ctbot()->get_comm());
         get_ctbot()->get_comm()->debug_print('\t', false);
         get_speed()->print(*get_ctbot()->get_comm());
-        get_ctbot()->get_comm()->debug_print("\n\r", false);
+        get_ctbot()->get_comm()->debug_print(PSTR("\r\n"), false);
     }
 }
 

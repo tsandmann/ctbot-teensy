@@ -53,15 +53,15 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
         configASSERT(p_dist_l);
         if (p_dist_l->init()) {
             if (!p_dist_l->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR)) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_l->set_address() failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_l->set_address() failed.\r\n"), true);
                 ena_.off(EnaI2cTypes::DISTANCE_L);
                 delete p_dist_l;
                 p_dist_l = nullptr;
             } else if (!p_dist_l->start_continuous(0)) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_l->start_continuous(0) failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_l->start_continuous(0) failed.\r\n"), true);
             }
         } else {
-            ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_l->init() failed.\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_l->init() failed.\r\n"), true);
             ena_.off(EnaI2cTypes::DISTANCE_L);
             delete p_dist_l;
             p_dist_l = nullptr;
@@ -76,15 +76,15 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
         configASSERT(p_dist_r);
         if (p_dist_r->init()) {
             if (!p_dist_r->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR)) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_r->set_address() failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_r->set_address() failed.\r\n"), true);
                 ena_.off(EnaI2cTypes::DISTANCE_R);
                 delete p_dist_r;
                 p_dist_r = nullptr;
             } else if (!p_dist_r->start_continuous(0)) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_r->start_continuous(0) failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_r->start_continuous(0) failed.\r\n"), true);
             }
         } else {
-            ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_dist_r->init() failed.\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_dist_r->init() failed.\r\n"), true);
             ena_.off(EnaI2cTypes::DISTANCE_R);
             delete p_dist_r;
             p_dist_r = nullptr;
@@ -100,20 +100,20 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
         configASSERT(p_trans_);
         if (p_trans_->init()) {
             if (!p_trans_->set_address(CtBotConfig::VL6180X_I2C_ADDR)) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_trans_->set_address() failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_trans_->set_address() failed.\r\n"), true);
                 ena_.off(EnaI2cTypes::TRANSPORT);
                 delete p_trans_;
                 p_trans_ = nullptr;
             }
             if (p_trans_->configure_defaults()) {
                 if (!p_trans_->start_continuous(100)) {
-                    ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_trans_->start_continuous() failed.\r\n", true);
+                    ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_trans_->start_continuous() failed.\r\n"), true);
                 }
             } else {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_trans_->configure_defaults() failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_trans_->configure_defaults() failed.\r\n"), true);
             }
         } else {
-            ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): p_trans_->init() failed.\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): p_trans_->init() failed.\r\n"), true);
             ena_.off(EnaI2cTypes::TRANSPORT);
             delete p_trans_;
             p_trans_ = nullptr;
@@ -132,7 +132,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
         configASSERT(p_mpu_6050_);
         if (!p_mpu_6050_->begin()) {
             if (DEBUG_) {
-                ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): MPU6050 init failed.\r\n", true);
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): MPU6050 init failed.\r\n"), true);
             }
             delete p_mpu_6050_;
             p_mpu_6050_ = nullptr;
@@ -140,7 +140,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
         if (p_mpu_6050_) {
             if (!p_mpu_6050_->calc_gyro_offset(DEBUG_)) {
                 if (DEBUG_) {
-                    ctbot_.get_comm()->debug_print("DigitalSensors::DigitalSensors(): MPU6050 calibration failed.\r\n", true);
+                    ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): MPU6050 calibration failed.\r\n"), true);
                 }
                 delete p_mpu_6050_;
                 p_mpu_6050_ = nullptr;
@@ -182,7 +182,7 @@ void DigitalSensors::update() {
 
     if (CtBotConfig::MPU6050_AVAILABLE && p_mpu_6050_) {
         if (!p_mpu_6050_->update_gyro() && DEBUG_) {
-            ctbot_.get_comm()->debug_print("DigitalSensors::update(): i2c error 4\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::update(): i2c error 4\r\n"), true);
         }
     }
 }

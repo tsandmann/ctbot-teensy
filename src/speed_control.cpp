@@ -48,7 +48,7 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        CtBot::get_instance().get_scheduler()->task_add("sctrl", TASK_PERIOD_MS, 8, 768UL, &controller);
+        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 768UL, &controller);
     }
 }
 
@@ -56,7 +56,7 @@ SpeedControl::~SpeedControl() {
     controller_list_.remove(this);
     delete p_pid_controller_;
     if (!controller_list_.size()) {
-        CtBot::get_instance().get_scheduler()->task_remove(CtBot::get_instance().get_scheduler()->task_get("sctrl"));
+        CtBot::get_instance().get_scheduler()->task_remove(CtBot::get_instance().get_scheduler()->task_get(PSTR("sctrl")));
     }
 }
 

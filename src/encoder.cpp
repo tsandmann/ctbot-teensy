@@ -66,7 +66,7 @@ void Encoder::update() {
 
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("diff_enc=%d\r\n", diff_enc);
+            ctbot.get_comm()->debug_printf<false>(PSTR("diff_enc=%d\r\n"), diff_enc);
         }
         edges_ += diff_enc;
         last_idx_ = idx;
@@ -74,7 +74,7 @@ void Encoder::update() {
 
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("count_=%d\r\n", count_);
+            ctbot.get_comm()->debug_printf<false>(PSTR("count_=%d\r\n"), count_);
         }
 
         const auto current_time { p_enc_data_[idx] };
@@ -89,14 +89,14 @@ void Encoder::update() {
 
         if (DEBUG_ && speed_ != 0.f) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("now_s=%f\r\n", now_us / 1'000'000.f);
+            ctbot.get_comm()->debug_printf<false>(PSTR("now_s=%f\r\n"), now_us / 1'000'000.f);
             ctbot.get_comm()->debug_printf<false>(
                 "%.2f\t%.2f\t%f\t%f\t%u\r\n", speed_, speed_avg_, current_time / 1'000'000.f, last_update_ / 1'000'000.f, idx);
 
             for (uint8_t i {}; i < DATA_ARRAY_SIZE; ++i) {
-                ctbot.get_comm()->debug_printf<false>("%f ", p_enc_data_[i] / 1'000'000.f);
+                ctbot.get_comm()->debug_printf<false>(PSTR("%f "), p_enc_data_[i] / 1'000'000.f);
             }
-            ctbot.get_comm()->debug_print("\r\n", false);
+            ctbot.get_comm()->debug_print(PSTR("\r\n"), false);
         }
         if (count_) {
             last_update_ = current_time;

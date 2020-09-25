@@ -36,8 +36,8 @@ namespace ctbot {
 decltype(BehaviorSquare::reg_) BehaviorSquare::reg_ { "square", []() { return INIT<BehaviorSquare>(); } };
 
 BehaviorSquare::BehaviorSquare(const uint16_t priority)
-    : Behavior { "DriveSquare", priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, counter_ {} {
-    debug_print<DEBUG_>("BehaviorSquare::BehaviorSquare(): init done.\r\n");
+    : Behavior { PSTR("DriveSquare"), priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, counter_ {} {
+    debug_print<DEBUG_>(PSTR("BehaviorSquare::BehaviorSquare(): init done.\r\n"));
 }
 
 void BehaviorSquare::run() {
@@ -65,7 +65,7 @@ void BehaviorSquare::run() {
             if (++counter_ == 4) {
                 if (CtBotConfig::AUDIO_AVAILABLE) {
                     /* make some R2-D2 like beeping */
-                    get_ctbot()->play_wav("r2d2-1.wav"); // sound is played asynchronously
+                    get_ctbot()->play_wav(PSTR("r2d2-1.wav")); // sound is played asynchronously
                 }
 
                 /* exit behavior */

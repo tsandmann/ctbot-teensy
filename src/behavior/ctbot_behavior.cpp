@@ -60,14 +60,14 @@ CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, en
 void CtBotBehavior::setup(const bool set_ready) {
     CtBot::setup(false);
 
-    p_parser_->register_cmd("help", 'h', [this](const std::string_view&) {
+    p_parser_->register_cmd(PSTR("help"), 'h', [this](const std::string_view&) FLASHMEM {
         CtBotHelpTexts::print(*p_comm_);
         p_comm_->debug_print(usage_text_beh, true);
         return true;
     });
 
-    p_parser_->register_cmd("beh", 'b', [this](const std::string_view& args) {
-        if (args.find("start") == 0) {
+    p_parser_->register_cmd(PSTR("beh"), 'b', [this](const std::string_view& args) FLASHMEM {
+        if (args.find(PSTR("start")) == 0) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const std::string_view beh_name { args.substr(s, e - s) };
@@ -79,21 +79,21 @@ void CtBotBehavior::setup(const bool set_ready) {
             if (beh_it != behavior_list_.end()) {
                 const auto beh { beh_it->second };
                 const auto params { std::get<0>(beh_it->second) };
-                get_comm()->debug_printf<true>("creating behavior \"%.*s\" with %u parameters...\r\n", beh_name.size(), beh_name.data(), params);
-                get_comm()->flush();
+                get_comm()->debug_printf<true>(PSTR("creating behavior \"%.*s\" with %u parameters...\r\n"), beh_name.size(), beh_name.data(), params);
+                // get_comm()->flush();
                 switch (params) {
                     case 0:
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>()>>(std::get<1>(beh))();
-                        get_comm()->debug_print(" done.\r\n", true);
-                        get_comm()->flush();
+                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        // get_comm()->flush();
                         break;
 
                     case 1: {
                         int32_t v {};
                         CmdParser::split_args(args.substr(e), v);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t)>>(std::get<1>(beh))(v);
-                        get_comm()->debug_print(" done.\r\n", true);
-                        get_comm()->flush();
+                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        // get_comm()->flush();
                         break;
                     }
 
@@ -101,8 +101,8 @@ void CtBotBehavior::setup(const bool set_ready) {
                         int32_t v1 {}, v2 {};
                         CmdParser::split_args(args.substr(e), v1, v2);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2);
-                        get_comm()->debug_print(" done.\r\n", true);
-                        get_comm()->flush();
+                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        // get_comm()->flush();
                         break;
                     }
 
@@ -111,8 +111,8 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2, v3);
                         p_beh_ =
                             std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2, v3);
-                        get_comm()->debug_print(" done.\r\n", true);
-                        get_comm()->flush();
+                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        // get_comm()->flush();
                         break;
                     }
 
@@ -121,8 +121,8 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2, v3, v4);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)>>(
                             std::get<1>(beh))(v1, v2, v3, v4);
-                        get_comm()->debug_print(" done.\r\n", true);
-                        get_comm()->flush();
+                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        // get_comm()->flush();
                         break;
                     }
 
@@ -130,22 +130,22 @@ void CtBotBehavior::setup(const bool set_ready) {
                 }
                 return p_beh_ ? true : false;
             }
-        } else if (args.find("stop") == 0) {
+        } else if (args.find(PSTR("stop")) == 0) {
             if (p_beh_) {
                 p_beh_.reset();
                 return true;
             } else {
                 return false;
             }
-        } else if (args.find("list") == 0) {
+        } else if (args.find(PSTR("list")) == 0) {
             for (const auto& b : behavior_list_) {
                 get_comm()->debug_printf<true>(PP_ARGS("{s} [{}]\r\n", b.first.c_str(), std::get<0>(b.second)));
             }
             return true;
-        } else if (args.find("enable") == 0) {
+        } else if (args.find(PSTR("enable")) == 0) {
             beh_enabled_ = true;
             return true;
-        } else if (args.find("disable") == 0) {
+        } else if (args.find(PSTR("disable")) == 0) {
             beh_enabled_ = false;
             return true;
         } else {
@@ -159,16 +159,16 @@ void CtBotBehavior::setup(const bool set_ready) {
     p_actuators_ = std::make_unique<ResourceContainer>();
     configASSERT(p_actuators_);
 
-    ResourceContainer* const p_model { p_data_->create_resource<ResourceContainer>("model.", true) };
-    Resource<Pose>* const p_pose_enc { p_model->create_resource<Pose>("pose_enc", true) };
+    ResourceContainer* const p_model { p_data_->create_resource<ResourceContainer>(PSTR("model."), true) };
+    Resource<Pose>* const p_pose_enc { p_model->create_resource<Pose>(PSTR("pose_enc"), true) };
     p_pose_enc->register_listener([p_model](const Resource<Pose>::basetype&) {
-        p_model->set_update_state("pose_enc");
+        p_model->set_update_state(("pose_enc"));
         return;
     });
 
-    Resource<Speed>* const p_speed_enc { p_model->create_resource<Speed>("speed_enc", true) };
+    Resource<Speed>* const p_speed_enc { p_model->create_resource<Speed>(PSTR("speed_enc"), true) };
     p_speed_enc->register_listener([p_model](const Resource<Speed>::basetype&) {
-        p_model->set_update_state("speed_enc");
+        p_model->set_update_state(PSTR("speed_enc"));
         return;
     });
 
@@ -177,17 +177,17 @@ void CtBotBehavior::setup(const bool set_ready) {
         p_model->reset_update_states();
     });
 
-    auto p_governors = p_actuators_->create_resource<ActuatorContainer<AMotor>>("speed.", true);
+    auto p_governors = p_actuators_->create_resource<ActuatorContainer<AMotor>>(PSTR("speed."), true);
     configASSERT(p_governors);
-    auto p_governor_l = p_governors->create_actuator("left", true);
-    auto p_governor_r = p_governors->create_actuator("right", true);
+    auto p_governor_l = p_governors->create_actuator(PSTR("left"), true);
+    auto p_governor_r = p_governors->create_actuator(PSTR("right"), true);
     configASSERT(p_governor_l && p_governor_r);
     p_governor_l->register_listener([p_governors](const AMotor::basetype&) {
-        p_governors->set_update_state("left");
+        p_governors->set_update_state(("left"));
         return;
     });
     p_governor_r->register_listener([p_governors](const AMotor::basetype&) {
-        p_governors->set_update_state("right");
+        p_governors->set_update_state(PSTR("right"));
         return;
     });
 
@@ -197,13 +197,13 @@ void CtBotBehavior::setup(const bool set_ready) {
         }
         // get_comm()->debug_printf<true>(PP_ARGS("all governors set at {} ms.\r\n", Timer::get_ms()));
         AMotor* p_left;
-        if (governors.get_resource("left", p_left)) {
+        if (governors.get_resource(PSTR("left"), p_left)) {
             const int16_t left { p_left->read() };
             p_speedcontrols_[0]->set_speed(static_cast<float>(left));
             // get_comm()->debug_printf<true>(PP_ARGS("speed left set to {}\r\n", left));
         }
         AMotor* p_right;
-        if (governors.get_resource("right", p_right)) {
+        if (governors.get_resource(PSTR("right"), p_right)) {
             const int16_t right { p_right->read() };
             p_speedcontrols_[1]->set_speed(static_cast<float>(right));
             // get_comm()->debug_printf<true>(PP_ARGS("speed right set to {}\r\n", right));
@@ -253,8 +253,8 @@ void CtBotBehavior::run() {
     CtBot::run();
 
     configASSERT(p_data_);
-    auto& pose { *p_data_->get_resource<Pose>("model.pose_enc") };
-    auto& speed { *p_data_->get_resource<Speed>("model.speed_enc") };
+    auto& pose { *p_data_->get_resource<Pose>(PSTR("model.pose_enc")) };
+    auto& speed { *p_data_->get_resource<Speed>(PSTR("model.speed_enc")) };
     update_enc(pose.get_ref(), speed.get_ref());
 
     if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
@@ -274,14 +274,25 @@ void CtBotBehavior::run() {
     std::this_thread::sleep_for(5ms); // FIXME: wait time?
 
     ActuatorContainer<AMotor>* p_governors;
-    p_actuators_->get_resource("speed.", p_governors);
+    p_actuators_->get_resource(PSTR("speed."), p_governors);
     configASSERT(p_governors);
 
     p_governors->commit_values();
 
     if (p_beh_ && p_beh_->finished()) {
-        get_comm()->debug_print("deleting Behavior (p_beh_)\r\n", false);
+        get_comm()->debug_print(PSTR("deleting Behavior (p_beh_)\r\n"), true);
         p_beh_.reset();
+    }
+}
+
+void CtBotBehavior::wait_for_model_update(std::atomic<bool>& abort) {
+    using namespace std::chrono_literals;
+
+    std::unique_lock<std::mutex> lk(model_mutex_);
+    while (model_cond_.wait_for(lk, 10ms) == std::cv_status::timeout) {
+        if (abort) {
+            return;
+        }
     }
 }
 
@@ -358,7 +369,7 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
 }
 
 void CtBotBehavior::shutdown() {
-    get_comm()->debug_print("CtBotBehavior::shutdown()\r\n", true);
+    get_comm()->debug_print(PSTR("CtBotBehavior::shutdown()\r\n"), true);
     get_comm()->flush();
 
     ready_ = false;
@@ -368,8 +379,8 @@ void CtBotBehavior::shutdown() {
         delete BehaviorLegacy::get_instance();
     }
 
-    auto& pose { *p_data_->get_resource<Pose>("model.pose_enc") };
-    auto& speed { *p_data_->get_resource<Speed>("model.speed_enc") };
+    auto& pose { *p_data_->get_resource<Pose>(PSTR("model.pose_enc")) };
+    auto& speed { *p_data_->get_resource<Speed>(PSTR("model.speed_enc")) };
     pose.notify();
     speed.notify();
 

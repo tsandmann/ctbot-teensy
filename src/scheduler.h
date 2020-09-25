@@ -103,7 +103,7 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string_view& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
+    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
 
     /**
      * @brief Add a tasks to the run queue
@@ -113,7 +113,7 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string_view& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
+    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, stack_size, std::move(func));
     }
 
@@ -124,29 +124,29 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    uint16_t task_add(const std::string_view& name, const uint16_t period, Task::func_t&& func) {
+    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, std::move(func));
     }
 
-    uint16_t task_register(const std::string_view& name, const bool external = false);
+    FLASHMEM uint16_t task_register(const std::string_view& name, const bool external = false);
 
-    uint16_t task_register(TaskHandle_t task, const bool external);
+    FLASHMEM uint16_t task_register(TaskHandle_t task, const bool external);
 
-    bool task_remove(const uint16_t task);
+    FLASHMEM bool task_remove(const uint16_t task);
 
     /**
      * @brief Get the ID of a task given by its name
      * @param[in] name: Reference to a string_view with task name
      * @return ID of searched task or 0xffff, if task name is unknown
      */
-    uint16_t task_get(const std::string_view& name) const;
+    FLASHMEM uint16_t task_get(const std::string_view& name) const;
 
     /**
      * @brief Get a pointer to a tasks' control structure (of type Task)
      * @param[in] id: ID of task to get
      * @return Pointer to task entry
      */
-    Task* task_get(const uint16_t id) const;
+    FLASHMEM Task* task_get(const uint16_t id) const;
 
     /**
      * @brief Suspend a task, task will not be scheduled again until resumed
@@ -164,7 +164,7 @@ public:
 
     bool task_join(const uint16_t id);
 
-    bool task_set_finished(const uint16_t id);
+    FLASHMEM bool task_set_finished(const uint16_t id);
 
     /**
      * @brief Print a list of all tasks and their current status

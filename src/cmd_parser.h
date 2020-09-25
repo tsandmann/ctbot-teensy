@@ -84,9 +84,9 @@ public:
      * @param[in] comm: Reference to CommInterface (for debugging output only)
      * @return true on success
      */
-    bool parse(const std::string_view& in, CommInterface& comm);
+    FLASHMEM bool parse(const std::string_view& in, CommInterface& comm);
 
-    bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
+    FLASHMEM bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
 
     auto get_echo() const {
         return echo_;

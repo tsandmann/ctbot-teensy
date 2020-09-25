@@ -32,7 +32,7 @@ namespace ctbot {
 decltype(BehaviorServo::active_) BehaviorServo::active_ { false, false };
 
 BehaviorServo::BehaviorServo(uint8_t servo, uint8_t position, bool auto_stop)
-    : Behavior { "Servo" }, p_servo_ { get_ctbot()->get_servos()[servo == 2 ? 1 : 0] }, servo_nr_ { static_cast<uint8_t>(servo == 2 ? 1 : 0) },
+    : Behavior { PSTR("Servo") }, p_servo_ { get_ctbot()->get_servos()[servo == 2 ? 1 : 0] }, servo_nr_ { static_cast<uint8_t>(servo == 2 ? 1 : 0) },
       servo_pos_ { position }, stop_ { auto_stop } {
     if (servo_nr_ == 0 && servo_pos_ > POS_OPEN) {
         servo_pos_ = POS_OPEN;

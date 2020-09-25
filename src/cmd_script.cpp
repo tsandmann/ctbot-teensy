@@ -55,14 +55,14 @@ bool CmdScript::exec_script() {
 
         if (DEBUG_) {
             comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
-            comm_interface_.debug_print("command \"", true);
+            comm_interface_.debug_print(PSTR("command \""), true);
             comm_interface_.debug_print(str, true);
             comm_interface_.debug_printf<true>(PP_ARGS("\" finished with result {}.\r\n", res));
             comm_interface_.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
         }
 
         if (!res) {
-            comm_interface_.debug_print("CmdScript::exec_script(): aborted.\r\n", true);
+            comm_interface_.debug_print(PSTR("CmdScript::exec_script(): aborted.\r\n"), true);
             return false;
         }
 
@@ -71,7 +71,7 @@ bool CmdScript::exec_script() {
 
     if (DEBUG_) {
         comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
-        comm_interface_.debug_print("CmdScript::exec_script(): done.\r\n", true);
+        comm_interface_.debug_print(PSTR("CmdScript::exec_script(): done.\r\n"), true);
         comm_interface_.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
     }
 
@@ -83,7 +83,7 @@ bool CmdScript::print_script() {
         comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
         comm_interface_.debug_print(str, true);
         comm_interface_.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
-        comm_interface_.debug_print("\r\n", true);
+        comm_interface_.debug_print(PSTR("\r\n"), true);
         return true;
     });
 }
@@ -96,7 +96,7 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
 
     File file { SD.open(filename_.c_str()) };
     if (DEBUG_VERBOSE_) {
-        comm_interface_.debug_print("CmdScript::process_script(): SD.open() done.\r\n", true);
+        comm_interface_.debug_print(PSTR("CmdScript::process_script(): SD.open() done.\r\n"), true);
     }
 
     auto p_buffer { std::make_unique<uint32_t[]>(MAX_LINE_LENGTH_ / 4U + 1U) };
@@ -115,7 +115,7 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
         }
         std::string_view str { p_str, n };
         if (DEBUG_VERBOSE_) {
-            comm_interface_.debug_print("CmdScript::process_script(): string_view created.\r\n", true);
+            comm_interface_.debug_print(PSTR("CmdScript::process_script(): string_view created.\r\n"), true);
         }
 
         if (DEBUG_VERBOSE_) {
@@ -123,7 +123,7 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
             for (size_t i { 0 }; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
             }
-            comm_interface_.debug_print("\r\n", true);
+            comm_interface_.debug_print(PSTR("\r\n"), true);
         }
 
         const auto pos { str.find_first_of('\r') };
@@ -139,7 +139,7 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
             for (size_t i { 0 }; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
             }
-            comm_interface_.debug_print("\r\n", true);
+            comm_interface_.debug_print(PSTR("\r\n"), true);
         }
 
         if (!func(str)) {
@@ -175,7 +175,7 @@ bool CmdScript::create_script(const size_t history_depth) {
                 for (size_t i { 0 }; i < str.size(); ++i) {
                     comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str.at(i))));
                 }
-                comm_interface_.debug_print("\r\n", true);
+                comm_interface_.debug_print(PSTR("\r\n"), true);
             }
 
             auto pos { str.find_first_of('\r') };
@@ -188,7 +188,7 @@ bool CmdScript::create_script(const size_t history_depth) {
             }
 
             file.write(str.data(), pos);
-            file.write("\r\n");
+            file.write(PSTR("\r\n"));
         }
     }
 

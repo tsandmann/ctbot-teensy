@@ -41,7 +41,7 @@ namespace ctbot {
 decltype(BehaviorTurn::reg_) BehaviorTurn::reg_ { "turn", [](const int32_t p) { return INIT<BehaviorTurn, int16_t>(p); } };
 
 BehaviorTurn::BehaviorTurn(const int16_t degrees, const uint16_t priority, const uint16_t min_speed, const uint16_t max_speed)
-    : Behavior { "TurnBeh", priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, min_speed_ { min_speed },
+    : Behavior { PSTR("TurnBeh"), priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, min_speed_ { min_speed },
       max_speed_ { max_speed }, state_ { State::TURN }, target_ {}, old_head_ {}, turn_direction_ {} {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorTurn::BehaviorTurn({},{},{},{})\r\n", degrees, priority, min_speed, max_speed));
 
@@ -66,8 +66,8 @@ BehaviorTurn::BehaviorTurn(const int16_t degrees, const uint16_t priority, const
 }
 
 BehaviorTurn::~BehaviorTurn() {
-    debug_printf<DEBUG_>("BehaviorTurn::~BehaviorTurn()\r\n");
-    debug_flush<DEBUG_>();
+    debug_print<DEBUG_>(PSTR("BehaviorTurn::~BehaviorTurn()\r\n"));
+    // debug_flush<DEBUG_>();
 
     abort_beh();
     wait();
@@ -137,8 +137,8 @@ void BehaviorTurn::run() {
 
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                     print_pose(false);
-                    debug_print<DEBUG_>("BehaviorTurn::run(): done.\r\n");
-                    debug_flush<DEBUG_>();
+                    debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): done.\r\n"));
+                    // debug_flush<DEBUG_>();
 
                     /* everything done, exit this behavior */
                     exit();
@@ -147,8 +147,8 @@ void BehaviorTurn::run() {
             break;
 
         case State::ABORT:
-            debug_print<DEBUG_>("BehaviorTurn::run(): aborted.\r\n");
-            debug_flush<DEBUG_>();
+            debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): aborted.\r\n"));
+            // debug_flush<DEBUG_>();
             exit();
             break;
     }

@@ -61,11 +61,11 @@ protected:
     static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
     static constexpr size_t OUTPUT_QUEUE_SIZE { 64 }; /**< Size of output queue in number of elements */
     static constexpr size_t BUFFER_CHUNK_SIZE { 4 };
-    static constexpr uint16_t INPUT_TASK_PERIOD_MS { 50 }; /**< Scheduling period of input task in ms */
-    static constexpr uint8_t INPUT_TASK_PRIORITY { 2 }; /**< Priority of input task */
+    static constexpr uint16_t INPUT_TASK_PERIOD_MS { 20 }; /**< Scheduling period of input task in ms */
+    static constexpr uint8_t INPUT_TASK_PRIORITY { 5 }; /**< Priority of input task */
     static constexpr uint32_t INPUT_TASK_STACK_SIZE { 1536 }; /**< stack size of input task */
     static constexpr uint16_t OUTPUT_TASK_PERIOD_MS { 20 }; /**< Scheduling period of output task in ms */
-    static constexpr uint8_t OUTPUT_TASK_PRIORITY { 1 }; /**< Priority of output task */
+    static constexpr uint8_t OUTPUT_TASK_PRIORITY { 4 }; /**< Priority of output task */
     static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 1024 }; /**< stack size of output task */
 
     struct OutBufferElement {

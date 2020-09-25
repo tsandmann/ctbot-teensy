@@ -123,7 +123,7 @@ static FLASHMEM void init_task() {
     }
 
     freertos::print_ram_usage();
-    ::serial_puts(PSTR(""));
+    ::serial_puts("");
 
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
     // ::serial_puts(PSTR("deleting init task..."));
@@ -224,7 +224,7 @@ extern "C" {
  *  deactivate CtBot
  * @enduml
  */
-void setup() {
+FLASHMEM void setup() {
     using namespace ctbot;
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
@@ -245,7 +245,7 @@ void setup() {
 /**
  * @brief Arduino loop function, not used because of scheduler (@see Scheduler)
  */
-void loop() {}
+FLASHMEM void loop() {}
 
 /**
  * @brief libc "syscall" implementation for writing characters to a filestream
@@ -254,7 +254,7 @@ void loop() {}
  * @return Number of bytes written, -1 in case of an error
  * @note File handle paramter is ignored, any data is written to serial connection
  */
-int _write(int, char* ptr, int len) {
+FLASHMEM int _write(int, char* ptr, int len) {
     using namespace ctbot;
 
     static CtBot& ctbot { CtBot::get_instance() };
@@ -271,8 +271,7 @@ int _write(int, char* ptr, int len) {
     }
 }
 
-uint8_t get_debug_led_pin() __attribute__((section(".flashmem")));
-uint8_t get_debug_led_pin() {
+FLASHMEM uint8_t get_debug_led_pin() {
     return ctbot::CtBotConfig::DEBUG_LED_PIN;
 }
 } // extern C

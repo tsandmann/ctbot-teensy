@@ -51,7 +51,7 @@ Scheduler::~Scheduler() {
     // ::serial_puts("Scheduler::~Scheduler() entered.");
     enter_critical_section();
     for (auto& t : tasks_) {
-        if (t.second->name_ != "main") {
+        if (t.second->name_ != PSTR("main")) {
             // arduino::Serial.print("Scheduler::~Scheduler(): task 0x");
             // arduino::Serial.print(t.second->id_, 16);
             // arduino::Serial.print(" @ 0x");
@@ -69,7 +69,7 @@ Scheduler::~Scheduler() {
     // ::serial_puts("Scheduler::~Scheduler(): all tasks blocked.");
 
     for (auto& t : tasks_) {
-        if (t.second->name_ != "main") {
+        if (t.second->name_ != PSTR("main")) {
             // arduino::Serial.print("Scheduler::~Scheduler(): task \"");
             // arduino::Serial.print(t.second->name_.c_str());
             // arduino::Serial.println("\" will be deleted...");

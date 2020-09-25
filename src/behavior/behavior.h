@@ -189,11 +189,11 @@ protected:
 public:
     using BasePtr = std::unique_ptr<Behavior>;
 
-    Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
+    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
 
-    Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms);
+    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms);
 
-    Behavior(const std::string& name);
+    FLASHMEM Behavior(const std::string& name);
 
     FLASHMEM virtual ~Behavior();
 
@@ -260,12 +260,12 @@ class BehaviorRunUntil : public Behavior {
 public:
     template <typename... Args>
     BehaviorRunUntil(std::function<bool()> check_func, Args&&... args)
-        : Behavior("BehaviorRunUntil"), p_beh_ { behavior_factory<Beh>(false, std::forward<Args>(args)...) }, func_ { check_func } {}
+        : Behavior(PSTR("BehaviorRunUntil")), p_beh_ { behavior_factory<Beh>(false, std::forward<Args>(args)...) }, func_ { check_func } {}
 
 
     FLASHMEM virtual ~BehaviorRunUntil() override {
-        debug_printf<DEBUG_>("BehaviorRunUntil::~BehaviorRunUntil()\r\n");
-        debug_flush<DEBUG_>();
+        debug_print<DEBUG_>(PSTR("BehaviorRunUntil::~BehaviorRunUntil()\r\n"));
+        // debug_flush<DEBUG_>();
 
         abort_beh();
         wait();
@@ -276,8 +276,8 @@ protected:
     std::function<bool()> func_;
 
     virtual void run() override {
-        debug_print<DEBUG_>("BehaviorRunUntil::run().\r\n");
-        debug_flush<DEBUG_>();
+        debug_print<DEBUG_>(PSTR("BehaviorRunUntil::run().\r\n"));
+        // debug_flush<DEBUG_>();
 
         do {
             using namespace std::chrono_literals;
@@ -288,10 +288,10 @@ protected:
             p_beh_->abort_beh();
 
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" aborted.\r\n", p_beh_->get_name().c_str()));
-            debug_flush<DEBUG_>();
+            // debug_flush<DEBUG_>();
         } else {
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" finished.\r\n", p_beh_->get_name().c_str()));
-            debug_flush<DEBUG_>();
+            // debug_flush<DEBUG_>();
         }
 
         exit();

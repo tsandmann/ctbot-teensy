@@ -75,11 +75,11 @@
 void software_isr();
 
 extern "C" {
-static int lua_wrapper_print(lua_State* L) {
+FLASHMEM static int lua_wrapper_print(lua_State* L) {
     auto p_comm { ctbot::CtBot::get_instance().get_comm() };
 
     const int n = lua_gettop(L); /* number of arguments */
-    lua_getglobal(L, "tostring");
+    lua_getglobal(L, PSTR("tostring"));
     for (int i = 1; i <= n; i++) {
         lua_pushvalue(L, -1); /* function to be called */
         lua_pushvalue(L, i); /* value to print */
@@ -109,7 +109,7 @@ CtBot& CtBot::get_instance() {
     return *p_instance;
 }
 
-CtBot::CtBot()
+FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
       p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {},
@@ -141,9 +141,9 @@ void CtBot::stop() {
     shutdown_ = true;
 }
 
-void CtBot::setup(const bool set_ready) {
+FLASHMEM void CtBot::setup(const bool set_ready) {
     p_scheduler_ = new Scheduler;
-    task_id_ = p_scheduler_->task_add("main", TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
+    task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
     p_scheduler_->task_register(PSTR("Tmr Svc"));
     p_scheduler_->task_register(PSTR("EVENT"));
 
@@ -205,11 +205,11 @@ void CtBot::setup(const bool set_ready) {
 
 #ifdef BUILTIN_SDCARD
     if (!(SD.begin(BUILTIN_SDCARD))) {
-        p_comm_->debug_print(PSTR("SD.begin() failed.\r\n"), false);
+        p_comm_->debug_print(PSTR("SD.begin() failed.\r\n"), true);
     }
 #endif
 
-    p_parameter_ = new ParameterStorage { "ctbot.jsn" };
+    p_parameter_ = new ParameterStorage { PSTR("ctbot.jsn") };
     configASSERT(p_parameter_);
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
@@ -259,7 +259,7 @@ void CtBot::setup(const bool set_ready) {
         });
         Scheduler::exit_critical_section();
 
-        get_scheduler()->task_add("audio", 1, Scheduler::MAX_PRIORITY, 512, [this]() {
+        get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 512, [this]() {
             while (get_ready()) {
                 ::xTaskNotifyWaitIndexed(1, 0, 0, nullptr, portMAX_DELAY);
                 ::software_isr(); // AudioStream::update_all()
@@ -268,19 +268,19 @@ void CtBot::setup(const bool set_ready) {
                 audio_task_ = nullptr;
             }
         });
-        audio_task_ = ::xTaskGetHandle("audio");
+        audio_task_ = ::xTaskGetHandle(PSTR("audio"));
 
-        p_scheduler_->task_register("speak", true);
+        p_scheduler_->task_register(PSTR("speak"), true);
     }
 
     if (CtBotConfig::LUA_AVAILABLE) {
         p_lua_ = new LuaWrapper;
         configASSERT(p_lua_);
-        lua_register(p_lua_->get_state(), "print", lua_wrapper_print);
+        lua_register(p_lua_->get_state(), PSTR("print"), lua_wrapper_print);
     }
 
     add_post_hook(
-        "task",
+        PSTR("task"),
         [this]() {
             static uint32_t last_ms {};
             const auto now { Timer::get_ms() };
@@ -297,7 +297,7 @@ void CtBot::setup(const bool set_ready) {
                 }
 
                 if (p_runtime_stats->size()) {
-                    p_comm_->debug_print("\r\n", true);
+                    p_comm_->debug_print(PSTR("\r\n"), true);
                 }
             }
         },
@@ -334,7 +334,7 @@ void CtBot::setup(const bool set_ready) {
     // });
 }
 
-void CtBot::init_parser() {
+FLASHMEM void CtBot::init_parser() {
     CtBotHelpTexts::init();
     p_parser_->register_cmd(PSTR("help"), 'h', [this](const std::string_view&) {
         CtBotHelpTexts::print(*p_comm_);
@@ -417,7 +417,7 @@ void CtBot::init_parser() {
             } else {
                 for (const auto& e : post_hooks_) {
                     p_comm_->debug_print(e.first, true);
-                    p_comm_->debug_print("\r\n", true);
+                    p_comm_->debug_print(PSTR("\r\n"), true);
                 }
                 return false;
             }
@@ -436,7 +436,7 @@ void CtBot::init_parser() {
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
-        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdout") != args.npos) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdout")) != args.npos) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             p_lcd_->set_output(args.substr(s, e - s));
@@ -455,47 +455,47 @@ void CtBot::init_parser() {
     });
 
     p_parser_->register_cmd(PSTR("get"), 'g', [this](const std::string_view& args) {
-        if (args.find("dist") == 0) {
+        if (args.find(PSTR("dist")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
-        } else if (args.find("enc") == 0) {
+        } else if (args.find(PSTR("enc")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
             // } else if (args.find("mouse") == 0) {
             //     // mouse sensor not implemented
-        } else if (args.find("border") == 0) {
+        } else if (args.find(PSTR("border")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_border_l(), p_sensors_->get_border_r()));
-        } else if (args.find("line") == 0) {
+        } else if (args.find(PSTR("line")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_line_l(), p_sensors_->get_line_r()));
-        } else if (args.find("ldr") == 0) {
+        } else if (args.find(PSTR("ldr")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_sensors_->get_ldr_l(), p_sensors_->get_ldr_r()));
-        } else if (args.find("speed") == 0) {
+        } else if (args.find(PSTR("speed")) == 0) {
             const auto l { static_cast<int16_t>(p_sensors_->get_enc_l().get_speed()) };
             const auto r { static_cast<int16_t>(p_sensors_->get_enc_r().get_speed()) };
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", l, r));
-        } else if (args.find("gyro") == 0) {
+        } else if (args.find(PSTR("gyro")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{6.2}\r\n", p_sensors_->get_mpu6050()->get_angle_gyro_z()));
-        } else if (args.find("motor") == 0) {
+        } else if (args.find(PSTR("motor")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_motors_[0]->get(), p_motors_[1]->get()));
-        } else if (args.find("servo") == 0) {
-            p_comm_->debug_printf<true>(PP_ARGS("{}[{s}] ", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? "on " : "off"));
+        } else if (args.find(PSTR("servo")) == 0) {
+            p_comm_->debug_printf<true>(PP_ARGS("{}[{s}] ", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on ") : PSTR("off")));
             if (p_servos_[1]) {
-                p_comm_->debug_printf<true>(PP_ARGS("{}[{s}]", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? "on" : "off"));
+                p_comm_->debug_printf<true>(PP_ARGS("{}[{s}]", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? PSTR("on") : PSTR("off")));
             }
-        } else if (args.find("rc5") == 0) {
+        } else if (args.find(PSTR("rc5")) == 0) {
             p_comm_->debug_printf<true>(
                 PP_ARGS("{} {} {}", p_sensors_->get_rc5().get_addr(), p_sensors_->get_rc5().get_cmd(), p_sensors_->get_rc5().get_toggle()));
-        } else if (args.find("transmm") == 0) {
+        } else if (args.find(PSTR("transmm")) == 0) {
             p_comm_->debug_print(p_sensors_->get_transport_mm(), true);
-        } else if (args.find("trans") == 0) {
+        } else if (args.find(PSTR("trans")) == 0) {
             p_comm_->debug_print(p_sensors_->get_transport(), true);
             // } else if (args.find("door") == 0) {
             //     p_comm_->debug_print(p_sensors_->get_shutter(), true);
-        } else if (args.find("led") == 0) {
+        } else if (args.find(PSTR("led")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{#x}", static_cast<uint8_t>(p_leds_->get())));
-        } else if (args.find("volt") == 0) {
+        } else if (args.find(PSTR("volt")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{.2} V", p_sensors_->get_bat_voltage()));
-        } else if (args.find("tasks") == 0) {
+        } else if (args.find(PSTR("tasks")) == 0) {
             get_scheduler()->print_task_list(*p_comm_);
-        } else if (args.find("free") == 0) {
+        } else if (args.find(PSTR("free")) == 0) {
             get_scheduler()->print_ram_usage(*p_comm_);
             const auto mem_use { AudioMemoryUsage() };
             const auto mem_use_max { AudioMemoryUsageMax() };
@@ -503,10 +503,10 @@ void CtBot::init_parser() {
             const float cpu_use { AudioProcessorUsage() };
             const float cpu_use_max { AudioProcessorUsageMax() };
             p_comm_->debug_printf<true>(PP_ARGS("AudioProcessorUsage()={.2} %%\tmax={.2} %%", cpu_use, cpu_use_max));
-        } else if (args.find("params") == 0) {
+        } else if (args.find(PSTR("params")) == 0) {
             auto dump { p_parameter_->dump() };
             p_comm_->debug_printf<true>(PP_ARGS("dump=\"{s}\"", dump->c_str()));
-        } else if (args.find("paramf") == 0) {
+        } else if (args.find(PSTR("paramf")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
                 return false;
@@ -516,11 +516,11 @@ void CtBot::init_parser() {
             const std::string_view param { args.substr(s, e - s) };
             float x;
             if (p_parameter_->get(param, x)) {
-                p_comm_->debug_printf<true>("paramf \"%.*s\"=%f", param.size(), param.data(), x);
+                p_comm_->debug_printf<true>(PSTR("paramf \"%.*s\"=%f"), param.size(), param.data(), x);
             } else {
                 return false;
             }
-        } else if (args.find("param") == 0) {
+        } else if (args.find(PSTR("param")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
                 return false;
@@ -530,29 +530,29 @@ void CtBot::init_parser() {
             const std::string_view param { args.substr(s, e - s) };
             int32_t x;
             if (p_parameter_->get(param, x)) {
-                p_comm_->debug_printf<true>("param \"%.*s\"=%" PRId32, param.size(), param.data(), x);
+                p_comm_->debug_printf<true>(PSTR("param \"%.*s\"=%" PRId32), param.size(), param.data(), x);
             } else {
                 return false;
             }
         } else {
             return false;
         }
-        p_comm_->debug_print("\r\n", true);
+        p_comm_->debug_print(PSTR("\r\n"), true);
         return true;
     });
 
     p_parser_->register_cmd(PSTR("set"), 's', [this](const std::string_view& args) {
-        if (args.find("speed") == 0) {
+        if (args.find(PSTR("speed")) == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_speed(static_cast<float>(left));
             p_speedcontrols_[1]->set_speed(static_cast<float>(right));
-        } else if (args.find("motor") == 0) {
+        } else if (args.find(PSTR("motor")) == 0) {
             int16_t left {}, right {};
             CmdParser::split_args(args, left, right);
             p_motors_[0]->set(left);
             p_motors_[1]->set(right);
-        } else if (args.find("servo") == 0) {
+        } else if (args.find(PSTR("servo")) == 0) {
             uint8_t s1 {}, s2 {};
             CmdParser::split_args(args, s1, s2);
             if (!s2) {
@@ -579,7 +579,7 @@ void CtBot::init_parser() {
                     p_servos_[1]->disable();
                 }
             }
-        } else if (args.find("enapwm") == 0) {
+        } else if (args.find(PSTR("enapwm")) == 0) {
             uint8_t pin {};
             bool value {};
             CmdParser::split_args(args, pin, value);
@@ -589,7 +589,7 @@ void CtBot::init_parser() {
             } else {
                 p_ena_pwm_->off(static_cast<LedTypesEna>(1 << pin));
             }
-        } else if (args.find("ena") == 0) {
+        } else if (args.find(PSTR("ena")) == 0) {
             uint8_t pin {};
             bool value {};
             CmdParser::split_args(args, pin, value);
@@ -599,15 +599,15 @@ void CtBot::init_parser() {
             } else {
                 p_ena_->off(static_cast<EnaI2cTypes>(1 << pin));
             }
-        } else if (args.find("led") == 0) {
+        } else if (args.find(PSTR("led")) == 0) {
             uint8_t led {};
             CmdParser::split_args(args, led);
             p_leds_->set(static_cast<LedTypes>(led));
-        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcdbl") == 0) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdbl")) == 0) {
             bool v {};
             CmdParser::split_args(args, v);
             p_lcd_->set_backlight(v);
-        } else if (CtBotConfig::LCD_AVAILABLE && args.find("lcd") == 0) {
+        } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcd")) == 0) {
             uint8_t line {}, column {};
             auto sv { CmdParser::split_args(args, line, column) };
             if (!line && !column) {
@@ -619,14 +619,14 @@ void CtBot::init_parser() {
                 return false;
             }
             p_lcd_->print(sv.substr(1));
-        } else if (CtBotConfig::TFT_AVAILABLE && args.find("tftbl") == 0) {
+        } else if (CtBotConfig::TFT_AVAILABLE && args.find(PSTR("tftbl")) == 0) {
             const auto n { args.find(' ') };
             if (n == args.npos) {
                 return false;
             }
             const float v { std::strtof(args.data() + n, nullptr) };
             p_tft_->set_backlight(v);
-        } else if (args.find("paramf") == 0) {
+        } else if (args.find(PSTR("paramf")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
                 return false;
@@ -638,17 +638,17 @@ void CtBot::init_parser() {
             }
 
             const std::string_view key { args.substr(s, e - s) };
-            p_comm_->debug_printf<true>("key=\"%.*s\"\r\n", key.size(), key.data());
+            p_comm_->debug_printf<true>(PSTR("key=\"%.*s\"\r\n"), key.size(), key.data());
 
             const std::string_view val { args.substr(e + 1) };
-            p_comm_->debug_printf<true>("val=\"%.*s\"\r\n", val.size(), val.data());
+            p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
             const float value { std::strtof(val.data(), nullptr) };
             p_comm_->debug_printf<true>(PP_ARGS("value={}\r\n", value));
 
             p_parameter_->set<float>(key, value);
             p_parameter_->flush();
-        } else if (args.find("param") == 0) {
+        } else if (args.find(PSTR("param")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
                 return false;
@@ -660,10 +660,10 @@ void CtBot::init_parser() {
             }
 
             const std::string_view key { args.substr(s, e - s) };
-            p_comm_->debug_printf<true>("key=\"%.*s\"\r\n", key.size(), key.data());
+            p_comm_->debug_printf<true>(PSTR("key=\"%.*s\"\r\n"), key.size(), key.data());
 
             const std::string_view val { args.substr(e + 1) };
-            p_comm_->debug_printf<true>("val=\"%.*s\"\r\n", val.size(), val.data());
+            p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
             int32_t value;
             std::from_chars(val.cbegin(), std::prev(val.cend()), value);
@@ -679,21 +679,21 @@ void CtBot::init_parser() {
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
         p_parser_->register_cmd(PSTR("audio"), 'a', [this](const std::string_view& args) {
-            if (args.find("play") == 0) {
+            if (args.find(PSTR("play")) == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
                 return play_wav(args.substr(s, e - s));
-            } else if (args.find("on") == 0) {
+            } else if (args.find(PSTR("on")) == 0) {
                 get_ena()->on(EnaI2cTypes::AUDIO);
                 using namespace std::chrono_literals;
                 std::this_thread::sleep_for(1'500ms);
-            } else if (args.find("off") == 0) {
+            } else if (args.find(PSTR("off")) == 0) {
                 get_ena()->off(EnaI2cTypes::AUDIO);
                 p_play_wav_->stop();
                 if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
                     p_audio_sine_->frequency(0.f);
                 }
-            } else if (args.find("vol") == 0) {
+            } else if (args.find(PSTR("vol")) == 0) {
                 const auto n { args.find(' ') };
                 if (n == args.npos) {
                     return false;
@@ -705,11 +705,11 @@ void CtBot::init_parser() {
                     e->gain(2, volume);
                 }
 
-            } else if (args.find("pitch") == 0) {
+            } else if (args.find(PSTR("pitch")) == 0) {
                 uint8_t pitch {};
                 CmdParser::split_args(args, pitch);
                 p_tts_->set_pitch(pitch);
-            } else if (args.find("speak") == 0) {
+            } else if (args.find(PSTR("speak")) == 0) {
                 if (p_tts_->is_playing()) {
                     return false;
                 }
@@ -718,7 +718,7 @@ void CtBot::init_parser() {
                 if (s != args.npos) {
                     return p_tts_->speak(args.substr(s + 1), true);
                 }
-            } else if (CtBotConfig::AUDIO_TEST_AVAILABLE && args.find("sine") == 0) {
+            } else if (CtBotConfig::AUDIO_TEST_AVAILABLE && args.find(PSTR("sine")) == 0) {
                 const auto n { args.find(' ') };
                 if (n == args.npos) {
                     return false;
@@ -733,7 +733,7 @@ void CtBot::init_parser() {
     }
 
     p_parser_->register_cmd(PSTR("fs"), 'f', [this](const std::string_view& args) {
-        if (args.find("ls") == 0) {
+        if (args.find(PSTR("ls")) == 0) {
             const auto s { args.find(' ') };
             std::string dir;
             if (s == args.npos) {
@@ -782,21 +782,21 @@ void CtBot::init_parser() {
 
     if (CtBotConfig::PROG_AVAILABLE) {
         p_parser_->register_cmd(PSTR("prog"), 'p', [this](const std::string_view& args) {
-            if (args.find("run") == 0) {
+            if (args.find(PSTR("run")) == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
                 const std::string_view filename { args.substr(s, e - s) };
 
                 auto p_cmd_script { std::make_unique<CmdScript>(filename, *p_comm_, *p_parser_) };
                 return p_cmd_script->exec_script();
-            } else if (args.find("view") == 0) {
+            } else if (args.find(PSTR("view")) == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
                 const std::string_view filename { args.substr(s, e - s) };
 
                 auto p_cmd_script { std::make_unique<CmdScript>(filename, *p_comm_, *p_parser_) };
                 return p_cmd_script->print_script();
-            } else if (args.find("create") == 0) {
+            } else if (args.find(PSTR("create")) == 0) {
                 size_t num {};
                 const std::string_view str { CmdParser::split_args(args, num) };
                 const size_t s { str.find(' ') + 1 };
@@ -813,17 +813,17 @@ void CtBot::init_parser() {
 
     if (CtBotConfig::I2C_TOOLS_AVAILABLE) {
         p_parser_->register_cmd(PSTR("i2c"), 'i', [this](const std::string_view& args) {
-            if (args.find("select") == 0) {
+            if (args.find(PSTR("select")) == 0) {
                 uint8_t bus {};
                 uint16_t freq {};
                 CmdParser::split_args(args, bus, freq);
                 return p_i2c_->init(bus, freq * 1000UL);
-            } else if (args.find("addr") == 0) {
+            } else if (args.find(PSTR("addr")) == 0) {
                 uint8_t addr {};
                 CmdParser::split_args(args, addr);
                 p_i2c_->set_address(addr);
                 return true;
-            } else if (args.find("read8") == 0) {
+            } else if (args.find(PSTR("read8")) == 0) {
                 uint8_t addr {};
                 CmdParser::split_args(args, addr);
                 uint8_t data {};
@@ -834,7 +834,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("read16") == 0) {
+            } else if (args.find(PSTR("read16")) == 0) {
                 uint8_t addr {};
                 CmdParser::split_args(args, addr);
                 uint16_t data {};
@@ -845,7 +845,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("read32") == 0) {
+            } else if (args.find(PSTR("read32")) == 0) {
                 uint8_t addr {};
                 CmdParser::split_args(args, addr);
                 uint32_t data {};
@@ -856,7 +856,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("write8") == 0) {
+            } else if (args.find(PSTR("write8")) == 0) {
                 uint8_t addr {};
                 uint8_t data {};
                 CmdParser::split_args(args, addr, data);
@@ -867,7 +867,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("write16") == 0) {
+            } else if (args.find(PSTR("write16")) == 0) {
                 uint8_t addr {};
                 uint16_t data {};
                 CmdParser::split_args(args, addr, data);
@@ -878,7 +878,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("write32") == 0) {
+            } else if (args.find(PSTR("write32")) == 0) {
                 uint8_t addr {};
                 uint32_t data {};
                 CmdParser::split_args(args, addr, data);
@@ -889,7 +889,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("setbit") == 0) {
+            } else if (args.find(PSTR("setbit")) == 0) {
                 uint8_t addr {};
                 uint8_t bit {};
                 CmdParser::split_args(args, addr, bit);
@@ -902,7 +902,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("clearbit") == 0) {
+            } else if (args.find(PSTR("clearbit")) == 0) {
                 uint8_t addr {};
                 uint8_t bit {};
                 CmdParser::split_args(args, addr, bit);
@@ -915,7 +915,7 @@ void CtBot::init_parser() {
                         "bus {} @ {} kHz dev {#x} addr {#x} = {#x}\r\n", p_i2c_->get_bus(), p_i2c_->get_freq() / 1000UL, p_i2c_->get_address(), addr, data));
                     return true;
                 }
-            } else if (args.find("scan") == 0) {
+            } else if (args.find(PSTR("scan")) == 0) {
                 for (uint8_t i { 8 }; i < 120; ++i) {
                     if (p_i2c_->test(i)) {
                         p_comm_->debug_printf<true>(
@@ -974,16 +974,16 @@ void CtBot::run() {
     }
 }
 
-bool CtBot::play_wav(const std::string_view& filename) {
+FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
     if (CtBotConfig::AUDIO_AVAILABLE) {
         if (p_play_wav_->isPlaying()) {
-            p_comm_->debug_print("CtBot::play_wav(): Still playing, abort.\r\n", false);
+            p_comm_->debug_print(PSTR("CtBot::play_wav(): Still playing, abort.\r\n"), false);
             return false;
         }
 
         const auto str_begin { filename.find_first_not_of(' ') };
         if (str_begin == filename.npos) {
-            p_comm_->debug_print("CtBot::play_wav(): no file given, abort.\r\n", false);
+            p_comm_->debug_print(PSTR("CtBot::play_wav(): no file given, abort.\r\n"), false);
             return false;
         }
 
@@ -1002,7 +1002,7 @@ bool CtBot::play_wav(const std::string_view& filename) {
     }
 }
 
-void CtBot::shutdown() {
+FLASHMEM void CtBot::shutdown() {
     ready_ = false;
 
     if (CtBotConfig::LUA_AVAILABLE) {
@@ -1049,7 +1049,7 @@ void CtBot::shutdown() {
                 ::serial_puts(PSTR("CtBot::shutdown(): p_audio_sine_ deleted."));
             }
         }
-        p_scheduler_->task_remove(p_scheduler_->task_get("audio"));
+        p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("audio")));
         if (DEBUG) {
             ::serial_puts(PSTR("CtBot::shutdown(): audio task removed."));
         }
@@ -1146,18 +1146,18 @@ void CtBot::shutdown() {
 
     free_rtos_std::gthr_freertos::set_next_stacksize(384);
     auto p_exit_thread { std::make_unique<std::thread>([]() { std::exit(0); }) };
-    free_rtos_std::gthr_freertos::set_name(p_exit_thread.get(), "EXIT");
+    free_rtos_std::gthr_freertos::set_name(p_exit_thread.get(), PSTR("EXIT"));
     free_rtos_std::gthr_freertos::set_priority(p_exit_thread.get(), 9);
 
     while (true) {
     }
 }
 
-void CtBot::add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active) {
+FLASHMEM void CtBot::add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active) {
     pre_hooks_[name] = std::make_tuple(hook, active);
 }
 
-void CtBot::add_post_hook(const std::string& name, std::function<void()>&& hook, bool active) {
+FLASHMEM void CtBot::add_post_hook(const std::string& name, std::function<void()>&& hook, bool active) {
     post_hooks_[name] = std::make_tuple(hook, active);
 }
 
