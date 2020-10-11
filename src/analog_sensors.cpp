@@ -64,7 +64,7 @@ uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution,
     }
     if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
         last_adc_res_ = resolution;
-        Scheduler::enter_critical_section();
+        Scheduler::enter_critical_section(); // FIXME: don't disable scheduler (yield() is called in analogRead())
         arduino::analogReadResolution(resolution);
     } else {
         Scheduler::enter_critical_section();

@@ -174,9 +174,7 @@ public:
 
     FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
 
-    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func) {
-        register_listener(func, nullptr);
-    }
+    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func);
 
     FLASHMEM bool remove_listener(void* owner);
 };

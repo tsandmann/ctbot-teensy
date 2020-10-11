@@ -29,6 +29,7 @@
 #include "actuator.h"
 
 #include "pprintpp.hpp"
+#include "avr/pgmspace.h"
 
 #include <cstdint>
 #include <string_view>
@@ -128,7 +129,7 @@ protected:
     }
 
     template <bool ENABLED = true, typename... Args>
-    __attribute__((section(".flashmem.template"))) auto debug_print(Args... args) const {
+    FLASHMEM_T auto debug_print(Args... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_print(args..., false);
         } else {
@@ -137,7 +138,7 @@ protected:
     }
 
     template <bool ENABLED = true, typename... Args>
-    FLASHMEM auto debug_printf(const Args&... args) const {
+    FLASHMEM_T auto debug_printf(const Args&... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_printf<false>(args...);
         } else {
@@ -146,43 +147,43 @@ protected:
     }
 
     template <typename T>
-    FLASHMEM bool init_data(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_data(const std::string_view& name, T*& p_res) const {
         return get_ctbot()->get_data()->get_resource(name, p_res);
     }
 
     template <typename T>
-    FLASHMEM bool init_data_ptr(const std::string_view& name, T*& ptr) const {
+    FLASHMEM_T bool init_data_ptr(const std::string_view& name, T*& ptr) const {
         ptr = get_ctbot()->get_data()->get_res_ptr<T>(name);
         return ptr != nullptr;
     }
 
     template <typename T>
-    FLASHMEM bool init_actuator(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_actuator(const std::string_view& name, T*& p_res) const {
         return get_ctbot()->get_actuators()->get_resource(name, p_res);
     }
 
     template <class T, typename U = int32_t>
-    FLASHMEM static auto INIT(const int32_t p) {
+    FLASHMEM_T static auto INIT(const int32_t p) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U>(p)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t>
-    FLASHMEM static auto INIT(const int32_t p1, const int32_t p2) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t, typename U3 = int32_t>
-    FLASHMEM static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2), static_cast<U3>(p3)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t, typename U3 = int32_t, typename U4 = int32_t>
-    FLASHMEM static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3, const int32_t p4) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3, const int32_t p4) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2), static_cast<U3>(p3), static_cast<U4>(p4)));
     }
 
     template <class T, typename... Args>
-    FLASHMEM static auto INIT(Args&&... args) {
+    FLASHMEM_T static auto INIT(Args&&... args) {
         return static_cast<BasePtr>(behavior_factory<T>(std::forward<Args>(args)...));
     }
 

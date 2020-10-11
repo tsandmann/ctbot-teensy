@@ -44,7 +44,30 @@ SECTIONS
         __init_array_start = .;
         KEEP (*(.init_array))
         __init_array_end = .;
-        . = ALIGN(16);
+        . = ALIGN(4);
+    } > FLASH
+
+    .ARM.exidx : {
+        *(.ARM.exidx.startup* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.flashmem* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text.startup* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZNSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZNKSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZZNSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text.*ArduinoJson* .gnu.linkonce.armexidx.*)
+        . = ALIGN(4);
+    } > FLASH
+ 
+    .ARM.extab : {
+        *(.ARM.extab.text.startup* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.flashmem* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZNSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZNKSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZZNSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text.*ArduinoJson* .gnu.linkonce.armextab.*)
+        . = ALIGN(4);
     } > FLASH
 
     .data.func : {
@@ -60,16 +83,12 @@ SECTIONS
         . = ALIGN(16);
     } > ITCM AT> FLASH
 
-    .ARM.exidx : {
-        . = ALIGN(4);
-        __exidx_start = .;
+    .ARM.exidx.itcm : {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-        __exidx_end = .;
         . = ALIGN(4);
     } > ITCM AT> FLASH
 
-    .ARM.extab : {
-        . = ALIGN(4);
+    .ARM.extab.itcm : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
         . = ALIGN(4);
     } > ITCM AT> FLASH
@@ -82,7 +101,7 @@ SECTIONS
         *(.rodata*)
         *(.data*)
         . = ALIGN(16);
-    } > DTCM  AT> FLASH
+    } > DTCM AT> FLASH
 
     .bss ALIGN(4) : {
         *(.bss*)
@@ -120,6 +139,9 @@ SECTIONS
 
     _flashimagelen = SIZEOF(.text.progmem) + SIZEOF(.text.itcm) + SIZEOF(.ARM.exidx) + SIZEOF(.ARM.extab) + SIZEOF(.data) + SIZEOF(.data.func);
     _teensy_model_identifier = 0x25;
+
+    __exidx_start = ADDR(.ARM.exidx);
+    __exidx_end = ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx);
 
     .debug_info     0 : { *(.debug_info) }
     .debug_abbrev   0 : { *(.debug_abbrev) }

@@ -75,6 +75,7 @@ Scheduler::~Scheduler() {
             // arduino::Serial.println("\" will be deleted...");
             // arduino::Serial.flush();
             delete t.second;
+            freertos::delay_ms(100);
             // arduino::Serial.println("Scheduler::~Scheduler(): task delete done.");
             // arduino::Serial.flush();
         }

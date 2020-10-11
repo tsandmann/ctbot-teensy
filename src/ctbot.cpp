@@ -145,6 +145,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_scheduler_ = new Scheduler;
     task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
     p_scheduler_->task_register(PSTR("Tmr Svc"));
+    p_scheduler_->task_register(PSTR("YIELD"));
     p_scheduler_->task_register(PSTR("EVENT"));
 
     p_parser_ = new CmdParser;
@@ -303,35 +304,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         },
         false);
 
-    p_comm_->debug_print(PSTR("\r\n*** c't-Bot init done. ***\n\r\nType \"help\" (or \"h\") to print help message\n\r\n"), true);
+    p_comm_->debug_print(PSTR("\r\n*** c't-Bot init done. ***\r\n\nType \"help\" (or \"h\") to print help message\r\n\n"), true);
     p_comm_->flush();
 
     ready_ = set_ready;
-
-    // auto p_er = new EventResponder;
-    // auto p_mt = new MillisTimer;
-    // p_mt->beginRepeating(3'000, *p_er);
-    // p_er->attach([](EventResponder&) {
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered by yield.\n\rtask: \""), true);
-    //     TaskStatus_t status;
-    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
-    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
-    // });
-    // p_er->attachImmediate([](EventResponder&) {
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered imm.\n\rtask: \""), true);
-    //     TaskStatus_t status;
-    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
-    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
-    // });
-    // p_er->attachInterrupt([](EventResponder&) {
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("p_er triggered int.\n\rtask: \""), true);
-    //     TaskStatus_t status;
-    //     ::vTaskGetInfo(nullptr, &status, false, eInvalid);
-    //     CtBot::get_instance().get_comm()->debug_print(status.pcTaskName, true);
-    //     CtBot::get_instance().get_comm()->debug_print(PSTR("\"\n\r"), true);
-    // });
 }
 
 FLASHMEM void CtBot::init_parser() {
@@ -1042,6 +1018,8 @@ FLASHMEM void CtBot::shutdown() {
     p_leds_->set(LedTypes::NONE);
     p_sensors_->disable_all();
 
+    ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
+
     if (CtBotConfig::AUDIO_AVAILABLE) {
         if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
             delete p_audio_sine_;
@@ -1148,6 +1126,8 @@ FLASHMEM void CtBot::shutdown() {
     auto p_exit_thread { std::make_unique<std::thread>([]() { std::exit(0); }) };
     free_rtos_std::gthr_freertos::set_name(p_exit_thread.get(), PSTR("EXIT"));
     free_rtos_std::gthr_freertos::set_priority(p_exit_thread.get(), 9);
+
+    ::vTaskPrioritySet(nullptr, 1);
 
     while (true) {
     }

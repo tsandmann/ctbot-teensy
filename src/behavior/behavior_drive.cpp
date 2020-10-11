@@ -48,7 +48,7 @@ BehaviorDrive::BehaviorDrive(const int16_t distance, const uint16_t priority)
     if (DEBUG_) {
         start_.print(*get_ctbot()->get_comm());
     }
-    debug_printf<DEBUG_>(PP_ARGS("\n\rBehaviorDrive::BehaviorDrive(): forward_={}\r\n", forward_));
+    debug_printf<DEBUG_>(PP_ARGS("\r\nBehaviorDrive::BehaviorDrive(): forward_={}\r\n", forward_));
 }
 
 BehaviorDrive::~BehaviorDrive() {

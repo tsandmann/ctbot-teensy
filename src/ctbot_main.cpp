@@ -36,6 +36,8 @@
 #include <memory>
 
 
+static constexpr bool DEBUG { false };
+
 namespace ctbot {
 tests::BlinkTest* g_blink_test {};
 tests::LedTest* g_led_test {};
@@ -55,22 +57,28 @@ tests::TaskWaitTest* g_wait_test {};
 static FLASHMEM void init_task() {
     using namespace ctbot;
 
-    /* wait for USB device enumeration, terminal program connection, etc. */
-    Timer::delay_us(CtBotConfig::BOOT_DELAY_MS * 1'000UL);
     ::serial_puts(PSTR("\r\n"));
 
-    // ::serial_puts(PSTR("init_task()"));
-    // freertos::print_ram_usage();
+    if (DEBUG) {
+        ::serial_puts(PSTR("init_task()"));
+        freertos::print_ram_usage();
+    }
 
     /* create CtBot singleton instance... */
-    // ::serial_puts(PSTR("creating CtBot instance..."));
+    if (DEBUG) {
+        ::serial_puts(PSTR("creating CtBot instance..."));
+    }
     CtBot& ctbot { CtBot::get_instance() };
 
     /* initialize it... */
-    // ::serial_puts(PSTR("calling ctbot.setup()..."));
+    if (DEBUG) {
+        ::serial_puts(PSTR("calling ctbot.setup()..."));
+    }
     ctbot.setup(true);
-    ::serial_puts(PSTR("ctbot.setup() done."));
-    ::serial_puts(PSTR("running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\n\r"));
+    if (DEBUG) {
+        ::serial_puts(PSTR("ctbot.setup() done."));
+    }
+    ::serial_puts(PSTR("running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
@@ -126,7 +134,9 @@ static FLASHMEM void init_task() {
     ::serial_puts("");
 
     ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
-    // ::serial_puts(PSTR("deleting init task..."));
+    if (DEBUG) {
+        ::serial_puts(PSTR("deleting init task..."));
+    }
     ::vTaskDelete(nullptr);
 }
 
@@ -224,11 +234,17 @@ extern "C" {
  *  deactivate CtBot
  * @enduml
  */
-FLASHMEM void setup() {
+FLASHMEM __attribute__((noinline)) void setup() {
     using namespace ctbot;
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
+    /* wait for USB device enumeration, terminal program connection, etc. */
+    freertos::delay_ms(CtBotConfig::BOOT_DELAY_MS);
+
+    if (DEBUG) {
+        ::serial_puts(PSTR("setup(): setting up init task..."));
+    }
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
     free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), PSTR("INIT"));
@@ -236,6 +252,9 @@ FLASHMEM void setup() {
 
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
 
+    if (DEBUG) {
+        ::serial_puts(PSTR("setup(): calling ::vTaskStartScheduler()..."));
+    }
     ::vTaskStartScheduler();
 
     freertos::error_blink(10);

@@ -110,6 +110,10 @@ void ResourceContainer::register_listener(std::function<void(const ResourceConta
     listeners_.push_back(std::make_tuple(func, owner));
 }
 
+void ResourceContainer::register_listener(std::function<void(const ResourceContainer&)> func) {
+    register_listener(func, nullptr);
+}
+
 bool ResourceContainer::remove_listener(void* owner) {
     std::lock_guard<std::mutex> lock(mutex_);
 
