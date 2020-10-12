@@ -67,7 +67,6 @@ BehaviorTurn::BehaviorTurn(const int16_t degrees, const uint16_t priority, const
 
 BehaviorTurn::~BehaviorTurn() {
     debug_print<DEBUG_>(PSTR("BehaviorTurn::~BehaviorTurn()\r\n"));
-    // debug_flush<DEBUG_>();
 
     abort_beh();
     wait();
@@ -138,7 +137,6 @@ void BehaviorTurn::run() {
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                     print_pose(false);
                     debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): done.\r\n"));
-                    // debug_flush<DEBUG_>();
 
                     /* everything done, exit this behavior */
                     exit();
@@ -148,7 +146,6 @@ void BehaviorTurn::run() {
 
         case State::ABORT:
             debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): aborted.\r\n"));
-            // debug_flush<DEBUG_>();
             exit();
             break;
     }

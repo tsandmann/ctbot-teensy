@@ -28,8 +28,6 @@
 #include "scheduler.h"
 #include "ctbot.h"
 
-//#include <portable/teensy.h>
-
 
 namespace ctbot {
 

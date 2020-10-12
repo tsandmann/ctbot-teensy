@@ -318,14 +318,12 @@ public:
 
         if (!callee_data) {
             debug_print<DEBUG_>(PSTR("BehaviorLegacy::call(): \"legacy::legacy_caller_behaviour\" could not be activated.\r\n"));
-            // debug_flush<DEBUG_>();
             caller->subResult = BehaviorLegacy::BEHAVIOUR_SUBFAIL;
             caller->active = BehaviorLegacy::BEHAVIOUR_ACTIVE;
             return nullptr;
         }
 
         debug_print<DEBUG_>(PSTR("BehaviorLegacy::call(): \"legacy::legacy_caller_behaviour\" activated.\r\n"));
-        // debug_flush<DEBUG_>();
 
         return callee_data;
     }

@@ -40,7 +40,6 @@ BehaviorFollowLine::BehaviorFollowLine(const uint16_t priority)
 
 BehaviorFollowLine::~BehaviorFollowLine() {
     debug_print<DEBUG_>(PSTR("BehaviorFollowLine::~BehaviorFollowLine()\r\n"));
-    // debug_flush<DEBUG_>();
 
     abort_beh();
     wait();
@@ -52,7 +51,6 @@ void BehaviorFollowLine::run() {
 
     if (abort_request_) {
         debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): aborted.\r\n"));
-        // debug_flush<DEBUG_>();
         exit();
         return;
     }

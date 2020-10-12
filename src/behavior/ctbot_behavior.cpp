@@ -80,12 +80,11 @@ void CtBotBehavior::setup(const bool set_ready) {
                 const auto beh { beh_it->second };
                 const auto params { std::get<0>(beh_it->second) };
                 get_comm()->debug_printf<true>(PSTR("creating behavior \"%.*s\" with %u parameters...\r\n"), beh_name.size(), beh_name.data(), params);
-                // get_comm()->flush();
+
                 switch (params) {
                     case 0:
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>()>>(std::get<1>(beh))();
                         get_comm()->debug_print(PSTR(" done.\r\n"), true);
-                        // get_comm()->flush();
                         break;
 
                     case 1: {
@@ -93,7 +92,6 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t)>>(std::get<1>(beh))(v);
                         get_comm()->debug_print(PSTR(" done.\r\n"), true);
-                        // get_comm()->flush();
                         break;
                     }
 
@@ -102,7 +100,6 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2);
                         get_comm()->debug_print(PSTR(" done.\r\n"), true);
-                        // get_comm()->flush();
                         break;
                     }
 
@@ -112,7 +109,6 @@ void CtBotBehavior::setup(const bool set_ready) {
                         p_beh_ =
                             std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2, v3);
                         get_comm()->debug_print(PSTR(" done.\r\n"), true);
-                        // get_comm()->flush();
                         break;
                     }
 
@@ -122,7 +118,6 @@ void CtBotBehavior::setup(const bool set_ready) {
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)>>(
                             std::get<1>(beh))(v1, v2, v3, v4);
                         get_comm()->debug_print(PSTR(" done.\r\n"), true);
-                        // get_comm()->flush();
                         break;
                     }
 

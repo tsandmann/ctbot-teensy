@@ -66,7 +66,6 @@ Behavior::Behavior(const std::string& name) : Behavior { name, DEFAULT_PRIORITY,
 
 Behavior::~Behavior() {
     debug_printf<DEBUG_>(PP_ARGS("Behavior::~Behavior() for \"{s}\": removing task {#x}...\r\n", get_name().c_str(), task_id_));
-    // debug_flush<DEBUG_>();
 
     if (get_ctbot()->get_scheduler()->task_remove(task_id_)) {
         debug_printf<DEBUG_>(PP_ARGS("Behavior::~Behavior() for \"{s}\": task removed.\r\n", get_name().c_str()));
@@ -82,7 +81,6 @@ uint16_t Behavior::get_priority() const {
 
 void Behavior::wait() {
     debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): waiting for exit of \"{s}\"...\r\n", get_name().c_str()));
-    // debug_flush<DEBUG_>();
 
     while (!finished_) {
         {
@@ -91,14 +89,12 @@ void Behavior::wait() {
         }
         if (!finished_) {
             debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" woke up, but not finished. Probably a BUG.\r\n", get_name().c_str()));
-            // debug_flush<DEBUG_>();
 
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(100ms);
         }
     }
     debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" finished.\r\n", get_name().c_str()));
-    // debug_flush<DEBUG_>();
 }
 
 void Behavior::wait_for_model_update() {
@@ -110,14 +106,12 @@ bool Behavior::exit() {
         finished_ = true;
 
         debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": notifying caller...\r\n", get_name().c_str()));
-        // debug_flush<DEBUG_>();
 
         caller_cv_.notify_all();
         return true;
     }
 
     debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": called, but already finished!\r\n", get_name().c_str()));
-    // debug_flush<DEBUG_>();
     return false;
 }
 

@@ -27,7 +27,6 @@
 #include "ctbot.h"
 
 #include "rc5.h"
-//#include "portable/teensy.h"
 
 #include <type_traits>
 

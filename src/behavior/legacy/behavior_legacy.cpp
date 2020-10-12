@@ -370,12 +370,10 @@ BehaviorLegacy::BehaviorLegacy(const std::string& name)
     : Behavior { name, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, running_ {}, max_active_priority_ {}, behavior_ {} {
     bot_behave_init();
     debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::BehaviorLegacy(\"{s}\").\r\n", name.c_str()));
-    // debug_flush<DEBUG_>();
 }
 
 BehaviorLegacy::~BehaviorLegacy() {
     debug_print<DEBUG_>(PSTR("BehaviorLegacy::~BehaviorLegacy().\r\n"));
-    // debug_flush<DEBUG_>();
 
     abort_beh();
     wait();
@@ -391,7 +389,6 @@ BehaviorLegacy::~BehaviorLegacy() {
 void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
     if (!data->caller) {
         debug_print<DEBUG_>(PSTR("BehaviorLegacy::legacy_caller_behaviour(): no caller found, abort.\r\n"));
-        // debug_flush<DEBUG_>();
 
         running_ = false;
         exit_behavior(data, BEHAVIOUR_SUBFAIL);
@@ -401,7 +398,6 @@ void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
     const auto it { called_behaviors_.find(data->caller) };
     if (it == called_behaviors_.end()) {
         debug_print<DEBUG_>(PSTR("BehaviorLegacy::legacy_caller_behaviour(): no behavior with valid caller found, abort.\r\n"));
-        // debug_flush<DEBUG_>();
 
         running_ = false;
         exit_behavior(data, BEHAVIOUR_SUBFAIL);
@@ -411,11 +407,9 @@ void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
     if (it->second->finished()) {
         const std::string callee_name { it->second->get_name() };
         debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::legacy_caller_behaviour(): behavior \"{s}\" finished.\r\n", callee_name.c_str()));
-        // debug_flush<DEBUG_>();
 
         called_behaviors_.erase(data->caller);
         debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::legacy_caller_behaviour(): \"{s}\" deleted.\r\n", callee_name.c_str()));
-        // debug_flush<DEBUG_>();
 
         running_ = false;
         return_from_behavior(data);
@@ -425,27 +419,22 @@ void BehaviorLegacy::legacy_caller_behaviour(legacy::Behaviour_t* data) {
 void BehaviorLegacy::abort_behavior(legacy::Behaviour_t* caller) {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::abort_behavior(\"{#x}\") for \"{s}\".\r\n", caller, get_name().c_str()));
     debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::abort_behavior(): called_behaviors_.size()={}.\r\n", called_behaviors_.size()));
-    // debug_flush<DEBUG_>();
 
     for (auto& e : called_behaviors_) {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::abort_behavior(): called_behaviors: {#x} -> \"{s}\".\r\n", e.first, e.second->get_name().c_str()));
     }
-    // debug_flush<DEBUG_>();
 
     if (called_behaviors_.count(caller)) {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::abort_behavior() called behavior found: \"{s}\"\r\n", called_behaviors_[caller]->get_name().c_str()));
-        // debug_flush<DEBUG_>();
 
         called_behaviors_[caller]->abort_beh();
     }
 
     debug_print<DEBUG_>(PSTR("BehaviorLegacy::abort_behavior() done.\r\n"));
-    // debug_flush<DEBUG_>();
 }
 
 void BehaviorLegacy::run() {
     debug_print<DEBUG_>(PSTR("BehaviorLegacy::run().\r\n"));
-    // debug_flush<DEBUG_>();
 
     while (!finished() && get_ctbot()->get_ready()) {
         wait_for_model_update();
@@ -470,7 +459,6 @@ void BehaviorLegacy::run() {
     }
 
     debug_print<DEBUG_>(PSTR("BehaviorLegacy::run(): finished.\r\n"));
-    // debug_flush<DEBUG_>();
 
     exit();
 }

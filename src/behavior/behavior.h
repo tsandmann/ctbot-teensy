@@ -266,7 +266,6 @@ public:
 
     FLASHMEM virtual ~BehaviorRunUntil() override {
         debug_print<DEBUG_>(PSTR("BehaviorRunUntil::~BehaviorRunUntil()\r\n"));
-        // debug_flush<DEBUG_>();
 
         abort_beh();
         wait();
@@ -278,7 +277,6 @@ protected:
 
     virtual void run() override {
         debug_print<DEBUG_>(PSTR("BehaviorRunUntil::run().\r\n"));
-        // debug_flush<DEBUG_>();
 
         do {
             using namespace std::chrono_literals;
@@ -289,10 +287,8 @@ protected:
             p_beh_->abort_beh();
 
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" aborted.\r\n", p_beh_->get_name().c_str()));
-            // debug_flush<DEBUG_>();
         } else {
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" finished.\r\n", p_beh_->get_name().c_str()));
-            // debug_flush<DEBUG_>();
         }
 
         exit();

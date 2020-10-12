@@ -53,7 +53,6 @@ BehaviorDrive::BehaviorDrive(const int16_t distance, const uint16_t priority)
 
 BehaviorDrive::~BehaviorDrive() {
     debug_print<DEBUG_>(PSTR("BehaviorDrive::~BehaviorDrive()\r\n"));
-    // debug_flush<DEBUG_>();
 
     abort_beh();
     wait();
@@ -102,7 +101,6 @@ void BehaviorDrive::run() {
 
         case State::ABORT:
             debug_print<DEBUG_>(PSTR("BehaviorDrive::run(): aborted.\r\n"));
-            // debug_flush<DEBUG_>();
             exit();
             return;
     }
