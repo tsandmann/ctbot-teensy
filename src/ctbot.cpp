@@ -114,7 +114,7 @@ FLASHMEM CtBot::CtBot()
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
       p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {},
       p_serial_usb_ { new SerialConnectionTeensy { 0, CtBotConfig::UART0_BAUDRATE } }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_i2c_ {}, p_parameter_ {},
-      p_audio_output_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {
+      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {
     std::atexit([]() {
         if (DEBUG) {
             ::serial_puts(PSTR("exit()"));
@@ -219,8 +219,14 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         configASSERT(p_play_wav_);
         p_tts_ = new TTS;
         configASSERT(p_tts_);
-        p_audio_output_ = new AudioOutputI2S;
-        configASSERT(p_audio_output_);
+        if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+            p_audio_output_i2s_ = new AudioOutputI2S;
+            configASSERT(p_audio_output_i2s_);
+        }
+        if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+            p_audio_output_dac_ = new AudioOutputAnalog;
+            configASSERT(p_audio_output_dac_);
+        }
         if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
             p_audio_sine_ = new AudioSynthWaveformSine;
             configASSERT(p_audio_sine_);
@@ -241,7 +247,11 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
             p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, i, *p_audio_mixer_[i], 0 });
             configASSERT(*p_audio_conn_.rbegin());
-            p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_, i });
+            if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+                p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_i2s_, i });
+            } else if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+                p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_dac_, i });
+            }
             configASSERT(*p_audio_conn_.rbegin());
         }
         p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[0], 1 });
@@ -1045,9 +1055,17 @@ FLASHMEM void CtBot::shutdown() {
             ::serial_puts(PSTR("CtBot::shutdown(): p_audio_mixer_ deleted."));
         }
 
-        delete p_audio_output_;
-        if (DEBUG) {
-            ::serial_puts(PSTR("CtBot::shutdown(): p_audio_output_ deleted."));
+        if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+            delete p_audio_output_i2s_;
+            if (DEBUG) {
+                ::serial_puts(PSTR("CtBot::shutdown(): p_audio_output_i2s_ deleted."));
+            }
+        }
+        if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+            delete p_audio_output_dac_;
+            if (DEBUG) {
+                ::serial_puts(PSTR("CtBot::shutdown(): p_audio_output_dac_ deleted."));
+            }
         }
 
         delete p_tts_;

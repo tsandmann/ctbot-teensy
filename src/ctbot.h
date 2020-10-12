@@ -36,6 +36,7 @@
 #include <vector>
 
 
+class AudioOutputAnalog;
 class AudioOutputI2S;
 class AudioPlaySdWav;
 class AudioSynthWaveformSine;
@@ -101,7 +102,8 @@ protected:
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     I2C_Wrapper* p_i2c_;
     ParameterStorage* p_parameter_;
-    AudioOutputI2S* p_audio_output_;
+    AudioOutputAnalog* p_audio_output_dac_;
+    AudioOutputI2S* p_audio_output_i2s_;
     AudioSynthWaveformSine* p_audio_sine_;
     AudioPlaySdWav* p_play_wav_;
     TTS* p_tts_;
