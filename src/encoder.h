@@ -27,7 +27,7 @@
 #include "timer.h"
 #include "ctbot_config.h"
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <cstdint>
 
@@ -70,7 +70,7 @@ public:
      * @param[in] p_idx: Pointer to current index in data array
      * @param[in] pin: Pin number of the input data signal
      */
-    Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin);
+    FLASHMEM Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin);
 
     /**
      * @brief Check for new input data and calculate current speed

@@ -26,7 +26,7 @@
 
 #include "timer.h"
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <cstdint>
 
@@ -71,12 +71,12 @@ public:
      * @brief Construct a new Rc5 object
      * @param[in] pin: Pin number of the input data signal, only used for initialization
      */
-    Rc5(const uint8_t pin);
+    FLASHMEM Rc5(const uint8_t pin);
 
     /**
      * @brief Destroy the Rc5 object
      */
-    ~Rc5();
+    FLASHMEM ~Rc5();
 
     /**
      * @brief Check for new input data and process it, if available

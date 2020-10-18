@@ -48,7 +48,7 @@ void bot_turn_behaviour(Behaviour_t* data);
  *                  zwischen -360 und +360
  * \return          Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_turn(Behaviour_t* caller, int16_t degrees);
+FLASHMEM Behaviour_t* bot_turn(Behaviour_t* caller, int16_t degrees);
 
 /**
  * Dreht den Bot im mathematischen Drehsinn im Rahmen der angegebenen Geschwindigkeiten.
@@ -59,7 +59,7 @@ Behaviour_t* bot_turn(Behaviour_t* caller, int16_t degrees);
  * \param maxspeed  maximale Drehgeschwindigkeit [mm/s]
  * \return          Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_turn_speed(Behaviour_t* caller, int16_t degrees, int16_t minspeed, int16_t maxspeed);
+FLASHMEM Behaviour_t* bot_turn_speed(Behaviour_t* caller, int16_t degrees, int16_t minspeed, int16_t maxspeed);
 
 /**
  * Dreht den Bot im mathematischen Drehsinn hoechstens mit der angegebenen Geschwindigkeit.
@@ -69,7 +69,7 @@ Behaviour_t* bot_turn_speed(Behaviour_t* caller, int16_t degrees, int16_t minspe
  * \param speed     maximale Drehgeschwindigkeit [mm/s]
  * \return          Zeiger auf Verhaltensdatensatz
  */
-static inline Behaviour_t* bot_turn_maxspeed(Behaviour_t* caller, int16_t degrees, int16_t speed) {
+FLASHMEM static inline Behaviour_t* bot_turn_maxspeed(Behaviour_t* caller, int16_t degrees, int16_t speed) {
     return bot_turn_speed(caller, degrees, BOT_SPEED_MIN, speed);
 }
 

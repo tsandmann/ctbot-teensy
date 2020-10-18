@@ -65,17 +65,17 @@ protected:
         return std::get<0>(it->second);
     }
 
-    ResourceBase* get_resource_deep(const std::string_view& name) const;
+    FLASHMEM ResourceBase* get_resource_deep(const std::string_view& name) const;
     void call_listener() const;
 
 public:
     using Ptr = std::unique_ptr<ResourceContainer>;
 
-    ResourceContainer() noexcept;
+    FLASHMEM ResourceContainer() noexcept;
     ~ResourceContainer() = default;
 
     template <class T, typename... Args>
-    typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
+    FLASHMEM typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
         const std::string_view& container_name, const char* new_res, bool active, Args&&... args) {
         ResourceContainer* p_container { get_resource<ResourceContainer>(container_name) };
         if (p_container) {
@@ -85,7 +85,7 @@ public:
     }
 
     template <class T, typename... Args>
-    typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
+    FLASHMEM typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
         const std::string_view& name, bool active, Args&&... args) {
         std::unique_ptr<ResourceBase> p_res { std::make_unique<Resource<T>>(std::forward<Args>(args)...) };
         Resource<T>* ptr { static_cast<Resource<T>*>(p_res.get()) };
@@ -96,7 +96,7 @@ public:
     }
 
     template <class T>
-    typename std::enable_if<std::is_base_of<ResourceContainer, T>::value, T*>::type create_resource(
+    FLASHMEM typename std::enable_if<std::is_base_of<ResourceContainer, T>::value, T*>::type create_resource(
         const std::string_view& container_name, const char* new_res, bool active) {
         ResourceContainer* p_container { get_resource<ResourceContainer>(container_name) };
         if (p_container) {
@@ -106,7 +106,7 @@ public:
     }
 
     template <class T>
-    typename std::enable_if<std::is_base_of<ResourceContainer, T>::value, T*>::type create_resource(const std::string_view& name, bool active) {
+    FLASHMEM typename std::enable_if<std::is_base_of<ResourceContainer, T>::value, T*>::type create_resource(const std::string_view& name, bool active) {
         std::unique_ptr<ResourceBase> p_res { std::make_unique<T>() };
         T* ptr { static_cast<T*>(p_res.get()) };
         if (add_resource(name, std::move(p_res), active)) {
@@ -115,7 +115,7 @@ public:
         return nullptr;
     }
 
-    bool add_resource(const std::string_view& name, ResourceBase::Ptr&& p_res, bool active);
+    FLASHMEM bool add_resource(const std::string_view& name, ResourceBase::Ptr&& p_res, bool active);
 
     ResourceBase* get_resource(const std::string_view& name) const {
         if (name.find(".") != name.npos) {
@@ -166,33 +166,17 @@ public:
         return resources_;
     }
 
-    bool set_update_state(const std::string_view& name) {
-        std::unique_lock<std::mutex> lock(mutex_);
-
-        const uint32_t id { get_id(name) };
-        if (!id) {
-            return false;
-        }
-        resource_updates_[id] = true;
-        if (resource_updates_.size() == resources_active_.size()) {
-            lock.unlock();
-            call_listener();
-            return true;
-        }
-        return false;
-    }
+    FLASHMEM bool set_update_state(const std::string_view& name);
 
     void set_active(const std::string_view& name, bool active);
 
     void reset_update_states();
 
-    void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
+    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func, void* owner);
 
-    void register_listener(std::function<void(const ResourceContainer&)> func) {
-        register_listener(func, nullptr);
-    }
+    FLASHMEM void register_listener(std::function<void(const ResourceContainer&)> func);
 
-    bool remove_listener(void* owner);
+    FLASHMEM bool remove_listener(void* owner);
 };
 
 } // namespace ctbot

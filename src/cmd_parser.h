@@ -61,14 +61,14 @@ public:
     /**
      * @brief Construct a new CmdParser object
      */
-    CmdParser();
+    FLASHMEM CmdParser();
 
     /**
      * @brief Register a new command given as a string_view
      * @param[in] cmd: Pointer to of command
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, func_t&& func);
+    FLASHMEM void register_cmd(const std::string& cmd, func_t&& func);
 
     /**
      * @brief Register a new command given as a string_view
@@ -76,7 +76,7 @@ public:
      * @param[in] cmd_short: Shortcut for command as a single character
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
+    FLASHMEM void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered
@@ -84,9 +84,9 @@ public:
      * @param[in] comm: Reference to CommInterface (for debugging output only)
      * @return true on success
      */
-    bool parse(const std::string_view& in, CommInterface& comm);
+    FLASHMEM bool parse(const std::string_view& in, CommInterface& comm);
 
-    bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
+    FLASHMEM bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
 
     auto get_echo() const {
         return echo_;
@@ -114,7 +114,8 @@ public:
      * @return Pointer to the character past the last character interpreted
      */
     static std::string_view split_args(const std::string_view& args, bool& b) {
-        uint_fast8_t x1;
+        uint_fast8_t x1 {};
+        b = false;
         auto l { args.find(' ') };
         if (l == args.npos) {
             return std::string_view {};
@@ -134,6 +135,7 @@ public:
      */
     template <typename T>
     static std::string_view split_args(const std::string_view& args, T& x1) {
+        x1 = T {};
         auto l { args.find(' ') };
         if (l == args.npos) {
             return std::string_view {};

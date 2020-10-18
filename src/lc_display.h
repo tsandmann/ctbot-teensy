@@ -51,14 +51,14 @@ protected:
     char buffer_[LINE_LENGTH + 1];
 
 public:
-    LCDisplay();
+    FLASHMEM LCDisplay();
 
-    ~LCDisplay();
+    FLASHMEM ~LCDisplay();
 
     /**
      * @brief Clear entire display, set cursor to home position
      */
-    void clear() const;
+    FLASHMEM void clear() const;
 
     /**
      * @brief Set the cursor to a position
@@ -78,14 +78,14 @@ public:
      * @param[in] c: Character to write
      * @return Number of written chars (1)
      */
-    uint8_t print(const char c) const;
+    FLASHMEM uint8_t print(const char c) const;
 
     /**
      * @brief Write a string to the display, starting at the current position
      * @param[in] str: Reference to the string as string_view
      * @return Number of written chars
      */
-    uint8_t print(const std::string_view& str) const;
+    FLASHMEM uint8_t print(const std::string_view& str) const;
 
     /**
      * @brief Write a formatted C-string to the display, starting at the current position
@@ -93,14 +93,14 @@ public:
      * @param[in] ...: Variadic argument list as for printf()
      * @return Number of written chars
      */
-    uint8_t printf(const char* format, ...);
+    FLASHMEM uint8_t printf(const char* format, ...);
 
     /**
      * @brief Enable display output to a file
      * @param[in] out: Output file name
      * @note Currently only stdout is implemented
      */
-    void set_output(const std::string_view& out);
+    FLASHMEM void set_output(const std::string_view& out);
 };
 
 } // namespace ctbot

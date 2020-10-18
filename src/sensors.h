@@ -52,7 +52,7 @@ public:
      * @brief Construct a new Sensors object
      * @param[in] ctbot: Reference to CtBot instance
      */
-    Sensors(CtBot& ctbot);
+    FLASHMEM Sensors(CtBot& ctbot);
 
     /**
      * @brief Update all sensors by calling the underlying update()-methods

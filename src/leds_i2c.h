@@ -148,7 +148,7 @@ class LedsI2cBase {
 protected:
     std::array<uint8_t, 8> pwm_dt_;
 
-    LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
+    FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
         : i2c_ { i2c_bus, i2c_addr, i2c_freq }, status_ { LedTypesEna::NONE }, init_ {} { // FIXME: read initial status from device
         if (i2c_.init()) {
             if (i2c_.write_reg8(MODE1_REG, 0)) {

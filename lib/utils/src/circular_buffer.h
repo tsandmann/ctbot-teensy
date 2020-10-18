@@ -36,13 +36,29 @@ class CircularBuffer {
     size_t head_;
     size_t tail_;
     bool full_;
-    std::array<T, SIZE> buf_;
+    std::array<T, SIZE>* p_buf_;
     std::mutex mutex_;
     std::condition_variable cond_in_;
     std::condition_variable cond_out_;
+    bool mem_allocated_;
 
 public:
-    explicit CircularBuffer() : head_ {}, tail_ {}, full_ { false } {}
+    explicit CircularBuffer(void* p_buffer) : head_ {}, tail_ {}, full_ {}, p_buf_ {}, mem_allocated_ {} {
+        if (p_buffer) {
+            p_buf_ = new (p_buffer) std::array<T, SIZE>;
+        } else {
+            p_buf_ = new std::array<T, SIZE>;
+            mem_allocated_ = true;
+        }
+    }
+
+    explicit CircularBuffer() : CircularBuffer { nullptr } {}
+
+    ~CircularBuffer() {
+        if (mem_allocated_) {
+            delete p_buf_;
+        }
+    }
 
     void push(const T& item) {
         std::unique_lock<std::mutex> mlock(mutex_);
@@ -51,7 +67,7 @@ public:
             cond_out_.wait(mlock);
         }
 
-        buf_[head_] = item;
+        (*p_buf_)[head_] = item;
 
         if (full_) {
             tail_ = (tail_ + 1) % SIZE;
@@ -71,7 +87,7 @@ public:
             cond_out_.wait(mlock);
         }
 
-        buf_[head_] = std::move(item);
+        (*p_buf_)[head_] = std::move(item);
 
         if (full_) {
             tail_ = (tail_ + 1) % SIZE;
@@ -90,7 +106,7 @@ public:
             return false;
         }
 
-        buf_[head_] = item;
+        (*p_buf_)[head_] = item;
 
         if (full_) {
             tail_ = (tail_ + 1) % SIZE;
@@ -110,7 +126,7 @@ public:
             return false;
         }
 
-        buf_[head_] = std::move(item);
+        (*p_buf_)[head_] = std::move(item);
 
         if (full_) {
             tail_ = (tail_ + 1) % SIZE;
@@ -131,7 +147,7 @@ public:
         }
 
         // Read data and advance the tail (we now have a free space)
-        item = buf_[tail_];
+        item = (*p_buf_)[tail_];
         full_ = false;
         tail_ = (tail_ + 1) % SIZE;
 
@@ -146,7 +162,7 @@ public:
         }
 
         // Read data and advance the tail (we now have a free space)
-        item = std::move(buf_[tail_]);
+        item = std::move((*p_buf_)[tail_]);
         full_ = false;
         tail_ = (tail_ + 1) % SIZE;
 

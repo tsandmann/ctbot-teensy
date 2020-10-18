@@ -28,10 +28,7 @@
 #include "comm_interface.h"
 
 #include "pprintpp.hpp"
-#include "arduino_fixed.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "portable/teensy.h"
+#include "arduino_freertos.h"
 
 
 namespace ctbot {
@@ -53,7 +50,7 @@ Scheduler::~Scheduler() {
     // ::serial_puts("Scheduler::~Scheduler() entered.");
     enter_critical_section();
     for (auto& t : tasks_) {
-        if (t.second->name_ != "main") {
+        if (t.second->name_ != PSTR("main")) {
             // arduino::Serial.print("Scheduler::~Scheduler(): task 0x");
             // arduino::Serial.print(t.second->id_, 16);
             // arduino::Serial.print(" @ 0x");
@@ -71,12 +68,13 @@ Scheduler::~Scheduler() {
     // ::serial_puts("Scheduler::~Scheduler(): all tasks blocked.");
 
     for (auto& t : tasks_) {
-        if (t.second->name_ != "main") {
+        if (t.second->name_ != PSTR("main")) {
             // arduino::Serial.print("Scheduler::~Scheduler(): task \"");
             // arduino::Serial.print(t.second->name_.c_str());
             // arduino::Serial.println("\" will be deleted...");
             // arduino::Serial.flush();
             delete t.second;
+            freertos::delay_ms(100);
             // arduino::Serial.println("Scheduler::~Scheduler(): task delete done.");
             // arduino::Serial.flush();
         }
@@ -151,7 +149,7 @@ uint16_t Scheduler::task_register(const std::string_view& name, const bool exter
     return task_register(task, external);
 }
 
-uint16_t Scheduler::task_register(void* task, const bool external) {
+uint16_t Scheduler::task_register(TaskHandle_t task, const bool external) {
     if (!task) {
         return 0;
     }
@@ -268,18 +266,23 @@ void Scheduler::print_task_list(CommInterface& comm) const {
 }
 
 void Scheduler::print_ram_usage(CommInterface& comm) const {
-    const auto info { freertos::ram_usage() };
+    const auto info1 { freertos::ram1_usage() };
+    const auto info2 { freertos::ram2_usage() };
 
-    comm.debug_printf<true>(PP_ARGS("RAM size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, ", std::get<3>(info) / 1024UL));
-    comm.debug_printf<true>(PP_ARGS("used: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m, free: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m\r\n",
-        (std::get<3>(info) - std::get<0>(info)) / 1024UL, std::get<0>(info) / 1024UL));
-    comm.debug_printf<true>(PP_ARGS("bss/data: \x1b[1m{} KB\x1b[0m\x1b[37;40m, heap: \x1b[1m{} KB\x1b[0m\x1b[37;40m",
-        (std::get<3>(info) - std::get<0>(info) - std::get<1>(info)) / 1024UL, std::get<1>(info) / 1024UL));
-    comm.debug_printf<true>(PP_ARGS(", system free: \x1b[1m{} KB\x1b[0m\x1b[37;40m\r\n", std::get<2>(info) / 1024UL));
+    comm.debug_printf<true>(PP_ARGS("RAM1 size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free RAM1: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
+        std::get<5>(info1) / 1024UL, std::get<0>(info1) / 1024UL));
+    comm.debug_printf<true>(PP_ARGS("data used: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m, ", std::get<1>(info1) / 1024UL));
+    comm.debug_printf<true>(PP_ARGS(
+        "bss used: \x1b[1m{} KB\x1b[0m\x1b[37;40m, heap used: \x1b[1m{} KB\x1b[0m\x1b[37;40m", std::get<2>(info1) / 1024UL, std::get<3>(info1) / 1024UL));
+    comm.debug_printf<true>(PP_ARGS(", system free: \x1b[1m{} KB\x1b[0m\x1b[37;40m\r\n", std::get<4>(info1) / 1024UL));
+
+    comm.debug_printf<true>(PP_ARGS("RAM2 size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free RAM2: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
+        std::get<1>(info2) / 1024UL, std::get<0>(info2) / 1024UL));
+    comm.debug_printf<true>(PP_ARGS("used RAM2: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m\r\n", (std::get<1>(info2) - std::get<0>(info2)) / 1024UL));
 }
 
-std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_stats() const {
-    static std::map<void*, uint32_t> last_runtimes;
+std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> Scheduler::get_runtime_stats() const {
+    static std::map<TaskHandle_t, uint32_t> last_runtimes;
     static uint64_t last_total_runtime { 0 };
 
     size_t num_tasks { ::uxTaskGetNumberOfTasks() };
@@ -288,7 +291,7 @@ std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_sta
     uint32_t total_runtime;
     num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
 
-    auto current_runtimes { std::make_unique<std::vector<std::pair<void*, float>>>() };
+    auto current_runtimes { std::make_unique<std::vector<std::pair<TaskHandle_t, float>>>() };
 
     for (size_t i { 0 }; i < num_tasks; ++i) {
         current_runtimes->push_back(std::make_pair(
@@ -298,7 +301,7 @@ std::unique_ptr<std::vector<std::pair<void*, float>>> Scheduler::get_runtime_sta
     last_total_runtime = total_runtime;
 
 
-    auto cmp = [](std::pair<void*, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
+    auto cmp = [](std::pair<TaskHandle_t, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
     std::sort(current_runtimes->begin(), current_runtimes->end(), cmp);
 
     return current_runtimes;

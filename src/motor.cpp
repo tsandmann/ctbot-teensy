@@ -25,8 +25,8 @@
 #include "motor.h"
 #include "ctbot.h"
 #include "scheduler.h"
+#include "arduino_freertos.h"
 
-#include <arduino_fixed.h>
 #include <cmath>
 #include <cstdlib>
 

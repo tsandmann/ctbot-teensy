@@ -119,7 +119,7 @@ public:
         return ret;
     }
 
-    void register_listener(std::function<void(const Resource&)> func, void* owner = nullptr) {
+    FLASHMEM void register_listener(std::function<void(const Resource&)> func, void* owner = nullptr) {
         listeners_.push_back(std::make_tuple(func, owner));
     }
 };

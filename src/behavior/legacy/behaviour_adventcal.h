@@ -82,7 +82,7 @@ void bot_adventcal_behaviour(Behaviour_t* data);
  * Rufe das Adventskalender-Verhalten auf
  * @param *caller Der obligatorische Verhaltensdatensatz des Aufrufers
  */
-void bot_adventcal(Behaviour_t* caller);
+FLASHMEM void bot_adventcal(Behaviour_t* caller);
 
 #endif // BEHAVIOUR_ADVENTCAL_AVAILABLE
 #endif // BEHAVIOUR_ADVENTCAL_H_

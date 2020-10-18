@@ -43,13 +43,13 @@ void bot_drive_square_behaviour(Behaviour_t* data);
  * \param *caller	Der obligatorische Verhaltensdatensatz des Aufrufers
  * \param length	Seitenlaenge des Quadrats in mm
  */
-Behaviour_t* bot_drive_square_len(Behaviour_t* caller, int16_t length);
+FLASHMEM Behaviour_t* bot_drive_square_len(Behaviour_t* caller, int16_t length);
 
 /**
  * Laesst den Roboter ein Quadrat abfahren.
  * \param *caller Der obligatorische Verhaltensdatensatz des Aufrufers
  */
-static inline Behaviour_t* bot_drive_square(Behaviour_t* caller) {
+FLASHMEM static inline Behaviour_t* bot_drive_square(Behaviour_t* caller) {
     return bot_drive_square_len(caller, 400);
 }
 

@@ -53,6 +53,6 @@ void bot_follow_line_behaviour(Behaviour_t* data);
  * @param *caller Verhaltensdatensatz des Aufrufers
  * @param search Falls 1, wird zunaechst nach einer Linie gesucht. Falls 0, muss der Bot auf der rechten Linienkante stehen (nur Version 2)
  */
-void bot_follow_line(Behaviour_t* caller, uint8_t search);
+FLASHMEM void bot_follow_line(Behaviour_t* caller, uint8_t search);
 #endif // BEHAVIOUR_FOLLOW_LINE_AVAILABLE
 #endif // BEHAVIOUR_FOLLOW_LINE_H_

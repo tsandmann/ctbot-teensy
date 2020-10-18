@@ -42,7 +42,7 @@ namespace ctbot {
 class CtBotConfig {
 public:
     static constexpr bool BEHAVIOR_MODEL_AVAILABLE { true };
-    static constexpr bool BEHAVIOR_LEGACY_SUPPORT_AVAILABLE { false };
+    static constexpr bool BEHAVIOR_LEGACY_SUPPORT_AVAILABLE { true };
 
     /* test tasks */
     static constexpr bool BLINK_TEST_AVAILABLE { false }; /**< Statically activate or deactivate LED blink test */
@@ -54,99 +54,103 @@ public:
     static constexpr bool TFT_TEST_AVAILABLE { false }; /**< Statically activate or deactivate TFT test */
     static constexpr bool TOUCH_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen test */
     static constexpr bool BUTTON_TEST_AVAILABLE { false }; /**< Statically activate or deactivate touchscreen button test */
+    static constexpr bool AUDIO_TEST_AVAILABLE { false }; /**< Statically activate or deactivate audio sine wave test */
 
     /* features/modules available */
     static constexpr bool LCD_AVAILABLE { false }; /**< Statically activate or deactivate LC display */
-    static constexpr bool TFT_AVAILABLE { true }; /**< Statically activate or deactivate TFT display */
+    static constexpr bool TFT_AVAILABLE { false }; /**< Statically activate or deactivate TFT display */
     static constexpr bool MPU6050_AVAILABLE { false };
-    static constexpr bool AUDIO_AVAILABLE { true }; /**< Statically activate or deactivate audio features */
+    static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
+    static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
+    static constexpr bool AUDIO_AVAILABLE { AUDIO_ANALOG_AVAILABLE ^ AUDIO_I2S_AVAILABLE }; /**< Statically activate or deactivate audio features */
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
 
     static constexpr bool ESP32_CONTROL_AVAILABLE { false }; /**< Statically activate or deactivate control of ESP32 (reset and prog signals) */
 
-    static constexpr bool SWD_DEBUGGER_AVAILABLE { false }; /**< Statically activate or deactivate SWD debug connection to KL02 */
-    static constexpr bool SWD_DEBUGGER_ENABLE_ON_BOOT { false }; /**< Statically enable or disable SWD debug setting on boot */
-
-    static constexpr uint32_t BOOT_DELAY_MS { 1'000 };
+    static constexpr uint32_t BOOT_DELAY_MS { 2'000 };
+    static constexpr uint8_t DEBUG_LED_PIN { 8 }; /**< Pin number of debug LED */
 
     /* uart */
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
-    static constexpr uint8_t UART5_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart 5 */
-    static constexpr uint8_t UART5_PIN_TX { 33 }; /**< Number of pin to use for TX line for Uart 5 */
-    static constexpr uint32_t UART5_BAUDRATE { 2'000'000 }; /**< Baud rate used for Uart 5 */
+    static constexpr uint8_t UART_WIFI_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart to WiFi */
+    static constexpr uint8_t UART_WIFI_PIN_TX { 35 }; /**< Number of pin to use for TX line for Uart to WiFi */
+    static constexpr uint32_t UART_WIFI_BAUDRATE { 1'000'000 }; /**< Baud rate used for Uart to WiFi */
     static constexpr uint8_t UART_FOR_CMD { 0 }; /**< Number of UART to use for command line interface */
 
     /* i2c */
-    static constexpr uint8_t I2C0_PIN_SCL { 7 }; /**< Pin number of SCL for I2C 0 */
-    static constexpr uint8_t I2C0_PIN_SDA { 8 }; /**< Pin number of SDA for I2C 0 */
+    static constexpr uint8_t I2C0_PIN_SCL { 19 }; /**< Pin number of SCL for I2C 0 */
+    static constexpr uint8_t I2C0_PIN_SDA { 18 }; /**< Pin number of SDA for I2C 0 */
     static constexpr uint32_t I2C0_FREQ { 400'000 };
 
-    static constexpr uint8_t I2C1_PIN_SCL { 37 }; /**< Pin number of SCL for I2C 1 */
-    static constexpr uint8_t I2C1_PIN_SDA { 38 }; /**< Pin number of SDA for I2C 1 */
+    static constexpr uint8_t I2C1_PIN_SCL { 255 }; /**< Pin number of SCL for I2C 1 */
+    static constexpr uint8_t I2C1_PIN_SDA { 255 }; /**< Pin number of SDA for I2C 1 */
     static constexpr uint32_t I2C1_FREQ { 100'000 };
 
-    static constexpr uint8_t I2C2_PIN_SCL { 3 }; /**< Pin number of SCL for I2C 2 */
-    static constexpr uint8_t I2C2_PIN_SDA { 4 }; /**< Pin number of SDA for I2C 2 */
+    static constexpr uint8_t I2C2_PIN_SCL { 255 }; /**< Pin number of SCL for I2C 2 */
+    static constexpr uint8_t I2C2_PIN_SDA { 255 }; /**< Pin number of SDA for I2C 2 */
     static constexpr uint32_t I2C2_FREQ { 100'000 };
 
-    static constexpr uint8_t I2C3_PIN_SCL { 57 }; /**< Pin number of SCL for I2C 3 */
-    static constexpr uint8_t I2C3_PIN_SDA { 56 }; /**< Pin number of SDA for I2C 3 */
+    static constexpr uint8_t I2C3_PIN_SCL { 16 }; /**< Pin number of SCL for I2C 3 */
+    static constexpr uint8_t I2C3_PIN_SDA { 17 }; /**< Pin number of SDA for I2C 3 */
     static constexpr uint32_t I2C3_FREQ { 100'000 };
 
     /* spi */
     static constexpr uint8_t SPI0_PIN_MOSI { 11 }; /**< Pin number of MOSI for SPI 0 */
     static constexpr uint8_t SPI0_PIN_MISO { 12 }; /**< Pin number of MISO for SPI 0 */
-    static constexpr uint8_t SPI0_PIN_SCK { 14 }; /**< Pin number of SCK for SPI 0 */
-    static constexpr uint8_t SPI0_PIN_CS0 { 2 }; /**< Pin number of default CS (CS0) for SPI 0 */
-    static constexpr uint8_t SPI0_PIN_CS4 { 15 }; /**< Pin number of CS4 for SPI 0 */
-    static constexpr uint8_t SPI0_PIN_CS5 { 45 }; /**< Pin number of CS5 for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_SCK { 13 }; /**< Pin number of SCK for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_CS0 { 10 }; /**< Pin number of default CS (CS0) for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_CS4 { 36 }; /**< Pin number of CS4 for SPI 0 */
+    static constexpr uint8_t SPI0_PIN_CS5 { 37 }; /**< Pin number of CS5 for SPI 0 */
 
-    static constexpr uint8_t SPI1_PIN_MOSI { 0 }; /**< Pin number of MOSI for SPI 1 */
-    static constexpr uint8_t SPI1_PIN_MISO { 1 }; /**< Pin number of MISO for SPI 1 */
-    static constexpr uint8_t SPI1_PIN_SCK { 32 }; /**< Pin number of SCK for SPI 1 */
-    static constexpr uint8_t SPI1_PIN_CS { 31 }; /**< Pin number of default CS for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_MOSI { 1 }; /**< Pin number of MOSI for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_MISO { 26 }; /**< Pin number of MISO for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_SCK { 27 }; /**< Pin number of SCK for SPI 1 */
+    static constexpr uint8_t SPI1_PIN_CS { 0 }; /**< Pin number of default CS for SPI 1 */
 
-    static constexpr uint8_t SPI2_PIN_MOSI { 52 }; /**< Pin number of MOSI for SPI 2 */
-    static constexpr uint8_t SPI2_PIN_MISO { 51 }; /**< Pin number of MISO for SPI 2 */
-    static constexpr uint8_t SPI2_PIN_SCK { 53 }; /**< Pin number of SCK for SPI 2 */
-    static constexpr uint8_t SPI2_PIN_CS { 55 }; /**< Pin number of default CS for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_MOSI { 255 }; /**< Pin number of MOSI for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_MISO { 255 }; /**< Pin number of MISO for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_SCK { 255 }; /**< Pin number of SCK for SPI 2 */
+    static constexpr uint8_t SPI2_PIN_CS { 255 }; /**< Pin number of default CS for SPI 2 */
 
     /* ENC_L */
-    static constexpr uint8_t ENC_L_PIN { 43 }; /**< Pin number of ENC_L signal */
+    static constexpr uint8_t ENC_L_PIN { 30 }; /**< Pin number of ENC_L signal */
 
     /* ENC_R */
-    static constexpr uint8_t ENC_R_PIN { 44 }; /**< Pin number of ENC_R signal */
+    static constexpr uint8_t ENC_R_PIN { 31 }; /**< Pin number of ENC_R signal */
 
     /* FERNBED */
-    static constexpr uint8_t RC5_PIN { 28 }; /**< Pin number of RC5 signal */
+    static constexpr uint8_t RC5_PIN { 32 }; /**< Pin number of RC5 signal */
     static constexpr uint8_t RC5_ADDR { 6 }; /**< RC5 address of used remote control */
 
     /* analog signals */
-    static constexpr uint8_t LINE_L_PIN { 64 }; /**< Pin number of LINE_L signal (A10) */
-    static constexpr uint8_t LINE_R_PIN { 65 }; /**< Pin number of LINE_R signal (A11) */
-    static constexpr uint8_t LDR_L_PIN { 49 }; /**< Pin number of LDR_L signal */
-    static constexpr uint8_t LDR_R_PIN { 50 }; /**< Pin number of LDR_R signal */
-    static constexpr uint8_t BORDER_L_PIN { 18 }; /**< Pin number of BORDER_L signal */
-    static constexpr uint8_t BORDER_R_PIN { 19 }; /**< Pin number of BORDER_R signal */
-    static constexpr uint8_t BAT_VOLTAGE_PIN { 39 }; /**< Pin number of battery voltage signal */
+    static constexpr uint8_t LINE_L_PIN { 41 }; /**< Pin number of LINE_L signal (A10) */
+    static constexpr uint8_t LINE_R_PIN { 40 }; /**< Pin number of LINE_R signal (A11) */
+    static constexpr uint8_t LDR_L_PIN { 255 }; /**< Pin number of LDR_L signal */
+    static constexpr uint8_t LDR_R_PIN { 255 }; /**< Pin number of LDR_R signal */
+    static constexpr uint8_t BORDER_L_PIN { 39 }; /**< Pin number of BORDER_L signal */
+    static constexpr uint8_t BORDER_R_PIN { 38 }; /**< Pin number of BORDER_R signal */
+    static constexpr uint8_t BAT_VOLTAGE_PIN { 15 }; /**< Pin number of battery voltage signal */
 
     /* motors */
-    static constexpr bool MOT_L_DIR { false }; /**< Direction of rotation for left motor */
-    static constexpr uint8_t MOT_L_PWM_PIN { 35 }; /**< Pin number of left motor pwm signal */
-    static constexpr uint8_t MOT_L_DIR_PIN { 40 }; /**< Pin number of left motor direction signal */
+    static constexpr bool MOT_L_DIR { true }; /**< Direction of rotation for left motor */
+    static constexpr uint8_t MOT_L_PWM_PIN { 2 }; /**< Pin number of left motor pwm signal */
+    static constexpr uint8_t MOT_L_DIR_PIN { 6 }; /**< Pin number of left motor direction signal */
     static constexpr bool MOT_R_DIR { false }; /**< Direction of rotation for right motor */
-    static constexpr uint8_t MOT_R_PWM_PIN { 36 }; /**< Pin number of right motor pwm signal */
-    static constexpr uint8_t MOT_R_DIR_PIN { 41 }; /**< Pin number of right motor direction signal */
-    static constexpr int16_t MOT_PWM_MAX { 16000 }; /**< Maximum pwm duty cycle value for motors */
+    static constexpr uint8_t MOT_R_PWM_PIN { 3 }; /**< Pin number of right motor pwm signal */
+    static constexpr uint8_t MOT_R_DIR_PIN { 9 }; /**< Pin number of right motor direction signal */
+    static constexpr int16_t MOT_PWM_MAX { 16'000 }; /**< Maximum pwm duty cycle value for motors */
 
     /* wheel encoders */
     static constexpr uint8_t ENCODER_MARKS { 160 }; /**< Number of encoder marks on a wheel */
 
     /* servos */
-    static constexpr uint8_t SERVO_1_PIN { 5 }; /**< Pin number of servo 1 pwm signal */
-    static constexpr uint8_t SERVO_2_PIN { 6 }; /**< Pin number of servo 2 pwm signal */
+    static constexpr uint8_t SERVO_1_PIN { 4 }; /**< Pin number of servo 1 pwm signal */
+    static constexpr uint8_t SERVO_2_PIN { 255 }; /**< Pin number of servo 2 pwm signal */
+
+    /* audio output channels */
+    static constexpr uint8_t AUDIO_CHANNELS { 1 };
 
     /* lcd */
     static constexpr uint8_t LCD_I2C_BUS { 0 }; /**< Number of I2C bus to use for lcd controller */
@@ -156,7 +160,7 @@ public:
     static constexpr uint32_t TFT_SPI_FREQUENCY { 30'000'000UL };
     static constexpr uint8_t TFT_CS_PIN { SPI0_PIN_CS0 }; /**< Pin number of SPI chip select signal to use for tft controller */
     static constexpr uint8_t TFT_DC_PIN { SPI0_PIN_CS5 }; /**< Pin number of data/control signal to use for tft controller */
-    static constexpr uint8_t TFT_BACKLIGHT_PIN { 30 }; /**< Pin number of backlight PWM control signal to use for tft display */
+    static constexpr uint8_t TFT_BACKLIGHT_PIN { 5 }; /**< Pin number of backlight PWM control signal to use for tft display */
     static constexpr uint8_t TFT_TOUCH_CS_PIN { SPI0_PIN_CS4 }; /**< Pin number of SPI chip select signal to use for touch controller */
     static constexpr uint8_t TFT_ROTATION { 1 };
     static constexpr uint8_t TFT_TOUCH_ROTATION { 4 };

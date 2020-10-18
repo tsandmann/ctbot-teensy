@@ -25,6 +25,7 @@
 #pragma once
 
 #include "comm_interface.h"
+#include "arduino_freertos.h"
 
 #include <string>
 #include <string_view>
@@ -32,11 +33,13 @@
 #include <functional>
 #include <map>
 #include <tuple>
+#include <vector>
 
 
-class ARMKinetisDebug;
 class AudioOutputAnalog;
+class AudioOutputI2S;
 class AudioPlaySdWav;
+class AudioSynthWaveformSine;
 class TTS;
 class AudioConnection;
 class AudioMixer4;
@@ -72,9 +75,13 @@ class ParameterStorage;
  */
 class CtBot {
 protected:
+    static constexpr bool DEBUG { false };
+
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
     static constexpr uint8_t TASK_PRIORITY { 7 };
     static constexpr uint32_t STACK_SIZE { 2048 };
+
+    static TaskHandle_t audio_task_;
 
     bool shutdown_;
     bool ready_;
@@ -95,15 +102,16 @@ protected:
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     I2C_Wrapper* p_i2c_;
     ParameterStorage* p_parameter_;
-    ARMKinetisDebug* p_swd_debugger_;
-    AudioOutputAnalog* p_audio_output_;
+    AudioOutputAnalog* p_audio_output_dac_;
+    AudioOutputI2S* p_audio_output_i2s_;
+    AudioSynthWaveformSine* p_audio_sine_;
     AudioPlaySdWav* p_play_wav_;
     TTS* p_tts_;
-    AudioConnection* p_audio_conn_[4];
-    AudioMixer4* p_audio_mixer_;
+    std::vector<AudioConnection*> p_audio_conn_;
+    std::vector<AudioMixer4*> p_audio_mixer_;
     std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> pre_hooks_;
     std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> post_hooks_;
-    void* p_watch_timer_;
+    TimerHandle_t p_watch_timer_;
     LuaWrapper* p_lua_;
 
 
@@ -112,7 +120,7 @@ protected:
      * @note Constructor is protected to enforce singleton pattern
      * @details The constructor initializes usb serial port to allow early debug infos printed out there.
      */
-    CtBot();
+    FLASHMEM CtBot();
 
     /* enforce singleton */
     CtBot(const CtBot&) = delete;
@@ -122,7 +130,7 @@ protected:
     /**
      * @brief Initialize command line parser, register the actions for every command
      */
-    void init_parser();
+    FLASHMEM void init_parser();
 
     /**
      * @brief Main task implementation
@@ -148,7 +156,7 @@ protected:
      * @brief Shut everything down and put the CPU into sleep mode
      * @details All motors, servos, leds, sensors are stopped / shut down and all tasks are suspended.
      */
-    virtual void shutdown();
+    FLASHMEM virtual void shutdown();
 
 public:
     /**
@@ -165,7 +173,7 @@ public:
     /**
      * @brief Destroy the CtBot instance
      */
-    virtual ~CtBot();
+    FLASHMEM virtual ~CtBot();
 
     /**
      * @brief Setup method responsible for initialization and creating of instances for all components (sensors, motors, etc.)
@@ -231,7 +239,7 @@ public:
      *  deactivate CommInterfaceCmdParser
      * @enduml
      */
-    virtual void setup(const bool set_ready);
+    FLASHMEM virtual void setup(const bool set_ready);
 
     /**
      * @brief Stop the scheduler
@@ -244,7 +252,7 @@ public:
      *  deactivate Scheduler
      * @enduml
      */
-    void stop();
+    FLASHMEM void stop();
 
     bool play_wav(const std::string_view& filename);
 

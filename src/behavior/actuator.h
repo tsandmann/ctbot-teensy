@@ -69,7 +69,7 @@ public:
      * @param[in] callback Callback functor called in commit_value(), to notify if this value is the selected one
      * @return true, if new value has highest priority so far
      */
-    bool add_value(const T& x, const uint16_t prio, std::function<void(const Actuator&, bool)> callback = nullptr) {
+    FLASHMEM bool add_value(const T& x, const uint16_t prio, std::function<void(const Actuator&, bool)> callback = nullptr) {
         std::unique_lock<std::mutex> lk { mutex_ };
         const bool res { value_map_.size() ? value_map_.rbegin()->first <= prio : true };
         T val { 0 };
@@ -86,7 +86,7 @@ public:
     /**
      * @brief Commits values added since last commit and calls any registered callback
      */
-    void commit_value() {
+    FLASHMEM void commit_value() {
         std::unique_lock<std::mutex> lk { mutex_ };
         if (!value_map_.empty()) {
             this->write(std::get<0>(value_map_.rbegin()->second));
@@ -154,7 +154,7 @@ public:
      * @return Pointer to created instance or nullptr, if add_resource() failed
      */
     template <typename... Args>
-    T* create_actuator(const char* name, bool active, Args&&... args) {
+    FLASHMEM T* create_actuator(const char* name, bool active, Args&&... args) {
         std::unique_ptr<T> p_res { std::make_unique<T>(std::forward<Args>(args)...) };
         T* ptr { p_res.get() };
         if (add_resource(name, std::move(p_res), active)) {
@@ -166,7 +166,7 @@ public:
     /**
      * @brief Commits all added values of all actuators in this container
      */
-    void commit_values() {
+    FLASHMEM void commit_values() {
         for (auto& p_res : resources_) {
             T* p_act { static_cast<T*>(std::get<1>(p_res.second).get()) };
             if (p_act) {

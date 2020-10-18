@@ -46,13 +46,13 @@ class BehaviorTest : public Behavior {
 public:
     using Ptr = std::unique_ptr<BehaviorTest>;
 
-    BehaviorTest();
+    FLASHMEM BehaviorTest();
 
 protected:
-    virtual void run() override;
+    FLASHMEM virtual void run() override;
 
 private:
-    static Registry reg_;
+    static const Registry reg_;
     uint8_t mode_;
 };
 

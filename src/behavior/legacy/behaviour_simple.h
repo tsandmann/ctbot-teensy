@@ -45,7 +45,7 @@ void bot_simple2_behaviour(Behaviour_t* data);
  * @param *caller   Der obligatorische Verhaltensdatensatz des Aufrufers
  * @param light     Uebergabeparameter
  */
-void bot_simple2(Behaviour_t* caller, int16_t light);
+FLASHMEM void bot_simple2(Behaviour_t* caller, int16_t light);
 
 /**
  * Ein ganz einfaches Verhalten, es hat maximale Prioritaet
@@ -57,7 +57,7 @@ void bot_simple_behaviour(Behaviour_t* data);
  * Rufe das Simple-Verhalten auf
  * @param caller Der obligatorische Verhaltensdatensatz des Aufrufers
  */
-void bot_simple(Behaviour_t* caller);
+FLASHMEM void bot_simple(Behaviour_t* caller);
 
 #endif // BEHAVIOUR_SIMPLE_AVAILABLE
 #endif // BEHAVIOUR_SIMPLE_H_

@@ -28,7 +28,7 @@
 #include "servo.h"
 #include "scheduler.h"
 
-#include <arduino_fixed.h>
+#include "arduino_freertos.h"
 
 
 namespace ctbot {

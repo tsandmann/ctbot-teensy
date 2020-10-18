@@ -59,14 +59,14 @@ static int32_t recalc = 0; /**< Entfernung^2 [mm^2], nach der die Kreisbahn neu 
 static uint16_t* p_goto_pos_err; /**< Zeiger auf Fehlervariable im EEPROM */
 static uint16_t margin; /**< aktueller Fehlerwert laut EEPROM */
 
-static const int32_t straight_go = 200L * 200L; /**< (Entfernung zum Ziel)^2 [mm^2], bis zu der geradeaus zum Ziel gefahren wird */
-static const int16_t max_angle = 30; /**< Maximaler Winkel [Grad] zwischen Start-Blickrichtung und Ziel */
-static const int16_t min_turn_angle = 5; /**< Minimaler Winkel [Grad], bei dem noch bot_turn() benutzt wird */
-static const int16_t v_m_min = 50; /**< Minimale (mittlere) Geschwindigkeit [mm/s], mit der der Bot zum Ziel fahert */
-static const int16_t v_m_max = 250; /**< Maximale (mittlere) Geschwindigkeit [mm/s], mit der der Bot zum Ziel fahert */
-static const int16_t v_diff_max = 200; /**< Maximale Differenz zwischen links und rechts fuer Zielanfahrt [mm/s] */
-static const int16_t v_max = 350; /**< Maximale Geschwindigkeit [mm/s] */
-static const int32_t recalc_dist = 50L * 50L; /**< Startwert fuer Entfernung^2 [mm^2], nach der die Kreisbahn neu berechnet wird */
+static PROGMEM const int32_t straight_go = 200L * 200L; /**< (Entfernung zum Ziel)^2 [mm^2], bis zu der geradeaus zum Ziel gefahren wird */
+static PROGMEM const int16_t max_angle = 30; /**< Maximaler Winkel [Grad] zwischen Start-Blickrichtung und Ziel */
+static PROGMEM const int16_t min_turn_angle = 5; /**< Minimaler Winkel [Grad], bei dem noch bot_turn() benutzt wird */
+static PROGMEM const int16_t v_m_min = 50; /**< Minimale (mittlere) Geschwindigkeit [mm/s], mit der der Bot zum Ziel fahert */
+static PROGMEM const int16_t v_m_max = 250; /**< Maximale (mittlere) Geschwindigkeit [mm/s], mit der der Bot zum Ziel fahert */
+static PROGMEM const int16_t v_diff_max = 200; /**< Maximale Differenz zwischen links und rechts fuer Zielanfahrt [mm/s] */
+static PROGMEM const int16_t v_max = 350; /**< Maximale Geschwindigkeit [mm/s] */
+static PROGMEM const int32_t recalc_dist = 50L * 50L; /**< Startwert fuer Entfernung^2 [mm^2], nach der die Kreisbahn neu berechnet wird */
 
 
 void bot_goto_pos_behaviour(Behaviour_t* data) {

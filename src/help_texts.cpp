@@ -27,6 +27,8 @@
 #include "comm_interface.h"
 
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 
 namespace ctbot {
@@ -43,8 +45,7 @@ const char CtBotHelpTexts::config_[] { "config (c)\r\n"
                                        "\ttask ledtest [0|1]\tstart/stop LED test\r\n"
                                        "\ttask sctrl [0|1]\tstart/stop speed controller task\r\n"
                                        "\ttask [taskname] [0|1]\tstart/stop a task\r\n"
-                                       "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\r\n"
-                                       "\tswd [0|1]\t\tactivate (1) or deactivate (0) SWD debug port\r\n" };
+                                       "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\r\n" };
 
 const char CtBotHelpTexts::get_[] { "get (g)\r\n"
                                     "\tdist\t\t\tprint current distance sensor's values\r\n"
@@ -74,8 +75,12 @@ const char CtBotHelpTexts::set_[] { "set (s)\r\n"
                                     "\tlcdbl [0;1]\t\tswitch LCD backlight ON (1) or OFF (0)\r\n" };
 
 const char CtBotHelpTexts::audio_[] { "audio (a)\r\n"
+                                      "\ton \t\t\tenable audio amplifier\r\n"
+                                      "\toff\t\t\tshutdown amp, stop currently playing wavefile\r\n"
+                                      "\tvol VOLUME\t\tset volume to VOLUME (0.0;1.0]\r\n"
+                                      "\tpitch PITCH\t\tset pitch for speak to PITCH [1;16]\r\n"
                                       "\tplay FILENAME\t\tplay wavefile FILENAME from SD card\r\n"
-                                      "\tstop\t\t\tstop currently playing wavefile\r\n" };
+                                      "\tspeak TEXT\t\tspeak TEXT\r\n" };
 
 const char CtBotHelpTexts::filesystem_[] { "fs (f)\r\n"
                                            "\tls DIR\t\t\tlist files of directory DIR on SD card\r\n" };
@@ -119,6 +124,8 @@ void CtBotHelpTexts::init() {
 void CtBotHelpTexts::print(CommInterface& comm) {
     for (auto& e : texts_) {
         comm.debug_print(e, true);
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(10ms);
         comm.debug_print("\r\n", true);
     }
 }

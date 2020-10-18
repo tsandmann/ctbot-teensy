@@ -60,7 +60,7 @@ public:
      * @param[in] pin_dir: Pin number of the direction signal
      * @param[in] invert: Invert motor direction setting; set to true, if wheel turning direction should be inverted
      */
-    Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert);
+    FLASHMEM Motor(Encoder& enc, const uint8_t pin_pwm, const uint8_t pin_dir, const bool invert);
 
     /**
      * @brief Set a new pwm duty cycle

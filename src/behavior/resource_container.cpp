@@ -63,6 +63,22 @@ ResourceBase* ResourceContainer::get_resource_deep(const std::string_view& name)
     }
 }
 
+bool ResourceContainer::set_update_state(const std::string_view& name) {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    const uint32_t id { get_id(name) };
+    if (!id) {
+        return false;
+    }
+    resource_updates_[id] = true;
+    if (resource_updates_.size() == resources_active_.size()) {
+        lock.unlock();
+        call_listener();
+        return true;
+    }
+    return false;
+}
+
 void ResourceContainer::set_active(const std::string_view& name, bool active) {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -92,6 +108,10 @@ void ResourceContainer::register_listener(std::function<void(const ResourceConta
     std::lock_guard<std::mutex> lock(mutex_);
 
     listeners_.push_back(std::make_tuple(func, owner));
+}
+
+void ResourceContainer::register_listener(std::function<void(const ResourceContainer&)> func) {
+    register_listener(func, nullptr);
 }
 
 bool ResourceContainer::remove_listener(void* owner) {

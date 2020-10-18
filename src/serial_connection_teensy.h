@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <streambuf>
 #include <mutex>
@@ -72,7 +72,7 @@ public:
     /**
      * @brief Destroy the SerialConnectionTeensy object
      */
-    ~SerialConnectionTeensy();
+    ~SerialConnectionTeensy() = default;
 
     /**
      * @brief Copy constructor
@@ -91,7 +91,7 @@ public:
      * @brief Set a callback function which is called in case of waiting for incoming data
      * @param[in] callback: Function pointer to callback function
      */
-    static void set_wait_callback(decltype(wait_callback_) callback) {
+    FLASHMEM static void set_wait_callback(decltype(wait_callback_) callback) {
         wait_callback_ = callback;
     }
 
@@ -106,7 +106,7 @@ public:
      * @param[in] size: Number of bytes to read
      * @return Number of bytes actually read
      */
-    size_t receive(void* data, const size_t size);
+    FLASHMEM size_t receive(void* data, const size_t size);
 
     /**
      * @brief Read size bytes from connection into a streambuffer
@@ -114,7 +114,7 @@ public:
      * @param[in] size: Number of bytes to read
      * @return Number of bytes actually read
      */
-    size_t receive(std::streambuf& buf, const size_t size);
+    FLASHMEM size_t receive(std::streambuf& buf, const size_t size);
 
     /**
      * @brief Read bytes from connection until a delimiter char into a plain buffer
@@ -123,7 +123,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    size_t receive_until(void* data, const char delim, const size_t maxsize);
+    FLASHMEM size_t receive_until(void* data, const char delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter string into a plain buffer
@@ -132,7 +132,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    size_t receive_until(void* data, const std::string& delim, const size_t maxsize);
+    FLASHMEM size_t receive_until(void* data, const std::string& delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter char into a streambuffer
@@ -141,7 +141,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    size_t receive_until(std::streambuf& buf, const char delim, const size_t maxsize);
+    FLASHMEM size_t receive_until(std::streambuf& buf, const char delim, const size_t maxsize);
 
     /**
      * @brief Read bytes from connection until a delimiter string into a streambuffer
@@ -150,7 +150,7 @@ public:
      * @param[in] maxsize: Number of bytes to read at most
      * @return Number of bytes actually read
      */
-    size_t receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize);
+    FLASHMEM size_t receive_until(std::streambuf& buf, const std::string& delim, const size_t maxsize);
 
     /**
      * @brief Read size bytes from connection into a plain buffer with a timeout
@@ -159,7 +159,7 @@ public:
      * @param[in] timeout_ms: Timeout while waiting for data
      * @return Number of bytes actually read
      */
-    size_t receive_async(void* data, const size_t size, const uint32_t timeout_ms);
+    FLASHMEM size_t receive_async(void* data, const size_t size, const uint32_t timeout_ms);
 
     /**
      * @brief Read size bytes from connection into a streambuffer with a timeout
@@ -168,7 +168,7 @@ public:
      * @param[in] timeout_ms: Timeout while waiting for data
      * @return Number of bytes actually read
      */
-    size_t receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms);
+    FLASHMEM size_t receive_async(std::streambuf& buf, const size_t size, const uint32_t timeout_ms);
 
     /**
      * @brief Write size bytes to connection from a plain buffer

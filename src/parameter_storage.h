@@ -27,7 +27,7 @@
 #define ARDUINOJSON_ENABLE_STD_STRING 1
 #define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
 #define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 #include "ArduinoJson.h"
 
 #include <string>
@@ -68,8 +68,8 @@ protected:
     void set_parameter(const std::string_view& key, const size_t index, const float value) noexcept;
 
 public:
-    ParameterStorage(const std::string_view& config_file, const size_t buffer_size = 512);
-    ~ParameterStorage();
+    FLASHMEM ParameterStorage(const std::string_view& config_file, const size_t buffer_size = 512);
+    FLASHMEM ~ParameterStorage();
 
     std::unique_ptr<std::string> dump() const;
 

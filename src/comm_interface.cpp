@@ -38,12 +38,26 @@
 
 namespace ctbot {
 
+decltype(CommInterface::buffer_storage_) CommInterface::buffer_storage_;
+CommInterface::static_pool_t CommInterface::mem_pool_ { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
+
 CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo)
-    : io_ { io_connection }, echo_ { enable_echo }, error_ {}, p_input_ { input_buffer_ } {
-    input_task_ = CtBot::get_instance().get_scheduler()->task_add(
-        "commIN", INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
+    : io_ { io_connection }, echo_ { enable_echo }, error_ {}, p_input_ {}, output_queue_ { mem_pool_.try_allocate_array(
+                                                                                OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE) } {
+    auto ptr { mem_pool_.try_allocate_array(INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE) };
+    if (ptr) {
+        p_input_buffer_ = new (ptr) std::array<char, INPUT_BUFFER_SIZE>;
+        static_assert(sizeof(*p_input_buffer_) == INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE * BUFFER_CHUNK_SIZE);
+
+        p_input_buffer_->fill(0);
+        p_input_ = p_input_buffer_->begin();
+
+        input_task_ = CtBot::get_instance().get_scheduler()->task_add(
+            PSTR("commIN"), INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
+    }
+
     output_task_ = CtBot::get_instance().get_scheduler()->task_add(
-        "commOUT", OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
+        PSTR("commOUT"), OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
 }
 
 CommInterface::~CommInterface() {
@@ -53,9 +67,9 @@ CommInterface::~CommInterface() {
     schdl->task_remove(output_task_);
 }
 
-size_t CommInterface::queue_debug_msg(const char c, std::unique_ptr<std::string>&& p_str, const bool block) {
+size_t CommInterface::queue_debug_msg(const char c, const std::string* p_str, const bool block) {
     const auto ret { p_str ? p_str->length() : 1 };
-    OutBufferElement element { c, std::move(p_str) };
+    const OutBufferElement element { p_str, c };
 
     if (block) {
         output_queue_.push(std::move(element));
@@ -75,10 +89,10 @@ size_t CommInterface::get_format_size(const char* format, ...) {
     return size;
 }
 
-std::unique_ptr<std::string> CommInterface::create_formatted_string(const size_t size, const char* format, ...) {
+std::string* CommInterface::create_formatted_string(const size_t size, const char* format, ...) {
     va_list vl;
     va_start(vl, format);
-    auto p_str { std::make_unique<std::string>(size, '\0') };
+    auto p_str { new std::string(size, '\0') };
     std::vsnprintf(p_str->data(), size, format, vl);
     va_end(vl);
 
@@ -86,35 +100,35 @@ std::unique_ptr<std::string> CommInterface::create_formatted_string(const size_t
 }
 
 void CommInterface::set_color(const Color fg, const Color bg) {
-    debug_printf<true>("\x1b[%u;%um", static_cast<uint16_t>(fg) + 30, static_cast<uint16_t>(bg) + 40);
+    debug_printf<true>(PSTR("\x1b[%u;%um"), static_cast<uint16_t>(fg) + 30, static_cast<uint16_t>(bg) + 40);
 }
 
 void CommInterface::set_attribute(const Attribute a) {
-    debug_printf<true>("\x1b[%um", static_cast<uint16_t>(a));
+    debug_printf<true>(PSTR("\x1b[%um"), static_cast<uint16_t>(a));
 }
 
 size_t CommInterface::debug_print(const char* str, const bool block) {
-    auto p_str { std::make_unique<std::string>(str) };
-    return queue_debug_msg('\0', std::move(p_str), block);
+    auto p_str { new std::string(str) };
+    return queue_debug_msg('\0', p_str, block);
 }
 
-size_t CommInterface::debug_print(std::unique_ptr<std::string>&& p_str, const bool block) {
-    return queue_debug_msg('\0', std::move(p_str), block);
+size_t CommInterface::debug_print(const std::string* p_str, const bool block) {
+    return queue_debug_msg('\0', p_str, block);
 }
 
 size_t CommInterface::debug_print(const std::string& str, const bool block) {
-    auto p_str { std::make_unique<std::string>(str) };
-    return queue_debug_msg('\0', std::move(p_str), block);
+    auto p_str { new std::string(str) };
+    return queue_debug_msg('\0', p_str, block);
 }
 
 size_t CommInterface::debug_print(std::string&& str, const bool block) {
-    auto p_str { std::make_unique<std::string>(str) };
-    return queue_debug_msg('\0', std::move(p_str), block);
+    auto p_str { new std::string(str) };
+    return queue_debug_msg('\0', p_str, block);
 }
 
 size_t CommInterface::debug_print(const std::string_view& str, const bool block) {
-    auto p_str { std::make_unique<std::string>(str) };
-    return queue_debug_msg('\0', std::move(p_str), block);
+    auto p_str { new std::string(str) };
+    return queue_debug_msg('\0', p_str, block);
 }
 
 // size_t CommInterface::debug_print(const arduino::String& str, const bool block) {
@@ -134,12 +148,13 @@ void CommInterface::run_output() {
     while (output_queue_.try_pop(element)) {
         if (element.p_str_) {
             io_.send(element.p_str_->c_str(), element.p_str_->length());
+            delete element.p_str_;
         } else {
             io_.send(&element.character_, sizeof(element.character_));
         }
     }
     using namespace std::chrono_literals;
-    std::this_thread::sleep_for(100ms);
+    std::this_thread::sleep_for(50ms);
 }
 
 CommInterfaceCmdParser::CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo)
@@ -157,9 +172,9 @@ void CommInterfaceCmdParser::run_input() {
         char c;
         io_.receive(&c, 1);
 
-        if (p_input_ >= &input_buffer_[sizeof(input_buffer_)]) {
+        if (p_input_ >= p_input_buffer_->end()) {
             /* no buffer space left */
-            p_input_ = input_buffer_;
+            p_input_ = p_input_buffer_->begin();
             error_ = 1;
         }
 
@@ -170,19 +185,19 @@ void CommInterfaceCmdParser::run_input() {
             }
             *p_input_ = 0;
             if (echo_) {
-                io_.send("\r\n", 2);
+                io_.send(PSTR("\r\n"), 2);
             }
-            const std::string_view str { input_buffer_, static_cast<size_t>(p_input_ - input_buffer_) };
+            const std::string_view str { p_input_buffer_->begin(), static_cast<size_t>(p_input_ - p_input_buffer_->begin()) };
             cmd_parser_.parse(str, *this);
-            p_input_ = input_buffer_;
+            p_input_ = p_input_buffer_->begin();
             history_view_ = 0;
             break;
         } else if (c == '\b' || c == 0x7f) {
             /* backspace / DEL */
-            if (p_input_ > input_buffer_) {
+            if (p_input_ > p_input_buffer_->begin()) {
                 --p_input_;
                 if (echo_) {
-                    const char tmp[] { "\b \b" };
+                    const char tmp[] { PSTR("\b \b") };
                     io_.send(tmp, sizeof(tmp) - 1);
                 }
             }
@@ -213,7 +228,7 @@ void CommInterfaceCmdParser::run_input() {
                     }
                 } else if (history_view_ == 1) {
                     clear_line();
-                    p_input_ = input_buffer_;
+                    p_input_ = p_input_buffer_->begin();
                 }
                 continue;
             } else if (c == 0x1b) {
@@ -240,8 +255,8 @@ void CommInterfaceCmdParser::update_line(const std::string_view& line) {
     io_.send(line);
 
     const size_t n { line.size() > INPUT_BUFFER_SIZE ? INPUT_BUFFER_SIZE : line.size() };
-    std::strncpy(input_buffer_, line.data(), n);
-    p_input_ = &input_buffer_[n];
+    std::strncpy(p_input_buffer_->begin(), line.data(), n);
+    p_input_ = &p_input_buffer_->begin()[n];
 }
 
 } // namespace ctbot

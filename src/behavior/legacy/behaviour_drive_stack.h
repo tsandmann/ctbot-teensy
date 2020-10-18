@@ -43,19 +43,19 @@ void bot_drive_stack_behaviour(Behaviour_t* data);
  * @param stack     Nummer des Stacks, der abgefahren werden soll
  * @param mode      0: Stack, 1: FIFO
  */
-void bot_drive_stack_x(Behaviour_t* caller, uint8_t stack, uint8_t mode);
+FLASHMEM void bot_drive_stack_x(Behaviour_t* caller, uint8_t stack, uint8_t mode);
 
 /**
  * Botenfunktion: Verhalten zum Anfahren aller auf dem Stack befindlichen Punkte
  * @param *caller   Der Verhaltensdatensatz des Aufrufers
  */
-void bot_drive_stack(Behaviour_t* caller);
+FLASHMEM void bot_drive_stack(Behaviour_t* caller);
 
 /**
  * Botenfunktion: Verhalten zum Anfahren aller in der FIFO-Queue befindlichen Punkte
  * @param *calle    Der Verhaltensdatensatz des Aufrufers
  */
-void bot_drive_fifo(Behaviour_t* caller);
+FLASHMEM void bot_drive_fifo(Behaviour_t* caller);
 
 #ifdef BOT_2_BOT_PAYLOAD_AVAILABLE
 /**
@@ -63,7 +63,7 @@ void bot_drive_fifo(Behaviour_t* caller);
  * @param *caller   Der Verhaltensdatensatz des Aufrufers
  * @param bot       Adresse des Zielbots
  */
-void bot_send_stack_b2b(Behaviour_t* caller, uint8_t bot);
+FLASHMEM void bot_send_stack_b2b(Behaviour_t* caller, uint8_t bot);
 #endif // BOT_2_BOT_PAYLOAD_AVAILABLE
 
 /**
@@ -86,12 +86,12 @@ void bot_save_waypos_behaviour(Behaviour_t* data);
  * @param *caller   Der Verhaltensdatensatz des Aufrufers
  * @param optimize  Optimierungslevel (unnoetige Stackeintraege werden automatisch geloescht)
  */
-void bot_save_waypos(Behaviour_t* caller, uint8_t optimize);
+FLASHMEM void bot_save_waypos(Behaviour_t* caller, uint8_t optimize);
 
 /**
  * Display zum Setzen und Anfahren der Stackpunkte
  */
-void drive_stack_display(void);
+FLASHMEM void drive_stack_display(void);
 
 #endif // BEHAVIOUR_DRIVE_STACK_AVAILABLE
 #endif // BEHAVIOUR_DRIVESTACK_H_

@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "arduino_fixed.h"
+#include "arduino.h"
 #include <cstdint>
 
 
