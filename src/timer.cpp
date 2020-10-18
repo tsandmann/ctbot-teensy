@@ -24,8 +24,7 @@
 
 #include "timer.h"
 
-#include "arduino_fixed.h"
-#include "portable/teensy.h"
+#include "arduino_freertos.h"
 
 #include <chrono>
 

@@ -35,7 +35,7 @@
 #include "Adafruit_ILI9341.h"
 #include "XPT2046_Touchscreen.h"
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 #include "pprintpp.hpp"
 #include "thread_gthread.h"
 

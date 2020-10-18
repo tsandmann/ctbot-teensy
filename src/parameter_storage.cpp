@@ -45,7 +45,7 @@ ParameterStorage::ParameterStorage(const std::string_view& config_file, const si
         if (n) {
             auto error { deserializeJson(*p_parameter_doc_, f) };
             if (error) {
-                arduino::Serial.print("PS::ParameterStorage(): deserializeJson() failed.");
+                arduino::Serial.print(PSTR("PS::ParameterStorage(): deserializeJson() failed."));
             } else {
                 // arduino::Serial.print("PS::ParameterStorage(): parameter_=\"");
                 // arduino::Serial.print(dump()->c_str());
@@ -54,7 +54,7 @@ ParameterStorage::ParameterStorage(const std::string_view& config_file, const si
         }
         f.close();
     } else {
-        arduino::Serial.println("ParameterStorage::ParameterStorage(): file open failed.");
+        arduino::Serial.println(PSTR("ParameterStorage::ParameterStorage(): file open failed."));
     }
 }
 

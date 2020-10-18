@@ -29,6 +29,7 @@
 #include "actuator.h"
 
 #include "pprintpp.hpp"
+#include "avr/pgmspace.h"
 
 #include <cstdint>
 #include <string_view>
@@ -92,7 +93,7 @@ protected:
 
     bool exit();
 
-    void print_pose(const bool moving = true) const;
+    FLASHMEM void print_pose(const bool moving = true) const;
 
     auto get_ctbot() const {
         return p_ctbot_;
@@ -121,14 +122,14 @@ protected:
     void wait_for_model_update();
 
     template <bool ENABLED = true>
-    void debug_flush() const {
+    FLASHMEM void debug_flush() const {
         if (ENABLED) {
             get_ctbot()->get_comm()->flush();
         }
     }
 
     template <bool ENABLED = true, typename... Args>
-    auto debug_print(Args... args) const {
+    FLASHMEM_T auto debug_print(Args... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_print(args..., false);
         } else {
@@ -137,7 +138,7 @@ protected:
     }
 
     template <bool ENABLED = true, typename... Args>
-    auto debug_printf(const Args&... args) const {
+    FLASHMEM_T auto debug_printf(const Args&... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_printf<false>(args...);
         } else {
@@ -146,56 +147,56 @@ protected:
     }
 
     template <typename T>
-    bool init_data(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_data(const std::string_view& name, T*& p_res) const {
         return get_ctbot()->get_data()->get_resource(name, p_res);
     }
 
     template <typename T>
-    bool init_data_ptr(const std::string_view& name, T*& ptr) const {
+    FLASHMEM_T bool init_data_ptr(const std::string_view& name, T*& ptr) const {
         ptr = get_ctbot()->get_data()->get_res_ptr<T>(name);
         return ptr != nullptr;
     }
 
     template <typename T>
-    bool init_actuator(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_actuator(const std::string_view& name, T*& p_res) const {
         return get_ctbot()->get_actuators()->get_resource(name, p_res);
     }
 
     template <class T, typename U = int32_t>
-    static auto INIT(const int32_t p) {
+    FLASHMEM_T static auto INIT(const int32_t p) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U>(p)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t>
-    static auto INIT(const int32_t p1, const int32_t p2) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t, typename U3 = int32_t>
-    static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2), static_cast<U3>(p3)));
     }
 
     template <class T, typename U1 = int32_t, typename U2 = int32_t, typename U3 = int32_t, typename U4 = int32_t>
-    static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3, const int32_t p4) {
+    FLASHMEM_T static auto INIT(const int32_t p1, const int32_t p2, const int32_t p3, const int32_t p4) {
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2), static_cast<U3>(p3), static_cast<U4>(p4)));
     }
 
     template <class T, typename... Args>
-    static auto INIT(Args&&... args) {
+    FLASHMEM_T static auto INIT(Args&&... args) {
         return static_cast<BasePtr>(behavior_factory<T>(std::forward<Args>(args)...));
     }
 
 public:
     using BasePtr = std::unique_ptr<Behavior>;
 
-    Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
+    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
 
-    Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms);
+    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms);
 
-    Behavior(const std::string& name);
+    FLASHMEM Behavior(const std::string& name);
 
-    virtual ~Behavior();
+    FLASHMEM virtual ~Behavior();
 
     uint16_t get_priority() const;
 
@@ -260,12 +261,11 @@ class BehaviorRunUntil : public Behavior {
 public:
     template <typename... Args>
     BehaviorRunUntil(std::function<bool()> check_func, Args&&... args)
-        : Behavior("BehaviorRunUntil"), p_beh_ { behavior_factory<Beh>(false, std::forward<Args>(args)...) }, func_ { check_func } {}
+        : Behavior(PSTR("BehaviorRunUntil")), p_beh_ { behavior_factory<Beh>(false, std::forward<Args>(args)...) }, func_ { check_func } {}
 
 
-    virtual ~BehaviorRunUntil() override {
-        debug_printf<DEBUG_>("BehaviorRunUntil::~BehaviorRunUntil()\r\n");
-        debug_flush<DEBUG_>();
+    FLASHMEM virtual ~BehaviorRunUntil() override {
+        debug_print<DEBUG_>(PSTR("BehaviorRunUntil::~BehaviorRunUntil()\r\n"));
 
         abort_beh();
         wait();
@@ -276,8 +276,7 @@ protected:
     std::function<bool()> func_;
 
     virtual void run() override {
-        debug_print<DEBUG_>("BehaviorRunUntil::run().\r\n");
-        debug_flush<DEBUG_>();
+        debug_print<DEBUG_>(PSTR("BehaviorRunUntil::run().\r\n"));
 
         do {
             using namespace std::chrono_literals;
@@ -288,10 +287,8 @@ protected:
             p_beh_->abort_beh();
 
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" aborted.\r\n", p_beh_->get_name().c_str()));
-            debug_flush<DEBUG_>();
         } else {
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" finished.\r\n", p_beh_->get_name().c_str()));
-            debug_flush<DEBUG_>();
         }
 
         exit();

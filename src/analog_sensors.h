@@ -49,6 +49,7 @@ protected:
     static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
     static constexpr auto ENA_MASK_PWM = LedTypesEna::BORDER_L | LedTypesEna::BORDER_R | LedTypesEna::LINE_L | LedTypesEna::LINE_R;
     static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna::NONE;
+    static constexpr uint8_t BAT_ADC_RES { 12 };
     static constexpr uint32_t BAT_VOLTAGE_R1 { 100'392 };
     static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 }; // FIXME: calibrated value
 
@@ -95,7 +96,7 @@ public:
     /**
      * @brief Construct a new AnalogSensors object
      */
-    AnalogSensors();
+    FLASHMEM AnalogSensors();
 
     /**
      * @return The last value of left border sensor

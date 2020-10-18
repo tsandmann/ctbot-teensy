@@ -29,6 +29,8 @@
 
 #include "ctbot_config.h"
 
+#include "avr/pgmspace.h"
+
 #include <cstdint>
 
 
@@ -52,7 +54,7 @@ public:
      * @param[in] pin: Pin used for the servo
      * @param[in] initial_pos: Position to set at initialization
      */
-    Servo(const uint8_t pin, const uint8_t initial_pos = 90);
+    FLASHMEM Servo(const uint8_t pin, const uint8_t initial_pos = 90);
 
     /**
      * @brief Create a servo instance for given servo number
@@ -61,7 +63,7 @@ public:
      * @param[in] max:
      * @param[in] initial_pos: Position to set at initialization
      */
-    Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos = 90);
+    FLASHMEM Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos = 90);
 
     /**
      * @brief Set the servo to a position

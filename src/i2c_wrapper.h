@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <cstdint>
 #include <array>
@@ -42,10 +42,10 @@ class I2C_Wrapper { // FIXME: implement as OS service?
     uint32_t freq_;
     static std::array<std::mutex, 4> mutex_;
 
-    uint32_t get_freq_internal() const;
+    FLASHMEM uint32_t get_freq_internal() const;
 
 public:
-    I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq);
+    FLASHMEM I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq);
 
     I2C_Wrapper(const uint8_t bus, const uint8_t addr) : I2C_Wrapper { bus, addr, 100'000 } {}
 
@@ -55,9 +55,9 @@ public:
         return bus_;
     }
 
-    bool init();
+    FLASHMEM bool init();
 
-    bool init(const uint8_t bus_id, const uint32_t freq);
+    FLASHMEM bool init(const uint8_t bus_id, const uint32_t freq);
 
     uint32_t get_freq() const {
         return freq_;
@@ -83,7 +83,7 @@ public:
 
     uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value) const;
 
-    bool test(const uint8_t addr);
+    FLASHMEM bool test(const uint8_t addr);
 };
 
 } // namespace ctbot

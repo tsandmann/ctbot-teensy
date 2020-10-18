@@ -27,6 +27,8 @@
 #ifndef _I2CIO_H_
 #define _I2CIO_H_
 
+#include "avr/pgmspace.h"
+
 #include <inttypes.h>
 
 #define _I2CIO_VERSION "1.0.0"
@@ -46,7 +48,7 @@ public:
     @abstract   Constructor method
     @discussion Class constructor constructor.
     */
-    I2CIO();
+    FLASHMEM I2CIO();
 
     /*!
     @method
@@ -54,7 +56,7 @@ public:
     @discussion Class constructor constructor.
     @param      wire: Wire instance to use
     */
-    I2CIO(TwoWire& wire);
+    FLASHMEM I2CIO(TwoWire& wire);
 
     /*!
     @method
@@ -67,7 +69,7 @@ public:
     @param      i2cAddr: I2C Address where the device is located.
     @result     true if the device was initialized correctly, false otherwise
     */
-    bool begin(uint8_t i2cAddr);
+    FLASHMEM bool begin(uint8_t i2cAddr);
 
     /*!
     @method
@@ -144,13 +146,12 @@ public:
     int digitalWrite(uint8_t pin, uint8_t level);
 
 
-
 private:
     TwoWire& _wire;
-    uint8_t _shadow;      // Shadow output
-    uint8_t _dirMask;     // Direction mask
-    uint8_t _i2cAddr;     // I2C address
-    bool    _initialised; // Initialised object
+    uint8_t _shadow; // Shadow output
+    uint8_t _dirMask; // Direction mask
+    uint8_t _i2cAddr; // I2C address
+    bool _initialised; // Initialised object
 
     /*!
     @method

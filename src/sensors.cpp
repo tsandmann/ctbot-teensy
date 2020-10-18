@@ -51,12 +51,12 @@ bool Sensors::enable_sensors() {
 
     ret &= ctbot_.get_ena()->on(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK);
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena()->on() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::enable_sensors(): get_ena()->on() failed.\r\n"), true);
     }
 
     ret &= ctbot_.get_ena_pwm()->on(AnalogSensors::ENA_MASK_PWM | DigitalSensors::ENA_MASK_PWM);
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena_pwm()->on() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::enable_sensors(): get_ena_pwm()->on() failed.\r\n"), true);
     }
 
     return ret;
@@ -67,12 +67,12 @@ bool Sensors::disable_sensors() {
 
     ret &= ctbot_.get_ena()->off(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK);
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena()->off() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::enable_sensors(): get_ena()->off() failed.\r\n"), true);
     }
 
     ret &= ctbot_.get_ena_pwm()->off(AnalogSensors::ENA_MASK_PWM | DigitalSensors::ENA_MASK_PWM);
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::enable_sensors(): get_ena_pwm()->off() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::enable_sensors(): get_ena_pwm()->off() failed.\r\n"), true);
     }
 
     return ret;
@@ -83,12 +83,12 @@ bool Sensors::disable_all() {
 
     ret &= ctbot_.get_ena()->off(static_cast<EnaI2cTypes>(0xff));
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::disable_all(): get_ena()->off() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::disable_all(): get_ena()->off() failed.\r\n"), true);
     }
 
     ret &= ctbot_.get_ena_pwm()->off(static_cast<LedTypesEna>(0xff));
     if (DEBUG_ && !ret) {
-        CtBot::get_instance().get_comm()->debug_print("Sensors::disable_all(): get_ena_pwm()->off() failed.\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::disable_all(): get_ena_pwm()->off() failed.\r\n"), true);
     }
 
     return ret;

@@ -44,11 +44,11 @@ BehaviorLegacyWrapper::BehaviorLegacyWrapper(const std::string& name, legacy::Be
     : Behavior { name, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, beh_func_ { func } {}
 
 BehaviorLegacyWrapper::~BehaviorLegacyWrapper() {
-    debug_print<DEBUG_>("BehaviorLegacyWrapper::~BehaviorLegacyWrapper().\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::~BehaviorLegacyWrapper().\r\n"));
 
     cleanup();
 
-    debug_printf<DEBUG_>("BehaviorLegacyWrapper::~BehaviorLegacyWrapper() done.\r\n");
+    debug_printf<DEBUG_>(PSTR("BehaviorLegacyWrapper::~BehaviorLegacyWrapper() done.\r\n"));
 }
 
 void BehaviorLegacyWrapper::clear_all() {
@@ -56,10 +56,10 @@ void BehaviorLegacyWrapper::clear_all() {
 }
 
 void BehaviorLegacyWrapper::run() {
-    debug_print<DEBUG_>("BehaviorLegacyWrapper::run().\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run().\r\n"));
 
     if (running_behaviors[get_name()]) {
-        debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): legacy behavior already running!\r\n");
+        debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): legacy behavior already running!\r\n"));
 
         exit();
         return;
@@ -67,7 +67,7 @@ void BehaviorLegacyWrapper::run() {
 
     const auto ptr { BehaviorLegacy::get_instance()->get_behavior(beh_func_) };
     if (!ptr) {
-        debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): legacy behavior not registered!\r\n");
+        debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): legacy behavior not registered!\r\n"));
 
         exit();
         return;
@@ -75,11 +75,11 @@ void BehaviorLegacyWrapper::run() {
 
     running_behaviors[get_name()] = ptr;
 
-    debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): calling start() ...\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): calling start() ...\r\n"));
 
     start();
 
-    debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): start() called.\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): start() called.\r\n"));
 
     auto& beh_legacy { *BehaviorLegacy::get_instance() };
     do {
@@ -89,7 +89,7 @@ void BehaviorLegacyWrapper::run() {
         // debug_flush<DEBUG_>();
     } while (get_ctbot()->get_ready() && beh_legacy.behavior_is_activated(beh_func_));
 
-    debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): legacy behavior finished!\r\n");
+    debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): legacy behavior finished!\r\n"));
 
     running_behaviors[get_name()] = nullptr;
 
@@ -113,7 +113,7 @@ decltype(BehaviorDriveDistance::reg_) BehaviorDriveDistance::reg_ { REGISTRY_HEL
     [](const int8_t curve, const int16_t speed, const int16_t cm) { return INIT<BehaviorDriveDistance, int8_t, int16_t, int16_t>(curve, speed, cm); }) };
 
 BehaviorDriveDistance::BehaviorDriveDistance(const int8_t curve, const int16_t speed, const int16_t cm)
-    : BehaviorLegacyWrapper { "DriveDistanceBeh", legacy::bot_drive_distance_behaviour }, curve_ { curve }, speed_ { speed }, length_ { cm } {
+    : BehaviorLegacyWrapper { PSTR("DriveDistanceBeh"), legacy::bot_drive_distance_behaviour }, curve_ { curve }, speed_ { speed }, length_ { cm } {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorDriveDistance::BehaviorDriveDistance({}, {}, {})\r\n", static_cast<int16_t>(curve_), speed_, length_));
     debug_flush<DEBUG_>();
 }
@@ -127,8 +127,8 @@ void BehaviorDriveDistance::start() {
 #ifdef BEHAVIOUR_SIMPLE_AVAILABLE
 decltype(BehaviorSimple::reg_) BehaviorSimple::reg_ { REGISTRY_HELPER("Simple", []() { return INIT<BehaviorSimple>(); }) };
 
-BehaviorSimple::BehaviorSimple() : BehaviorLegacyWrapper { "SimpleBeh", legacy::bot_simple_behaviour } {
-    debug_print<DEBUG_>("BehaviorSimple::BehaviorSimple().\r\n");
+BehaviorSimple::BehaviorSimple() : BehaviorLegacyWrapper { PSTR("SimpleBeh"), legacy::bot_simple_behaviour } {
+    debug_print<DEBUG_>(PSTR("BehaviorSimple::BehaviorSimple().\r\n"));
 }
 
 void BehaviorSimple::start() {
@@ -149,18 +149,22 @@ decltype(
 }) };
 
 BehaviorGotoPos::BehaviorGotoPos(int16_t pos_x, int16_t pos_y, int16_t heading, bool relative)
-    : BehaviorLegacyWrapper { "GotoPosBeh", legacy::bot_goto_pos_behaviour }, x_ { pos_x }, y_ { pos_y }, head_ { heading }, rel_ { relative }, dist_ {},
+    : BehaviorLegacyWrapper { PSTR("GotoPosBeh"), legacy::bot_goto_pos_behaviour }, x_ { pos_x }, y_ { pos_y }, head_ { heading }, rel_ { relative }, dist_ {},
       dir_ {} {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::BehaviorGotoPos({}, {}, {}, {}).\r\n", pos_x, pos_y, heading, relative));
 }
 
 BehaviorGotoPos::BehaviorGotoPos(int16_t distance, int8_t direction)
-    : BehaviorLegacyWrapper { "GotoPosBeh", legacy::bot_goto_pos_behaviour }, x_ {}, y_ {}, head_ { -1 }, rel_ {}, dist_ { distance }, dir_ { direction } {
+    : BehaviorLegacyWrapper { PSTR("GotoPosBeh"), legacy::bot_goto_pos_behaviour }, x_ {}, y_ {}, head_ { -1 }, rel_ {}, dist_ { distance }, dir_ {
+          direction
+      } {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::BehaviorGotoPos({}, {}).\r\n", distance, static_cast<int16_t>(direction)));
 }
 
 BehaviorGotoPos::BehaviorGotoPos(int16_t distance, int8_t direction, int16_t heading)
-    : BehaviorLegacyWrapper { "GotoPosBeh", legacy::bot_goto_pos_behaviour }, x_ {}, y_ {}, head_ { heading }, rel_ {}, dist_ { distance }, dir_ { direction } {
+    : BehaviorLegacyWrapper { PSTR("GotoPosBeh"), legacy::bot_goto_pos_behaviour }, x_ {}, y_ {}, head_ { heading }, rel_ {}, dist_ { distance }, dir_ {
+          direction
+      } {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::BehaviorGotoPos({}, {}, {}).\r\n", distance, static_cast<int16_t>(direction), heading));
 }
 
@@ -192,12 +196,12 @@ decltype(
 decltype(BehaviorDriveSquareLegacy::reg2_) BehaviorDriveSquareLegacy::reg2_ { REGISTRY_HELPER(
     "DriveSquareLen", [](const uint16_t length) { return INIT<BehaviorDriveSquareLegacy, uint16_t>(length); }) };
 
-BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy() : BehaviorLegacyWrapper { "DriveSquareBeh", legacy::bot_drive_square_behaviour }, length_ { 400 } {
-    debug_print<DEBUG_>("BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy().\r\n");
+BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy() : BehaviorLegacyWrapper { PSTR("DriveSquareBeh"), legacy::bot_drive_square_behaviour }, length_ { 400 } {
+    debug_print<DEBUG_>(PSTR("BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy().\r\n"));
 }
 
 BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy(const uint16_t length)
-    : BehaviorLegacyWrapper { "DriveSquareBeh", legacy::bot_drive_square_behaviour }, length_ { length } {
+    : BehaviorLegacyWrapper { PSTR("DriveSquareBeh"), legacy::bot_drive_square_behaviour }, length_ { length } {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy({}).\r\n", length_));
 }
 
@@ -207,11 +211,43 @@ void BehaviorDriveSquareLegacy::start() {
 #endif // BEHAVIOUR_DRIVE_SQUARE_AVAILABLE
 
 
+#ifdef BEHAVIOUR_CATCH_PILLAR_AVAILABLE
+decltype(BehaviorCatchPillarLegacy::reg1_) BehaviorCatchPillarLegacy::reg1_ { REGISTRY_HELPER(
+    "CatchPillar", [](const uint8_t mode) { return INIT<BehaviorCatchPillarLegacy, uint8_t>(mode); }) };
+
+decltype(BehaviorCatchPillarLegacy::reg2_) BehaviorCatchPillarLegacy::reg2_ { REGISTRY_HELPER(
+    "CatchPillarTurn", [](const uint8_t mode, const int16_t max_turn) { return INIT<BehaviorCatchPillarLegacy, uint8_t, int16_t>(mode, max_turn); }) };
+
+BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(uint8_t mode, int16_t max_turn)
+    : BehaviorLegacyWrapper { PSTR("CatchPillarTurnBeh"), legacy::bot_catch_pillar_behaviour }, mode_ { mode }, max_turn_ { max_turn } {
+    debug_printf<DEBUG_>(PP_ARGS("BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy({}, {}).\r\n", mode_, max_turn_));
+}
+
+BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(const uint8_t mode) : BehaviorCatchPillarLegacy(mode, 360) {}
+
+void BehaviorCatchPillarLegacy::start() {
+    legacy::bot_catch_pillar(nullptr, mode_);
+}
+
+
+decltype(BehaviorUnloadPillarLegacy::reg1_) BehaviorUnloadPillarLegacy::reg1_ { REGISTRY_HELPER(
+    "UnloadPillar", []() { return INIT<BehaviorUnloadPillarLegacy>(); }) };
+
+BehaviorUnloadPillarLegacy::BehaviorUnloadPillarLegacy() : BehaviorLegacyWrapper { PSTR("UnloadPillarBeh"), legacy::bot_unload_pillar_behaviour } {
+    debug_print<DEBUG_>(PSTR("BehaviorUnloadPillarLegacy::BehaviorUnloadPillarLegacy().\r\n"));
+}
+
+void BehaviorUnloadPillarLegacy::start() {
+    legacy::bot_unload_pillar(nullptr);
+}
+#endif // BEHAVIOUR_CATCH_PILLAR_AVAILABLE
+
+
 #ifdef BEHAVIOUR_ADVENTCAL_AVAILABLE
 decltype(BehaviorAdventcal::reg_) BehaviorAdventcal::reg_ { REGISTRY_HELPER("Advent", []() { return INIT<BehaviorAdventcal>(); }) };
 
-BehaviorAdventcal::BehaviorAdventcal() : BehaviorLegacyWrapper { "AdventBeh", legacy::bot_adventcal_behaviour } {
-    debug_print<DEBUG_>("BehaviorAdventcal::BehaviorAdventcal().\r\n");
+BehaviorAdventcal::BehaviorAdventcal() : BehaviorLegacyWrapper { PSTR("AdventBeh"), legacy::bot_adventcal_behaviour } {
+    debug_print<DEBUG_>(PSTR("BehaviorAdventcal::BehaviorAdventcal().\r\n"));
 }
 
 void BehaviorAdventcal::start() {

@@ -57,7 +57,7 @@ class CtBotBehavior : public CtBot {
 protected:
     friend class CtBot; // allows protected constructor to enforce singleton pattern
 
-    static const char usage_text_beh[]; /**< C-String containing the usage / help message */
+    PROGMEM static const char usage_text_beh[]; /**< C-String containing the usage / help message */
 
     ResourceContainer::Ptr p_data_; /**< Top level resource container for sensor models */
     ResourceContainer::Ptr p_actuators_; /**< Top level resource container for for actuators */
@@ -97,7 +97,7 @@ protected:
      */
     bool update_enc(Pose& pose, Speed& speed);
 
-    void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
+    FLASHMEM void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
 
 public:
     /**
@@ -108,17 +108,18 @@ public:
     /**
      * @see CtBot::setup()
      */
-    virtual void setup(const bool set_ready) override;
+    FLASHMEM virtual void setup(const bool set_ready) override;
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>()> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>()> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t)> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t)> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)> initializer);
+    FLASHMEM void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)> initializer);
 
-    void register_behavior(const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)> initializer);
+    FLASHMEM void register_behavior(
+        const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)> initializer);
 
-    void register_behavior(
+    FLASHMEM void register_behavior(
         const std::string_view& name, std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)> initializer);
 
     /**
@@ -147,15 +148,6 @@ public:
         return p_actuators_.get();
     }
 
-    void wait_for_model_update(std::atomic<bool>& abort) {
-        using namespace std::chrono_literals;
-
-        std::unique_lock<std::mutex> lk(model_mutex_);
-        while (model_cond_.wait_for(lk, 10ms) == std::cv_status::timeout) {
-            if (abort) {
-                return;
-            }
-        }
-    }
+    FLASHMEM void wait_for_model_update(std::atomic<bool>& abort);
 };
 } // namespace ctbot

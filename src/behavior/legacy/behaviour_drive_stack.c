@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#define DEBUG
+//#define DEBUG
 
 /* bot_save_waypos()-Parameter */
 #define STACK_SIZE 64 /**< Groesse des Positionsspeichers */
@@ -365,13 +365,13 @@ static void drivestack_disp_key_handler(void) {
 
 void drive_stack_display(void) {
     display_cursor(1, 1);
-    display_printf("Stack   %5d %5d", pos.x, pos.y);
+    display_printf(PSTR("Stack   %5d %5d"), pos.x, pos.y);
     display_cursor(2, 1);
-    display_puts("Save/Del      : 3/8");
+    display_puts(PSTR("Save/Del      : 3/8"));
     display_cursor(3, 1);
-    display_puts("GoBack/Forward: 4/7");
+    display_puts(PSTR("GoBack/Forward: 4/7"));
     display_cursor(4, 1);
-    display_puts("Start WayPushPos: 5");
+    display_puts(PSTR("Start WayPushPos: 5"));
 
     drivestack_disp_key_handler(); // Aufruf des Key-Handlers
 }

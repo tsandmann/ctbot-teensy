@@ -33,7 +33,7 @@ namespace ctbot {
 
 decltype(I2C_Wrapper::mutex_) I2C_Wrapper::mutex_;
 
-I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : bus_ { bus }, addr_ { addr }, freq_ { freq } {}
+I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : p_i2c_ {}, bus_ { bus }, addr_ { addr }, freq_ { freq } {}
 
 bool I2C_Wrapper::init() {
     return init(bus_, freq_);
@@ -72,7 +72,7 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
             break;
         }
 
-#ifdef WIRE_IMPLEMENT_WIRE3
+#if defined TwoWireKinetis_h && defined WIRE_IMPLEMENT_WIRE3
         case 3: {
             p_i2c_ = &arduino::Wire3;
             pin_sda = CtBotConfig::I2C3_PIN_SDA;
@@ -98,6 +98,9 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
 }
 
 uint32_t I2C_Wrapper::get_freq_internal() const {
+#if defined(__IMXRT1052__) || defined(__IMXRT1062__)
+    return freq_;
+#else
     switch (bus_) {
         case 0: {
             switch (KINETIS_I2C0.F) {
@@ -132,6 +135,7 @@ uint32_t I2C_Wrapper::get_freq_internal() const {
             break;
         }
     }
+#endif
     return 0;
 }
 
@@ -142,7 +146,7 @@ void I2C_Wrapper::set_address(const uint8_t addr) {
 uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -153,14 +157,14 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): write() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): write() failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::read_reg8(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_reg8(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
         return status;
@@ -168,14 +172,14 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
 
     if (p_i2c_->requestFrom(addr_, 1U, 1U) != 1U) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): requestFrom() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): requestFrom() failed."));
         }
         return 4;
     }
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -183,7 +187,7 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
     const auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): read() failed."));
         }
         return 4;
     }
@@ -195,7 +199,7 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
 uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -206,20 +210,20 @@ uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg >> 8) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): write(high) failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): write(high) failed."));
         }
         return 4;
     }
     if (p_i2c_->write(reg & 0xff) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): write(low) failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): write(low) failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::read_reg8(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_reg8(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
         return status;
@@ -227,14 +231,14 @@ uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
 
     if (p_i2c_->requestFrom(addr_, 1U, 1U) != 1U) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): requestFrom() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): requestFrom() failed."));
         }
         return 4;
     }
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg8(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -251,7 +255,7 @@ uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
 uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -262,14 +266,14 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): write() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): write() failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::read_reg16(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_reg16(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
         return status;
@@ -277,13 +281,13 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
 
     if (p_i2c_->requestFrom(addr_, 2U, 1U) != 2U) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): requestFrom() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): requestFrom() failed."));
         }
         return 4;
     }
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -291,7 +295,7 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
     auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): read() failed."));
         }
         return 4;
     }
@@ -299,7 +303,7 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -307,7 +311,7 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg16(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): read() failed."));
         }
         return 4;
     }
@@ -319,7 +323,7 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
 uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -330,14 +334,14 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): write() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): write() failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::read_reg32(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_reg32(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
         return status;
@@ -345,14 +349,14 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
 
     if (p_i2c_->requestFrom(addr_, 4U, 1U) != 4U) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): requestFrom() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): requestFrom() failed."));
         }
         return 4;
     }
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -360,7 +364,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): read() failed."));
         }
         return 4;
     }
@@ -368,7 +372,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -376,7 +380,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): read() failed."));
         }
         return 4;
     }
@@ -384,7 +388,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -392,7 +396,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): read() failed."));
         }
         return 4;
     }
@@ -400,7 +404,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
 
     while (p_i2c_->available() == 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -408,7 +412,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_reg32(): read() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): read() failed."));
         }
         return 4;
     }
@@ -420,7 +424,7 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
 uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t length) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_bytes(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -431,14 +435,14 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(addr) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_bytes(): write() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): write() failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::read_bytes(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_bytes(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
         return status;
@@ -446,13 +450,13 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
 
     if (p_i2c_->requestFrom(addr_, length, 1U) != length) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_bytes(): requestFrom() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): requestFrom() failed."));
         }
         return 4;
     }
     while (p_i2c_->available() < length) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_bytes(): waiting for requested data.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): waiting for requested data."));
         }
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(1ms);
@@ -460,7 +464,7 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
 
     if (p_i2c_->readBytes(static_cast<uint8_t*>(p_data), length) != length) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::read_bytes(): readBytes() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): readBytes() failed."));
         }
         return 4;
     }
@@ -471,7 +475,7 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
 uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -482,20 +486,20 @@ uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): write() 1 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 1 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): write() 2 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 2 failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::write_reg8(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::write_reg8(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
     }
@@ -505,7 +509,7 @@ uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) const {
 uint8_t I2C_Wrapper::write_reg8(const uint16_t reg, const uint8_t value) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -516,26 +520,26 @@ uint8_t I2C_Wrapper::write_reg8(const uint16_t reg, const uint8_t value) const {
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg >> 8) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): write() 1 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 1 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(reg & 0xff) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): write() 2 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 2 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg8(): write() 3 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 3 failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::write_reg8(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::write_reg8(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
     }
@@ -552,7 +556,7 @@ uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) const 
 
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg16(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg16(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -563,26 +567,26 @@ uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) const 
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg16(): write() 1 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg16(): write() 1 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value >> 8) != 1) { // high byte
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg16(): write() 2 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg16(): write() 2 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value & 0xff) != 1) { // low byte
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg16(): write() 3 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg16(): write() 3 failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::write_reg16(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::write_reg16(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
     }
@@ -592,7 +596,7 @@ uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) const 
 uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -603,38 +607,38 @@ uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) const 
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(reg) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): write() 1 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): write() 1 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value >> 24) != 1) { // most significant byte
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): write() 2 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): write() 2 failed."));
         }
         return 4;
     }
     if (p_i2c_->write((value >> 16) & 0xff) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): write() 3 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): write() 3 failed."));
         }
         return 4;
     }
     if (p_i2c_->write((value >> 8) & 0xff) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): write() 4 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): write() 4 failed."));
         }
         return 4;
     }
     if (p_i2c_->write(value & 0xff) != 1) { // least significant byte
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_reg32(): write() 5 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_reg32(): write() 5 failed."));
         }
         return 4;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::write_reg32(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::write_reg32(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
     }
@@ -644,7 +648,7 @@ uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) const 
 uint8_t I2C_Wrapper::write_bytes(const uint8_t addr, const void* p_data, const uint8_t length) const {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_bytes(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_bytes(): p_i2c_ not initialized."));
         }
         return 4;
     }
@@ -655,14 +659,14 @@ uint8_t I2C_Wrapper::write_bytes(const uint8_t addr, const void* p_data, const u
     p_i2c_->beginTransmission(addr_);
     if (p_i2c_->write(addr) != 1) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_bytes(): write() 1 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_bytes(): write() 1 failed."));
         }
         return 4;
     }
 
     if (p_i2c_->write(static_cast<const uint8_t*>(p_data), length) != length) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::write_bytes(): write() 2 failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::write_bytes(): write() 2 failed."));
         }
         return 4;
     }
@@ -670,7 +674,7 @@ uint8_t I2C_Wrapper::write_bytes(const uint8_t addr, const void* p_data, const u
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
         if (DEBUG_) {
-            arduino::Serial.print("I2C_Wrapper::write_bytes(): endTransmission() failed: ");
+            arduino::Serial.print(PSTR("I2C_Wrapper::write_bytes(): endTransmission() failed: "));
             arduino::Serial.println(status, 10);
         }
     }
@@ -681,7 +685,7 @@ uint8_t I2C_Wrapper::set_bit(const uint8_t reg, const uint8_t bit, const bool va
     uint8_t data;
     if (read_reg8(reg, data)) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::set_bit(): read_reg8() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::set_bit(): read_reg8() failed."));
         }
         return 4;
     }
@@ -690,7 +694,7 @@ uint8_t I2C_Wrapper::set_bit(const uint8_t reg, const uint8_t bit, const bool va
 
     if (write_reg8(reg, data)) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::set_bit(): write_reg8() failed.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::set_bit(): write_reg8() failed."));
         }
         return 4;
     }
@@ -700,7 +704,7 @@ uint8_t I2C_Wrapper::set_bit(const uint8_t reg, const uint8_t bit, const bool va
 bool I2C_Wrapper::test(const uint8_t addr) {
     if (!p_i2c_) {
         if (DEBUG_) {
-            arduino::Serial.println("I2C_Wrapper::test(): p_i2c_ not initialized.");
+            arduino::Serial.println(PSTR("I2C_Wrapper::test(): p_i2c_ not initialized."));
         }
         return false;
     }

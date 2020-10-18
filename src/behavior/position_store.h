@@ -96,7 +96,7 @@ public:
      * @param size      Groesse des Speichers, <= POS_STORE_SIZE
      * @return          Zeiger auf neuen Positionsspeicher oder NULL
      */
-    static pos_store_t* pos_store_create_size(legacy::Behaviour_t* owner, void* data, const pos_store_size_t size) noexcept;
+    FLASHMEM static pos_store_t* pos_store_create_size(legacy::Behaviour_t* owner, void* data, const pos_store_size_t size) noexcept;
 
     /**
      * Erzeugt einen neuen Positionsspeicher maximaler Groesse
@@ -105,7 +105,7 @@ public:
      * @return          Zeiger auf neuen Positionsspeicher oder NULL
      * @see pos_store_create_size()
      */
-    static auto pos_store_create(legacy::Behaviour_t* owner, void* data) noexcept {
+    FLASHMEM static auto pos_store_create(legacy::Behaviour_t* owner, void* data) noexcept {
         return pos_store_create_size(owner, data, 0);
     }
 
@@ -115,7 +115,7 @@ public:
      * @param size      Groesse des Speichers, <= POS_STORE_SIZE
      * @return          Zeiger auf neuen Positionsspeicher oder NULL
      */
-    static auto pos_store_new_size(legacy::Behaviour_t* owner, const pos_store_size_t size) noexcept {
+    FLASHMEM static auto pos_store_new_size(legacy::Behaviour_t* owner, const pos_store_size_t size) noexcept {
         return pos_store_create_size(owner, nullptr, size);
     }
 
@@ -125,7 +125,7 @@ public:
      * @return          Zeiger auf neuen Positionsspeicher oder NULL
      * @see pos_store_new_size()
      */
-    static auto pos_store_new(legacy::Behaviour_t* owner) noexcept {
+    FLASHMEM static auto pos_store_new(legacy::Behaviour_t* owner) noexcept {
         return pos_store_create_size(owner, nullptr, 0);
     }
 
@@ -160,12 +160,12 @@ public:
      * Loescht einen Positionsspeicher
      * @param *store    Zeiger auf Positionsspeicher
      */
-    static void pos_store_release(pos_store_t* store) noexcept;
+    FLASHMEM static void pos_store_release(pos_store_t* store) noexcept;
 
     /**
      * Loescht alle Positionsspeicher
      */
-    static void pos_store_release_all() noexcept;
+    FLASHMEM static void pos_store_release_all() noexcept;
 
     /**
      * Pop-Routine zur Rueckgabe des letzten auf dem Stack gepushten Punktes

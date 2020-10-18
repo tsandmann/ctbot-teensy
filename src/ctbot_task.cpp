@@ -27,10 +27,7 @@
 #include "comm_interface.h"
 
 #include "pprintpp.hpp"
-#include "arduino_fixed.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "portable/teensy.h"
+#include "arduino_freertos.h"
 
 #include <algorithm>
 
@@ -44,7 +41,7 @@ Task::Task(
 
 void Task::print(CommInterface& comm) const {
     comm.debug_printf<true>(PP_ARGS(" \"{s}\":\t{#x}\t", name_.c_str(), id_));
-    comm.debug_print(state_ == 1 ? "  ACTIVE" : (state_ == 2 ? " BLOCKED" : "FINISHED"), true);
+    comm.debug_print(state_ == 1 ? PSTR("  ACTIVE") : (state_ == 2 ? PSTR(" BLOCKED") : PSTR("FINISHED")), true);
     comm.debug_printf<true>(PP_ARGS("\tprio: {} \t", get_priority()));
     if (period_) {
         comm.debug_printf<true>(PP_ARGS("{} ms", period_));
@@ -53,36 +50,36 @@ void Task::print(CommInterface& comm) const {
 }
 
 Task::~Task() {
-    arduino::Serial.print("Task::~Task() for \"");
+    arduino::Serial.print(PSTR("Task::~Task() for \""));
     arduino::Serial.print(name_.c_str());
     arduino::Serial.println('\"');
 
     state_ = 0;
     if (std_thread_) {
         if (handle_.p_thread && !external_) {
-            ::serial_puts("Task::~Task(): task is std::thread.");
+            ::serial_puts(PSTR("Task::~Task(): task is std::thread."));
             if (handle_.p_thread->joinable()) {
-                if (name_ != "main") {
-                    ::serial_puts("Task::~Task(): calling join()...");
+                if (name_ != PSTR("main")) {
+                    ::serial_puts(PSTR("Task::~Task(): calling join()..."));
                     handle_.p_thread->join();
-                    ::serial_puts("Task::~Task(): join() done.");
+                    ::serial_puts(("Task::~Task(): join() done."));
                 } else {
                     handle_.p_thread->detach();
-                    ::serial_puts("Task::~Task(): detach() done.");
+                    ::serial_puts(PSTR("Task::~Task(): detach() done."));
                 }
             } else {
-                ::serial_puts("Task::~Task(): not joinable.");
+                ::serial_puts(PSTR("Task::~Task(): not joinable."));
             }
             delete handle_.p_thread;
-            ::serial_puts("Task::~Task(): thread deleted.");
+            ::serial_puts(PSTR("Task::~Task(): thread deleted."));
         }
     } else {
-        ::serial_puts("Task::~Task(): task is pure FreeRTOS task.");
+        ::serial_puts(PSTR("Task::~Task(): task is pure FreeRTOS task."));
         if (handle_.p_freertos_handle && !external_) {
             ::vTaskDelete(handle_.p_freertos_handle);
         }
     }
-    ::serial_puts("Task::~Task() done.");
+    ::serial_puts(PSTR("Task::~Task() done."));
 }
 
 bool Task::resume() {

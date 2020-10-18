@@ -1,6 +1,6 @@
 # c't-Bot Teensy framework
 
-This is a very basic framework for the [c't-Bot][ctBot] with a [Teensy 35][Teensy] or [Teensy 36][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
+This is a very basic framework for the [c't-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
 
 ## Summary
 
@@ -29,7 +29,7 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 ## Usage
 
 1. Build project
-    * Commandline: `platformio run`
+    * Commandline: `platformio run -e teensy36`
     * VS Code: use “Build” button on the PlatformIO toolbar or shortcut (`ctrl/cmd+alt+b`)
     * Eclipse CDT: `Project` -> `Build Project` or shortcut (`ctrl/cmd+b`)
     * Atom: Select project folder in sidebar -> Menu `PlatformIO` -> `Build` or shortcut (`Alt+Ctrl+B`)
@@ -47,7 +47,7 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 1. Cruise around with the c't-Bot using
     * your remote control: **arrow keys** for *forward*, *backward*, *left*, *right* and **power button** for *stop*
     * the command line interface: `set speed 30 30` for 30% of max speed on both wheels, `set speed 0 0` (or just `set speed`) to stop
-1. Press **play** on remote control get a little easter egg on the command line interface :) or **I/II** to shutdown the bot :(
+1. Press **play** on remote control to show a little easter egg on the command line interface :) or **I/II** to shutdown the bot :(
 
 ## Notices
 

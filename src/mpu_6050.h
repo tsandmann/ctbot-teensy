@@ -65,13 +65,13 @@ class MPU6050 {
 public:
     static constexpr uint8_t DEFAULT_I2C_ADDR { 0x68 };
 
-    MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq);
+    FLASHMEM MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq);
 
-    MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq, const float acc_coef, const float gyro_coef);
+    FLASHMEM MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq, const float acc_coef, const float gyro_coef);
 
-    bool begin();
+    FLASHMEM bool begin();
 
-    bool calc_gyro_offset(const bool debug_out);
+    FLASHMEM bool calc_gyro_offset(const bool debug_out);
 
     bool update_gyro();
 
@@ -81,7 +81,7 @@ public:
 
     bool update_all();
 
-    void set_gyro_offset(const float x, const float y, const float z);
+    FLASHMEM void set_gyro_offset(const float x, const float y, const float z);
 
     auto get_temperature() const {
         return temperature_;

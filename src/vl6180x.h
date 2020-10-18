@@ -91,18 +91,18 @@ class VL6180X {
     uint8_t ptp_offset_;
     uint8_t scaling_;
 
-    bool set_scaling(const uint8_t scaling);
+    FLASHMEM bool set_scaling(const uint8_t scaling);
 
 public:
-    VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR);
+    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR);
 
-    bool init();
+    FLASHMEM bool init();
 
-    bool set_address(const uint8_t addr);
+    FLASHMEM bool set_address(const uint8_t addr);
 
-    bool configure_defaults();
+    FLASHMEM bool configure_defaults();
 
-    bool start_continuous(const uint32_t period_ms) const;
+    FLASHMEM bool start_continuous(const uint32_t period_ms) const;
 
     bool get_dist_range(uint8_t& range_mm) const;
 };

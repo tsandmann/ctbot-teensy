@@ -35,11 +35,11 @@ namespace ctbot {
 
 class BehaviorLegacyWrapper : public Behavior {
     static constexpr bool DEBUG_ { true };
-    static constexpr uint32_t STACK_SIZE { 4096 };
+    static constexpr uint32_t STACK_SIZE { 2048 };
 
 protected:
     template <typename... Args>
-    static Registry REGISTRY_HELPER(const std::string_view&& name, Args&&... args) {
+    FLASHMEM static Registry REGISTRY_HELPER(const std::string_view&& name, Args&&... args) {
         if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
             return Registry { name, args... };
         } else {
@@ -51,15 +51,15 @@ protected:
 
     const legacy::BehaviourFunc_t beh_func_;
 
-    virtual void start() = 0;
-    virtual void run() override;
-    void cleanup();
+    FLASHMEM virtual void start() = 0;
+    FLASHMEM virtual void run() override;
+    FLASHMEM void cleanup();
 
 public:
     BehaviorLegacyWrapper(const std::string& name, legacy::BehaviourFunc_t func);
-    virtual ~BehaviorLegacyWrapper() override;
+    FLASHMEM virtual ~BehaviorLegacyWrapper() override;
 
-    static void clear_all();
+    FLASHMEM static void clear_all();
 };
 
 
@@ -76,7 +76,7 @@ protected:
     const int16_t speed_;
     const int16_t length_;
 
-    virtual void start() override;
+    FLASHMEM virtual void start() override;
 };
 
 
@@ -88,7 +88,7 @@ public:
     BehaviorSimple();
 
 protected:
-    virtual void start() override;
+    FLASHMEM virtual void start() override;
 };
 
 
@@ -110,7 +110,7 @@ protected:
     const int16_t dist_;
     const int8_t dir_;
 
-    virtual void start() override;
+    FLASHMEM virtual void start() override;
 };
 
 
@@ -126,7 +126,34 @@ public:
 protected:
     const uint16_t length_;
 
-    virtual void start() override;
+    FLASHMEM virtual void start() override;
+};
+
+class BehaviorCatchPillarLegacy : public BehaviorLegacyWrapper {
+    static constexpr bool DEBUG_ { true };
+    static Registry reg1_;
+    static Registry reg2_;
+
+public:
+    BehaviorCatchPillarLegacy(uint8_t mode);
+    BehaviorCatchPillarLegacy(uint8_t mode, int16_t max_turn);
+
+protected:
+    const uint8_t mode_;
+    const int16_t max_turn_;
+
+    FLASHMEM virtual void start() override;
+};
+
+class BehaviorUnloadPillarLegacy : public BehaviorLegacyWrapper {
+    static constexpr bool DEBUG_ { true };
+    static Registry reg1_;
+
+public:
+    BehaviorUnloadPillarLegacy();
+
+protected:
+    FLASHMEM virtual void start() override;
 };
 
 class BehaviorAdventcal : public BehaviorLegacyWrapper {
@@ -137,7 +164,7 @@ public:
     BehaviorAdventcal();
 
 protected:
-    virtual void start() override;
+    FLASHMEM virtual void start() override;
 };
 
 } /* namespace ctbot */

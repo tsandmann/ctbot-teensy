@@ -80,7 +80,7 @@ protected:
     /**
      * @brief Construct a new DigitalSensors object
      */
-    DigitalSensors(CtBot& ctbot);
+    FLASHMEM DigitalSensors(CtBot& ctbot);
 
     /**
      * @brief Read all the current pin values
@@ -91,7 +91,7 @@ public:
     static uint32_t enc_data_l_[], enc_data_r_[]; /**< Raw input data buffers for both wheel encoders */
     static volatile uint8_t enc_l_idx_, enc_r_idx_; /**< Current indices in input data buffers, pointing to each latest entry */
 
-    ~DigitalSensors();
+    FLASHMEM ~DigitalSensors();
 
     /**
      * @return The last value of left distance sensor

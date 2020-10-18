@@ -60,6 +60,8 @@
 namespace ctbot {
 class VL53L0X {
     static constexpr bool DEBUG_ { false };
+    static constexpr uint16_t MIN_DISTANCE_ { 40 }; // mm
+    static constexpr uint16_t MAX_DISTANCE_ { 900 }; // mm
 
     struct SequenceStepEnables {
         bool tcc, msrc, dss, pre_range, final_range;
@@ -141,23 +143,23 @@ class VL53L0X {
     uint32_t timing_budget_us_;
     uint8_t stop_variable_;
 
-    bool get_spad_info(uint8_t& count, bool& type_is_aperture) const;
-    uint32_t get_measurement_timing_budget() const;
-    bool set_measurement_timing_budget(const uint32_t budget_us) const;
-    bool get_sequence_step_enables(SequenceStepEnables& enables) const;
-    bool get_sequence_step_timeouts(const SequenceStepEnables& enables, SequenceStepTimeouts& timeouts) const;
-    uint8_t get_vcsel_pulse_period(const bool final) const;
-    bool perform_single_ref_calibration(const uint8_t vhv_init_byte) const;
-    bool set_signal_rate_limit(const float limit_mcps) const;
+    FLASHMEM bool get_spad_info(uint8_t& count, bool& type_is_aperture) const;
+    FLASHMEM uint32_t get_measurement_timing_budget() const;
+    FLASHMEM bool set_measurement_timing_budget(const uint32_t budget_us) const;
+    FLASHMEM bool get_sequence_step_enables(SequenceStepEnables& enables) const;
+    FLASHMEM bool get_sequence_step_timeouts(const SequenceStepEnables& enables, SequenceStepTimeouts& timeouts) const;
+    FLASHMEM uint8_t get_vcsel_pulse_period(const bool final) const;
+    FLASHMEM bool perform_single_ref_calibration(const uint8_t vhv_init_byte) const;
+    FLASHMEM bool set_signal_rate_limit(const float limit_mcps) const;
 
 public:
-    VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR);
+    FLASHMEM VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR);
 
     bool init();
 
-    bool set_address(const uint8_t addr);
+    FLASHMEM bool set_address(const uint8_t addr);
 
-    bool start_continuous(const uint32_t period_ms) const;
+    FLASHMEM bool start_continuous(const uint32_t period_ms) const;
 
     bool get_dist_range(uint16_t& range_mm) const;
 };

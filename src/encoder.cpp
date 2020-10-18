@@ -28,8 +28,6 @@
 #include "scheduler.h"
 #include "ctbot.h"
 
-#include <portable/teensy.h>
-
 
 namespace ctbot {
 
@@ -41,22 +39,10 @@ Encoder::Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
     // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
         arduino::attachInterrupt(
-            pin,
-            []() {
-                freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
-                isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_);
-                freertos::trace_isr_exit();
-            },
-            arduino::CHANGE);
+            pin, []() { isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_); }, arduino::CHANGE);
     } else if (pin == CtBotConfig::ENC_R_PIN) {
         arduino::attachInterrupt(
-            pin,
-            []() {
-                freertos::trace_isr_enter(); // FIXME: put in PORT_ISR_FUNCTION_CLZ instead?
-                isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_);
-                freertos::trace_isr_exit();
-            },
-            arduino::CHANGE);
+            pin, []() { isr<CtBotConfig::ENC_R_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_r_, &DigitalSensors::enc_r_idx_); }, arduino::CHANGE);
     }
     Scheduler::exit_critical_section();
 }
@@ -78,7 +64,7 @@ void Encoder::update() {
 
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("diff_enc=%d\r\n", diff_enc);
+            ctbot.get_comm()->debug_printf<false>(PSTR("diff_enc=%d\r\n"), diff_enc);
         }
         edges_ += diff_enc;
         last_idx_ = idx;
@@ -86,7 +72,7 @@ void Encoder::update() {
 
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("count_=%d\r\n", count_);
+            ctbot.get_comm()->debug_printf<false>(PSTR("count_=%d\r\n"), count_);
         }
 
         const auto current_time { p_enc_data_[idx] };
@@ -101,14 +87,14 @@ void Encoder::update() {
 
         if (DEBUG_ && speed_ != 0.f) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_printf<false>("now_s=%f\r\n", now_us / 1'000'000.f);
+            ctbot.get_comm()->debug_printf<false>(PSTR("now_s=%f\r\n"), now_us / 1'000'000.f);
             ctbot.get_comm()->debug_printf<false>(
                 "%.2f\t%.2f\t%f\t%f\t%u\r\n", speed_, speed_avg_, current_time / 1'000'000.f, last_update_ / 1'000'000.f, idx);
 
             for (uint8_t i {}; i < DATA_ARRAY_SIZE; ++i) {
-                ctbot.get_comm()->debug_printf<false>("%f ", p_enc_data_[i] / 1'000'000.f);
+                ctbot.get_comm()->debug_printf<false>(PSTR("%f "), p_enc_data_[i] / 1'000'000.f);
             }
-            ctbot.get_comm()->debug_print("\r\n", false);
+            ctbot.get_comm()->debug_print(PSTR("\r\n"), false);
         }
         if (count_) {
             last_update_ = current_time;

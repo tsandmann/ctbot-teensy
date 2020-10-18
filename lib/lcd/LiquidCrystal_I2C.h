@@ -49,9 +49,9 @@ public:
     @param      lcd_Addr[in] I2C address of the IO expansion module. For I2CLCDextraIO,
     the address can be configured using the on board jumpers.
     */
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr);
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr);
     // Constructor with backlight control
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t backlighPin, t_backlighPol pol);
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t backlighPin, t_backlighPol pol);
 
     /*!
     @method
@@ -66,9 +66,9 @@ public:
     @param      Rw[in] LCD Rw (Read/write) pin connected to the IO extender module
     @param      Rs[in] LCD Rs (Reset) pin connected to the IO extender module
     */
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs);
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs);
     // Constructor with backlight control
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t backlighPin, t_backlighPol pol);
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t backlighPin, t_backlighPol pol);
 
     /*!
     @method
@@ -87,13 +87,13 @@ public:
     @param      d6[in] LCD data 2 pin map on IO extender module
     @param      d7[in] LCD data 3 pin map on IO extender module
     */
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
     // Constructor with backlight control
-    LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
+    FLASHMEM LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
         uint8_t backlighPin, t_backlighPol pol);
-        
+
     virtual ~LiquidCrystal_I2C() override = default;
-        
+
     /*!
     @function
     @abstract   LCD initialization and associated HW.
@@ -110,7 +110,7 @@ public:
     @param      charsize[in] size of the characters of the LCD: LCD_5x8DOTS or
     LCD_5x10DOTS.
     */
-    virtual bool begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
+    FLASHMEM virtual bool begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
 
     /*!
     @function
@@ -124,7 +124,7 @@ public:
     @param      mode[in] DATA - write to the LCD CGRAM, COMMAND - write a
     command to the LCD.
     */
-    virtual void send(uint8_t value, uint8_t mode);
+    FLASHMEM virtual void send(uint8_t value, uint8_t mode);
 
     /*!
     @function
@@ -145,9 +145,9 @@ public:
 
     @param      value: backlight mode (HIGH|LOW)
     */
-    void setBacklight(uint8_t value);
+    FLASHMEM void setBacklight(uint8_t value);
 
-    void set_output(FILE*) {}
+    FLASHMEM void set_output(FILE*) {}
 
 private:
     /*!
@@ -155,7 +155,7 @@ private:
     @abstract   Initializes the LCD class
     @discussion Initializes the LCD class and IO expansion module.
     */
-    bool init();
+    FLASHMEM bool init();
 
     /*!
     @function
@@ -172,7 +172,7 @@ private:
     @param      d6[in] LCD data 2 pin map on IO extender module
     @param      d7[in] LCD data 3 pin map on IO extender module
     */
-    void config(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
+    FLASHMEM void config(uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
 
     /*!
     @method

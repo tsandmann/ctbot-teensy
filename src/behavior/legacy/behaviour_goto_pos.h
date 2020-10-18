@@ -45,7 +45,7 @@ void bot_goto_pos_behaviour(Behaviour_t* data);
  * @param head      neue Blickrichtung am Zielpunkt
  * @return          Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_goto_pos(Behaviour_t* caller, int16_t x, int16_t y, int16_t head);
+FLASHMEM Behaviour_t* bot_goto_pos(Behaviour_t* caller, int16_t x, int16_t y, int16_t head);
 
 /**
  * Botenfunktion des relativen Positionierungsverhaltens.
@@ -56,7 +56,7 @@ Behaviour_t* bot_goto_pos(Behaviour_t* caller, int16_t x, int16_t y, int16_t hea
  * @param head      neue Blickrichtung am Zielpunkt oder 999, falls egal
  * @return          Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_goto_pos_rel(Behaviour_t* caller, int16_t x, int16_t y, int16_t head);
+FLASHMEM Behaviour_t* bot_goto_pos_rel(Behaviour_t* caller, int16_t x, int16_t y, int16_t head);
 
 /**
  * Botenfunktion des Distanz-Positionierungsverhaltens.
@@ -67,7 +67,7 @@ Behaviour_t* bot_goto_pos_rel(Behaviour_t* caller, int16_t x, int16_t y, int16_t
  * @param head      neue Blickrichtung am Zielpunkt oder 999, falls egal
  * @return          Zeiger auf Verhaltensdatensatz
  */
-Behaviour_t* bot_goto_dist_head(Behaviour_t* caller, int16_t distance, int8_t dir, int16_t head);
+FLASHMEM Behaviour_t* bot_goto_dist_head(Behaviour_t* caller, int16_t distance, int8_t dir, int16_t head);
 
 /**
  * Botenfunktion des Distanz-Positionierungsverhaltens.
@@ -77,7 +77,7 @@ Behaviour_t* bot_goto_dist_head(Behaviour_t* caller, int16_t distance, int8_t di
  * @param dir       Fahrtrichtung: >=0: vorwaerts, <0 rueckwaerts
  * @return          Zeiger auf Verhaltensdatensatz
  */
-static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir) {
+FLASHMEM static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir) {
     return bot_goto_dist_head(caller, distance, dir, heading_int);
 }
 #endif // BEHAVIOUR_GOTO_POS_AVAILABLE

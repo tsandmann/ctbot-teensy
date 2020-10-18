@@ -80,7 +80,7 @@
  */
 inline static void waitUsec(uint16_t uSec) {
 #ifndef FAST_MODE
-   delayMicroseconds(uSec);
+    delayMicroseconds(uSec);
 #endif // FAST_MODE
 }
 
@@ -94,53 +94,53 @@ inline static void waitUsec(uint16_t uSec) {
  */
 // LCD Commands
 // ---------------------------------------------------------------------------
-#define LCD_CLEARDISPLAY        0x01
-#define LCD_RETURNHOME          0x02
-#define LCD_ENTRYMODESET        0x04
-#define LCD_DISPLAYCONTROL      0x08
-#define LCD_CURSORSHIFT         0x10
-#define LCD_FUNCTIONSET         0x20
-#define LCD_SETCGRAMADDR        0x40
-#define LCD_SETDDRAMADDR        0x80
+#define LCD_CLEARDISPLAY 0x01
+#define LCD_RETURNHOME 0x02
+#define LCD_ENTRYMODESET 0x04
+#define LCD_DISPLAYCONTROL 0x08
+#define LCD_CURSORSHIFT 0x10
+#define LCD_FUNCTIONSET 0x20
+#define LCD_SETCGRAMADDR 0x40
+#define LCD_SETDDRAMADDR 0x80
 
 // flags for display entry mode
 // ---------------------------------------------------------------------------
-#define LCD_ENTRYRIGHT          0x00
-#define LCD_ENTRYLEFT           0x02
+#define LCD_ENTRYRIGHT 0x00
+#define LCD_ENTRYLEFT 0x02
 #define LCD_ENTRYSHIFTINCREMENT 0x01
 #define LCD_ENTRYSHIFTDECREMENT 0x00
 
 // flags for display on/off and cursor control
 // ---------------------------------------------------------------------------
-#define LCD_DISPLAYON           0x04
-#define LCD_DISPLAYOFF          0x00
-#define LCD_CURSORON            0x02
-#define LCD_CURSOROFF           0x00
-#define LCD_BLINKON             0x01
-#define LCD_BLINKOFF            0x00
+#define LCD_DISPLAYON 0x04
+#define LCD_DISPLAYOFF 0x00
+#define LCD_CURSORON 0x02
+#define LCD_CURSOROFF 0x00
+#define LCD_BLINKON 0x01
+#define LCD_BLINKOFF 0x00
 
 // flags for display/cursor shift
 // ---------------------------------------------------------------------------
-#define LCD_DISPLAYMOVE         0x08
-#define LCD_CURSORMOVE          0x00
-#define LCD_MOVERIGHT           0x04
-#define LCD_MOVELEFT            0x00
+#define LCD_DISPLAYMOVE 0x08
+#define LCD_CURSORMOVE 0x00
+#define LCD_MOVERIGHT 0x04
+#define LCD_MOVELEFT 0x00
 
 // flags for function set
 // ---------------------------------------------------------------------------
-#define LCD_8BITMODE            0x10
-#define LCD_4BITMODE            0x00
-#define LCD_2LINE               0x08
-#define LCD_1LINE               0x00
-#define LCD_5x10DOTS            0x04
-#define LCD_5x8DOTS             0x00
+#define LCD_8BITMODE 0x10
+#define LCD_4BITMODE 0x00
+#define LCD_2LINE 0x08
+#define LCD_1LINE 0x00
+#define LCD_5x10DOTS 0x04
+#define LCD_5x8DOTS 0x00
 
 
 // Define COMMAND and DATA LCD Rs (used by send method).
 // ---------------------------------------------------------------------------
-#define COMMAND                 0
-#define DATA                    1
-#define FOUR_BITS               2
+#define COMMAND 0
+#define DATA 1
+#define FOUR_BITS 2
 
 
 /*!
@@ -149,7 +149,7 @@ inline static void waitUsec(uint16_t uSec) {
  @discussion This constant defines the time it takes for the home and clear
  commands in the LCD - Time in microseconds.
  */
-#define HOME_CLEAR_EXEC      2000
+#define HOME_CLEAR_EXEC 2000
 
 /*!
     @defined
@@ -157,7 +157,7 @@ inline static void waitUsec(uint16_t uSec) {
     @discussion Used in combination with the setBacklight to swith off the
  LCD backlight. @set setBacklight
 */
-#define BACKLIGHT_OFF           0
+#define BACKLIGHT_OFF 0
 
 /*!
  @defined
@@ -165,7 +165,7 @@ inline static void waitUsec(uint16_t uSec) {
  @discussion Used in combination with the setBacklight to swith on the
  LCD backlight. @set setBacklight
  */
-#define BACKLIGHT_ON          255
+#define BACKLIGHT_ON 255
 
 
 class LCD : public Print {
@@ -183,8 +183,8 @@ public:
     @discussion LiquidCrystal class abstract constructor needed to create
     the base abstract class.
     */
-    LCD();
-    
+    FLASHMEM LCD();
+
     virtual ~LCD() = default;
 
     /*!
@@ -202,7 +202,7 @@ public:
     @param      rows[in] the number of rows that the display has
     @param      charsize[in] character size, default==LCD_5x8DOTS
     */
-    virtual bool begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
+    FLASHMEM virtual bool begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
 
     /*!
     @function
@@ -214,7 +214,7 @@ public:
 
     @param      none
     */
-    void clear();
+    FLASHMEM void clear();
 
     /*!
     @function
@@ -227,7 +227,7 @@ public:
 
     @param      none
     */
-    void home();
+    FLASHMEM void home();
 
     /*!
     @function
@@ -237,7 +237,7 @@ public:
 
     @param      none
     */
-    void noDisplay();
+    FLASHMEM void noDisplay();
 
     /*!
     @function
@@ -248,7 +248,7 @@ public:
 
     @param      none
     */
-    void display();
+    FLASHMEM void display();
 
     /*!
     @function
@@ -256,7 +256,7 @@ public:
 
     @param      none
     */
-    void noBlink();
+    FLASHMEM void noBlink();
 
     /*!
     @function
@@ -266,7 +266,7 @@ public:
 
     @param      none
     */
-    void blink();
+    FLASHMEM void blink();
 
     /*!
     @function
@@ -274,7 +274,7 @@ public:
 
     @param      none
     */
-    void noCursor();
+    FLASHMEM void noCursor();
 
     /*!
     @function
@@ -284,7 +284,7 @@ public:
 
     @param      none
     */
-    void cursor();
+    FLASHMEM void cursor();
 
     /*!
     @function
@@ -293,7 +293,7 @@ public:
 
     @param      none
     */
-    void scrollDisplayLeft();
+    FLASHMEM void scrollDisplayLeft();
 
     /*!
     @function
@@ -302,7 +302,7 @@ public:
 
     @param      none
     */
-    void scrollDisplayRight();
+    FLASHMEM void scrollDisplayRight();
 
     /*!
     @function
@@ -315,7 +315,7 @@ public:
 
     @param      none
     */
-    void leftToRight();
+    FLASHMEM void leftToRight();
 
     /*!
     @function
@@ -328,7 +328,7 @@ public:
 
     @param      none
     */
-    void rightToLeft();
+    FLASHMEM void rightToLeft();
 
     /*!
     @function
@@ -336,7 +336,7 @@ public:
     @discussion
     @param      none
     */
-    void moveCursorLeft();
+    FLASHMEM void moveCursorLeft();
 
 
     /*!
@@ -345,7 +345,7 @@ public:
 
     @param      none
     */
-    void moveCursorRight();
+    FLASHMEM void moveCursorRight();
 
     /*!
     @function
@@ -360,7 +360,7 @@ public:
 
     @param      none
     */
-    void autoscroll();
+    FLASHMEM void autoscroll();
 
     /*!
     @function
@@ -370,7 +370,7 @@ public:
 
     @param      none
     */
-    void noAutoscroll();
+    FLASHMEM void noAutoscroll();
 
     /*!
     @function
@@ -388,7 +388,7 @@ public:
     (0 to 7)
     @param      charmap[in] the bitmap array representing each row of the character.
     */
-    void createChar(uint8_t location, uint8_t charmap[]);
+    FLASHMEM void createChar(uint8_t location, uint8_t charmap[]);
 
     /*!
     @function
@@ -399,7 +399,7 @@ public:
     @param      col[in] LCD column
     @param      row[in] LCD row - line.
     */
-    void setCursor(uint8_t col, uint8_t row);
+    FLASHMEM void setCursor(uint8_t col, uint8_t row);
 
     /*!
     @function
@@ -408,7 +408,7 @@ public:
     The setBacklightPin has to be called before setting the backlight for
     this method to work. @see setBacklightPin.
     */
-    void backlight();
+    FLASHMEM void backlight();
 
     /*!
     @function
@@ -417,7 +417,7 @@ public:
     The setBacklightPin has to be called before setting the backlight for
     this method to work. @see setBacklightPin.
     */
-    void noBacklight();
+    FLASHMEM void noBacklight();
 
     /*!
     @function
@@ -426,7 +426,7 @@ public:
     and the backlight. This method has the same effect of calling display and
     backlight. @see display, @see backlight
     */
-    void on();
+    FLASHMEM void on();
 
     /*!
     @function
@@ -435,7 +435,7 @@ public:
     and the backlight. This method has the same effect of calling noDisplay and
     noBacklight. @see display, @see backlight
     */
-    void off();
+    FLASHMEM void off();
 
     //
     // virtual class methods
@@ -487,21 +487,21 @@ public:
 
     @param      value[in] Value to write to the LCD.
     */
-    virtual size_t write(uint8_t value);
+    FLASHMEM virtual size_t write(uint8_t value);
 
     using Print::write;
 
 protected:
-   // Internal LCD variables to control the LCD shared between all derived
-   // classes.
-   uint8_t _displayfunction; // LCD_5x10DOTS or LCD_5x8DOTS, LCD_4BITMODE or
-                             // LCD_8BITMODE, LCD_1LINE or LCD_2LINE
-   uint8_t _displaycontrol;  // LCD base control command LCD on/off, blink, cursor
+    // Internal LCD variables to control the LCD shared between all derived
+    // classes.
+    uint8_t _displayfunction; // LCD_5x10DOTS or LCD_5x8DOTS, LCD_4BITMODE or
+                              // LCD_8BITMODE, LCD_1LINE or LCD_2LINE
+    uint8_t _displaycontrol; // LCD base control command LCD on/off, blink, cursor
                              // all commands are "ored" to its contents.
-   uint8_t _displaymode;     // Text entry mode to the LCD
-   uint8_t _numlines;        // Number of lines of the LCD, initialized with begin()
-   uint8_t _cols;            // Number of columns in the LCD
-   t_backlighPol _polarity;  // Backlight polarity
+    uint8_t _displaymode; // Text entry mode to the LCD
+    uint8_t _numlines; // Number of lines of the LCD, initialized with begin()
+    uint8_t _cols; // Number of columns in the LCD
+    t_backlighPol _polarity; // Backlight polarity
 
 private:
     /*!
@@ -516,7 +516,7 @@ private:
     @param      value[in] Command value to send to the LCD (COMMAND, DATA or
     FOUR_BITS).
     */
-    void command(uint8_t value);
+    FLASHMEM void command(uint8_t value);
 
     /*!
     @function
@@ -531,7 +531,6 @@ private:
     @result     mode LOW - write to the LCD CGRAM, HIGH - write a command to
     the LCD.
     */
-    virtual void send(uint8_t value, uint8_t mode) = 0;
-
+    FLASHMEM virtual void send(uint8_t value, uint8_t mode) = 0;
 };
 #endif /* _LCD_H_ */

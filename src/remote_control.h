@@ -59,14 +59,14 @@ public:
      * @param[in] rc5: Reference to RC5 decoder instance
      * @param[in] rc5_address: RC5 address of remote control for filtering
      */
-    RemoteControl(Rc5& rc5, const uint8_t rc5_address);
+    FLASHMEM RemoteControl(Rc5& rc5, const uint8_t rc5_address);
 
     /**
      * @brief Register a RC5 command with an action to be executed when receiving this command
      * @param[in] cmd: RC5 command to register an action for
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    void register_cmd(const uint8_t cmd, func_t&& func);
+    FLASHMEM void register_cmd(const uint8_t cmd, func_t&& func);
 
     /**
      * @brief Check for new RC5 data and execute a registered handler for a received command (if any)

@@ -36,7 +36,7 @@ namespace ctbot {
 VL53L0X::VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr)
     : i2c_ { i2c_bus, i2c_addr, i2c_freq }, timing_budget_us_ {}, stop_variable_ {} {}
 
-bool VL53L0X::init() {
+FLASHMEM bool VL53L0X::init() {
     if (!i2c_.init()) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): i2c_.init() failed.\r\n", true);
@@ -288,7 +288,7 @@ bool VL53L0X::init() {
     return ret == 0;
 }
 
-bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) const {
+FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) const {
 #if defined __x86_64__ || defined __i386__
     return true; // FIXME: workaround for simulator
 #endif
@@ -352,7 +352,7 @@ bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) const {
     return true;
 }
 
-uint32_t VL53L0X::get_measurement_timing_budget() const {
+FLASHMEM uint32_t VL53L0X::get_measurement_timing_budget() const {
     SequenceStepEnables enables;
     SequenceStepTimeouts timeouts;
 
@@ -395,7 +395,7 @@ uint32_t VL53L0X::get_measurement_timing_budget() const {
     return budget_us;
 }
 
-bool VL53L0X::set_measurement_timing_budget(const uint32_t budget_us) const {
+FLASHMEM bool VL53L0X::set_measurement_timing_budget(const uint32_t budget_us) const {
     const uint16_t StartOverhead { 1910 };
     const uint16_t EndOverhead { 960 };
     const uint16_t MsrcOverhead { 660 };
@@ -466,7 +466,7 @@ bool VL53L0X::set_measurement_timing_budget(const uint32_t budget_us) const {
     return true;
 }
 
-bool VL53L0X::get_sequence_step_enables(SequenceStepEnables& enables) const {
+FLASHMEM bool VL53L0X::get_sequence_step_enables(SequenceStepEnables& enables) const {
     uint8_t sequence_config;
     if (i2c_.read_reg8(SEQUENCE_CONFIG_REG, sequence_config)) {
         return false;
@@ -481,7 +481,7 @@ bool VL53L0X::get_sequence_step_enables(SequenceStepEnables& enables) const {
     return true;
 }
 
-bool VL53L0X::get_sequence_step_timeouts(const SequenceStepEnables& enables, SequenceStepTimeouts& timeouts) const {
+FLASHMEM bool VL53L0X::get_sequence_step_timeouts(const SequenceStepEnables& enables, SequenceStepTimeouts& timeouts) const {
     timeouts.pre_range_vcsel_period_pclks = get_vcsel_pulse_period(false);
 
     uint8_t tmp8;
@@ -515,7 +515,7 @@ bool VL53L0X::get_sequence_step_timeouts(const SequenceStepEnables& enables, Seq
     return true;
 }
 
-uint8_t VL53L0X::get_vcsel_pulse_period(const bool final) const {
+FLASHMEM uint8_t VL53L0X::get_vcsel_pulse_period(const bool final) const {
     uint8_t tmp;
     if (i2c_.read_reg8(final ? FINAL_RANGE_CONFIG_VCSEL_PERIOD_REG : PRE_RANGE_CONFIG_VCSEL_PERIOD_REG, tmp)) {
         return 255;
@@ -523,7 +523,7 @@ uint8_t VL53L0X::get_vcsel_pulse_period(const bool final) const {
     return vcsel_period_decode(tmp);
 }
 
-bool VL53L0X::perform_single_ref_calibration(const uint8_t vhv_init_byte) const {
+FLASHMEM bool VL53L0X::perform_single_ref_calibration(const uint8_t vhv_init_byte) const {
     if (i2c_.write_reg8(SYSRANGE_START_REG, 1 | vhv_init_byte)) {
         return false;
     }
@@ -545,7 +545,7 @@ bool VL53L0X::perform_single_ref_calibration(const uint8_t vhv_init_byte) const 
     return true;
 }
 
-bool VL53L0X::set_signal_rate_limit(const float limit_mcps) const {
+FLASHMEM bool VL53L0X::set_signal_rate_limit(const float limit_mcps) const {
     if (limit_mcps < 0.f || limit_mcps > 511.99f) {
         return false;
     }
@@ -561,7 +561,7 @@ bool VL53L0X::set_signal_rate_limit(const float limit_mcps) const {
     return true;
 }
 
-bool VL53L0X::set_address(const uint8_t addr) {
+FLASHMEM bool VL53L0X::set_address(const uint8_t addr) {
     if (addr > 127) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print("VL53L0X::set_address(): invalid address.\r\n", true);
@@ -579,7 +579,7 @@ bool VL53L0X::set_address(const uint8_t addr) {
     return true;
 }
 
-bool VL53L0X::start_continuous(const uint32_t period_ms) const {
+FLASHMEM bool VL53L0X::start_continuous(const uint32_t period_ms) const {
     uint8_t ret {};
     ret |= i2c_.write_reg8(static_cast<uint8_t>(0x80), 1);
     ret |= i2c_.write_reg8(static_cast<uint8_t>(0xff), 1);
@@ -628,7 +628,7 @@ bool VL53L0X::get_dist_range(uint16_t& range_mm) const {
         if (data & 7) {
             uint16_t mm;
             if (!i2c_.read_reg16(static_cast<uint8_t>(RESULT_RANGE_STATUS_REG + 10), mm)) {
-                range_mm = mm < 900 ? mm : 9999;
+                range_mm = mm >= MIN_DISTANCE_ && mm <= MAX_DISTANCE_ ? mm : 9999;
             } else if (DEBUG_) {
                 CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_dist_range(): i2c error 2\r\n", true);
             }

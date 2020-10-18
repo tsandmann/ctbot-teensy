@@ -29,7 +29,7 @@
 
 #include "behaviour_turn.h"
 
-#define DEBUG_TURN // Schalter fuer Debug-Ausgaben
+// #define DEBUG_TURN // Schalter fuer Debug-Ausgaben
 
 #ifdef MCU
 #define TURN_ERR \

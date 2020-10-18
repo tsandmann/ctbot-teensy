@@ -39,7 +39,7 @@ void CommandBase::append_payload(boost::asio::streambuf& buf, const size_t len) 
     auto bufs { buf.data() };
     const auto n { len > MAX_PAYLOAD ? MAX_PAYLOAD : len };
     payload_.reserve(n);
-    payload_.assign(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + static_cast<const ptrdiff_t>(n));
+    payload_.assign(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + static_cast<ptrdiff_t>(n));
     buf.consume(n);
 }
 

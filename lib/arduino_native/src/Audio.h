@@ -63,9 +63,23 @@ public:
     }
 };
 
+class AudioSynthWaveformSine : public AudioStream {
+public:
+    AudioSynthWaveformSine() : AudioStream(0, nullptr) {}
+    void frequency(float) {}
+    void phase(float) {}
+    void amplitude(float) {}
+    virtual void update();
+};
+
 class AudioOutputAnalog : public AudioStream {
 public:
     AudioOutputAnalog() : AudioStream(0, nullptr) {}
+};
+
+class AudioOutputI2S : public AudioStream {
+public:
+    AudioOutputI2S() : AudioStream(0, nullptr) {}
 };
 
 class AudioMixer4 : public AudioStream {

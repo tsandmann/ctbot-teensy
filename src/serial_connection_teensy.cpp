@@ -65,6 +65,14 @@ static constexpr arduino::Stream& get_serial_port(const uint8_t serial_port) {
         return arduino::Serial5;
     } else if (serial_port == 6) {
         return arduino::Serial6;
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+    } else if (serial_port == 7) {
+        return arduino::Serial7;
+#endif
+#ifdef ARDUINO_TEENSY41
+    } else if (serial_port == 8) {
+        return arduino::Serial8;
+#endif
     } else {
         return arduino::Serial;
     }
@@ -87,8 +95,6 @@ SerialConnectionTeensy::SerialConnectionTeensy(const uint8_t serial_port, const 
         /* for the USB serial port there is no need to call begin() or initialize anything */
     }
 }
-
-SerialConnectionTeensy::~SerialConnectionTeensy() {}
 
 uint16_t SerialConnectionTeensy::wait_for_data(const uint16_t size, const uint16_t timeout_ms) {
     uint16_t bytes_available { static_cast<uint16_t>(available()) };

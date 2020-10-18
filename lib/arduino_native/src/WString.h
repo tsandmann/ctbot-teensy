@@ -27,6 +27,40 @@
 #include <cstdint>
 
 
+#define strcmp_P strcmp
+#define strncmp_P strncmp
+#define memcpy_P memcpy
+#define strlen_P strlen
+
+#define pgm_read_byte_near(addr) pgm_read_byte(addr)
+#define pgm_read_word_near(addr) pgm_read_word(addr)
+#define pgm_read_dword_near(addr) pgm_read_dword(addr)
+#define pgm_read_float_near(addr) pgm_read_float(addr)
+#define pgm_read_ptr_near(addr) pgm_read_ptr(addr)
+#define pgm_read_byte_far(addr) pgm_read_byte(addr)
+#define pgm_read_word_far(addr) pgm_read_word(addr)
+#define pgm_read_dword_far(addr) pgm_read_dword(addr)
+#define pgm_read_float_far(addr) pgm_read_float(addr)
+#define pgm_read_ptr_far(addr) pgm_read_ptr(addr)
+
+#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+#define pgm_read_word(addr) ({ \
+	typeof(addr) _addr = (addr); \
+	*(const unsigned short *)(_addr); \
+})
+#define pgm_read_dword(addr) ({ \
+	typeof(addr) _addr = (addr); \
+	*(const unsigned long *)(_addr); \
+})
+#define pgm_read_float(addr) ({ \
+	typeof(addr) _addr = (addr); \
+	*(const float *)(_addr); \
+})
+#define pgm_read_ptr(addr) ({ \
+	typeof(addr) _addr = (addr); \
+	*(void * const *)(_addr); \
+})
+
 class __FlashStringHelper;
 class Print;
 

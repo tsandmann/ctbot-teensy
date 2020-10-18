@@ -31,7 +31,7 @@
 namespace ctbot {
 VL6180X::VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr) : i2c_ { i2c_bus, i2c_addr, i2c_freq }, ptp_offset_ {}, scaling_ {} {}
 
-bool VL6180X::init() {
+FLASHMEM bool VL6180X::init() {
     if (!i2c_.init()) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print("VL6180X::init(): i2c_.init() failed.\r\n", true);
@@ -112,7 +112,7 @@ bool VL6180X::init() {
     return true;
 }
 
-bool VL6180X::configure_defaults() {
+FLASHMEM bool VL6180X::configure_defaults() {
     uint8_t ret {};
 
     // readout__averaging_sample_period = 48
@@ -150,7 +150,7 @@ bool VL6180X::configure_defaults() {
     return set_scaling(1);
 }
 
-bool VL6180X::set_scaling(const uint8_t scaling) {
+FLASHMEM bool VL6180X::set_scaling(const uint8_t scaling) {
     static constexpr uint8_t DEFAULT_CROSSTALK_VALID_HEIGHT { 20 };
 
     if (scaling < 1 || scaling > 3) {
@@ -176,7 +176,7 @@ bool VL6180X::set_scaling(const uint8_t scaling) {
     return ret == 0;
 }
 
-bool VL6180X::set_address(const uint8_t addr) {
+FLASHMEM bool VL6180X::set_address(const uint8_t addr) {
     if (addr > 127) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print("VL6180X::set_address(): invalid address.\r\n", true);
@@ -194,7 +194,7 @@ bool VL6180X::set_address(const uint8_t addr) {
     return true;
 }
 
-bool VL6180X::start_continuous(const uint32_t period_ms) const {
+FLASHMEM bool VL6180X::start_continuous(const uint32_t period_ms) const {
     int16_t period_reg { static_cast<int16_t>(period_ms / 10U - 1U) };
     period_reg = std::max<int16_t>(0, period_reg);
     period_reg = std::min<int16_t>(period_reg, 254);

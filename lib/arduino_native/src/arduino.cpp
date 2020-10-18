@@ -21,12 +21,11 @@
  * @date    10.06.2018
  */
 
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 #include "Wire.h"
 #include "SPI.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
+#include "cxxopts.hpp"
 #include "sim_connection.h"
 
 #include <chrono>
@@ -41,8 +40,8 @@
 
 namespace arduino {
 static auto g_start_time { std::chrono::high_resolution_clock::now() };
-static std::vector<bool> g_digital_pins(128);
-static std::vector<int16_t> g_analog_pins(128);
+static std::vector<bool> g_digital_pins(256);
+static std::vector<int16_t> g_analog_pins(256);
 
 uint32_t micros() __attribute__((weak));
 uint32_t micros() {
@@ -70,6 +69,8 @@ int analogRead(uint8_t pin) {
 void analogReadAveraging(unsigned int) {}
 
 void analogReadResolution(unsigned int) {}
+
+void analogReference(uint8_t) {}
 
 void analogWrite(uint8_t pin, int val) {
     try {
@@ -110,6 +111,10 @@ void digitalWriteFast(uint8_t pin, uint8_t val) {
 }
 
 void pinMode(uint8_t, uint8_t) {}
+
+void attachInterruptVector(uint8_t irq, void (*function)(void)) {
+    _VectorsRam[irq + 16] = function;
+}
 } // namespace arduino
 
 StdinOutWrapper::StdinOutWrapper() : recv_running_ { true } {
@@ -158,7 +163,7 @@ int StdinOutWrapper::read() {
 }
 
 size_t StdinOutWrapper::write(const uint8_t data) {
-    std::cout << static_cast<const char>(data);
+    std::cout << static_cast<char>(data);
     return 1;
 }
 
@@ -190,6 +195,8 @@ HardwareSerial Serial3;
 HardwareSerial Serial4;
 HardwareSerial Serial5;
 HardwareSerial Serial6;
+HardwareSerial Serial7;
+HardwareSerial Serial8;
 
 SPIClass SPI;
 SPIClass SPI1;
@@ -198,17 +205,40 @@ SPIClass SPI2;
 TwoWire Wire;
 TwoWire Wire1;
 TwoWire Wire2;
+TwoWire Wire3;
 
-void (*_VectorsRam[116])(void);
-
-void software_isr(void) {}
+void (*_VectorsRam[255 + 16])(void);
 
 extern "C" void setup();
 
-int main(int /*argc*/, char** /*argv*/) {
+int main(int argc, char** argv) {
+    cxxopts::Options options { argv[0], "c't-Bot Teensy framework" };
+    options.allow_unrecognised_options();
+
+    // clang-format off
+    options.add_options()
+        ("t,host", "Hostname of ct-Sim", cxxopts::value<std::string>()->default_value("localhost"), "HOSTNAME")
+        ("p,port", "Port of ct-Sim", cxxopts::value<std::string>()->default_value("10001"), "PORT")
+        ("h,help", "Print usage")
+        ;
+    // clang-format on
+    auto result { options.parse(argc, argv) };
+
+    if (result.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
+
     std::cout << "c't-Bot Teensy framework starting...\n";
-    ctbot::SimConnection sim_conn { "localhost", "10001" };
+
+    std::unique_ptr<ctbot::SimConnection> sim_conn {};
+    std::thread t { [&result, &sim_conn]() {
+        sim_conn.reset(new ctbot::SimConnection(result["host"].as<std::string>(), result["port"].as<std::string>()));
+        ::vTaskDelete(nullptr);
+    } };
+
     setup();
+
     std::cout << "exit.\n";
     return 0;
 }
