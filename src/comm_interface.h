@@ -29,6 +29,8 @@
 #include "static_allocator.hpp"
 #include "namespace_alias.hpp"
 
+#include "avr/pgmspace.h"
+
 #include <cstdint>
 #include <array>
 #include <string>

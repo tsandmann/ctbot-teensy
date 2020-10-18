@@ -25,7 +25,6 @@
 #include "timer.h"
 
 #include "arduino_freertos.h"
-#include "portable/teensy.h"
 
 #include <chrono>
 

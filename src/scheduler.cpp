@@ -29,7 +29,6 @@
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"
-#include "portable/teensy.h"
 
 
 namespace ctbot {

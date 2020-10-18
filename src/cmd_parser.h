@@ -114,7 +114,8 @@ public:
      * @return Pointer to the character past the last character interpreted
      */
     static std::string_view split_args(const std::string_view& args, bool& b) {
-        uint_fast8_t x1;
+        uint_fast8_t x1 {};
+        b = false;
         auto l { args.find(' ') };
         if (l == args.npos) {
             return std::string_view {};
@@ -134,6 +135,7 @@ public:
      */
     template <typename T>
     static std::string_view split_args(const std::string_view& args, T& x1) {
+        x1 = T {};
         auto l { args.find(' ') };
         if (l == args.npos) {
             return std::string_view {};

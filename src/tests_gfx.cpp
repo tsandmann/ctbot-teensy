@@ -39,7 +39,7 @@
 
 
 namespace freertos {
-std::tuple<size_t, size_t, size_t, size_t> ram_usage();
+std::tuple<size_t, size_t, size_t, size_t, size_t, size_t> ram1_usage();
 }
 
 namespace ctbot {
@@ -321,7 +321,7 @@ void ButtonTest::display_tasks() {
             ctbot_.get_tft()->set_text_size(2);
             ctbot_.get_tft()->set_text_color(TFTColors::PINK);
 
-            const auto info { freertos::ram_usage() };
+            const auto info { freertos::ram1_usage() };
             const float ram_size_f { static_cast<float>(std::get<3>(info)) };
             const size_t ram_size_kb { std::get<3>(info) / 1024UL };
             const size_t ram_used { std::get<3>(info) - std::get<0>(info) };

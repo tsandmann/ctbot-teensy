@@ -45,7 +45,6 @@
 
 #include "timers.h"
 #include "pprintpp.hpp"
-#include "portable/teensy.h"
 #include "lua_wrapper.h"
 
 #include <cstdlib>
@@ -208,10 +207,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     if (!(SD.begin(BUILTIN_SDCARD))) {
         p_comm_->debug_print(PSTR("SD.begin() failed.\r\n"), true);
     }
-#endif
 
     p_parameter_ = new ParameterStorage { PSTR("ctbot.jsn") };
     configASSERT(p_parameter_);
+#endif
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
         Scheduler::enter_critical_section();
@@ -360,7 +359,7 @@ FLASHMEM void CtBot::init_parser() {
 
     p_parser_->register_cmd(PSTR("config"), 'c', [this](const std::string_view& args) {
         if (args.find(PSTR("echo")) == 0) {
-            uint8_t v {};
+            uint8_t v;
             CmdParser::split_args(args, v);
             p_comm_->set_echo(v);
         } else if (args.find(PSTR("task")) == 0) {
@@ -369,7 +368,7 @@ FLASHMEM void CtBot::init_parser() {
             const uint16_t task_id { get_scheduler()->task_get(args.substr(s, e - s)) };
 
             if (task_id < 0xffff) {
-                uint8_t v {};
+                uint8_t v;
                 CmdParser::split_args(args.substr(s), v);
                 if (!v) {
                     get_scheduler()->task_suspend(task_id);
@@ -383,7 +382,7 @@ FLASHMEM void CtBot::init_parser() {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const std::string_view hookname { args.substr(s, e - s) };
-            uint8_t v {};
+            uint8_t v;
             CmdParser::split_args(args.substr(s), v);
             auto it { pre_hooks_.find(hookname) };
             if (it != pre_hooks_.end()) {
@@ -395,7 +394,7 @@ FLASHMEM void CtBot::init_parser() {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
             const std::string_view hookname { args.substr(s, e - s) };
-            uint8_t v {};
+            uint8_t v;
             CmdParser::split_args(args.substr(s), v);
             auto it { post_hooks_.find(hookname) };
             if (it != post_hooks_.end()) {
@@ -408,17 +407,17 @@ FLASHMEM void CtBot::init_parser() {
                 return false;
             }
         } else if (args.find(PSTR("kp")) == 0) {
-            int16_t left {}, right {};
+            int16_t left, right;
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(static_cast<float>(left), p_speedcontrols_[0]->get_ki(), p_speedcontrols_[0]->get_kd());
             p_speedcontrols_[1]->set_parameters(static_cast<float>(right), p_speedcontrols_[1]->get_ki(), p_speedcontrols_[1]->get_kd());
         } else if (args.find(PSTR("ki")) == 0) {
-            int16_t left {}, right {};
+            int16_t left, right;
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), static_cast<float>(left), p_speedcontrols_[0]->get_kd());
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), static_cast<float>(right), p_speedcontrols_[1]->get_kd());
         } else if (args.find(PSTR("kd")) == 0) {
-            int16_t left {}, right {};
+            int16_t left, right;
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_parameters(p_speedcontrols_[0]->get_kp(), p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
             p_speedcontrols_[1]->set_parameters(p_speedcontrols_[1]->get_kp(), p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
@@ -427,11 +426,11 @@ FLASHMEM void CtBot::init_parser() {
             const size_t e { args.find(' ', s) };
             p_lcd_->set_output(args.substr(s, e - s));
         } else if (args.find(PSTR("led")) == 0) {
-            uint8_t mask {}, pwm {};
+            uint8_t mask, pwm;
             CmdParser::split_args(args, mask, pwm);
             p_leds_->set_pwm(static_cast<LedTypes>(mask), pwm);
         } else if (args.find(PSTR("enapwm")) == 0) {
-            uint8_t mask {}, pwm {};
+            uint8_t mask, pwm;
             CmdParser::split_args(args, mask, pwm);
             p_ena_pwm_->set_pwm(static_cast<LedTypesEna>(mask), pwm);
         } else {
@@ -529,17 +528,17 @@ FLASHMEM void CtBot::init_parser() {
 
     p_parser_->register_cmd(PSTR("set"), 's', [this](const std::string_view& args) {
         if (args.find(PSTR("speed")) == 0) {
-            int16_t left {}, right {};
+            int16_t left, right;
             CmdParser::split_args(args, left, right);
             p_speedcontrols_[0]->set_speed(static_cast<float>(left));
             p_speedcontrols_[1]->set_speed(static_cast<float>(right));
         } else if (args.find(PSTR("motor")) == 0) {
-            int16_t left {}, right {};
+            int16_t left, right;
             CmdParser::split_args(args, left, right);
             p_motors_[0]->set(left);
             p_motors_[1]->set(right);
         } else if (args.find(PSTR("servo")) == 0) {
-            uint8_t s1 {}, s2 {};
+            uint8_t s1, s2;
             CmdParser::split_args(args, s1, s2);
             if (!s2) {
                 if (args.find(' ', 7) == args.npos) {
@@ -566,8 +565,8 @@ FLASHMEM void CtBot::init_parser() {
                 }
             }
         } else if (args.find(PSTR("enapwm")) == 0) {
-            uint8_t pin {};
-            bool value {};
+            uint8_t pin;
+            bool value;
             CmdParser::split_args(args, pin, value);
 
             if (value) {
@@ -576,8 +575,8 @@ FLASHMEM void CtBot::init_parser() {
                 p_ena_pwm_->off(static_cast<LedTypesEna>(1 << pin));
             }
         } else if (args.find(PSTR("ena")) == 0) {
-            uint8_t pin {};
-            bool value {};
+            uint8_t pin;
+            bool value;
             CmdParser::split_args(args, pin, value);
 
             if (value) {
@@ -586,15 +585,15 @@ FLASHMEM void CtBot::init_parser() {
                 p_ena_->off(static_cast<EnaI2cTypes>(1 << pin));
             }
         } else if (args.find(PSTR("led")) == 0) {
-            uint8_t led {};
+            uint8_t led;
             CmdParser::split_args(args, led);
             p_leds_->set(static_cast<LedTypes>(led));
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdbl")) == 0) {
-            bool v {};
+            bool v;
             CmdParser::split_args(args, v);
             p_lcd_->set_backlight(v);
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcd")) == 0) {
-            uint8_t line {}, column {};
+            uint8_t line, column;
             auto sv { CmdParser::split_args(args, line, column) };
             if (!line && !column) {
                 p_lcd_->clear();
@@ -651,7 +650,7 @@ FLASHMEM void CtBot::init_parser() {
             const std::string_view val { args.substr(e + 1) };
             p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
-            int32_t value;
+            int32_t value {};
             std::from_chars(val.cbegin(), std::prev(val.cend()), value);
             p_comm_->debug_printf<true>(PP_ARGS("value={}\r\n", value));
 
@@ -692,7 +691,7 @@ FLASHMEM void CtBot::init_parser() {
                 }
 
             } else if (args.find(PSTR("pitch")) == 0) {
-                uint8_t pitch {};
+                uint8_t pitch;
                 CmdParser::split_args(args, pitch);
                 p_tts_->set_pitch(pitch);
             } else if (args.find(PSTR("speak")) == 0) {
@@ -754,7 +753,7 @@ FLASHMEM void CtBot::init_parser() {
     });
 
     p_parser_->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
-        uint32_t duration {};
+        uint32_t duration;
         CmdParser::split_args(args, duration);
         std::this_thread::sleep_for(std::chrono::milliseconds(duration));
         return true;
@@ -800,17 +799,17 @@ FLASHMEM void CtBot::init_parser() {
     if (CtBotConfig::I2C_TOOLS_AVAILABLE) {
         p_parser_->register_cmd(PSTR("i2c"), 'i', [this](const std::string_view& args) {
             if (args.find(PSTR("select")) == 0) {
-                uint8_t bus {};
-                uint16_t freq {};
+                uint8_t bus;
+                uint16_t freq;
                 CmdParser::split_args(args, bus, freq);
                 return p_i2c_->init(bus, freq * 1000UL);
             } else if (args.find(PSTR("addr")) == 0) {
-                uint8_t addr {};
+                uint8_t addr;
                 CmdParser::split_args(args, addr);
                 p_i2c_->set_address(addr);
                 return true;
             } else if (args.find(PSTR("read8")) == 0) {
-                uint8_t addr {};
+                uint8_t addr;
                 CmdParser::split_args(args, addr);
                 uint8_t data {};
                 if (p_i2c_->read_reg8(addr, data)) {
@@ -821,7 +820,7 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("read16")) == 0) {
-                uint8_t addr {};
+                uint8_t addr;
                 CmdParser::split_args(args, addr);
                 uint16_t data {};
                 if (p_i2c_->read_reg16(addr, data)) {
@@ -832,7 +831,7 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("read32")) == 0) {
-                uint8_t addr {};
+                uint8_t addr;
                 CmdParser::split_args(args, addr);
                 uint32_t data {};
                 if (p_i2c_->read_reg32(addr, data)) {
@@ -843,8 +842,8 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("write8")) == 0) {
-                uint8_t addr {};
-                uint8_t data {};
+                uint8_t addr;
+                uint8_t data;
                 CmdParser::split_args(args, addr, data);
                 if (p_i2c_->write_reg8(addr, data)) {
                     return false;
@@ -854,8 +853,8 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("write16")) == 0) {
-                uint8_t addr {};
-                uint16_t data {};
+                uint8_t addr;
+                uint16_t data;
                 CmdParser::split_args(args, addr, data);
                 if (p_i2c_->write_reg16(addr, data)) {
                     return false;
@@ -865,8 +864,8 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("write32")) == 0) {
-                uint8_t addr {};
-                uint32_t data {};
+                uint8_t addr;
+                uint32_t data;
                 CmdParser::split_args(args, addr, data);
                 if (p_i2c_->read_reg32(addr, data)) {
                     return false;
@@ -876,8 +875,8 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("setbit")) == 0) {
-                uint8_t addr {};
-                uint8_t bit {};
+                uint8_t addr;
+                uint8_t bit;
                 CmdParser::split_args(args, addr, bit);
                 if (p_i2c_->set_bit(addr, bit, true)) {
                     return false;
@@ -889,8 +888,8 @@ FLASHMEM void CtBot::init_parser() {
                     return true;
                 }
             } else if (args.find(PSTR("clearbit")) == 0) {
-                uint8_t addr {};
-                uint8_t bit {};
+                uint8_t addr;
+                uint8_t bit;
                 CmdParser::split_args(args, addr, bit);
                 if (p_i2c_->set_bit(addr, bit, false)) {
                     return false;

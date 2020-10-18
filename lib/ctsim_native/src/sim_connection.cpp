@@ -22,11 +22,10 @@
 #include "../../../src/vl6180x.h"
 
 #include "circular_buffer.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "arduino_fixed.h"
+#include "arduino_freertos.h"
 
 #include <iostream>
+#include <chrono>
 #include <boost/system/system_error.hpp>
 
 
@@ -46,17 +45,31 @@ namespace ctbot {
 
 SimConnection::SimConnection(const std::string& hostname, const std::string& port)
     : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 }, now_ms_ {}, p_i2c_range_ {} {
+    while (!CtBot::get_instance().get_ready()) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100ms);
+    }
+
     boost::asio::ip::tcp::resolver r { io_service_ };
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
     boost::asio::ip::tcp::resolver::iterator it { r.resolve(q) };
-    try {
-        sock_.connect(*it);
-        std::cout << "SimConnection::SimConnection(): connected to ct-Sim.\n";
-    } catch (const boost::system::system_error& e) {
-        std::cerr << "SimConnection::SimConnection(): connect to ct-Sim failed: \"" << e.what() << "\"\n";
+
+
+    boost::system::error_code ec;
+    do {
+        sock_.close();
+        sock_.connect(*it, ec);
+    } while (ec.value() == EINTR);
+
+    if (ec) {
+        std::cerr << "SimConnection::SimConnection(): connection to ct-Sim failed: \"" << ec.message() << "\"\n";
         sock_.close();
         return;
     }
+
+    boost::asio::ip::tcp::no_delay option { true };
+    sock_.set_option(option);
+    std::cout << "SimConnection::SimConnection(): connected to ct-Sim.\n";
 
     register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase&) {
         // std::cout << "CMD_WELCOME received: " << cmd << "\n";
@@ -205,10 +218,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     }
 
     p_recv_thread_ = std::make_shared<std::thread>([this]() {
-        while (!CtBot::get_instance().get_ready()) {
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(10ms);
-        }
+        ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
 
         auto p_model { CtBotBehavior::get_instance().get_data()->get_resource<ResourceContainer>("model.") };
         assert(p_model);
@@ -239,7 +249,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
                     auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
 
                     CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1->get_position()),
-                        p_servo_2 ? static_cast<int16_t>(p_servo_2->get_position()) : 0, bot_addr_ };
+                        static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0), bot_addr_ };
 
                     send_cmd(cmd);
                 }
@@ -260,6 +270,8 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
             }
         }
     });
+
+    free_rtos_std::gthr_freertos::set_name(p_recv_thread_.get(), "ct-Sim");
 }
 
 SimConnection::~SimConnection() {
@@ -277,6 +289,11 @@ size_t SimConnection::receive_until(std::streambuf& buf, const char delim, const
 
     boost::system::error_code error;
     auto& buffer { dynamic_cast<boost::asio::streambuf&>(buf) };
+
+    if (sock_.available() < sizeof(CommandData) && CtBot::get_instance().get_ready()) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(1ms);
+    }
     const auto n { std::min(boost::asio::read_until(sock_, buffer, delim, error), maxsize) };
 
     if (error) {
@@ -315,7 +332,7 @@ bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
     std::shared_ptr<CommandBase> p_cmd;
     do {
         try {
-            if (!receive_until(recv_bufer_, static_cast<const char>(CommandCodes::CMD_STOPCODE), 1024)) {
+            if (!receive_until(recv_bufer_, static_cast<char>(CommandCodes::CMD_STOPCODE), 1024)) {
                 return false;
             }
         } catch (const boost::system::system_error& e) {

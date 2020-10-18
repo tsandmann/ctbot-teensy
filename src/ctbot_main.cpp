@@ -30,7 +30,6 @@
 #include "tests.h"
 
 #include "arduino_freertos.h"
-#include "portable/teensy.h"
 
 #include <thread>
 #include <memory>

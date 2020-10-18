@@ -232,3 +232,4 @@ public:
 extern TwoWire Wire;
 extern TwoWire Wire1;
 extern TwoWire Wire2;
+extern TwoWire Wire3;
