@@ -48,6 +48,8 @@ public:
     StdinOutWrapper();
     ~StdinOutWrapper();
 
+    virtual void begin(uint32_t);
+
     virtual int available() override;
     virtual int peek() override;
     virtual int read() override;

@@ -113,7 +113,19 @@ FLASHMEM CtBot::CtBot()
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
       p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {},
       p_serial_usb_ { new SerialConnectionTeensy { 0, CtBotConfig::UART0_BAUDRATE } }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_i2c_ {}, p_parameter_ {},
-      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {
+      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {}
+
+CtBot::~CtBot() {
+    if (DEBUG) {
+        ::serial_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance."));
+    }
+}
+
+void CtBot::stop() {
+    shutdown_ = true;
+}
+
+FLASHMEM void CtBot::setup(const bool set_ready) {
     std::atexit([]() {
         if (DEBUG) {
             ::serial_puts(PSTR("exit()"));
@@ -128,22 +140,10 @@ FLASHMEM CtBot::CtBot()
 
         Scheduler::stop();
     });
-}
 
-CtBot::~CtBot() {
-    if (DEBUG) {
-        ::serial_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance."));
-    }
-}
-
-void CtBot::stop() {
-    shutdown_ = true;
-}
-
-FLASHMEM void CtBot::setup(const bool set_ready) {
     p_scheduler_ = new Scheduler;
     task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
-    p_scheduler_->task_register(PSTR("Tmr Svc"));
+    p_scheduler_->task_register(PSTR("Tmr Svc"), true);
     p_scheduler_->task_register(PSTR("YIELD"));
     p_scheduler_->task_register(PSTR("EVENT"));
 

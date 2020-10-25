@@ -20,20 +20,23 @@
 #include "../../../src/i2c_wrapper.h"
 #include "../../../src/vl53l0x.h"
 #include "../../../src/vl6180x.h"
+#include "../../../src/lc_display.h"
 
 #include "circular_buffer.h"
 #include "arduino_freertos.h"
+#include "LiquidCrystal_I2C.h"
 
 #include <iostream>
 #include <chrono>
 #include <boost/system/system_error.hpp>
+#include <boost/bind/bind.hpp>
 
 
 namespace arduino {
-static uint32_t g_time_ms { 0 };
+static uint32_t g_time_ms {};
 
 uint32_t micros() {
-    return g_time_ms * 1000UL;
+    return g_time_ms * 1'000UL;
 }
 
 uint32_t millis() {
@@ -41,35 +44,92 @@ uint32_t millis() {
 }
 } // namespace arduino
 
+
 namespace ctbot {
+uint32_t Timer::get_us() {
+    return arduino::g_time_ms * 1'000UL;
+}
+
+uint32_t Timer::get_ms() {
+    return arduino::g_time_ms;
+}
 
 SimConnection::SimConnection(const std::string& hostname, const std::string& port)
-    : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -11 }, now_ms_ {}, p_i2c_range_ {} {
-    while (!CtBot::get_instance().get_ready()) {
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(100ms);
-    }
-
+    : sock_ { io_service_ }, bot_addr_ { CommandBase::ADDR_BROADCAST }, sim_time_ms_ { -1 }, p_i2c_range_ {} {
     boost::asio::ip::tcp::resolver r { io_service_ };
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
-    boost::asio::ip::tcp::resolver::iterator it { r.resolve(q) };
+    endpoint_it_ = r.resolve(q);
 
+    p_i2c_range_ = new I2C_Wrapper { CtBotConfig::VL53L0X_I2C_BUS };
+    assert(p_i2c_range_);
+    p_i2c_range_->init();
+    arduino::Wire.set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
 
-    boost::system::error_code ec;
-    do {
+    p_i2c_range_->set_address(VL53L0X::DEFAULT_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+    p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+
+    p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+
+    p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
+    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+
+    p_io_thread_ = std::make_unique<std::thread>([this]() {
+        using namespace std::chrono_literals;
+        while (!CtBot::get_instance().get_ready()) {
+            std::this_thread::sleep_for(100ms);
+        }
+
+        ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
+
+        auto p_model { CtBotBehavior::get_instance().get_data()->get_resource<ResourceContainer>("model.") };
+        assert(p_model);
+        p_sim_res_ = p_model->create_resource<bool>("sim_update", true);
+        assert(p_sim_res_);
+        p_sim_res_->register_listener([p_model](const Resource<bool>::basetype&) {
+            p_model->set_update_state("sim_update");
+            return;
+        });
+
+        sock_.async_connect(endpoint_it_->endpoint(), boost::bind(&SimConnection::handle_connect, this, boost::asio::placeholders::error));
+
+        while (true) {
+            io_service_.poll();
+            std::this_thread::sleep_for(1ms);
+        }
+    });
+
+    free_rtos_std::gthr_freertos::set_name(p_io_thread_.get(), "ct-Sim");
+}
+
+SimConnection::~SimConnection() {
+    sock_.close();
+    if (p_io_thread_ && p_io_thread_->joinable()) {
+        p_io_thread_->join();
+    }
+
+    delete p_i2c_range_;
+}
+
+void SimConnection::handle_connect(const boost::system::error_code& ec) {
+    if (ec.value() == EINTR) {
+        // std::cerr << "SimConnection::handle_connect(): connection request interrupted, trying again...\n";
         sock_.close();
-        sock_.connect(*it, ec);
-    } while (ec.value() == EINTR);
+        sock_.async_connect(endpoint_it_->endpoint(), boost::bind(&SimConnection::handle_connect, this, boost::asio::placeholders::error));
+        return;
+    }
 
-    if (ec) {
-        std::cerr << "SimConnection::SimConnection(): connection to ct-Sim failed: \"" << ec.message() << "\"\n";
+    if (ec || !sock_.is_open()) {
+        std::cerr << "SimConnection::handle_connect(): connection to ct-Sim failed: \"" << (ec ? ec.message() : "unknown error") << "\"\n";
         sock_.close();
         return;
     }
 
     boost::asio::ip::tcp::no_delay option { true };
     sock_.set_option(option);
-    std::cout << "SimConnection::SimConnection(): connected to ct-Sim.\n";
+    std::cout << "SimConnection::handle_connect(): connected to ct-Sim.\n";
+
 
     register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase&) {
         // std::cout << "CMD_WELCOME received: " << cmd << "\n";
@@ -82,10 +142,61 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         sim_time_ms_ = cmd.get_cmd_data_l();
         int32_t diff { sim_time_ms_ - last_time };
         if (diff < 0) {
-            diff += 10000;
+            diff += 10'000;
         }
         arduino::g_time_ms += diff;
-        // std::cout << "CMD_DONE received: " << cmd << "sim_time _ms_=" << std::dec << sim_time_ms_ << " g_time_ms=" << arduino::g_time_ms << "\n";
+        // std::cout << "CMD_DONE received: " << cmd << "sim_time_ms_=" << std::dec << sim_time_ms_ << " g_time_ms=" << arduino::g_time_ms << "\n";
+
+
+        if (CtBot::get_instance().get_ready()) {
+            p_sim_res_->notify(); // FIXME: think about this
+
+            {
+                auto p_speedctrl_l { CtBot::get_instance().get_speedcontrols()[0] };
+                auto p_speedctrl_r { CtBot::get_instance().get_speedcontrols()[1] };
+
+                CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM,
+                    static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControl::MAX_SPEED / 200.f),
+                    static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControl::MAX_SPEED / 200.f), bot_addr_ };
+
+                send_cmd(cmd);
+            }
+
+            {
+                auto p_servo_1 { CtBot::get_instance().get_servos()[0] };
+                auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
+
+                CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1->get_position()),
+                    static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0), bot_addr_ };
+
+                send_cmd(cmd);
+            }
+
+            {
+                auto p_leds { CtBot::get_instance().get_leds() };
+
+                CommandNoCRC cmd { CommandCodes::CMD_AKT_LED, CommandCodes::CMD_SUB_NORM,
+                    static_cast<int16_t>(p_leds ? static_cast<int16_t>(p_leds->get()) : 0), 0, bot_addr_ };
+
+                send_cmd(cmd);
+            }
+
+            {
+                auto p_lcd { CtBot::get_instance().get_lcd()->get_impl() };
+                int16_t r { 0 };
+                for (const auto& e : p_lcd->get_buffer()) {
+                    CommandNoCRC cmd { CommandCodes::CMD_AKT_LCD, CommandCodes::CMD_SUB_LCD_DATA, 0, r++, bot_addr_ };
+                    cmd.add_payload(e.c_str(), 20);
+                    send_cmd(cmd);
+                }
+            }
+
+            {
+                CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, bot_addr_ };
+                send_cmd(cmd);
+            }
+        }
+
         return true;
     });
     register_cmd(CommandCodes::CMD_ID, [this](const CommandBase& cmd) {
@@ -125,7 +236,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
             uint8_t idx { DigitalSensors::enc_l_idx_ };
             ++idx;
             idx %= Encoder::DATA_ARRAY_SIZE;
-            DigitalSensors::enc_data_l_[idx] = now_ms_ * 1'000UL;
+            DigitalSensors::enc_data_l_[idx] = arduino::g_time_ms * 1'000UL;
             DigitalSensors::enc_l_idx_ = idx;
         }
 
@@ -136,7 +247,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
             uint8_t idx { DigitalSensors::enc_r_idx_ };
             ++idx;
             idx %= Encoder::DATA_ARRAY_SIZE;
-            DigitalSensors::enc_data_r_[idx] = now_ms_ * 1'000UL;
+            DigitalSensors::enc_data_r_[idx] = arduino::g_time_ms * 1'000UL;
             DigitalSensors::enc_r_idx_ = idx;
         }
 
@@ -171,14 +282,17 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
         const int16_t data { cmd.get_cmd_data_l() };
         const uint8_t rc5_addr { static_cast<uint8_t>((data & 0x7c0) >> 6) };
         const uint8_t rc5_cmd { static_cast<uint8_t>(data & 0x3f) };
+        const bool toggle { cmd.get_cmd_data_r() > 0 };
         auto p_sensors { CtBot::get_instance().get_sensors() };
         if (p_sensors) {
-            p_sensors->get_rc5().set_rc5(rc5_addr, rc5_cmd);
+            if (data) {
+                // std::cout << "CMD_SENS_RC5 received: data=0x" << std::hex << data << " addr=0x" << static_cast<uint16_t>(rc5_addr) << " cmd=0x"
+                //           << static_cast<uint16_t>(rc5_cmd) << std::dec << " toggle=" << toggle << "\n";
+                p_sensors->get_rc5().set_rc5(rc5_addr, rc5_cmd, toggle);
+            }
+        } else {
+            // std::cout << "CMD_SENS_RC5 received: data=0x" << std::hex << data << std::dec << ", but no sensor found.\n";
         }
-        // if (data) {
-        //     std::cout << "CMD_SENS_RC5 received: data=0x" << std::hex << data << " addr=0x" << static_cast<uint16_t>(rc5_addr)
-        //         << " cmd=0x" << static_cast<uint16_t>(rc5_cmd) << std::dec << "\n";
-        // }
         return true;
     });
 
@@ -187,179 +301,82 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     register_cmd(CommandCodes::CMD_SENS_BPS, [](const CommandBase&) { return true; });
     register_cmd(CommandCodes::CMD_AKT_SERVO, [](const CommandBase&) { return true; });
 
-    p_i2c_range_ = new I2C_Wrapper { CtBotConfig::VL53L0X_I2C_BUS };
-    assert(p_i2c_range_);
-    p_i2c_range_->init();
-    arduino::Wire.set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
-
-    p_i2c_range_->set_address(VL53L0X::DEFAULT_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
-    p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
-
-    p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
-
-    p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
-
     {
         CommandNoCRC cmd { CommandCodes::CMD_WELCOME, CommandCodes::CMD_SUB_WELCOME_SIM, 2 /* RC5 */, 0, CommandBase::ADDR_BROADCAST };
         if (!send_cmd(cmd)) {
             std::cerr << "SimConnection::SimConnection(): send_cmd() failed.\n";
         }
     }
-    if (receive_sensor_data()) {
-        sim_time_ms_ += 10;
-        now_ms_ += 10; // FIXME: calc from delta?
-        CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, CommandBase::ADDR_BROADCAST };
-        if (!send_cmd(cmd)) {
-            std::cerr << "SimConnection::SimConnection(): send_cmd() failed.\n";
-        }
+
+    receive_cmd_data();
+}
+
+void SimConnection::receive_cmd_data() {
+    boost::asio::async_read_until(sock_, recv_bufer_, static_cast<char>(CommandCodes::CMD_STOPCODE),
+        boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+}
+
+void SimConnection::handle_read(const boost::system::error_code& ec, std::size_t size) {
+    if (ec) {
+        std::cerr << "SimConnection::handle_read(): connection to ct-Sim aborted: \"" << ec.message() << "\"\n";
+        return;
     }
 
-    p_recv_thread_ = std::make_shared<std::thread>([this]() {
-        ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
+    evaluate_received_data();
+}
 
-        auto p_model { CtBotBehavior::get_instance().get_data()->get_resource<ResourceContainer>("model.") };
-        assert(p_model);
-        auto p_res { p_model->create_resource<bool>("sim_update", true) };
-        assert(p_res);
-        p_res->register_listener([p_model](const Resource<bool>::basetype&) {
-            p_model->set_update_state("sim_update");
-            return;
-        });
+void SimConnection::handle_write(const boost::system::error_code& ec) {
+    if (ec) {
+        std::cerr << "SimConnection::handle_write(): connection to ct-Sim aborted: \"" << ec.message() << "\"\n";
+    }
+}
 
-        while (sock_.is_open()) {
-            if (CtBot::get_instance().get_ready() && receive_sensor_data()) {
-                p_res->notify(); // FIXME: think about this
+void SimConnection::evaluate_received_data() {
+    while (recv_bufer_.in_avail() > 0) {
+        if (p_cmd_) {
+            if (static_cast<std::streamsize>(p_cmd_->get_payload_size()) > recv_bufer_.in_avail()) {
+                std::cerr << "SimConnection::evaluate_received_data(): not enough bytes for payload received: " << recv_bufer_.in_avail() << "\n";
+                boost::asio::async_read(sock_, recv_bufer_, boost::asio::transfer_at_least(p_cmd_->get_payload_size() - recv_bufer_.in_avail()),
+                    boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                return;
+            }
+            p_cmd_->append_payload(recv_bufer_, p_cmd_->get_payload_size());
+        } else {
+            if (recv_bufer_.in_avail() < static_cast<std::streamsize>(sizeof(CommandData))) {
+                std::cerr << "SimConnection::evaluate_received_data(): not enough bytes received: " << recv_bufer_.in_avail() << "\n";
+                boost::asio::async_read(sock_, recv_bufer_, boost::asio::transfer_at_least(sizeof(CommandData) - recv_bufer_.in_avail()),
+                    boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                return;
+            }
 
-                {
-                    auto p_speedctrl_l { CtBot::get_instance().get_speedcontrols()[0] };
-                    auto p_speedctrl_r { CtBot::get_instance().get_speedcontrols()[1] };
+            try {
+                p_cmd_ = std::make_unique<CommandNoCRC>(recv_bufer_);
+            } catch (const std::exception& e) {
+                std::cerr << "SimConnection::evaluate_received_data(): creating new command failed: \"" << e.what() << "\"\n";
+                p_cmd_.reset();
+                break;
+            }
 
-                    CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM,
-                        static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControl::MAX_SPEED / 200.f),
-                        static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControl::MAX_SPEED / 200.f), bot_addr_ };
-
-                    send_cmd(cmd);
+            assert(p_cmd_);
+            if (p_cmd_->get_payload_size()) {
+                if (recv_bufer_.in_avail() < static_cast<std::streamsize>(p_cmd_->get_payload_size())) {
+                    std::cerr << "SimConnection::evaluate_received_data(): not enough bytes for payload received: " << recv_bufer_.in_avail() << "\n";
+                    boost::asio::async_read(sock_, recv_bufer_, boost::asio::transfer_at_least(p_cmd_->get_payload_size() - recv_bufer_.in_avail()),
+                        boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                    return;
                 }
-
-                {
-                    auto p_servo_1 { CtBot::get_instance().get_servos()[0] };
-                    auto p_servo_2 { CtBot::get_instance().get_servos()[1] };
-
-                    CommandNoCRC cmd { CommandCodes::CMD_AKT_SERVO, CommandCodes::CMD_SUB_NORM, static_cast<int16_t>(p_servo_1->get_position()),
-                        static_cast<int16_t>(p_servo_2 ? p_servo_2->get_position() : 0), bot_addr_ };
-
-                    send_cmd(cmd);
-                }
-
-                {
-                    auto p_leds { CtBot::get_instance().get_leds() };
-
-                    CommandNoCRC cmd { CommandCodes::CMD_AKT_LED, CommandCodes::CMD_SUB_NORM,
-                        static_cast<int16_t>(p_leds ? static_cast<int16_t>(p_leds->get()) : 0), 0, bot_addr_ };
-
-                    send_cmd(cmd);
-                }
-
-                {
-                    CommandNoCRC cmd { CommandCodes::CMD_DONE, CommandCodes::CMD_SUB_NORM, sim_time_ms_, 0, bot_addr_ };
-                    send_cmd(cmd);
-                }
+                p_cmd_->append_payload(recv_bufer_, p_cmd_->get_payload_size());
             }
         }
-    });
 
-    free_rtos_std::gthr_freertos::set_name(p_recv_thread_.get(), "ct-Sim");
-}
-
-SimConnection::~SimConnection() {
-    sock_.close();
-    if (p_recv_thread_ && p_recv_thread_->joinable()) {
-        p_recv_thread_->join();
-    }
-}
-
-size_t SimConnection::receive_until(std::streambuf& buf, const char delim, const size_t maxsize) {
-    if (!sock_.is_open()) {
-        std::cerr << "SimConnection::receive_until(): not ready, abort.\n";
-        return 0;
-    }
-
-    boost::system::error_code error;
-    auto& buffer { dynamic_cast<boost::asio::streambuf&>(buf) };
-
-    if (sock_.available() < sizeof(CommandData) && CtBot::get_instance().get_ready()) {
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
-    const auto n { std::min(boost::asio::read_until(sock_, buffer, delim, error), maxsize) };
-
-    if (error) {
-        throw boost::system::system_error(error);
-    }
-
-    return n;
-}
-
-size_t SimConnection::send(const void* data, const size_t size) {
-    if (!sock_.is_open()) {
-        std::cerr << "SimConnection::send(): not ready, abort.\n";
-        return 0;
-    }
-
-    boost::system::error_code error;
-    const auto n { boost::asio::write(sock_, boost::asio::buffer(data, size), error) };
-
-    if (error) {
-        throw boost::system::system_error(error);
-    }
-
-    return n;
-}
-
-bool SimConnection::receive_sensor_data() {
-    return receive_sensor_data(CommandCodes::CMD_DONE);
-}
-
-bool SimConnection::receive_sensor_data(const CommandCodes cmd) {
-    if (!sock_.is_open()) {
-        std::cerr << "SimConnection::receive_sensor_data(): not ready, abort.\n";
-        return false;
-    }
-
-    std::shared_ptr<CommandBase> p_cmd;
-    do {
-        try {
-            if (!receive_until(recv_bufer_, static_cast<char>(CommandCodes::CMD_STOPCODE), 1024)) {
-                return false;
-            }
-        } catch (const boost::system::system_error& e) {
-            if (e.code() == boost::asio::error::misc_errors::eof) {
-                sock_.close();
-            } else if (e.code() != boost::asio::error::basic_errors::interrupted) {
-                std::cerr << "SimConnection::receive_sensor_data(): receiving commands failed: \"" << e.what() << "\"\n";
-            }
-            return false;
+        if (!evaluate_cmd(*p_cmd_)) {
+            std::cerr << "SimConnection::evaluate_received_data(): evaluate_cmd failed.\n";
         }
 
-        try {
-            p_cmd = std::make_shared<CommandNoCRC>(recv_bufer_);
-        } catch (const std::exception& e) {
-            std::cerr << "SimConnection::receive_sensor_data(): creating new command failed: \"" << e.what() << "\"\n";
-            return false;
-        }
-        assert(p_cmd);
-        if (p_cmd->get_payload_size()) {
-            p_cmd->append_payload(recv_bufer_, p_cmd->get_payload_size());
-        }
-        if (!evaluate_cmd(*p_cmd)) {
-            return false;
-        }
-    } while (p_cmd->get_cmd_code() != cmd);
+        p_cmd_.reset();
+    }
 
-    return true;
+    receive_cmd_data();
 }
 
 bool SimConnection::send_cmd(CommandBase& cmd) {
@@ -375,11 +392,13 @@ bool SimConnection::send_cmd(CommandBase& cmd) {
     }
 
     try {
-        auto sent { send(&cmd.get_cmd(), sizeof(CommandData)) };
+        boost::asio::async_write(
+            sock_, boost::asio::buffer(&cmd.get_cmd(), sizeof(CommandData)), boost::bind(&SimConnection::handle_write, this, boost::asio::placeholders::error));
         if (cmd.get_payload_size()) {
-            sent += send(cmd.get_payload().data(), cmd.get_payload_size());
+            boost::asio::async_write(sock_, boost::asio::buffer(cmd.get_payload().data(), cmd.get_payload_size()),
+                boost::bind(&SimConnection::handle_write, this, boost::asio::placeholders::error));
         }
-        return sent == sizeof(CommandData) + cmd.get_payload_size();
+        return true;
     } catch (const boost::system::system_error& e) {
         return false;
     }
@@ -398,12 +417,11 @@ bool SimConnection::send_cmd(std::vector<std::shared_ptr<CommandBase>>& cmds) {
             if (p_cmd->get_cmd_to() == CommandBase::ADDR_NOT_SET) {
                 p_cmd->set_cmd_to(CommandBase::ADDR_SIM);
             }
-            auto sent { send(&p_cmd->get_cmd(), sizeof(CommandData)) };
+            boost::asio::async_write(sock_, boost::asio::buffer(&p_cmd->get_cmd(), sizeof(CommandData)),
+                boost::bind(&SimConnection::handle_write, this, boost::asio::placeholders::error));
             if (p_cmd->get_payload_size()) {
-                sent += send(p_cmd->get_payload().data(), p_cmd->get_payload_size());
-            }
-            if (sent != sizeof(CommandData) + p_cmd->get_payload_size()) {
-                return false;
+                boost::asio::async_write(sock_, boost::asio::buffer(p_cmd->get_payload().data(), p_cmd->get_payload_size()),
+                    boost::bind(&SimConnection::handle_write, this, boost::asio::placeholders::error));
             }
         }
     } catch (const boost::system::system_error& e) {

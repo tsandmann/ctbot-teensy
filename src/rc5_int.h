@@ -114,6 +114,8 @@ public:
 
     void set_rc5(const uint8_t addr, const uint8_t cmd);
 
+    void set_rc5(const uint8_t addr, const uint8_t cmd, bool toggle);
+
     /**
      * @brief ISR for RC5 pin change interrupt
      * @tparam PIN_NUM: Number of interrupt vector (to distinguish ISRs)

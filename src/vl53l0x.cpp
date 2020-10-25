@@ -107,8 +107,8 @@ FLASHMEM bool VL53L0X::init() {
         return false;
     }
 
-    uint8_t spad_count;
-    bool spad_type_is_aperture;
+    uint8_t spad_count {};
+    bool spad_type_is_aperture {};
     if (!get_spad_info(spad_count, spad_type_is_aperture)) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): get_spad_info() failed.\r\n", true);

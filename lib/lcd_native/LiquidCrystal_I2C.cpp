@@ -27,7 +27,11 @@
 
 
 LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
-    : p_lcd_out(nullptr) {}
+    : p_lcd_out {}, cursor_r_ {}, cursor_c_ {} {
+    for (auto& e : data_) {
+        e.resize(20, ' ');
+    }
+}
 
 bool LiquidCrystal_I2C::begin(uint8_t cols, uint8_t lines) {
     return true;
@@ -44,6 +48,7 @@ void LiquidCrystal_I2C::clear() {
         fprintf(p_lcd_out, "\033[2J");
         fflush(p_lcd_out);
     }
+    setCursor(0, 0);
 }
 
 void LiquidCrystal_I2C::setCursor(uint8_t col, uint8_t row) {
@@ -51,27 +56,49 @@ void LiquidCrystal_I2C::setCursor(uint8_t col, uint8_t row) {
         fprintf(p_lcd_out, "\033[%d;%dH", row, col);
         fflush(p_lcd_out);
     }
+
+    if (row < 4) {
+        cursor_r_ = row;
+    }
+    if (col < 20) {
+        cursor_c_ = col;
+    }
 }
 
 size_t LiquidCrystal_I2C::write(uint8_t b) {
     if (p_lcd_out) {
         fputc(b, p_lcd_out);
     }
+
+    data_[cursor_r_][cursor_c_] = b;
+    cursor_c_ = (cursor_c_ + 1) % 20;
+
     return 1;
 }
 
 size_t LiquidCrystal_I2C::write(const uint8_t* buf, size_t size) {
     if (p_lcd_out) {
-        for (size_t i { 0 }; i < size; ++i) {
+        for (size_t i {}; i < size; ++i) {
             fputc(*buf++, p_lcd_out);
         }
     }
-    return size;
+
+    size_t i, n {};
+    for (i = cursor_c_; i < cursor_c_ + size && i < 20; ++i) {
+        char tmp { static_cast<char>(*buf++) };
+        if (tmp < 0x20) {
+            tmp = ' ';
+        } else if (tmp > 0x7e) {
+            tmp = '#';
+        }
+        data_[cursor_r_][i] = tmp;
+        ++n;
+    }
+    cursor_c_ = i % 20;
+
+    return n;
 }
 
 size_t LiquidCrystal_I2C::write(const char* s) {
-    if (p_lcd_out) {
-        fputs(s, p_lcd_out);
-    }
-    return std::strlen(s);
+    return write(s, std::strlen(s));
 }
