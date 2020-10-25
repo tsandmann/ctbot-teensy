@@ -116,7 +116,7 @@ void TFTDisplay::set_backlight(const float brightness) const {
 uint8_t TFTDisplay::print(const char c, bool clear) const {
     if (clear) {
         int16_t x, y;
-        uint16_t w, h;
+        uint16_t w {}, h {};
         char tmp[2] { c, '\0' };
         p_display_->getTextBounds(tmp, 0, 0, &x, &y, &w, &h);
         fill_rect(get_cursor_x(), get_cursor_y(), w, h, TFTColors::BLACK);
@@ -127,7 +127,7 @@ uint8_t TFTDisplay::print(const char c, bool clear) const {
 uint8_t TFTDisplay::print(const std::string& str, bool clear) const {
     if (clear) {
         int16_t x, y;
-        uint16_t w, h;
+        uint16_t w {}, h {};
         p_display_->getTextBounds(str.c_str(), 0, 0, &x, &y, &w, &h);
         fill_rect(get_cursor_x(), get_cursor_y(), w, h, TFTColors::BLACK);
     }

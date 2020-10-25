@@ -119,15 +119,15 @@ void RemoteControl::register_cmd(const uint8_t cmd, func_t&& func) {
 }
 
 void RemoteControl::update() {
-    if (rc5_.get_addr() != addr_) {
-        return;
-    }
+    const auto toggle { rc5_.get_toggle() };
+    const auto cmd { rc5_.get_cmd() };
 
-    const auto toggle(rc5_.get_toggle());
-    const auto cmd(rc5_.get_cmd());
-
-    if (last_toggle_ != toggle || last_cmd_ != cmd) {
+    if (last_toggle_ != toggle) {
         last_toggle_ = toggle;
+        if (rc5_.get_addr() != addr_) {
+            return;
+        }
+
         const auto it { key_mappings_.find(cmd) };
         if (it == key_mappings_.end()) {
             return;

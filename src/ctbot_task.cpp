@@ -77,6 +77,7 @@ Task::~Task() {
         ::serial_puts(PSTR("Task::~Task(): task is pure FreeRTOS task."));
         if (handle_.p_freertos_handle && !external_) {
             ::vTaskDelete(handle_.p_freertos_handle);
+            ::serial_puts(PSTR("Task::~Task(): task handle deleted."));
         }
     }
     ::serial_puts(PSTR("Task::~Task() done."));

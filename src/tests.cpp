@@ -76,7 +76,7 @@ void LedTest::run() {
 }
 
 
-LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ { 0U } {
+LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ {} {
     ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS, [this]() { return run(); });
 }
 
@@ -105,12 +105,20 @@ void EnaTest::run() {
 }
 
 
-SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1024UL, [this]() { return run(); });
+SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
+    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1'024UL, [this]() { return run(); });
+}
+
+SensorLcdTest::~SensorLcdTest() {
+    running_ = false;
 }
 
 void SensorLcdTest::run() {
-    auto const p_sens(ctbot_.get_sensors());
+    if (!running_ || !ctbot_.get_ready()) {
+        return;
+    }
+
+    auto const p_sens { ctbot_.get_sensors() };
 
     ctbot_.get_lcd()->set_cursor(1, 1);
     ctbot_.get_lcd()->printf("P%03X %03X D=%4d %4d", p_sens->get_ldr_l(), p_sens->get_ldr_r(), p_sens->get_distance_l(), p_sens->get_distance_r());
@@ -262,7 +270,7 @@ TftTest::TftTest(CtBot& ctbot) : ctbot_(ctbot), p_tft_ {} {
     p_tft_->setRotation(CtBotConfig::TFT_ROTATION);
     p_tft_->fillRect(0, 0, p_tft_->width(), p_tft_->height(), TFTColors::BLACK);
 
-    ctbot_.get_scheduler()->task_add("tfttest", TASK_PERIOD_MS, 2, 2048, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("tfttest", TASK_PERIOD_MS, 2, 2'048, [this]() { return run(); });
 }
 
 void TftTest::run() {
@@ -270,29 +278,29 @@ void TftTest::run() {
     auto& comm { *ctbot_.get_comm() };
 
     comm.debug_print("\r\nBenchmark                Time\r\n", true);
-    comm.debug_printf<true>(PP_ARGS("Text                     {.2} ms\r\n", testText() / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Text                     {.2} ms\r\n", testText() / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Lines                    {.2} ms\r\n", testLines(TFTColors::CYAN) / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Lines                    {.2} ms\r\n", testLines(TFTColors::CYAN) / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Rectangles (outline)     {.2} ms\r\n", testRects(TFTColors::GREEN) / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Rectangles (outline)     {.2} ms\r\n", testRects(TFTColors::GREEN) / 1'000.f));
     std::this_thread::sleep_for(1s);
 
     p_tft_->fillScreen(TFTColors::BLACK);
-    comm.debug_printf<true>(PP_ARGS("Circles (outline)        {.2} ms\r\n", testCircles(10, TFTColors::RED) / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Circles (outline)        {.2} ms\r\n", testCircles(10, TFTColors::RED) / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Triangles (outline)      {.2} ms\r\n", testTriangles() / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Triangles (outline)      {.2} ms\r\n", testTriangles() / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Triangles (filled)       {.2} ms\r\n", testFilledTriangles() / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Triangles (filled)       {.2} ms\r\n", testFilledTriangles() / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Rounded rects (outline)  {.2} ms\r\n", testRoundRects() / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Rounded rects (outline)  {.2} ms\r\n", testRoundRects() / 1'000.f));
     std::this_thread::sleep_for(1s);
 
-    comm.debug_printf<true>(PP_ARGS("Rounded rects (filled)   {.2} ms\r\n", testFilledRoundRects() / 1000.f));
+    comm.debug_printf<true>(PP_ARGS("Rounded rects (filled)   {.2} ms\r\n", testFilledRoundRects() / 1'000.f));
     std::this_thread::sleep_for(1s);
 }
 
@@ -513,7 +521,7 @@ TouchTest::TouchTest(CtBot& ctbot) : ctbot_(ctbot), p_touch_ {} {
         comm.debug_print("Touch controller init failed.\r\n", true);
     }
 
-    ctbot_.get_scheduler()->task_add("touchtest", TASK_PERIOD_MS, 1, 1024, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("touchtest", TASK_PERIOD_MS, 1, 1'024, [this]() { return run(); });
 }
 
 void TouchTest::run() {
@@ -527,7 +535,7 @@ void TouchTest::run() {
         const auto dt { arduino::micros() - start };
 
         comm.debug_printf<true>(PP_ARGS(
-            "Touch event: x={}\ty={}, took {} us\r\n", arduino::map<uint16_t>(x, 0U, 4095U, 0U, 240), arduino::map<uint16_t>(y, 0U, 4095U, 0U, 320), dt));
+            "Touch event: x={}\ty={}, took {} us\r\n", arduino::map<uint16_t>(x, 0U, 4'095U, 0U, 240), arduino::map<uint16_t>(y, 0U, 4'095U, 0U, 320), dt));
     }
 }
 

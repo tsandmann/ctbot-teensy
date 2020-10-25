@@ -117,7 +117,17 @@ void attachInterruptVector(uint8_t irq, void (*function)(void)) {
 }
 } // namespace arduino
 
-StdinOutWrapper::StdinOutWrapper() : recv_running_ { true } {
+StdinOutWrapper::StdinOutWrapper() : recv_running_ {} {}
+
+StdinOutWrapper::~StdinOutWrapper() {
+    if (recv_running_) {
+        recv_running_ = false;
+        p_in_thread_->join();
+    }
+}
+
+void StdinOutWrapper::begin(uint32_t) {
+    recv_running_ = true;
     p_in_thread_ = std::make_unique<std::thread>([this]() {
         while (recv_running_) {
             if (key_pressed(100)) {
@@ -130,13 +140,8 @@ StdinOutWrapper::StdinOutWrapper() : recv_running_ { true } {
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(100ms);
         }
-        std::cout << "StdinOutWrapper::receiver_task(): receiver task finished.\n";
+        std::cout << "StdinOutWrapper::StdinOutWrapper(): recv thread finished.\n";
     });
-}
-
-StdinOutWrapper::~StdinOutWrapper() {
-    recv_running_ = false;
-    p_in_thread_->join();
 }
 
 int StdinOutWrapper::available() {
@@ -231,11 +236,8 @@ int main(int argc, char** argv) {
 
     std::cout << "c't-Bot Teensy framework starting...\n";
 
-    std::unique_ptr<ctbot::SimConnection> sim_conn {};
-    std::thread t { [&result, &sim_conn]() {
-        sim_conn.reset(new ctbot::SimConnection(result["host"].as<std::string>(), result["port"].as<std::string>()));
-        ::vTaskDelete(nullptr);
-    } };
+    ctbot::SimConnection sim_conn { result["host"].as<std::string>(), result["port"].as<std::string>() };
+    Serial.begin(0);
 
     setup();
 

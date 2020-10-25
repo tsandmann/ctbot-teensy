@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <array>
+#include <string>
 #include <cstdint>
 #include <cstddef>
 #include <cstdio>
@@ -31,6 +33,9 @@
 class LiquidCrystal_I2C {
 protected:
     FILE* p_lcd_out;
+    size_t cursor_r_;
+    size_t cursor_c_;
+    std::array<std::string, 4> data_;
 
 public:
     typedef enum { POSITIVE, NEGATIVE } t_backlighPol;
@@ -61,5 +66,9 @@ public:
 
     void set_output(FILE* fp) {
         p_lcd_out = fp;
+    }
+
+    const auto get_buffer() const {
+        return data_;
     }
 };

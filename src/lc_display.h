@@ -101,6 +101,10 @@ public:
      * @note Currently only stdout is implemented
      */
     FLASHMEM void set_output(const std::string_view& out);
+
+    FLASHMEM auto get_impl() {
+        return p_impl_;
+    }
 };
 
 } // namespace ctbot

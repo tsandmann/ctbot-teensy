@@ -61,7 +61,7 @@ protected:
     friend class TFTDisplay;
 
     static constexpr size_t INPUT_BUFFER_SIZE { 64 }; /**< Size of input buffer in byte */
-    static constexpr size_t OUTPUT_QUEUE_SIZE { 64 }; /**< Size of output queue in number of elements */
+    static constexpr size_t OUTPUT_QUEUE_SIZE { 128 }; /**< Size of output queue in number of elements */
     static constexpr size_t BUFFER_CHUNK_SIZE { 4 };
     static constexpr uint16_t INPUT_TASK_PERIOD_MS { 20 }; /**< Scheduling period of input task in ms */
     static constexpr uint8_t INPUT_TASK_PRIORITY { 5 }; /**< Priority of input task */

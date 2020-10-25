@@ -39,6 +39,7 @@ Scheduler::Scheduler() : next_id_ {} {
     Task* p_idle_task { new Task {
         *this, next_id_++, configIDLE_TASK_NAME, false, 0, static_cast<uint8_t>(::uxTaskPriorityGet(::xTaskGetIdleTaskHandle())), nullptr } };
     p_idle_task->std_thread_ = false;
+    p_idle_task->external_ = true;
     p_idle_task->handle_.p_freertos_handle = ::xTaskGetIdleTaskHandle();
 
     ::vTaskSuspendAll();
@@ -83,8 +84,13 @@ Scheduler::~Scheduler() {
 }
 
 void Scheduler::stop() {
-    ::vTaskSuspend(p_main_task_);
-    ::vTaskDelete(p_main_task_);
+    // ::serial_puts("Scheduler::stop()");
+    if (p_main_task_) {
+        ::vTaskSuspend(p_main_task_);
+        // ::serial_puts("Scheduler::stop(): vTaskSuspend(p_main_task_) done.");
+        ::vTaskDelete(p_main_task_);
+        // ::serial_puts("Scheduler::stop(): vTaskDelete(p_main_task_) done.");
+    }
 
     // size_t num_tasks { ::uxTaskGetNumberOfTasks() };
     // std::vector<TaskStatus_t> task_data;

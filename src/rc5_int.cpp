@@ -127,11 +127,18 @@ bool Rc5::update() {
 }
 
 void Rc5::set_rc5(const uint8_t addr, const uint8_t cmd) {
-    if (addr != rc5_addr_ || cmd != rc5_cmd_) {
-        rc5_toggle_ = !rc5_toggle_;
-    }
     rc5_addr_ = addr;
     rc5_cmd_ = cmd;
+}
+
+void Rc5::set_rc5(const uint8_t addr, const uint8_t cmd, bool toggle) {
+    rc5_toggle_ = toggle;
+    rc5_addr_ = addr;
+    rc5_cmd_ = cmd;
+
+    // if (addr | cmd) {
+    //     ::printf("Rc5::set_rc5(): toggle=%u\taddr=%u\tcmd=%u\r\n", rc5_toggle_, rc5_addr_, rc5_cmd_);
+    // }
 }
 
 } // namespace ctbot

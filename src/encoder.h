@@ -61,8 +61,8 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
+    /** Size of buffer array in byte for raw encoder data */ // FIXME: calc correct size
     static constexpr uint8_t DATA_ARRAY_SIZE { CtBotConfig::ENCODER_MARKS <= 60 ? 32 : 64 };
-    /**< Size of buffer array in byte for raw encoder data */ // FIXME: calc correct size
 
     /**
      * @brief Construct a new Encoder object

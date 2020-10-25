@@ -318,6 +318,7 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 50 }; /**< Scheduling period of task in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
+    std::atomic<bool> running_;
 
     /**
      * @brief Sensor LCD test task implementation
@@ -389,7 +390,7 @@ public:
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    FLASHMEM ~SensorLcdTest() = default;
+    FLASHMEM ~SensorLcdTest();
 };
 
 

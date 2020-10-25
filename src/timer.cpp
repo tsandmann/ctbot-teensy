@@ -31,18 +31,16 @@
 
 namespace ctbot {
 
-uint32_t Timer::get_us() {
-    // using namespace std::chrono;
-    // return static_cast<uint32_t>(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
+__attribute__((weak)) uint32_t Timer::get_us() {
     return freertos::get_us();
 }
 
-uint32_t Timer::get_ms() {
+__attribute__((weak)) uint32_t Timer::get_ms() {
     using namespace std::chrono;
     return static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 }
 
-void Timer::delay_us(const uint32_t us) {
+__attribute__((weak)) void Timer::delay_us(const uint32_t us) {
     arduino::delayMicroseconds(us);
 }
 

@@ -91,8 +91,9 @@ void Encoder::update() {
             ctbot.get_comm()->debug_printf<false>(
                 "%.2f\t%.2f\t%f\t%f\t%u\r\n", speed_, speed_avg_, current_time / 1'000'000.f, last_update_ / 1'000'000.f, idx);
 
-            for (uint8_t i {}; i < DATA_ARRAY_SIZE; ++i) {
-                ctbot.get_comm()->debug_printf<false>(PSTR("%f "), p_enc_data_[i] / 1'000'000.f);
+            for (uint8_t i {}; i < DATA_ARRAY_SIZE; i += 4) {
+                ctbot.get_comm()->debug_printf<false>(PSTR("%f %f %f %f "), p_enc_data_[i] / 1'000'000.f, p_enc_data_[i + 1] / 1'000'000.f,
+                    p_enc_data_[i + 2] / 1'000'000.f, p_enc_data_[i + 3] / 1'000'000.f);
             }
             ctbot.get_comm()->debug_print(PSTR("\r\n"), false);
         }
@@ -104,6 +105,11 @@ void Encoder::update() {
         speed_ = speed_avg_ = 0.f;
         count_ = 0;
         last_update_ = now_us;
+
+        if (DEBUG_) {
+            CtBot& ctbot { CtBot::get_instance() };
+            ctbot.get_comm()->debug_printf<false>(PSTR("no update, setting speed to 0\r\n"));
+        }
     }
 }
 
