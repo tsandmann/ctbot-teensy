@@ -16,7 +16,6 @@ SECTIONS
         . = ORIGIN(FLASH) + 0x1000;
         KEEP(*(.ivt))
         KEEP(*(.bootdata))
-        KEEP(*(.vectors))
         KEEP(*(.startup))
         *(.text.startup*)
         *(.flashmem*)
@@ -46,6 +45,28 @@ SECTIONS
         . = ALIGN(16);
     } > FLASH
 
+    .ARM.exidx : {
+        *(.ARM.exidx.startup* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.flashmem* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text.startup* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZNSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZNKSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text._ZZNSt* .gnu.linkonce.armexidx.*)
+        *(.ARM.exidx.text.*ArduinoJson* .gnu.linkonce.armexidx.*)
+        . = ALIGN(4);
+    } > FLASH
+ 
+    .ARM.extab : {
+        *(.ARM.extab.flashmem* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZNSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZNKSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text._ZZNSt* .gnu.linkonce.armextab.*)
+        *(.ARM.extab.text.*ArduinoJson* .gnu.linkonce.armextab.*)
+        . = ALIGN(4);
+    } > FLASH
+
     .data.func : {
         *(.*__func__*)
         *(.*__PRETTY_FUNCTION__*)
@@ -59,16 +80,12 @@ SECTIONS
         . = ALIGN(16);
     } > ITCM AT> FLASH
 
-    .ARM.exidx : {
-        . = ALIGN(4);
-        __exidx_start = .;
+    .ARM.exidx.itcm : {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-        __exidx_end = .;
         . = ALIGN(4);
     } > ITCM AT> FLASH
 
-    .ARM.extab : {
-        . = ALIGN(4);
+    .ARM.extab.itcm : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
         . = ALIGN(4);
     } > ITCM AT> FLASH
@@ -80,8 +97,7 @@ SECTIONS
     .data : {
         *(.rodata*)
         *(.data*)
-        . = ALIGN(16);
-    } > DTCM  AT> FLASH
+    } > DTCM AT> FLASH
 
     .bss ALIGN(4) : {
         *(.bss*)
@@ -91,9 +107,16 @@ SECTIONS
     } > DTCM
 
     .bss.dma (NOLOAD) : {
+        *(.hab_log)
         *(.dmabuffers)
         . = ALIGN(32);
     } > RAM
+
+    .text.csf : {
+        FILL(0xFF)
+        . = ALIGN(4);
+        KEEP(*(.csf))
+    } > FLASH
 
     _stext = ADDR(.text.itcm);
     _etext = ADDR(.text.itcm) + SIZEOF(.text.itcm) + SIZEOF(.ARM.exidx) + SIZEOF(.ARM.extab);
@@ -113,8 +136,11 @@ SECTIONS
     _flexram_bank_config = 0xAAAAAAAA | ((1 << (_itcm_block_count * 2)) - 1);
     _estack = ORIGIN(DTCM) + ((16 - _itcm_block_count) << 15) - 128;
 
-    _flashimagelen = SIZEOF(.text.progmem) + SIZEOF(.text.itcm) + SIZEOF(.ARM.exidx) + SIZEOF(.ARM.extab) + SIZEOF(.data) + SIZEOF(.data.func);
+    _flashimagelen = SIZEOF(.text.progmem) + SIZEOF(.text.itcm) + SIZEOF(.ARM.exidx) + SIZEOF(.ARM.extab) + SIZEOF(.data) + SIZEOF(.data.func) + SIZEOF(.text.csf);
     _teensy_model_identifier = 0x24;
+
+    __exidx_start = ADDR(.ARM.exidx);
+    __exidx_end = ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx);
 
     .debug_info     0 : { *(.debug_info) }
     .debug_abbrev   0 : { *(.debug_abbrev) }

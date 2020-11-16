@@ -269,7 +269,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         });
         Scheduler::exit_critical_section();
 
-        get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 512, [this]() {
+        get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 1024, [this]() {
             while (get_ready()) {
                 ::xTaskNotifyWaitIndexed(1, 0, 0, nullptr, portMAX_DELAY);
                 ::software_isr(); // AudioStream::update_all()

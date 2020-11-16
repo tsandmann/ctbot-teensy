@@ -212,7 +212,7 @@ public:
         }
 
         bool ret { true };
-        for (uint8_t i { 0 }; i < 8; ++i) {
+        for (uint8_t i {}; i < 8; ++i) {
             if ((static_cast<uint8_t>(status_) & (1 << i)) == (static_cast<uint8_t>(leds) & (1 << i))) {
                 continue;
             }
