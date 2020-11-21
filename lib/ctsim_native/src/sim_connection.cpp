@@ -1,7 +1,7 @@
 
 /**
  * @file    sim_connection.cpp
- * @brief   C't-Sim connection
+ * @brief   ct-Sim connection
  * @author  Timo Sandmann
  * @date    17.06.2018
  */
@@ -181,9 +181,9 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
                 send_cmd(cmd);
             }
 
-            {
+            if (CtBotConfig::LCD_AVAILABLE) {
                 auto p_lcd { CtBot::get_instance().get_lcd()->get_impl() };
-                int16_t r { 0 };
+                int16_t r {};
                 for (const auto& e : p_lcd->get_buffer()) {
                     CommandNoCRC cmd { CommandCodes::CMD_AKT_LCD, CommandCodes::CMD_SUB_LCD_DATA, 0, r++, bot_addr_ };
                     cmd.add_payload(e.c_str(), 20);
