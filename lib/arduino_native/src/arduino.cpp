@@ -117,6 +117,8 @@ void attachInterruptVector(uint8_t irq, void (*function)(void)) {
 }
 } // namespace arduino
 
+void software_isr() {}
+
 StdinOutWrapper::StdinOutWrapper() : recv_running_ {} {}
 
 StdinOutWrapper::~StdinOutWrapper() {

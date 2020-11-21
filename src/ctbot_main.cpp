@@ -244,7 +244,7 @@ FLASHMEM __attribute__((noinline)) void setup() {
     if (DEBUG) {
         ::serial_puts(PSTR("setup(): setting up init task..."));
     }
-    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(2048) };
+    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(4096) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
     free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), PSTR("INIT"));
     free_rtos_std::gthr_freertos::set_next_stacksize(last);

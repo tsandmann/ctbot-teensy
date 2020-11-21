@@ -269,7 +269,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         });
         Scheduler::exit_critical_section();
 
-        get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 512, [this]() {
+        get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 1024, [this]() {
             while (get_ready()) {
                 ::xTaskNotifyWaitIndexed(1, 0, 0, nullptr, portMAX_DELAY);
                 ::software_isr(); // AudioStream::update_all()
@@ -738,9 +738,14 @@ FLASHMEM void CtBot::init_parser() {
                     break;
                 }
 
-                p_comm_->debug_print(entry.name(), true);
+                const auto len { p_comm_->debug_print(entry.name(), true) };
                 if (!entry.isDirectory()) {
-                    p_comm_->debug_printf<true>(PP_ARGS("\t\t{}\r\n", entry.size()));
+                    if (len < 14) {
+                        p_comm_->debug_print('\t', true);
+                    }
+                    p_comm_->debug_printf<true>(PP_ARGS("\t{} KB\r\n", static_cast<uint32_t>(entry.size() / 1'024ULL)));
+                } else {
+                    p_comm_->debug_print(PSTR("\r\n"), true);
                 }
 
                 entry.close();

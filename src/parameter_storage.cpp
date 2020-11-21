@@ -31,7 +31,7 @@
 namespace ctbot {
 ParameterStorage::ParameterStorage(const std::string_view& config_file, const size_t buffer_size) : config_file_ { config_file }, p_parameter_doc_ {} {
     if (!SD.exists(config_file_.c_str())) {
-        File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
+        File f { SD.open(config_file_.c_str(), static_cast<uint8_t>(O_WRITE | O_CREAT)) };
         if (f) {
             f.close();
         } else {
@@ -215,7 +215,7 @@ std::unique_ptr<std::string> ParameterStorage::dump() const {
 
 bool ParameterStorage::flush() const {
     SD.remove(config_file_.c_str());
-    File f { SD.open(config_file_.c_str(), O_WRITE | O_CREAT) };
+    File f { SD.open(config_file_.c_str(), static_cast<uint8_t>(O_WRITE | O_CREAT)) };
     if (f) {
         serializeJson(*p_parameter_doc_, f);
         f.close();

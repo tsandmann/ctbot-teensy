@@ -165,7 +165,7 @@ bool CmdScript::create_script(const size_t history_depth) {
         return false;
     }
 
-    File file { SD.open(filename_.c_str(), O_WRITE | O_CREAT | O_TRUNC) };
+    File file { SD.open(filename_.c_str(), static_cast<uint8_t>(O_WRITE | O_CREAT | O_TRUNC)) };
 
     for (size_t i { history_depth + 1U }; i > 1; --i) {
         auto str { cmd_parser_.get_history(i) };
