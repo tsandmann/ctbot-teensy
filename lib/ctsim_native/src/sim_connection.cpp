@@ -1,7 +1,7 @@
 
 /**
  * @file    sim_connection.cpp
- * @brief   C't-Sim connection
+ * @brief   ct-Sim connection
  * @author  Timo Sandmann
  * @date    17.06.2018
  */
@@ -181,9 +181,9 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
                 send_cmd(cmd);
             }
 
-            {
+            if (CtBotConfig::LCD_AVAILABLE) {
                 auto p_lcd { CtBot::get_instance().get_lcd()->get_impl() };
-                int16_t r { 0 };
+                int16_t r {};
                 for (const auto& e : p_lcd->get_buffer()) {
                     CommandNoCRC cmd { CommandCodes::CMD_AKT_LCD, CommandCodes::CMD_SUB_LCD_DATA, 0, r++, bot_addr_ };
                     cmd.add_payload(e.c_str(), 20);
@@ -316,7 +316,7 @@ void SimConnection::receive_cmd_data() {
         boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void SimConnection::handle_read(const boost::system::error_code& ec, std::size_t size) {
+void SimConnection::handle_read(const boost::system::error_code& ec, std::size_t) {
     if (ec) {
         std::cerr << "SimConnection::handle_read(): connection to ct-Sim aborted: \"" << ec.message() << "\"\n";
         return;

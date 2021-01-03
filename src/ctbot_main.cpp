@@ -293,3 +293,38 @@ FLASHMEM uint8_t get_debug_led_pin() {
     return ctbot::CtBotConfig::DEBUG_LED_PIN;
 }
 } // extern C
+
+
+#ifdef CTBOT_SIMULATION
+#include "cxxopts.hpp"
+#include "sim_connection.h"
+
+int main(int argc, char** argv) {
+    cxxopts::Options options { argv[0], "ct-Bot Teensy framework" };
+    options.allow_unrecognised_options();
+
+    // clang-format off
+    options.add_options()
+        ("t,host", "Hostname of ct-Sim", cxxopts::value<std::string>()->default_value("localhost"), "HOSTNAME")
+        ("p,port", "Port of ct-Sim", cxxopts::value<std::string>()->default_value("10001"), "PORT")
+        ("h,help", "Print usage")
+        ;
+    // clang-format on
+    auto result { options.parse(argc, argv) };
+
+    if (result.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
+
+    std::cout << "ct-Bot Teensy framework starting...\n";
+
+    ctbot::SimConnection sim_conn { result["host"].as<std::string>(), result["port"].as<std::string>() };
+    Serial.begin(0);
+
+    setup();
+
+    std::cout << "exit.\n";
+    return 0;
+}
+#endif // CTBOT_SIMULATION

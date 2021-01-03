@@ -25,9 +25,6 @@
 #include "Wire.h"
 #include "SPI.h"
 
-#include "cxxopts.hpp"
-#include "sim_connection.h"
-
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -42,6 +39,8 @@ namespace arduino {
 static auto g_start_time { std::chrono::high_resolution_clock::now() };
 static std::vector<bool> g_digital_pins(256);
 static std::vector<int16_t> g_analog_pins(256);
+
+KINETIS_I2C_t i2c_dummy;
 
 uint32_t micros() __attribute__((weak));
 uint32_t micros() {
@@ -215,34 +214,3 @@ TwoWire Wire2;
 TwoWire Wire3;
 
 void (*_VectorsRam[255 + 16])(void);
-
-extern "C" void setup();
-
-int main(int argc, char** argv) {
-    cxxopts::Options options { argv[0], "c't-Bot Teensy framework" };
-    options.allow_unrecognised_options();
-
-    // clang-format off
-    options.add_options()
-        ("t,host", "Hostname of ct-Sim", cxxopts::value<std::string>()->default_value("localhost"), "HOSTNAME")
-        ("p,port", "Port of ct-Sim", cxxopts::value<std::string>()->default_value("10001"), "PORT")
-        ("h,help", "Print usage")
-        ;
-    // clang-format on
-    auto result { options.parse(argc, argv) };
-
-    if (result.count("help")) {
-        std::cout << options.help() << std::endl;
-        return 0;
-    }
-
-    std::cout << "c't-Bot Teensy framework starting...\n";
-
-    ctbot::SimConnection sim_conn { result["host"].as<std::string>(), result["port"].as<std::string>() };
-    Serial.begin(0);
-
-    setup();
-
-    std::cout << "exit.\n";
-    return 0;
-}

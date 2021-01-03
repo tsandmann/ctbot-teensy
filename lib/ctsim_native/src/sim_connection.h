@@ -1,7 +1,7 @@
 
 /**
  * @file    sim_connection.h
- * @brief   C't-Sim connection
+ * @brief   ct-Sim connection
  * @author  Timo Sandmann
  * @date    17.06.2018
  */
