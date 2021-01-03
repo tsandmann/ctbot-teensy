@@ -27,7 +27,7 @@
 
 
 File::File(std::fstream file, const char* name) : file_ { std::move(file) } {
-    std::strncpy(name_, name, sizeof(name_));
+    std::strncpy(name_, name, sizeof(name_) - 1);
 }
 
 File::~File() {

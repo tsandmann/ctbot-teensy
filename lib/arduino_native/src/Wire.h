@@ -46,13 +46,6 @@ typedef struct {
     volatile uint8_t SLTL;
 } KINETIS_I2C_t;
 
-static KINETIS_I2C_t i2c_dummy;
-
-#define KINETIS_I2C0 (*(KINETIS_I2C_t*) &i2c_dummy)
-#define KINETIS_I2C1 (*(KINETIS_I2C_t*) &i2c_dummy)
-#define KINETIS_I2C2 (*(KINETIS_I2C_t*) &i2c_dummy)
-#define KINETIS_I2C3 (*(KINETIS_I2C_t*) &i2c_dummy)
-
 
 class TwoWire {
     static constexpr bool DEBUG_ { false };
@@ -233,3 +226,12 @@ extern TwoWire Wire;
 extern TwoWire Wire1;
 extern TwoWire Wire2;
 extern TwoWire Wire3;
+
+namespace arduino {
+extern KINETIS_I2C_t i2c_dummy;
+}
+
+#define KINETIS_I2C0 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
+#define KINETIS_I2C1 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
+#define KINETIS_I2C2 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
+#define KINETIS_I2C3 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)

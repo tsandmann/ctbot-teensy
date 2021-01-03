@@ -23,7 +23,6 @@ CommandBase::CommandBase(const CommandCodes& cmd_code, const CommandCodes& subcm
 CommandBase::CommandBase(boost::asio::streambuf& buf) : has_crc_ { false }, crc_ok_ { false } {
     std::istream is { &buf };
     is.read(reinterpret_cast<char*>(&data_), sizeof(CommandData));
-    uint8_t* ptr { reinterpret_cast<uint8_t*>(&data_) };
     while (data_.startCode != static_cast<uint8_t>(CommandCodes::CMD_STARTCODE) && is.good()) {
         char* ptr { reinterpret_cast<char*>(&data_) };
         std::memmove(ptr, &ptr[1], sizeof(CommandData) - 1);

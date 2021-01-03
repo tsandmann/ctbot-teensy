@@ -316,7 +316,7 @@ void SimConnection::receive_cmd_data() {
         boost::bind(&SimConnection::handle_read, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void SimConnection::handle_read(const boost::system::error_code& ec, std::size_t size) {
+void SimConnection::handle_read(const boost::system::error_code& ec, std::size_t) {
     if (ec) {
         std::cerr << "SimConnection::handle_read(): connection to ct-Sim aborted: \"" << ec.message() << "\"\n";
         return;
