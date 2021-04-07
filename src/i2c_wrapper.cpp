@@ -22,29 +22,59 @@
  * @date    17.08.2019
  */
 
+#if 0
 #include "i2c_wrapper.h"
 #include "ctbot_config.h"
 
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+#include "i2c_t4.h"
+namespace I2C_NS = arduino::teensy4;
+#else
+namespace I2C_NS = arduino;
+#endif
+
 #include <chrono>
-#include <thread>
 
 
 namespace ctbot {
+using namespace std::chrono_literals;
 
 decltype(I2C_Wrapper::mutex_) I2C_Wrapper::mutex_;
 
-I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : p_i2c_ {}, bus_ { bus }, addr_ { addr }, freq_ { freq } {}
+FLASHMEM I2C_Wrapper::I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq) : p_i2c_ {}, bus_ { bus }, addr_ { addr }, freq_ { freq } {
+    if (DEBUG_) {
+        printf_debug(PSTR("I2C_Wrapper::I2C_Wrapper(%u): created.\r\n"), bus_);
+    }
+}
 
-bool I2C_Wrapper::init() {
+FLASHMEM bool I2C_Wrapper::init() {
+    if (DEBUG_) {
+        printf_debug(PSTR("I2C_Wrapper::init()...\r\n"));
+    }
     return init(bus_, freq_);
 }
 
-bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
+FLASHMEM bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
+    if (DEBUG_) {
+        printf_debug(PSTR("I2C_Wrapper::init(%u)...\r\n"), bus_id);
+    }
+
     if (bus_id > mutex_.size()) {
+        if (DEBUG_) {
+            printf_debug(PSTR("I2C_Wrapper::init(%u): invalid bus.\r\n"), bus_id);
+        }
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_id], 100ms };
+    if (!lock) {
+        if (DEBUG_) {
+            printf_debug(PSTR("I2C_Wrapper::init(%u): lock not available.\r\n"), bus_id);
+        }
+        return false;
+    } else if (DEBUG_) {
+        printf_debug(PSTR("I2C_Wrapper::init(%u): lock acquired.\r\n"), bus_id);
+    }
 
     bus_ = bus_id;
     freq_ = freq;
@@ -52,34 +82,34 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
     uint8_t pin_sda, pin_scl;
     switch (bus_) {
         case 0: {
-            p_i2c_ = &arduino::Wire;
+            p_i2c_ = &I2C_NS::Wire;
             pin_sda = CtBotConfig::I2C0_PIN_SDA;
             pin_scl = CtBotConfig::I2C0_PIN_SCL;
             break;
         }
 
         case 1: {
-            p_i2c_ = &arduino::Wire1;
+            p_i2c_ = &I2C_NS::Wire1;
             pin_sda = CtBotConfig::I2C1_PIN_SDA;
             pin_scl = CtBotConfig::I2C1_PIN_SCL;
             break;
         }
 
         case 2: {
-            p_i2c_ = &arduino::Wire2;
+            p_i2c_ = &I2C_NS::Wire2;
             pin_sda = CtBotConfig::I2C2_PIN_SDA;
             pin_scl = CtBotConfig::I2C2_PIN_SCL;
             break;
         }
 
-#if defined TwoWireKinetis_h && defined WIRE_IMPLEMENT_WIRE3
+#ifdef WIRE_IMPLEMENT_WIRE3
         case 3: {
-            p_i2c_ = &arduino::Wire3;
+            p_i2c_ = &I2C_NS::Wire3;
             pin_sda = CtBotConfig::I2C3_PIN_SDA;
             pin_scl = CtBotConfig::I2C3_PIN_SCL;
             break;
         }
-#endif
+#endif // WIRE_IMPLEMENT_WIRE3
 
         default: {
             p_i2c_ = nullptr;
@@ -97,8 +127,8 @@ bool I2C_Wrapper::init(const uint8_t bus_id, const uint32_t freq) {
     return true;
 }
 
-uint32_t I2C_Wrapper::get_freq_internal() const {
-#if defined(__IMXRT1052__) || defined(__IMXRT1062__)
+FLASHMEM uint32_t I2C_Wrapper::get_freq_internal() const {
+#if defined __IMXRT1052__ || defined __IMXRT1062__
     return freq_;
 #else
     switch (bus_) {
@@ -151,7 +181,10 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -177,13 +210,13 @@ uint8_t I2C_Wrapper::read_reg8(const uint8_t reg, uint8_t& data) const {
         return 4;
     }
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     const auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
@@ -204,7 +237,10 @@ uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -236,13 +272,13 @@ uint8_t I2C_Wrapper::read_reg8(const uint16_t reg, uint8_t& data) const {
         return 4;
     }
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg8(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     const auto x { p_i2c_->read() };
     if (x < 0) {
         return 4;
@@ -260,7 +296,10 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -285,13 +324,13 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
         }
         return 4;
     }
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
@@ -301,13 +340,13 @@ uint8_t I2C_Wrapper::read_reg16(const uint8_t reg, uint16_t& data) const {
     }
     data = static_cast<uint16_t>(x) << 8; // high byte
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg16(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
@@ -328,7 +367,10 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -354,13 +396,13 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
         return 4;
     }
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     auto x { p_i2c_->read() };
     if (x < 0) {
         if (DEBUG_) {
@@ -370,13 +412,13 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     }
     data = static_cast<uint32_t>(x) << 24; // most significant byte
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
@@ -386,13 +428,13 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     }
     data |= static_cast<uint32_t>(x) << 16;
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
@@ -402,13 +444,13 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     }
     data |= static_cast<uint32_t>(x) << 8;
 
-    while (p_i2c_->available() == 0) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() == 0) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_reg32(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
     x = p_i2c_->read();
     if (x < 0) {
         if (DEBUG_) {
@@ -421,15 +463,19 @@ uint8_t I2C_Wrapper::read_reg32(const uint8_t reg, uint32_t& data) const {
     return 0;
 }
 
+// FIXME: length > BUFFER_SIZE?
 uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t length) const {
     if (!p_i2c_) {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): p_i2c_ not initialized."));
         }
-        return 4;
+        return 10;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 10;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -437,9 +483,9 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): write() failed."));
         }
-        return 4;
+        return 20;
     }
-    const uint8_t status { p_i2c_->endTransmission(0U) };
+    uint8_t status { p_i2c_->endTransmission(0U) };
     if (status) {
         if (DEBUG_) {
             arduino::Serial.print(PSTR("I2C_Wrapper::read_bytes(): endTransmission() failed: "));
@@ -448,25 +494,29 @@ uint8_t I2C_Wrapper::read_bytes(const uint8_t addr, void* p_data, const uint8_t 
         return status;
     }
 
-    if (p_i2c_->requestFrom(addr_, length, 1U) != length) {
+    status = p_i2c_->requestFrom(addr_, length, 1U);
+    if (status != length) {
         if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): requestFrom() failed."));
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_bytes(): requestFrom() failed: "));
+            arduino::Serial.println(status, 10);
         }
-        return 4;
+        return 30;
     }
-    while (p_i2c_->available() < length) {
-        if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): waiting for requested data."));
-        }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(1ms);
-    }
+    // while (p_i2c_->available() < length) {
+    //     if (DEBUG_) {
+    //         arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): waiting for requested data."));
+    //     }
+    //     using namespace std::chrono_literals;
+    //     std::this_thread::sleep_for(1ms);
+    // }
 
-    if (p_i2c_->readBytes(static_cast<uint8_t*>(p_data), length) != length) {
+    status = p_i2c_->readBytes(static_cast<uint8_t*>(p_data), length);
+    if (status != length) {
         if (DEBUG_) {
-            arduino::Serial.println(PSTR("I2C_Wrapper::read_bytes(): readBytes() failed."));
+            arduino::Serial.print(PSTR("I2C_Wrapper::read_bytes(): readBytes() failed: "));
+            arduino::Serial.println(status, 10);
         }
-        return 4;
+        return 40;
     }
 
     return 0;
@@ -477,10 +527,13 @@ uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) const {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): p_i2c_ not initialized."));
         }
-        return 4;
+        return 10;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 10;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -488,13 +541,13 @@ uint8_t I2C_Wrapper::write_reg8(const uint8_t reg, const uint8_t value) const {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 1 failed."));
         }
-        return 4;
+        return 20;
     }
     if (p_i2c_->write(value) != 1) {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 2 failed."));
         }
-        return 4;
+        return 30;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
@@ -511,10 +564,13 @@ uint8_t I2C_Wrapper::write_reg8(const uint16_t reg, const uint8_t value) const {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): p_i2c_ not initialized."));
         }
-        return 4;
+        return 10;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 10;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -522,19 +578,19 @@ uint8_t I2C_Wrapper::write_reg8(const uint16_t reg, const uint8_t value) const {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 1 failed."));
         }
-        return 4;
+        return 20;
     }
     if (p_i2c_->write(reg & 0xff) != 1) {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 2 failed."));
         }
-        return 4;
+        return 30;
     }
     if (p_i2c_->write(value) != 1) {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::write_reg8(): write() 3 failed."));
         }
-        return 4;
+        return 40;
     }
     const uint8_t status { p_i2c_->endTransmission(1U) };
     if (status) {
@@ -561,7 +617,10 @@ uint8_t I2C_Wrapper::write_reg16(const uint8_t reg, const uint16_t value) const 
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -601,7 +660,10 @@ uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) const 
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -645,6 +707,7 @@ uint8_t I2C_Wrapper::write_reg32(const uint8_t reg, const uint32_t value) const 
     return status;
 }
 
+// FIXME: length > BUFFER_SIZE?
 uint8_t I2C_Wrapper::write_bytes(const uint8_t addr, const void* p_data, const uint8_t length) const {
     if (!p_i2c_) {
         if (DEBUG_) {
@@ -653,7 +716,10 @@ uint8_t I2C_Wrapper::write_bytes(const uint8_t addr, const void* p_data, const u
         return 4;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return 4;
+    }
 
     p_i2c_->setClock(freq_);
     p_i2c_->beginTransmission(addr_);
@@ -701,7 +767,7 @@ uint8_t I2C_Wrapper::set_bit(const uint8_t reg, const uint8_t bit, const bool va
     return 0;
 }
 
-bool I2C_Wrapper::test(const uint8_t addr) {
+FLASHMEM bool I2C_Wrapper::test(const uint8_t addr) {
     if (!p_i2c_) {
         if (DEBUG_) {
             arduino::Serial.println(PSTR("I2C_Wrapper::test(): p_i2c_ not initialized."));
@@ -709,7 +775,10 @@ bool I2C_Wrapper::test(const uint8_t addr) {
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(mutex_[bus_]);
+    std::unique_lock<std::timed_mutex> lock { mutex_[bus_], 100ms };
+    if (!lock) {
+        return false;
+    }
 
     addr_ = addr;
     p_i2c_->setClock(freq_);
@@ -728,3 +797,4 @@ bool I2C_Wrapper::test(const uint8_t addr) {
 }
 
 } // namespace ctbot
+#endif

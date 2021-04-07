@@ -46,6 +46,8 @@ namespace ctbot {
 namespace tests {
 
 void ButtonTest::initialize_buttons() {
+    static_assert(CtBotConfig::TFT_AVAILABLE || (!CtBotConfig::BUTTON_TEST_AVAILABLE));
+
     auto p_tft { ctbot_.get_tft() };
 
     buttons_.emplace_back(new Adafruit_GFX_Button);
@@ -273,7 +275,7 @@ void ButtonTest::test_triangles() {
 ButtonTest::ButtonTest(CtBot& ctbot) : ctbot_(ctbot) {
     initialize_buttons();
 
-    ctbot_.get_scheduler()->task_add("TFT-Test", TASK_PERIOD_MS, 2, 4096, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add("TFT-Test", TASK_PERIOD_MS, 2, 8192, [this]() { return run(); });
 }
 
 ButtonTest::~ButtonTest() {

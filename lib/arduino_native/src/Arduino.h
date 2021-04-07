@@ -15,7 +15,7 @@
  */
 
 /**
- * @file    arduino.h
+ * @file    Arduino.h
  * @brief   Wrapper aroung Arduino stuff to execute in a POSIX environment
  * @author  Timo Sandmann
  * @date    10.06.2018
@@ -93,6 +93,10 @@ extern HardwareSerial Serial8;
 
 extern "C" {
 extern void (*_VectorsRam[255 + 16])(void);
+
+static inline void NVIC_ENABLE_IRQ(uint8_t) {}
+static inline void NVIC_DISABLE_IRQ(uint8_t) {}
+static inline void NVIC_SET_PRIORITY(uint8_t, uint8_t) {}
 } // extern C
 
 namespace arduino {
@@ -175,3 +179,153 @@ using ::Wire3;
 
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
+
+class elapsedMillis {
+private:
+    unsigned long ms;
+
+public:
+    elapsedMillis(void) {
+        ms = arduino::millis();
+    }
+    elapsedMillis(unsigned long val) {
+        ms = arduino::millis() - val;
+    }
+    elapsedMillis(const elapsedMillis& orig) {
+        ms = orig.ms;
+    }
+    operator unsigned long() const {
+        return arduino::millis() - ms;
+    }
+    elapsedMillis& operator=(const elapsedMillis& rhs) {
+        ms = rhs.ms;
+        return *this;
+    }
+    elapsedMillis& operator=(unsigned long val) {
+        ms = arduino::millis() - val;
+        return *this;
+    }
+    elapsedMillis& operator-=(unsigned long val) {
+        ms += val;
+        return *this;
+    }
+    elapsedMillis& operator+=(unsigned long val) {
+        ms -= val;
+        return *this;
+    }
+    elapsedMillis operator-(int val) const {
+        elapsedMillis r(*this);
+        r.ms += val;
+        return r;
+    }
+    elapsedMillis operator-(unsigned int val) const {
+        elapsedMillis r(*this);
+        r.ms += val;
+        return r;
+    }
+    elapsedMillis operator-(long val) const {
+        elapsedMillis r(*this);
+        r.ms += val;
+        return r;
+    }
+    elapsedMillis operator-(unsigned long val) const {
+        elapsedMillis r(*this);
+        r.ms += val;
+        return r;
+    }
+    elapsedMillis operator+(int val) const {
+        elapsedMillis r(*this);
+        r.ms -= val;
+        return r;
+    }
+    elapsedMillis operator+(unsigned int val) const {
+        elapsedMillis r(*this);
+        r.ms -= val;
+        return r;
+    }
+    elapsedMillis operator+(long val) const {
+        elapsedMillis r(*this);
+        r.ms -= val;
+        return r;
+    }
+    elapsedMillis operator+(unsigned long val) const {
+        elapsedMillis r(*this);
+        r.ms -= val;
+        return r;
+    }
+};
+
+class elapsedMicros {
+private:
+    unsigned long us;
+
+public:
+    elapsedMicros(void) {
+        us = arduino::micros();
+    }
+    elapsedMicros(unsigned long val) {
+        us = arduino::micros() - val;
+    }
+    elapsedMicros(const elapsedMicros& orig) {
+        us = orig.us;
+    }
+    operator unsigned long() const {
+        return arduino::micros() - us;
+    }
+    elapsedMicros& operator=(const elapsedMicros& rhs) {
+        us = rhs.us;
+        return *this;
+    }
+    elapsedMicros& operator=(unsigned long val) {
+        us = arduino::micros() - val;
+        return *this;
+    }
+    elapsedMicros& operator-=(unsigned long val) {
+        us += val;
+        return *this;
+    }
+    elapsedMicros& operator+=(unsigned long val) {
+        us -= val;
+        return *this;
+    }
+    elapsedMicros operator-(int val) const {
+        elapsedMicros r(*this);
+        r.us += val;
+        return r;
+    }
+    elapsedMicros operator-(unsigned int val) const {
+        elapsedMicros r(*this);
+        r.us += val;
+        return r;
+    }
+    elapsedMicros operator-(long val) const {
+        elapsedMicros r(*this);
+        r.us += val;
+        return r;
+    }
+    elapsedMicros operator-(unsigned long val) const {
+        elapsedMicros r(*this);
+        r.us += val;
+        return r;
+    }
+    elapsedMicros operator+(int val) const {
+        elapsedMicros r(*this);
+        r.us -= val;
+        return r;
+    }
+    elapsedMicros operator+(unsigned int val) const {
+        elapsedMicros r(*this);
+        r.us -= val;
+        return r;
+    }
+    elapsedMicros operator+(long val) const {
+        elapsedMicros r(*this);
+        r.us -= val;
+        return r;
+    }
+    elapsedMicros operator+(unsigned long val) const {
+        elapsedMicros r(*this);
+        r.us -= val;
+        return r;
+    }
+};

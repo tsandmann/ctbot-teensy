@@ -25,7 +25,7 @@
 #pragma once
 
 #include "ctbot_config.h"
-#include "i2c_wrapper.h"
+#include "i2c_service.h"
 
 #include <cstdint>
 #include <array>
@@ -141,35 +141,39 @@ class LedsI2cBase {
     static constexpr uint8_t LEDOUT0_REG { 0xc }; // LED output state register 0
     static constexpr uint8_t LEDOUT1_REG { 0xd }; // LED output state register 1
 
-    I2C_Wrapper i2c_;
+    I2C_Service i2c_;
+    const uint8_t i2c_addr_;
     T status_;
     bool init_;
+
+    uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
+        return i2c_.write_reg(i2c_addr_, reg, value);
+    }
 
 protected:
     std::array<uint8_t, 8> pwm_dt_;
 
     FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_addr, i2c_freq }, status_ { LedTypesEna::NONE }, init_ {} { // FIXME: read initial status from device
-        if (i2c_.init()) {
-            if (i2c_.write_reg8(MODE1_REG, 0)) {
-                return;
-            }
-            if (i2c_.write_reg8(MODE2_REG, 5)) { // OUTDRV | OUTNE1
-                return;
-            }
-            if (i2c_.write_reg8(LEDOUT0_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
-                return;
-            }
-            if (i2c_.write_reg8(LEDOUT1_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
-                return;
-            }
-
-            for (auto& e : pwm_dt_) {
-                e = 0xff;
-            }
-
-            init_ = true;
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, status_ { LedTypesEna::NONE },
+          init_ {} { // FIXME: read initial status from device
+        if (write_reg8(MODE1_REG, 0)) {
+            return;
         }
+        if (write_reg8(MODE2_REG, 5)) { // OUTDRV | OUTNE1
+            return;
+        }
+        if (write_reg8(LEDOUT0_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
+            return;
+        }
+        if (write_reg8(LEDOUT1_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
+            return;
+        }
+
+        for (auto& e : pwm_dt_) {
+            e = 0xff;
+        }
+
+        init_ = true;
     }
 
     bool update(const uint8_t led, const uint8_t value) const {
@@ -177,7 +181,7 @@ protected:
             return false;
         }
 
-        return i2c_.write_reg8(static_cast<uint8_t>(led + 2), value) == 0;
+        return write_reg8(led + 2, value) == 0;
     }
 
 public:
@@ -219,9 +223,6 @@ public:
 
             ret &= update(i, static_cast<uint8_t>(leds) & (1 << i) ? pwm_dt_[i] : 0); // FIXME: burst write?
             if (!ret) {
-                arduino::Serial.print("LedsI2cBase::set(): update for "); // FIXME: use comm-interface
-                arduino::Serial.print(i, 10);
-                arduino::Serial.println(" failed.\r\n");
                 break;
             }
         }

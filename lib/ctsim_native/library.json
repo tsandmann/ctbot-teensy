@@ -1,0 +1,7 @@
+{
+  "name": "ctsim_native",
+  "description": "ct-Sim connection framework",
+  "version": "1.0.0",
+  "frameworks": "*",
+  "platforms": "native"
+}

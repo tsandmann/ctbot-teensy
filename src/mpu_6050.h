@@ -1,6 +1,6 @@
 /*
- * This file is part of the c't-Bot teensy framework.
- * Copyright (c) 2019 Timo Sandmann
+ * This file is part of the ct-Bot teensy framework.
+ * Copyright (c) 2021 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,114 +17,106 @@
 
 /**
  * @file    mpu_6050.h
- * @brief   MPU 6050 sensor driver
+ * @brief   MPU 6050 sensor driver wrapper
  * @author  Timo Sandmann
- * @date    17.11.2019
+ * @date    04.04.2021
  */
 
 #pragma once
 
-#include "i2c_wrapper.h"
+#include "helper_3dmath.h"
 
 #include <cstdint>
+#include <tuple>
 
+
+class MPU6050;
 
 namespace ctbot {
-class I2C_Wrapper;
+class MPU6050_Wrapper {
+    static constexpr bool DEBUG_ { true };
 
-class MPU6050 {
-    static constexpr uint8_t SMPLRT_DIV_REG { 0x19 };
-    static constexpr uint8_t CONFIG_REG { 0x1a };
-    static constexpr uint8_t GYRO_CONFIG_REG { 0x1b };
-    static constexpr uint8_t ACCEL_CONFIG_REG { 0x1c };
-    static constexpr uint8_t ACCEL_XOUT_H_REG { 0x3b };
-    static constexpr uint8_t TEMP_H_REG { 0x41 };
-    static constexpr uint8_t GYRO_XOUT_H_REG { 0x43 };
-    static constexpr uint8_t SIGNAL_PATH_RESET_REG { 0x68 };
-    static constexpr uint8_t PWR_MGMT_1_REG { 0x6b };
+    static constexpr std::tuple<int16_t, int16_t, int16_t> INITIAL_ACC_OFFSET_ { -32, 2514, 1376 };
+    static constexpr std::tuple<int16_t, int16_t, int16_t> INITIAL_GYRO_OFFSET_ { 19, 42, 18 };
 
-    static constexpr uint16_t CALIBRATION_RUNS { 100 };
+    const uint8_t i2c_bus_;
+    const uint32_t i2c_freq_;
+    MPU6050* p_mpu_;
 
-    const float acc_coef_, gyro_coef_;
+    bool calc_euler_;
+    bool calc_ypr_;
+    bool calc_gyro_;
+    bool calc_real_acc_;
+    bool calc_word_acc_;
 
-    I2C_Wrapper i2c_;
+    uint8_t buffer_[64];
 
-    std::array<float, 3> acc_;
-    std::array<float, 3> gyro_;
-    std::array<float, 3> gyro_offsets_;
-
-    std::array<float, 3> angle_gyro_;
-    std::array<float, 2> angle_acc_;
-    std::array<float, 2> angles_;
-
-    float temperature_;
-
-    uint32_t last_update_;
-
+    Quaternion last_q_;
+    std::tuple<float, float, float> last_euler_;
+    VectorFloat last_g_;
+    VectorInt16 last_a_;
+    std::tuple<float, float, float> last_ypr_;
+    VectorInt16 last_gyro_;
+    VectorInt16 last_a_real_;
+    VectorInt16 last_a_world_;
 
 public:
-    static constexpr uint8_t DEFAULT_I2C_ADDR { 0x68 };
+    MPU6050_Wrapper(const uint8_t i2c_bus, const uint32_t i2c_freq);
 
-    FLASHMEM MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq);
+    ~MPU6050_Wrapper();
 
-    FLASHMEM MPU6050(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq, const float acc_coef, const float gyro_coef);
+    bool init();
 
-    FLASHMEM bool begin();
+    bool update();
 
-    FLASHMEM bool calc_gyro_offset(const bool debug_out);
+    void clear_fifo() const;
 
-    bool update_gyro();
+    void enable_euler(const bool value) {
+        calc_euler_ = value;
+    }
 
-    bool update_acc();
+    void enable_ypr(const bool value) {
+        calc_ypr_ = value;
+    }
 
-    bool update_temp();
+    void enable_gyro(const bool value) {
+        calc_gyro_ = value;
+    }
 
-    bool update_all();
+    void enable_real_acc(const bool value) {
+        calc_real_acc_ = value;
+    }
 
-    FLASHMEM void set_gyro_offset(const float x, const float y, const float z);
+    void enable_word_acc(const bool value) {
+        calc_word_acc_ = value;
+    }
 
-    auto get_temperature() const {
-        return temperature_;
-    };
+    const auto& get_quaternion() const {
+        return last_q_;
+    }
 
-    auto get_gyro_offset_x() const {
-        return gyro_offsets_[0];
-    };
+    const auto& get_euler() const {
+        return last_euler_;
+    }
 
-    auto get_gyro_offset_y() const {
-        return gyro_offsets_[1];
-    };
+    const auto& get_ypr() const {
+        return last_ypr_;
+    }
 
-    auto get_gyro_offset_z() const {
-        return gyro_offsets_[2];
-    };
+    const auto& get_gravity() const {
+        return last_g_;
+    }
 
-    auto get_angle_acc_x() const {
-        return angle_acc_[0];
-    };
+    const auto& get_gyro() const {
+        return last_gyro_;
+    }
 
-    auto get_angle_acc_y() const {
-        return angle_acc_[1];
-    };
+    const auto& get_real_acc() const {
+        return last_a_real_;
+    }
 
-    auto get_angle_gyro_x() const {
-        return angle_gyro_[0];
-    };
-
-    auto get_angle_gyro_y() const {
-        return angle_gyro_[1];
-    };
-
-    auto get_angle_gyro_z() const {
-        return angle_gyro_[2];
-    };
-
-    auto get_angle_x() const {
-        return angles_[0];
-    };
-
-    auto get_angle_y() const {
-        return angles_[1];
-    };
+    const auto& get_world_acc() const {
+        return last_a_world_;
+    }
 };
 } // namespace ctbot

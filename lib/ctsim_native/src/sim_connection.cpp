@@ -17,7 +17,7 @@
 #include "../../../src/leds_i2c.h"
 #include "../../../src/sensors.h"
 #include "../../../src/encoder.h"
-#include "../../../src/i2c_wrapper.h"
+#include "../../../src/i2c_service.h"
 #include "../../../src/vl53l0x.h"
 #include "../../../src/vl6180x.h"
 #include "../../../src/lc_display.h"
@@ -60,20 +60,14 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
     endpoint_it_ = r.resolve(q);
 
-    p_i2c_range_ = new I2C_Wrapper { CtBotConfig::VL53L0X_I2C_BUS };
-    assert(p_i2c_range_);
-    p_i2c_range_->init();
-    arduino::Wire.set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
+    p_i2c_range_ =
+        CtBotConfig::VL53L0X_I2C_BUS == 0 ? &Wire : (CtBotConfig::VL53L0X_I2C_BUS == 1 ? &Wire1 : (CtBotConfig::VL53L0X_I2C_BUS == 2 ? &Wire2 : &Wire3));
 
-    p_i2c_range_->set_address(VL53L0X::DEFAULT_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
-    p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
-
-    p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
-
-    p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
-    p_i2c_range_->write_reg8(VL53L0X::MODEL_ID_REG, 0xee);
+    p_i2c_range_->set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
+    i2c_write_reg8(p_i2c_range_, VL53L0X::DEFAULT_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
+    i2c_write_reg8(p_i2c_range_, VL53L0X::DEFAULT_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+    i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
+    i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
 
     p_io_thread_ = std::make_unique<std::thread>([this]() {
         using namespace std::chrono_literals;
@@ -108,8 +102,6 @@ SimConnection::~SimConnection() {
     if (p_io_thread_ && p_io_thread_->joinable()) {
         p_io_thread_->join();
     }
-
-    delete p_i2c_range_;
 }
 
 void SimConnection::handle_connect(const boost::system::error_code& ec) {
@@ -131,8 +123,9 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
     std::cout << "SimConnection::handle_connect(): connected to ct-Sim.\n";
 
 
-    register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase&) {
+    register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase& cmd) {
         // std::cout << "CMD_WELCOME received: " << cmd << "\n";
+        (void) cmd;
         CommandNoCRC cmd1 { CommandCodes::CMD_ID, CommandCodes::CMD_SUB_ID_REQUEST, 0, 0, CommandBase::ADDR_BROADCAST };
         send_cmd(cmd1);
         return true;
@@ -216,13 +209,14 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
     register_cmd(CommandCodes::CMD_SENS_IR, [this](const CommandBase& cmd) {
         // std::cout << "CMD_SENS_IR received: " << cmd << "\n";
 
-        p_i2c_range_->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR);
-        p_i2c_range_->write_reg16(static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10), cmd.get_cmd_data_l());
-        p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7); // FIXME: handle SYSTEM_INTERRUPT_CLEAR?
+        i2c_write_reg16(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10),
+            static_cast<uint16_t>(cmd.get_cmd_data_l()));
+        i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+        // FIXME: handle SYSTEM_INTERRUPT_CLEAR?
 
-        p_i2c_range_->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR);
-        p_i2c_range_->write_reg16(static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10), cmd.get_cmd_data_r());
-        p_i2c_range_->write_reg8(VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
+        i2c_write_reg16(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10),
+            static_cast<uint16_t>(cmd.get_cmd_data_r()));
+        i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
 
         return true;
     });
@@ -269,9 +263,9 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
         return true;
     });
     register_cmd(CommandCodes::CMD_SENS_TRANS, [this](const CommandBase& cmd) {
-        p_i2c_range_->set_address(CtBotConfig::VL6180X_I2C_ADDR);
-        p_i2c_range_->write_reg8(VL6180X::RESULT_RANGE_VAL_REG, cmd.get_cmd_data_l() > 0 ? 10 : 50);
-        p_i2c_range_->write_reg8(VL6180X::RESULT_INTERRUPT_STATUS_REG, 4); // FIXME: handle SYSTEM__INTERRUPT_CLEAR?
+        i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_RANGE_VAL_REG, cmd.get_cmd_data_l() > 0 ? 10 : 50);
+        i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_INTERRUPT_STATUS_REG, 4);
+        // FIXME: handle SYSTEM__INTERRUPT_CLEAR?
         return true;
     });
     register_cmd(CommandCodes::CMD_SENS_DOOR, [](const CommandBase&) {
@@ -452,6 +446,84 @@ bool SimConnection::evaluate_cmd(const CommandBase& cmd) {
 
 void SimConnection::register_cmd(const CommandCodes& cmd, decltype(commands_)::mapped_type::value_type func) {
     commands_[cmd].push_back(func);
+}
+
+
+uint8_t SimConnection::i2c_write_reg8(TwoWire* p_i2c, const uint8_t addr, const uint8_t reg, const uint8_t value) const {
+    if (!p_i2c) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): p_i2c not initialized."));
+        return 10;
+    }
+
+    p_i2c->beginTransmission(addr);
+    if (p_i2c->write(reg) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): write() 1 failed."));
+        return 20;
+    }
+    if (p_i2c->write(value) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): write() 2 failed."));
+        return 30;
+    }
+    const uint8_t status { p_i2c->endTransmission(1U) };
+    if (status) {
+        arduino::Serial.print(PSTR("SimConnection::i2c_write_reg8(): endTransmission() failed: "));
+        arduino::Serial.println(status, 10);
+    }
+    return status;
+}
+
+uint8_t SimConnection::i2c_write_reg8(TwoWire* p_i2c, const uint8_t addr, const uint16_t reg, const uint8_t value) const {
+    if (!p_i2c) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): p_i2c_ not initialized."));
+        return 10;
+    }
+
+    p_i2c->beginTransmission(addr);
+    if (p_i2c->write(reg >> 8) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): write() 1 failed."));
+        return 20;
+    }
+    if (p_i2c->write(reg & 0xff) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): write() 2 failed."));
+        return 30;
+    }
+    if (p_i2c->write(value) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg8(): write() 3 failed."));
+        return 40;
+    }
+    const uint8_t status { p_i2c->endTransmission(1U) };
+    if (status) {
+        arduino::Serial.print(PSTR("SimConnection::i2c_write_reg8(): endTransmission() failed: "));
+        arduino::Serial.println(status, 10);
+    }
+    return status;
+}
+
+uint8_t SimConnection::i2c_write_reg16(TwoWire* p_i2c, const uint8_t addr, const uint8_t reg, const uint16_t value) const {
+    if (!p_i2c) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg16(): p_i2c not initialized."));
+        return 10;
+    }
+
+    p_i2c->beginTransmission(addr);
+    if (p_i2c->write(reg) != 1) {
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg16(): write() 1 failed."));
+        return 20;
+    }
+    if (p_i2c->write(value >> 8) != 1) { // high byte
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg16(): write() 2 failed."));
+        return 4;
+    }
+    if (p_i2c->write(value & 0xff) != 1) { // low byte
+        arduino::Serial.println(PSTR("SimConnection::i2c_write_reg16(): write() 3 failed."));
+        return 4;
+    }
+    const uint8_t status { p_i2c->endTransmission(1U) };
+    if (status) {
+        arduino::Serial.print(PSTR("SimConnection::i2c_write_reg16(): endTransmission() failed: "));
+        arduino::Serial.println(status, 10);
+    }
+    return status;
 }
 
 } /* namespace ctbot */

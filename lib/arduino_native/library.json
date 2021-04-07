@@ -1,0 +1,7 @@
+{
+  "name": "arduino_native",
+  "description": "Arduino framework mockup",
+  "version": "1.0.0",
+  "frameworks": "*",
+  "platforms": "native"
+}

@@ -41,8 +41,8 @@ decltype(DigitalSensors::enc_l_idx_) DigitalSensors::enc_l_idx_, DigitalSensors:
 DigitalSensors::DigitalSensors(CtBot& ctbot)
     : ctbot_ { ctbot }, ena_ { *ctbot_.get_ena() }, transport_ {}, enc_l_ { enc_data_l_, &enc_l_idx_, CtBotConfig::ENC_L_PIN },
       enc_r_ { enc_data_r_, &enc_r_idx_, CtBotConfig::ENC_R_PIN }, rc5_ { CtBotConfig::RC5_PIN }, remote_control_ { rc5_, CtBotConfig::RC5_ADDR },
-      distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {}, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
-    ena_.off(EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT | EnaI2cTypes::EXTENSION_1); // shutdown i2c sensors
+      distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {}, mpu_last_update_ {}, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
+    ena_.off(EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT); // shutdown i2c sensors
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(10ms);
 
@@ -122,35 +122,28 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     }
 
     if (CtBotConfig::MPU6050_AVAILABLE) {
-        ena_.on(EnaI2cTypes::EXTENSION_1);
-        std::this_thread::sleep_for(200ms);
-        p_mpu_6050_ = new MPU6050 { CtBotConfig::MPU6050_I2C_BUS, MPU6050::DEFAULT_I2C_ADDR,
+        p_mpu_6050_ = new MPU6050_Wrapper { CtBotConfig::MPU6050_I2C_BUS,
             CtBotConfig::MPU6050_I2C_BUS == 0 ?
                 CtBotConfig::I2C0_FREQ :
                 (CtBotConfig::MPU6050_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ :
                                                      (CtBotConfig::MPU6050_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
         configASSERT(p_mpu_6050_);
-        if (!p_mpu_6050_->begin()) {
+        if (p_mpu_6050_->init()) {
+            p_mpu_6050_->enable_ypr(true);
+            p_mpu_6050_->enable_euler(true);
+        } else {
             if (DEBUG_) {
                 ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): MPU6050 init failed.\r\n"), true);
             }
             delete p_mpu_6050_;
             p_mpu_6050_ = nullptr;
         }
-        if (p_mpu_6050_) {
-            if (!p_mpu_6050_->calc_gyro_offset(DEBUG_)) {
-                if (DEBUG_) {
-                    ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): MPU6050 calibration failed.\r\n"), true);
-                }
-                delete p_mpu_6050_;
-                p_mpu_6050_ = nullptr;
-            }
-        }
     }
 }
 
 DigitalSensors::~DigitalSensors() {
     delete p_mpu_6050_;
+    delete p_trans_;
     delete p_dist_r;
     delete p_dist_l;
 }
@@ -181,8 +174,12 @@ void DigitalSensors::update() {
     }
 
     if (CtBotConfig::MPU6050_AVAILABLE && p_mpu_6050_) {
-        if (!p_mpu_6050_->update_gyro() && DEBUG_) {
-            ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::update(): i2c error 4\r\n"), true);
+        if (now - mpu_last_update_ >= 12) {
+            mpu_last_update_ = now;
+            if (!p_mpu_6050_->update() && DEBUG_) {
+                ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::update(): p_mpu_6050_->update() failed\r\n"), true);
+            }
+            p_mpu_6050_->clear_fifo();
         }
     }
 }

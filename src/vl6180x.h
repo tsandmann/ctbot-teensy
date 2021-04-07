@@ -52,7 +52,7 @@
 
 #pragma once
 
-#include "i2c_wrapper.h"
+#include "i2c_service.h"
 
 #include <cstdint>
 
@@ -87,14 +87,31 @@ class VL6180X {
 
     static constexpr uint16_t SCALER_VALUES[] = { 0, 253, 127, 84 };
 
-    I2C_Wrapper i2c_;
+    I2C_Service i2c_;
+    uint8_t i2c_addr_;
     uint8_t ptp_offset_;
     uint8_t scaling_;
 
     FLASHMEM bool set_scaling(const uint8_t scaling);
 
+    uint8_t read_reg8(const uint16_t reg, uint8_t& data) const {
+        return i2c_.read_reg(i2c_addr_, reg, data);
+    }
+
+    uint8_t read_reg16(const uint16_t reg, uint16_t& data) const {
+        return i2c_.read_reg(i2c_addr_, reg, data);
+    }
+
+    uint8_t write_reg8(const uint16_t reg, const uint8_t value) const {
+        return i2c_.write_reg(i2c_addr_, reg, value);
+    }
+
+    uint8_t write_reg16(const uint16_t reg, const uint16_t value) const {
+        return i2c_.write_reg(i2c_addr_, reg, value);
+    }
+
 public:
-    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR);
+    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR); // FIXME: pass I2C_Service
 
     FLASHMEM bool init();
 

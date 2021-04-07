@@ -40,7 +40,7 @@ class CtBot;
 class EnaI2c;
 class VL53L0X;
 class VL6180X;
-class MPU6050;
+class MPU6050_Wrapper;
 
 /**
  * @brief Abstraction layer for (simple) digital sensors
@@ -72,10 +72,11 @@ protected:
     std::array<uint16_t, 2> distance_;
     uint32_t dist_last_update_;
     uint32_t trans_last_update_;
+    uint32_t mpu_last_update_;
     VL53L0X* p_dist_l;
     VL53L0X* p_dist_r;
     VL6180X* p_trans_;
-    MPU6050* p_mpu_6050_;
+    MPU6050_Wrapper* p_mpu_6050_;
 
     /**
      * @brief Construct a new DigitalSensors object

@@ -49,6 +49,10 @@ tests::ButtonTest* g_button_test {};
 tests::TaskWaitTest* g_wait_test {};
 } // namespace ctbot
 
+#ifndef EXC_PRINTF
+#define EXC_PRINTF(...) ::printf(__VA_ARGS__)
+#endif
+
 /**
  * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
@@ -56,28 +60,30 @@ tests::TaskWaitTest* g_wait_test {};
 static FLASHMEM void init_task() {
     using namespace ctbot;
 
-    ::serial_puts(PSTR("\r\n"));
+    /* wait for USB device enumeration, terminal program connection, etc. */
+    ::vTaskDelay(pdMS_TO_TICKS(CtBotConfig::BOOT_DELAY_MS));
+
+    EXC_PRINTF(PSTR("\r\nrunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
 
     if (DEBUG) {
-        ::serial_puts(PSTR("init_task()"));
+        EXC_PRINTF(PSTR("init_task():\r\n"));
         freertos::print_ram_usage();
     }
 
     /* create CtBot singleton instance... */
     if (DEBUG) {
-        ::serial_puts(PSTR("creating CtBot instance..."));
+        EXC_PRINTF(PSTR("creating CtBot instance...\r\n"));
     }
     CtBot& ctbot { CtBot::get_instance() };
 
     /* initialize it... */
     if (DEBUG) {
-        ::serial_puts(PSTR("calling ctbot.setup()..."));
+        EXC_PRINTF(PSTR("calling ctbot.setup()...\r\n"));
     }
     ctbot.setup(true);
     if (DEBUG) {
-        ::serial_puts(PSTR("ctbot.setup() done."));
+        EXC_PRINTF(PSTR("ctbot.setup() done.\r\n"));
     }
-    ::serial_puts(PSTR("running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
 
     /* create test tasks if configured... */
     if (CtBotConfig::BLINK_TEST_AVAILABLE) {
@@ -118,9 +124,9 @@ static FLASHMEM void init_task() {
     if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
         g_button_test = new tests::ButtonTest { ctbot };
         std::atexit([]() {
-            ::serial_puts(PSTR("deleting g_button_test..."));
+            EXC_PRINTF(PSTR("deleting g_button_test...\r\n"));
             delete g_button_test;
-            ::serial_puts(PSTR("done."));
+            EXC_PRINTF(PSTR("done.\r\n"));
         });
     }
 
@@ -129,12 +135,16 @@ static FLASHMEM void init_task() {
         std::atexit([]() { delete g_wait_test; });
     }
 
-    freertos::print_ram_usage();
-    ::serial_puts("");
-
-    ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
     if (DEBUG) {
-        ::serial_puts(PSTR("deleting init task..."));
+        ::vTaskDelay(pdMS_TO_TICKS(200));
+        freertos::print_ram_usage();
+    }
+
+    arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
+    ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
+
+    if (DEBUG) {
+        EXC_PRINTF(PSTR("deleting init task...\r\n"));
     }
     ::vTaskDelete(nullptr);
 }
@@ -238,21 +248,16 @@ FLASHMEM __attribute__((noinline)) void setup() {
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
-    /* wait for USB device enumeration, terminal program connection, etc. */
-    freertos::delay_ms(CtBotConfig::BOOT_DELAY_MS);
-
     if (DEBUG) {
-        ::serial_puts(PSTR("setup(): setting up init task..."));
+        printf_debug(PSTR("setup(): setting up init task...\r\n"));
     }
     const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(4096) };
     auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
     free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), PSTR("INIT"));
     free_rtos_std::gthr_freertos::set_next_stacksize(last);
 
-    arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
-
     if (DEBUG) {
-        ::serial_puts(PSTR("setup(): calling ::vTaskStartScheduler()..."));
+        printf_debug(PSTR("setup(): calling ::vTaskStartScheduler()...\r\n"));
     }
     ::vTaskStartScheduler();
 
@@ -270,7 +275,7 @@ FLASHMEM void loop() {}
  * @param[in] ptr: Pointer to data to write
  * @param[in] len: Number of bytes to write
  * @return Number of bytes written, -1 in case of an error
- * @note File handle paramter is ignored, any data is written to serial connection
+ * @note File handle parameter is ignored, any data is written to serial connection
  */
 FLASHMEM int _write(int, char* ptr, int len) {
     using namespace ctbot;
@@ -291,6 +296,58 @@ FLASHMEM int _write(int, char* ptr, int len) {
 
 FLASHMEM uint8_t get_debug_led_pin() {
     return ctbot::CtBotConfig::DEBUG_LED_PIN;
+}
+
+FLASHMEM void serialport_put(const char c) {
+    switch (ctbot::CtBotConfig::UART_FOR_CMD) {
+        case 0: ::Serial.print(c); break;
+
+        case 5: ::Serial5.print(c); break;
+
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+        case 7: ::Serial7.print(c); break;
+#endif
+
+        default: break;
+    }
+}
+
+FLASHMEM void serialport_flush() {
+    switch (ctbot::CtBotConfig::UART_FOR_CMD) {
+        case 0:
+            ::Serial.flush();
+            freertos::delay_ms(100);
+            break;
+
+        case 5:
+            while (::Serial5.availableForWrite() < 39) {
+#if defined ARDUINO_TEENSY35 || defined ARDUINO_TEENSY36
+                portDISABLE_INTERRUPTS();
+                uart4_status_isr();
+                portENABLE_INTERRUPTS();
+#endif
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+                portDISABLE_INTERRUPTS();
+                IRQHandler_Serial5();
+                portENABLE_INTERRUPTS();
+#endif
+            }
+            freertos::delay_ms(100);
+            break;
+
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+        case 7:
+            while (::Serial7.availableForWrite() < 39) {
+                portDISABLE_INTERRUPTS();
+                IRQHandler_Serial7();
+                portENABLE_INTERRUPTS();
+            }
+            freertos::delay_ms(100);
+            break;
+#endif
+
+        default: break;
+    }
 }
 } // extern C
 

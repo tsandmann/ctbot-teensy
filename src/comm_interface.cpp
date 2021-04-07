@@ -197,8 +197,7 @@ void CommInterfaceCmdParser::run_input() {
             if (p_input_ > p_input_buffer_->begin()) {
                 --p_input_;
                 if (echo_) {
-                    const char tmp[] { PSTR("\b \b") };
-                    io_.send(tmp, sizeof(tmp) - 1);
+                    io_.send(PSTR("\b \b"), 3);
                 }
             }
             continue;

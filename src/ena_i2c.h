@@ -25,7 +25,7 @@
 #pragma once
 
 #include "ctbot_config.h"
-#include "i2c_wrapper.h"
+#include "i2c_service.h"
 
 #include <cstdint>
 
@@ -97,7 +97,12 @@ class EnaI2c {
     static constexpr uint8_t POL_INVERSION_REG { 2 };
     static constexpr uint8_t CONFIG_REG { 3 };
 
-    I2C_Wrapper i2c_;
+    I2C_Service i2c_;
+    const uint8_t i2c_addr_;
+
+    uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
+        return i2c_.write_reg(i2c_addr_, reg, value);
+    }
 
 protected:
     bool init_;
@@ -108,7 +113,7 @@ protected:
      */
     bool update() const {
         if (init_) {
-            return i2c_.write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_)) == 0;
+            return write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_)) == 0;
         }
 
         return false;
@@ -116,15 +121,12 @@ protected:
 
 public:
     EnaI2c(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_addr, i2c_freq }, init_ {}, status_ { EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG | EnaI2cTypes::EXTENSION_1
-              | EnaI2cTypes::EXTENSION_2 } {
-        if (i2c_.init()) {
-            update();
-            i2c_.write_reg8(CONFIG_REG,
-                static_cast<uint8_t>(/*EnaI2cTypes::EXTENSION_1 |*/ EnaI2cTypes::EXTENSION_2
-                    | (CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::NONE : EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG)));
-            init_ = true;
-        }
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
+              CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG : EnaI2cTypes::NONE
+          } {
+        write_reg8(
+            CONFIG_REG, static_cast<uint8_t>(CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::NONE : EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG));
+        init_ = true;
     }
 
     /**

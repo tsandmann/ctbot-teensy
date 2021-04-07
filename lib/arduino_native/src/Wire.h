@@ -197,6 +197,14 @@ public:
     }
 
     size_t write(const uint8_t* buffer, size_t length) {
+        if (length == 1) {
+            return write(*buffer);
+        } else if (length == 2) {
+            auto res { write(buffer[0]) };
+            res += write(buffer[1]);
+            return res;
+        }
+
         if (mode_ == 3) {
             auto& data_vec { data_[addr_] };
             if (data_vec.size() < 65'535) {
