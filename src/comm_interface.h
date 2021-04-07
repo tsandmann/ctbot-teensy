@@ -68,7 +68,7 @@ protected:
     static constexpr uint32_t INPUT_TASK_STACK_SIZE { 4096 }; /**< stack size of input task */
     static constexpr uint16_t OUTPUT_TASK_PERIOD_MS { 20 }; /**< Scheduling period of output task in ms */
     static constexpr uint8_t OUTPUT_TASK_PRIORITY { 4 }; /**< Priority of output task */
-    static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 1024 }; /**< stack size of output task */
+    static constexpr uint32_t OUTPUT_TASK_STACK_SIZE { 2048 }; /**< stack size of output task */
 
     struct OutBufferElement {
         const std::string* p_str_;

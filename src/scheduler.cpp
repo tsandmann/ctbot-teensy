@@ -48,7 +48,7 @@ Scheduler::Scheduler() : next_id_ {} {
 }
 
 Scheduler::~Scheduler() {
-    // ::serial_puts("Scheduler::~Scheduler() entered.");
+    // ::serialport_puts("Scheduler::~Scheduler() entered.");
     enter_critical_section();
     for (auto& t : tasks_) {
         if (t.second->name_ != PSTR("main")) {
@@ -66,7 +66,7 @@ Scheduler::~Scheduler() {
         }
     }
     exit_critical_section();
-    // ::serial_puts("Scheduler::~Scheduler(): all tasks blocked.");
+    // ::serialport_puts("Scheduler::~Scheduler(): all tasks blocked.");
 
     for (auto& t : tasks_) {
         if (t.second->name_ != PSTR("main")) {
@@ -80,16 +80,16 @@ Scheduler::~Scheduler() {
             // arduino::Serial.flush();
         }
     }
-    // ::serial_puts("Scheduler::~Scheduler(): all tasks deleted.");
+    // ::serialport_puts("Scheduler::~Scheduler(): all tasks deleted.");
 }
 
 void Scheduler::stop() {
-    // ::serial_puts("Scheduler::stop()");
+    // ::serialport_puts("Scheduler::stop()");
     if (p_main_task_) {
         ::vTaskSuspend(p_main_task_);
-        // ::serial_puts("Scheduler::stop(): vTaskSuspend(p_main_task_) done.");
+        // ::serialport_puts("Scheduler::stop(): vTaskSuspend(p_main_task_) done.");
         ::vTaskDelete(p_main_task_);
-        // ::serial_puts("Scheduler::stop(): vTaskDelete(p_main_task_) done.");
+        // ::serialport_puts("Scheduler::stop(): vTaskDelete(p_main_task_) done.");
     }
 
     // size_t num_tasks { ::uxTaskGetNumberOfTasks() };
@@ -180,13 +180,13 @@ uint16_t Scheduler::task_register(TaskHandle_t task, const bool external) {
 }
 
 bool Scheduler::task_remove(const uint16_t task_id) {
-    // ::serial_puts("Scheduler::task_remove():");
+    // ::serialport_puts("Scheduler::task_remove():");
 
     Task* p_task;
     {
         std::unique_lock<std::mutex> lock(task_mutex_);
         if (tasks_.count(task_id)) {
-            // ::serial_puts("Scheduler::task_remove(): task_id found.");
+            // ::serialport_puts("Scheduler::task_remove(): task_id found.");
             p_task = tasks_[task_id];
             tasks_.erase(task_id);
         } else {
@@ -195,7 +195,7 @@ bool Scheduler::task_remove(const uint16_t task_id) {
     }
     delete p_task;
 
-    // ::serial_puts("Scheduler::task_remove() done.");
+    // ::serialport_puts("Scheduler::task_remove() done.");
     return true;
 }
 
@@ -291,11 +291,13 @@ std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> Scheduler::get_runt
     static std::map<TaskHandle_t, uint32_t> last_runtimes;
     static uint64_t last_total_runtime { 0 };
 
+    enter_critical_section();
     size_t num_tasks { ::uxTaskGetNumberOfTasks() };
     std::vector<TaskStatus_t> task_data;
     task_data.resize(num_tasks);
     uint32_t total_runtime;
     num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
+    exit_critical_section();
 
     auto current_runtimes { std::make_unique<std::vector<std::pair<TaskHandle_t, float>>>() };
 

@@ -21,9 +21,9 @@
 #include <boost/asio.hpp>
 
 
-namespace ctbot {
+class TwoWire;
 
-class I2C_Wrapper;
+namespace ctbot {
 
 class SimConnection {
 protected:
@@ -33,7 +33,7 @@ protected:
     boost::asio::ip::tcp::resolver::iterator endpoint_it_;
     uint8_t bot_addr_;
     int16_t sim_time_ms_;
-    I2C_Wrapper* p_i2c_range_;
+    TwoWire* p_i2c_range_;
     Resource<bool>* p_sim_res_;
     std::map<CommandCodes /*cmd*/, std::vector<std::function<bool(const CommandBase&)>> /*functions*/> commands_;
     std::unique_ptr<std::thread> p_io_thread_;
@@ -48,6 +48,11 @@ protected:
 
     bool evaluate_cmd(const CommandBase& cmd);
     void register_cmd(const CommandCodes& cmd, decltype(commands_)::mapped_type::value_type func);
+
+
+    uint8_t i2c_write_reg8(TwoWire* p_i2c, const uint8_t addr, const uint8_t reg, const uint8_t value) const;
+    uint8_t i2c_write_reg8(TwoWire* p_i2c, const uint8_t addr, const uint16_t reg, const uint8_t value) const;
+    uint8_t i2c_write_reg16(TwoWire* p_i2c, const uint8_t addr, const uint8_t reg, const uint16_t value) const;
 
 public:
     SimConnection(const std::string& hostname, const std::string& port);

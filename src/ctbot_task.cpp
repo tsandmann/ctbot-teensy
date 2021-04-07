@@ -46,7 +46,9 @@ void Task::print(CommInterface& comm) const {
     if (period_) {
         comm.debug_printf<true>(PP_ARGS("{} ms", period_));
     }
-    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte\r\n", scheduler_.get_free_stack(id_)));
+    comm.debug_printf<true>(PP_ARGS("\tstack free: {} byte", scheduler_.get_free_stack(id_)));
+    comm.debug_printf<true>(
+        PP_ARGS("\thandle: {#x}\r\n", std_thread_ ? free_rtos_std::gthr_freertos::get_freertos_handle(handle_.p_thread) : handle_.p_freertos_handle));
 }
 
 Task::~Task() {
@@ -57,30 +59,30 @@ Task::~Task() {
     state_ = 0;
     if (std_thread_) {
         if (handle_.p_thread && !external_) {
-            ::serial_puts(PSTR("Task::~Task(): task is std::thread."));
+            ::serialport_puts(PSTR("Task::~Task(): task is std::thread."));
             if (handle_.p_thread->joinable()) {
                 if (name_ != PSTR("main")) {
-                    ::serial_puts(PSTR("Task::~Task(): calling join()..."));
+                    ::serialport_puts(PSTR("Task::~Task(): calling join()..."));
                     handle_.p_thread->join();
-                    ::serial_puts(("Task::~Task(): join() done."));
+                    ::serialport_puts(("Task::~Task(): join() done."));
                 } else {
                     handle_.p_thread->detach();
-                    ::serial_puts(PSTR("Task::~Task(): detach() done."));
+                    ::serialport_puts(PSTR("Task::~Task(): detach() done."));
                 }
             } else {
-                ::serial_puts(PSTR("Task::~Task(): not joinable."));
+                ::serialport_puts(PSTR("Task::~Task(): not joinable."));
             }
             delete handle_.p_thread;
-            ::serial_puts(PSTR("Task::~Task(): thread deleted."));
+            ::serialport_puts(PSTR("Task::~Task(): thread deleted."));
         }
     } else {
-        ::serial_puts(PSTR("Task::~Task(): task is pure FreeRTOS task."));
+        ::serialport_puts(PSTR("Task::~Task(): task is pure FreeRTOS task."));
         if (handle_.p_freertos_handle && !external_) {
             ::vTaskDelete(handle_.p_freertos_handle);
-            ::serial_puts(PSTR("Task::~Task(): task handle deleted."));
+            ::serialport_puts(PSTR("Task::~Task(): task handle deleted."));
         }
     }
-    ::serial_puts(PSTR("Task::~Task() done."));
+    ::serialport_puts(PSTR("Task::~Task() done."));
 }
 
 bool Task::resume() {

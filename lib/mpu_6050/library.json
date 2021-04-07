@@ -1,0 +1,7 @@
+{
+  "name": "mpu_6050",
+  "description": "MPU 6050 driver",
+  "version": "1.0.0",
+  "frameworks": "arduino",
+  "platforms": "*"
+}

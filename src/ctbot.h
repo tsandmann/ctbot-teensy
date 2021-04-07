@@ -61,7 +61,6 @@ class LCDisplay;
 class TFTDisplay;
 class CmdParser;
 class Scheduler;
-class I2C_Wrapper;
 class ParameterStorage;
 
 /**
@@ -100,7 +99,6 @@ protected:
     SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
-    I2C_Wrapper* p_i2c_;
     ParameterStorage* p_parameter_;
     AudioOutputAnalog* p_audio_output_dac_;
     AudioOutputI2S* p_audio_output_i2s_;

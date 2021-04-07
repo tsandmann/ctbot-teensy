@@ -27,25 +27,35 @@
 #include "arduino_freertos.h"
 
 #include <cstdint>
-#include <array>
 #include <mutex>
+#include <array>
 
+
+namespace arduino {
+class I2CT4;
+} // namespace arduino
 
 namespace ctbot {
 
-class I2C_Wrapper { // FIXME: implement as OS service?
+class I2C_Wrapper {
     static constexpr bool DEBUG_ { false };
 
-    arduino::TwoWire* p_i2c_;
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+    using I2C_t = arduino::I2CT4;
+#else
+    using I2C_t = arduino::TwoWire;
+#endif
+
+    I2C_t* p_i2c_;
     uint8_t bus_;
     uint8_t addr_;
     uint32_t freq_;
-    static std::array<std::mutex, 4> mutex_;
+    static std::array<std::timed_mutex, 4> mutex_;
 
-    FLASHMEM uint32_t get_freq_internal() const;
+    uint32_t get_freq_internal() const;
 
 public:
-    FLASHMEM I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq);
+    I2C_Wrapper(const uint8_t bus, const uint8_t addr, const uint32_t freq);
 
     I2C_Wrapper(const uint8_t bus, const uint8_t addr) : I2C_Wrapper { bus, addr, 100'000 } {}
 
@@ -55,9 +65,9 @@ public:
         return bus_;
     }
 
-    FLASHMEM bool init();
+    bool init();
 
-    FLASHMEM bool init(const uint8_t bus_id, const uint32_t freq);
+    bool init(const uint8_t bus_id, const uint32_t freq);
 
     uint32_t get_freq() const {
         return freq_;
@@ -83,7 +93,7 @@ public:
 
     uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value) const;
 
-    FLASHMEM bool test(const uint8_t addr);
+    bool test(const uint8_t addr);
 };
 
 } // namespace ctbot
