@@ -1,5 +1,5 @@
 sudo: required
-dist: bionic
+dist: focal
 
 language: python
 python:
@@ -20,8 +20,8 @@ install:
 script:
     - platformio update
     - platformio init
+    - platformio run --environment teensy41
+    - platformio run --environment teensy40
     - platformio run --environment teensy36
     - platformio run --environment teensy35
-    - platformio run --environment teensy40
-    - platformio run --environment teensy41
     - platformio run --environment linux
