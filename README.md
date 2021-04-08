@@ -65,6 +65,13 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
   * More to come soon
 * ...
 
+## Continuous integration tests
+
+| Branch              | Build status  |
+|:------------------- |:------------- |
+| master              | [![PlatformIO CI](https://github.com/tsandmann/ctbot-teensy/actions/workflows/pio_build.yml/badge.svg?branch=master)](https://github.com/tsandmann/ctbot-teensy/actions/workflows/pio_build.yml) |
+
+
 [ctBot]: https://www.heise.de/ct/artikel/c-t-Bot-und-c-t-Sim-284119.html
 [Teensy]: https://www.pjrc.com/teensy/index.html
 [PlatformIO]: https://platformio.org
