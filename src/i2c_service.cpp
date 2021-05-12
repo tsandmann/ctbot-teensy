@@ -398,7 +398,7 @@ uint8_t I2C_Service::read_bytes(
                 (void) done;
                 printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, ret);
             }
-            ::xTaskNotifyGiveIndexed((*p_transfer)->caller, 1);
+            ::xTaskNotifyGive((*p_transfer)->caller);
         };
     }
 
@@ -410,7 +410,7 @@ uint8_t I2C_Service::read_bytes(
         return 0;
     }
 
-    ::ulTaskNotifyTakeIndexed(1, pdTRUE, portMAX_DELAY); // FIXME: timeout?
+    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
     if (DEBUG_) {
         // printf_debug(PSTR("I2C_Service::read_bytes(): done, err=%u\r\n"), ret);
     }
@@ -528,7 +528,7 @@ uint8_t I2C_Service::write_bytes(
                 (void) done;
                 printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(REG), done, ret);
             }
-            ::xTaskNotifyGiveIndexed((*p_transfer)->caller, 1);
+            ::xTaskNotifyGive((*p_transfer)->caller);
         };
     }
 
@@ -541,7 +541,7 @@ uint8_t I2C_Service::write_bytes(
         return 0;
     }
 
-    ::ulTaskNotifyTakeIndexed(1, pdTRUE, portMAX_DELAY); // FIXME: timeout?
+    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
     if (DEBUG_) {
         // printf_debug(PSTR("I2C_Service::write_bytes<%u>(): done, ret=%u\r\n"), ret, sizeof(REG));
     }

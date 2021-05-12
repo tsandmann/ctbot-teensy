@@ -50,6 +50,10 @@ uint32_t Timer::get_us() {
     return arduino::g_time_ms * 1'000UL;
 }
 
+uint32_t Timer::get_us_from_isr() {
+    return arduino::g_time_ms * 1'000UL;
+}
+
 uint32_t Timer::get_ms() {
     return arduino::g_time_ms;
 }

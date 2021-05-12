@@ -109,7 +109,7 @@ public:
         static bool last {};
         static uint32_t last_time {};
 
-        const uint32_t now { Timer::get_us() };
+        const uint32_t now { Timer::get_us_from_isr() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
         constexpr int32_t MIN_DT_US { static_cast<int32_t>(1'000'000.f / (200.f * 1.2f / 60.f) / CtBotConfig::ENCODER_MARKS) }; // max 200 rpm +20% margin

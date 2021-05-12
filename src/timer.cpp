@@ -32,7 +32,11 @@
 namespace ctbot {
 
 __attribute__((weak)) uint32_t Timer::get_us() {
-    return freertos::get_us();
+    return static_cast<uint32_t>(freertos::get_us());
+}
+
+__attribute__((weak)) uint32_t Timer::get_us_from_isr() {
+    return static_cast<uint32_t>(freertos::get_us_from_isr());
 }
 
 __attribute__((weak)) uint32_t Timer::get_ms() {

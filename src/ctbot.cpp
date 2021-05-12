@@ -271,7 +271,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
         get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 4096, [this]() {
             while (get_ready()) {
-                if (::ulTaskNotifyTakeIndexed(1, pdTRUE, pdMS_TO_TICKS(500)) == 1) {
+                if (::ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500)) == 1) {
                     ::software_isr(); // AudioStream::update_all()
                 }
             }
@@ -287,7 +287,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             ::attachInterruptVector(IRQ_SOFTWARE, []() FASTRUN {
                 if (audio_task_) {
                     BaseType_t higher_woken { pdFALSE };
-                    ::vTaskNotifyGiveIndexedFromISR(audio_task_, 1, &higher_woken);
+                    ::vTaskNotifyGiveFromISR(audio_task_, &higher_woken);
                     portYIELD_FROM_ISR(higher_woken);
                 }
             });
@@ -426,10 +426,6 @@ FLASHMEM void CtBot::init_parser() {
             if (it != post_hooks_.end()) {
                 std::get<1>(it->second) = v;
             } else {
-                for (const auto& e : post_hooks_) {
-                    p_comm_->debug_print(e.first, true);
-                    p_comm_->debug_print(PSTR("\r\n"), true);
-                }
                 return false;
             }
         } else if (args.find(PSTR("kp")) == 0) {
