@@ -126,7 +126,7 @@ public:
         static bool last { true };
         static uint32_t last_time {};
 
-        const auto now { Timer::get_us() };
+        const auto now { Timer::get_us_from_isr() };
         const bool value { static_cast<bool>(arduino::digitalReadFast(PIN_NUM)) };
 
         const auto diff { std::abs(static_cast<int32_t>(now) - static_cast<int32_t>(last_time)) };

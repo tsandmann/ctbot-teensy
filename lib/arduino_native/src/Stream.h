@@ -26,10 +26,6 @@
 #include "Print.h"
 #include "WString.h"
 
-#include <deque>
-#include <thread>
-#include <mutex>
-#include <atomic>
 
 class Stream : public Print {
 public:

@@ -180,7 +180,7 @@ uint8_t I2CT4::endTransmission(uint8_t sendStop) {
             }
             port->MIER = LPI2C_MIER_TDIE;
             uint32_t status;
-            if (::xTaskNotifyWaitIndexed(1, DEBUG_LEVEL_ >= 2 ? 2 : 0, 0, DEBUG_LEVEL_ >= 2 ? &status : nullptr, pdMS_TO_TICKS(1)) == pdFALSE) {
+            if (::xTaskNotifyWait(DEBUG_LEVEL_ >= 2 ? 2 : 0, 0, DEBUG_LEVEL_ >= 2 ? &status : nullptr, pdMS_TO_TICKS(1)) == pdFALSE) {
                 port->MIER = 0;
                 if (DEBUG_LEVEL_ >= 2) {
                     isr_timeout = true;
@@ -314,10 +314,10 @@ uint8_t I2CT4::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) 
                 if (DEBUG_LEVEL_ >= 4) {
                     printf_debug(PSTR("rF waiting for irq, rx_fifo=%u\r\n"), rx_fifo);
                 }
-                // ::xTaskNotifyStateClearIndexed(nullptr, 1);
+                // ::xTaskNotifyStateClear(nullptr);
                 port->MIER = LPI2C_MIER_RDIE;
                 uint32_t status;
-                if (::xTaskNotifyWaitIndexed(1, DEBUG_LEVEL_ >= 2 ? 1 : 0, 0, DEBUG_LEVEL_ >= 2 ? &status : nullptr, pdMS_TO_TICKS(1)) == pdFALSE) {
+                if (::xTaskNotifyWait(DEBUG_LEVEL_ >= 2 ? 1 : 0, 0, DEBUG_LEVEL_ >= 2 ? &status : nullptr, pdMS_TO_TICKS(1)) == pdFALSE) {
                     port->MIER = 0;
                     if (DEBUG_LEVEL_ >= 2) {
                         isr_timeout = true;
@@ -369,7 +369,7 @@ FASTRUN void I2CT4::isr1() {
             status = IMXRT_LPI2C1.MSR;
         }
         BaseType_t higher_woken {};
-        if (::xTaskNotifyIndexedFromISR(caller_[0], 1, DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
+        if (::xTaskNotifyFromISR(caller_[0], DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
                 DEBUG_LEVEL_ >= 2 ? eSetBits : eNoAction, &higher_woken)) {
             portYIELD_FROM_ISR(higher_woken);
         }
@@ -384,7 +384,7 @@ FASTRUN void I2CT4::isr2() {
             status = IMXRT_LPI2C3.MSR;
         }
         BaseType_t higher_woken {};
-        if (::xTaskNotifyIndexedFromISR(caller_[1], 1, DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
+        if (::xTaskNotifyFromISR(caller_[1], DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
                 DEBUG_LEVEL_ >= 2 ? eSetBits : eNoAction, &higher_woken)) {
             portYIELD_FROM_ISR(higher_woken);
         }
@@ -399,7 +399,7 @@ FASTRUN void I2CT4::isr3() {
             status = IMXRT_LPI2C4.MSR;
         }
         BaseType_t higher_woken {};
-        if (::xTaskNotifyIndexedFromISR(caller_[2], 1, DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
+        if (::xTaskNotifyFromISR(caller_[2], DEBUG_LEVEL_ >= 2 ? (status & LPI2C_MSR_RDF ? 1 : (status & LPI2C_MSR_TDF ? 2 : 4)) : 0,
                 DEBUG_LEVEL_ >= 2 ? eSetBits : eNoAction, &higher_woken)) {
             portYIELD_FROM_ISR(higher_woken);
         }

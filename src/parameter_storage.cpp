@@ -40,7 +40,7 @@ ParameterStorage::ParameterStorage(const std::string_view& config_file, const si
     }
     File f { SD.open(config_file_.c_str(), O_READ) };
     if (f) {
-        const size_t n { f.size() };
+        const size_t n { static_cast<size_t>(f.size()) };
         p_parameter_doc_ = new DynamicJsonDocument { n + buffer_size };
         if (n) {
             auto error { deserializeJson(*p_parameter_doc_, f) };
