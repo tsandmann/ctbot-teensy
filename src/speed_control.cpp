@@ -75,7 +75,9 @@ void SpeedControl::run() {
         pwm = static_cast<int>(output_);
     }
 
-    motor_.set(direction_ ? pwm : -pwm);
+    if (motor_.get() != direction_ ? pwm : -pwm) {
+        motor_.set(direction_ ? pwm : -pwm);
+    }
 }
 
 void SpeedControl::set_parameters(const float kp, const float ki, const float kd) {
