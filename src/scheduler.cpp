@@ -69,13 +69,13 @@ Scheduler::~Scheduler() {
     // ::serialport_puts("Scheduler::~Scheduler(): all tasks blocked.");
 
     for (auto& t : tasks_) {
-        if (t.second->name_ != PSTR("main")) {
+        if (t.second->name_ != PSTR("main") && t.second->name_ != PSTR("YIELD")) {
             // arduino::Serial.print("Scheduler::~Scheduler(): task \"");
             // arduino::Serial.print(t.second->name_.c_str());
             // arduino::Serial.println("\" will be deleted...");
             // arduino::Serial.flush();
             delete t.second;
-            freertos::delay_ms(100);
+            freertos::delay_ms(20); // FIXME: needed?
             // arduino::Serial.println("Scheduler::~Scheduler(): task delete done.");
             // arduino::Serial.flush();
         }

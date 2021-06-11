@@ -58,7 +58,7 @@ void Motor::set(int new_pwm) {
     }
     arduino::digitalWriteFast(dir_pin_, new_pwm >= 0);
 
-    Scheduler::enter_critical_section();
+    Scheduler::enter_critical_section(); // FIXME: mutex?
     const uint32_t old_res { arduino::analogWriteResolution(PWM_RESOLUTION) };
     arduino::analogWrite(pwm_pin_, static_cast<int>(static_cast<float>(std::abs(pwm_)) / (CtBotConfig::MOT_PWM_MAX / static_cast<float>(1 << PWM_RESOLUTION))));
     arduino::analogWriteResolution(old_res);
