@@ -64,7 +64,7 @@ ParameterStorage::~ParameterStorage() {
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, uint32_t& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto data { p_parameter_doc_->getMember(key) };
 
     if (data.isNull()) {
         return false;
@@ -78,7 +78,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, uint32_t& valu
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, int32_t& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto data { p_parameter_doc_->getMember(key) };
 
     if (data.isNull()) {
         return false;
@@ -92,7 +92,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, int32_t& value
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, float& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto data { p_parameter_doc_->getMember(key) };
 
     if (data.isNull()) {
         return false;
@@ -106,7 +106,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, float& value) 
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, uint32_t& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -125,7 +125,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, int32_t& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -144,7 +144,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
 }
 
 bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, float& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
         // arduino::Serial.println("PS::get_parameter(): key not found.");
@@ -163,22 +163,22 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const uint32_t value) noexcept {
-    (*p_parameter_doc_)[std::string { key }] = value;
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const int32_t value) noexcept {
-    (*p_parameter_doc_)[std::string { key }] = value;
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const float value) noexcept {
-    (*p_parameter_doc_)[std::string { key }] = value;
+    (*p_parameter_doc_)[key] = value;
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const uint32_t value) noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?
@@ -186,10 +186,10 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const int32_t value) noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?
@@ -197,10 +197,10 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
 }
 
 void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const float value) noexcept {
-    const auto array { p_parameter_doc_->getMember(std::string { key }) }; // FIXME: implement for std::string_view
+    const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(std::string { key }); // FIXME: implement for std::string_view
+        p_parameter_doc_->createNestedArray(key);
         // arduino::Serial.println("PS::set_parameter(): array created.");
     }
     // FIXME: add zero-padding?
