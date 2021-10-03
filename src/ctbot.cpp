@@ -66,7 +66,6 @@
 
 #include "Audio.h"
 #include "SD.h"
-#include "SPI.h"
 #include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 #include "tts.h"
 
@@ -161,8 +160,14 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             CtBotConfig::UART_WIFI_BAUDRATE };
         configASSERT(p_serial_wifi_);
         p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
+        if (CrashReport) {
+            p_serial_wifi_->get_stream().print(CrashReport);
+        }
     } else {
         p_comm_ = new CommInterfaceCmdParser { *p_serial_usb_, *p_parser_, true };
+        if (CrashReport) {
+            p_serial_usb_->get_stream().print(CrashReport);
+        }
     }
     configASSERT(p_comm_);
 
@@ -185,11 +190,17 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     configASSERT(p_sensors_);
     p_sensors_->enable_sensors();
 
-    p_motors_[0] = new Motor { p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, CtBotConfig::MOT_L_DIR };
-    p_motors_[1] = new Motor { p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, CtBotConfig::MOT_R_DIR };
 
-    p_speedcontrols_[0] = new SpeedControl { p_sensors_->get_enc_l(), *p_motors_[0] };
-    p_speedcontrols_[1] = new SpeedControl { p_sensors_->get_enc_r(), *p_motors_[1] };
+    if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
+        p_speedcontrols_[0] = new SpeedControlExternal {};
+        p_speedcontrols_[1] = new SpeedControlExternal {};
+    } else {
+        p_motors_[0] = new Motor { p_sensors_->get_enc_l(), CtBotConfig::MOT_L_PWM_PIN, CtBotConfig::MOT_L_DIR_PIN, CtBotConfig::MOT_L_DIR };
+        p_motors_[1] = new Motor { p_sensors_->get_enc_r(), CtBotConfig::MOT_R_PWM_PIN, CtBotConfig::MOT_R_DIR_PIN, CtBotConfig::MOT_R_DIR };
+
+        p_speedcontrols_[0] = new SpeedControl { p_sensors_->get_enc_l(), *p_motors_[0] };
+        p_speedcontrols_[1] = new SpeedControl { p_sensors_->get_enc_r(), *p_motors_[1] };
+    }
 
     p_servos_[0] = new Servo { CtBotConfig::SERVO_1_PIN };
     if (CtBotConfig::SERVO_2_PIN != 255) {
@@ -211,14 +222,14 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         arduino::digitalWriteFast(CtBotConfig::TFT_BACKLIGHT_PIN, true);
     }
 
-#ifdef BUILTIN_SDCARD
-    if (!(SD.begin(BUILTIN_SDCARD))) {
-        p_comm_->debug_print(PSTR("SD.begin() failed.\r\n"), true);
+    if (CtBotConfig::SDCARD_AVAILABLE) {
+        if (SD.sdfs.begin(SdioConfig(CtBotConfig::SDCARD_USE_DMA ? DMA_SDIO : FIFO_SDIO))) {
+            p_parameter_ = new ParameterStorage { SD, PSTR("ctbot.jsn") };
+            configASSERT(p_parameter_);
+        } else {
+            p_comm_->debug_print(PSTR("SD.sdfs.begin() failed.\r\n"), true);
+        }
     }
-
-    p_parameter_ = new ParameterStorage { PSTR("ctbot.jsn") };
-    configASSERT(p_parameter_);
-#endif
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
         portENTER_CRITICAL();
@@ -487,7 +498,9 @@ FLASHMEM void CtBot::init_parser() {
             p_comm_->debug_printf<true>(PP_ARGS("  {9.4}   {9.4}   {9.4}\r\n", e1, e2, e3));
             p_comm_->debug_printf<true>(PP_ARGS("y={9.4} p={9.4} r={9.4}\r\n", y, p, r));
         } else if (args.find(PSTR("motor")) == 0) {
-            p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_motors_[0]->get(), p_motors_[1]->get()));
+            if (p_motors_[0] && p_motors_[1]) {
+                p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_motors_[0]->get(), p_motors_[1]->get()));
+            }
         } else if (args.find(PSTR("servo")) == 0) {
             p_comm_->debug_printf<true>(PP_ARGS("{}[{s}] ", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on ") : PSTR("off")));
             if (p_servos_[1]) {
@@ -556,15 +569,24 @@ FLASHMEM void CtBot::init_parser() {
 
     p_parser_->register_cmd(PSTR("set"), 's', [this](const std::string_view& args) {
         if (args.find(PSTR("speed")) == 0) {
-            int16_t left, right;
-            CmdParser::split_args(args, left, right);
-            p_speedcontrols_[0]->set_speed(static_cast<float>(left));
-            p_speedcontrols_[1]->set_speed(static_cast<float>(right));
+            const auto n { args.find(' ') };
+            if (n == args.npos) {
+                p_speedcontrols_[0]->set_speed(0.f);
+                p_speedcontrols_[1]->set_speed(0.f);
+                return false;
+            }
+            char* p_end;
+            const float left { std::strtof(args.data() + n, &p_end) };
+            const float right { std::strtof(p_end, nullptr) };
+            p_speedcontrols_[0]->set_speed(left);
+            p_speedcontrols_[1]->set_speed(right);
         } else if (args.find(PSTR("motor")) == 0) {
-            int16_t left, right;
-            CmdParser::split_args(args, left, right);
-            p_motors_[0]->set(left);
-            p_motors_[1]->set(right);
+            if (p_motors_[0] && p_motors_[1]) {
+                int16_t left, right;
+                CmdParser::split_args(args, left, right);
+                p_motors_[0]->set(left);
+                p_motors_[1]->set(right);
+            }
         } else if (args.find(PSTR("servo")) == 0) {
             uint8_t s1, s2;
             CmdParser::split_args(args, s1, s2);
@@ -839,7 +861,8 @@ FLASHMEM void CtBot::init_parser() {
                 uint16_t freq;
                 CmdParser::split_args(args, bus, freq);
                 delete p_i2c;
-                p_i2c = new I2C_Service { bus, freq * 1000UL, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }; // FIXME: other bus pins
+                p_i2c = new I2C_Service { bus, static_cast<uint32_t>(freq * 1000UL), CtBotConfig::I2C0_PIN_SDA,
+                    CtBotConfig::I2C0_PIN_SCL }; // FIXME: other bus pins
                 return p_i2c != nullptr;
             } else if (args.find(PSTR("addr")) == 0) {
                 CmdParser::split_args(args, dev_addr);
@@ -1030,8 +1053,10 @@ FLASHMEM void CtBot::shutdown() {
 
     p_speedcontrols_[0]->set_speed(0.f);
     p_speedcontrols_[1]->set_speed(0.f);
-    p_motors_[0]->set(0);
-    p_motors_[1]->set(0);
+    if (p_motors_[0] && p_motors_[1]) {
+        p_motors_[0]->set(0);
+        p_motors_[1]->set(0);
+    }
     p_servos_[0]->disable();
     if (p_servos_[1]) {
         p_servos_[1]->disable();

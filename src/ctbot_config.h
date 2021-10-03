@@ -25,7 +25,6 @@
 #pragma once
 
 #include <cstdint>
-#include <type_traits>
 
 
 namespace ctbot {
@@ -63,6 +62,7 @@ public:
     static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
     static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
     static constexpr bool AUDIO_AVAILABLE { AUDIO_ANALOG_AVAILABLE ^ AUDIO_I2S_AVAILABLE }; /**< Statically activate or deactivate audio features */
+    static constexpr bool SDCARD_AVAILABLE { true };
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
@@ -120,6 +120,9 @@ public:
     static constexpr uint8_t SPI2_PIN_SCK { 255 }; /**< Pin number of SCK for SPI 2 */
     static constexpr uint8_t SPI2_PIN_CS { 255 }; /**< Pin number of default CS for SPI 2 */
 
+    /* SD card */
+    static constexpr bool SDCARD_USE_DMA { true };
+
     /* ENC_L */
     static constexpr uint8_t ENC_L_PIN { 30 }; /**< Pin number of ENC_L signal */
 
@@ -145,9 +148,10 @@ public:
 
     /* GPIO */
     static constexpr uint8_t GPIO_1_PIN { 24 }; /**< Pin number of GPIO 1 signal */
-    static constexpr uint8_t GPIO_2_PIN { 25 }; /**< Pin number of GPIO 1 signal */
+    static constexpr uint8_t GPIO_2_PIN { 25 }; /**< Pin number of GPIO 2 signal */
 
     /* motors */
+    static constexpr bool EXTERNAL_SPEEDCTRL { false };
     static constexpr bool MOT_L_DIR { false }; /**< Direction of rotation for left motor */
     static constexpr uint8_t MOT_L_PWM_PIN { 2 }; /**< Pin number of left motor pwm signal */
     static constexpr uint8_t MOT_L_DIR_PIN { 6 }; /**< Pin number of left motor direction signal */

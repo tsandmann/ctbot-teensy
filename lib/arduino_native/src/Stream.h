@@ -29,7 +29,7 @@
 
 class Stream : public Print {
 public:
-    Stream();
+    constexpr Stream() {}
     void setRX(uint8_t pin);
     void setTX(uint8_t pin);
     void begin(uint32_t baud);

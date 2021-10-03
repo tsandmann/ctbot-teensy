@@ -213,4 +213,6 @@ TwoWire Wire1;
 TwoWire Wire2;
 TwoWire Wire3;
 
+CrashReportClass CrashReport;
+
 void (*_VectorsRam[255 + 16])(void);

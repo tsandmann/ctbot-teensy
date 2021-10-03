@@ -153,8 +153,8 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
                 auto p_speedctrl_r { CtBot::get_instance().get_speedcontrols()[1] };
 
                 CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM,
-                    static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControl::MAX_SPEED / 200.f),
-                    static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControl::MAX_SPEED / 200.f), bot_addr_ };
+                    static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControlBase::MAX_SPEED / 200.f),
+                    static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControlBase::MAX_SPEED / 200.f), bot_addr_ };
 
                 send_cmd(cmd);
             }

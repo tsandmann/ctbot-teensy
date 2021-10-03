@@ -79,6 +79,8 @@ public:
     virtual size_t write(const uint8_t*, size_t) override {
         return 0;
     }
+    void addMemoryForRead(void*, size_t) {}
+    void addMemoryForWrite(void*, size_t) {}
 };
 
 extern StdinOutWrapper Serial;
@@ -179,6 +181,18 @@ using ::Wire3;
 
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
+
+#define FILE_USE_MOVE
+
+typedef struct {
+    uint8_t sec; // 0-59
+    uint8_t min; // 0-59
+    uint8_t hour; // 0-23
+    uint8_t wday; // 0-6, 0=sunday
+    uint8_t mday; // 1-31
+    uint8_t mon; // 0-11
+    uint8_t year; // 70-206, 70=1970, 206=2106
+} DateTimeFields;
 
 class elapsedMillis {
 private:
@@ -329,3 +343,16 @@ public:
         return r;
     }
 };
+
+class CrashReportClass : public Printable {
+public:
+    virtual size_t printTo(Print&) const {
+        return 0;
+    }
+    void clear() {}
+    operator bool() {
+        return false;
+    }
+};
+
+extern CrashReportClass CrashReport;

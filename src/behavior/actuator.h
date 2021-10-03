@@ -147,15 +147,13 @@ public:
     /**
      * @brief Create an actuator instance
      *
-     * @tparam Args... Types of Arguments for constructor of actuator class
      * @param[in] name Name of actuator instance as C-String
      * @param[in] active Flag to indicated, if added resource should be active or inactive
      * @param args... Arguments for constructor of actuator class
      * @return Pointer to created instance or nullptr, if add_resource() failed
      */
-    template <typename... Args>
-    FLASHMEM T* create_actuator(const char* name, bool active, Args&&... args) {
-        std::unique_ptr<T> p_res { std::make_unique<T>(std::forward<Args>(args)...) };
+    FLASHMEM T* create_actuator(const char* name, bool active, auto&&... args) {
+        std::unique_ptr<T> p_res { std::make_unique<T>(args...) };
         T* ptr { p_res.get() };
         if (add_resource(name, std::move(p_res), active)) {
             return ptr;

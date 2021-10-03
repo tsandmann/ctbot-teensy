@@ -28,6 +28,7 @@
 
 #include <array>
 #include <functional>
+#include <concepts>
 
 
 struct QueueDefinition;
@@ -99,8 +100,8 @@ protected:
 
     const uint8_t bus_;
 
-    template <typename REG, typename DATA>
-    uint8_t set_bit_internal(const uint16_t addr, const REG reg, const uint8_t bit, const bool value) const;
+    template <typename DATA>
+    uint8_t set_bit_internal(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const;
 
 public:
     static bool init(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda, const uint8_t pin_scl);
@@ -115,20 +116,17 @@ public:
         return freq_[bus_];
     }
 
-    template <typename REG, typename DATA>
-    uint8_t read_reg(const uint16_t addr, const REG reg, DATA& data, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
-    template <typename REG>
-    uint8_t read_bytes(const uint16_t addr, const REG reg_addr, uint8_t* p_data, const uint8_t length,
+    uint8_t read_reg(const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto& data,
+        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t read_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, uint8_t* p_data, const uint8_t length,
         std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
 
-    template <typename REG, typename DATA>
-    uint8_t write_reg(const uint16_t addr, const REG reg, const DATA data, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
-    template <typename REG>
-    uint8_t write_bytes(const uint16_t addr, const REG reg_addr, const uint8_t* p_data, const uint8_t length,
+    uint8_t write_reg(const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto const data,
+        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t write_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, const uint8_t* p_data, const uint8_t length,
         std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
 
-    template <typename REG>
-    uint8_t set_bit(const uint16_t addr, const REG reg, const uint8_t bit, const bool value) const;
+    uint8_t set_bit(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const;
 
     void test(const uint16_t addr, const uint32_t rx, const uint32_t tx, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
 };

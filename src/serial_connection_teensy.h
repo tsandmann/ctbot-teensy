@@ -204,6 +204,10 @@ public:
      * @brief Wait for any outstanding transmission to complete
      */
     void flush();
+
+    auto& get_stream() {
+        return io_stream_;
+    }
 };
 
 } // namespace ctbot

@@ -162,7 +162,7 @@ public:
         size_t size;
     };
 
-    template <class T>
+    template <class>
     static constexpr name_view get_name_helper() {
         auto p { __PRETTY_FUNCTION__ };
         while (*p++ != '=') {
@@ -292,13 +292,12 @@ public:
      * @brief Wrapper to start a C++-behavior from a (legacy) C-behavior
      *
      * @tparam Beh Behavior to start
-     * @tparam Args Types of parameters for the behavior to start
      * @param[in] caller Behavior dataset of the caller
      * @param args Parameter for the behavior to start
      * @return Behavior dataset of callee
      */
-    template <class Beh, typename... Args>
-    legacy::Behaviour_t* call(legacy::Behaviour_t* caller, Args&&... args) {
+    template <class Beh>
+    legacy::Behaviour_t* call(legacy::Behaviour_t* caller, auto&&... args) {
         if (running_ || !caller) {
             caller->subResult = BehaviorLegacy::BEHAVIOUR_SUBFAIL;
             return nullptr; // behavior is already running, abort
@@ -311,7 +310,7 @@ public:
         constexpr auto callee { get_name_helper<Beh>() };
         const std::string callee_name { callee.data, callee.size };
 
-        called_behaviors_[caller] = behavior_factory<Beh>(std::forward<Args>(args)...);
+        called_behaviors_[caller] = behavior_factory<Beh>(args...);
         debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::call(): created behavior \"{s}\"\r\n", callee_name.c_str()));
 
         auto callee_data { switch_to_behavior(caller, legacy::legacy_caller_behaviour, BEHAVIOUR_OVERRIDE) };

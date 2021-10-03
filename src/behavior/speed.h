@@ -78,11 +78,9 @@ public:
     /**
      * @brief Set speed of left wheel
      *
-     * @tparam T Type of input
      * @param[in] value New value for speed of left wheel in mm/s
      */
-    template <typename T = speed_t>
-    void set_left(const T& value) noexcept {
+    void set_left(auto const& value) noexcept {
         left_ = static_cast<decltype(left_)>(value);
     }
 
@@ -100,11 +98,9 @@ public:
     /**
      * @brief Set speed of right wheel
      *
-     * @tparam T Type of input
      * @param[in] value New value for speed of right wheel in mm/s
      */
-    template <typename T = speed_t>
-    void set_right(const T& value) noexcept {
+    void set_right(auto const& value) noexcept {
         right_ = static_cast<decltype(right_)>(value);
     }
 
@@ -122,11 +118,9 @@ public:
     /**
      * @brief Set speed of bot
      *
-     * @tparam T Type of input
      * @param[in] value New value for speed of bot in mm/s
      */
-    template <typename T = speed_t>
-    void set_center(const T& value) noexcept {
+    void set_center(auto const& value) noexcept {
         center_ = static_cast<decltype(center_)>(value);
     }
 

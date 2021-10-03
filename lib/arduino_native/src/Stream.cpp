@@ -24,8 +24,6 @@
 #include "Stream.h"
 
 
-Stream::Stream() {};
-
 void Stream::setRX(uint8_t) {}
 
 void Stream::setTX(uint8_t) {}

@@ -52,7 +52,7 @@ namespace ctbot {
 class SerialConnectionTeensy;
 class Sensors;
 class Motor;
-class SpeedControl;
+class SpeedControlBase;
 class Servo;
 class EnaI2c;
 class LedsI2c;
@@ -88,7 +88,7 @@ protected:
     Scheduler* p_scheduler_; /**< Pointer to scheduler instance */
     Sensors* p_sensors_; /**< Pointer to sensor instance */
     Motor* p_motors_[2]; /**< Pointer to motor instances */
-    SpeedControl* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
+    SpeedControlBase* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     EnaI2c* p_ena_;
     LedsI2cEna* p_ena_pwm_;

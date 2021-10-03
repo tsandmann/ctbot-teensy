@@ -38,8 +38,7 @@ class BehaviorLegacyWrapper : public Behavior {
     static constexpr uint32_t STACK_SIZE { 2048 };
 
 protected:
-    template <typename... Args>
-    FLASHMEM static Registry REGISTRY_HELPER(const std::string_view&& name, Args&&... args) {
+    FLASHMEM static Registry REGISTRY_HELPER(const std::string_view&& name, auto&&... args) {
         if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
             return Registry { name, args... };
         } else {

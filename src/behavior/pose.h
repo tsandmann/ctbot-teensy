@@ -107,11 +107,9 @@ public:
     /**
      * @brief Set the X part of pose vector
      *
-     * @tparam T Type of input
      * @param[in] value New value for X part of pose vector in mm
      */
-    template <typename T>
-    void set_x(const T& value) noexcept {
+    void set_x(auto const& value) noexcept {
         x_ = static_cast<float>(value);
     }
 
@@ -129,11 +127,9 @@ public:
     /**
      * @brief Set the Y part of pose vector
      *
-     * @tparam T Type of input
      * @param[in] value New value for Y part of pose vector in mm
      */
-    template <typename T>
-    void set_y(const T& value) noexcept {
+    void set_y(auto const& value) noexcept {
         y_ = static_cast<float>(value);
     }
 
@@ -176,8 +172,7 @@ public:
      * @tparam T Type of input
      * @param[in] value New value for heading in degree
      */
-    template <typename T>
-    void set_heading(const T& value) noexcept {
+    void set_heading(auto const& value) noexcept {
         heading_ = static_cast<float>(value);
         heading_sin_ = std::sin(to_rad(heading_));
         heading_cos_ = std::cos(to_rad(heading_));
