@@ -24,21 +24,23 @@
 
 #include "parameter_storage.h"
 
-#include "SD.h"
+#include "FS.h"
 
 
 // FIXME: use debug output of CommInterface
 namespace ctbot {
-ParameterStorage::ParameterStorage(const std::string_view& config_file, const size_t buffer_size) : config_file_ { config_file }, p_parameter_doc_ {} {
-    if (!SD.exists(config_file_.c_str())) {
-        File f { SD.open(config_file_.c_str(), static_cast<uint8_t>(O_WRITE | O_CREAT)) };
+ParameterStorage::ParameterStorage(FS& fs, const std::string_view& config_file, const size_t buffer_size)
+    : fs_ { fs }, config_file_ { config_file }, p_parameter_doc_ {} {
+    if (!fs_.exists(config_file_.c_str())) {
+        File f { fs_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE | FILE_WRITE_BEGIN)) };
         if (f) {
             f.close();
         } else {
-            // arduino::Serial.println("PS::ParameterStorage(): file create failed.");
+            arduino::Serial.println(PSTR("PS::ParameterStorage(): file create failed."));
+            return;
         }
     }
-    File f { SD.open(config_file_.c_str(), O_READ) };
+    File f { fs_.open(config_file_.c_str(), FILE_READ) };
     if (f) {
         const size_t n { static_cast<size_t>(f.size()) };
         p_parameter_doc_ = new DynamicJsonDocument { n + buffer_size };
@@ -214,13 +216,13 @@ std::unique_ptr<std::string> ParameterStorage::dump() const {
 }
 
 bool ParameterStorage::flush() const {
-    SD.remove(config_file_.c_str());
-    File f { SD.open(config_file_.c_str(), static_cast<uint8_t>(O_WRITE | O_CREAT)) };
+    fs_.remove(config_file_.c_str());
+    File f { fs_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE | FILE_WRITE_BEGIN)) };
     if (f) {
         serializeJson(*p_parameter_doc_, f);
         f.close();
     } else {
-        // arduino::Serial.println("PS::flush(): file create failed.");
+        arduino::Serial.println(PSTR("PS::flush(): file create failed."));
         return false;
     }
     return true;

@@ -122,7 +122,7 @@ uint8_t I2CT4::endTransmission(uint8_t sendStop) {
         // monitor status
         const uint32_t status { port->MSR }; // pg 2884 & 2891
         if (status & LPI2C_MSR_ALF) {
-            port->MCR |= LPI2C_MCR_RTF | LPI2C_MCR_RRF; // clear FIFOs
+            port->MCR = port->MCR | (LPI2C_MCR_RTF | LPI2C_MCR_RRF); // clear FIFOs
 
             port->MIER = 0;
             if (DEBUG_LEVEL_) {
@@ -132,7 +132,7 @@ uint8_t I2CT4::endTransmission(uint8_t sendStop) {
             return 3; // we lost bus arbitration to another master
         }
         if (status & LPI2C_MSR_NDF) {
-            port->MCR |= LPI2C_MCR_RTF | LPI2C_MCR_RRF; // clear FIFOs
+            port->MCR = port->MCR | (LPI2C_MCR_RTF | LPI2C_MCR_RRF); // clear FIFOs
             port->MTDR = LPI2C_MTDR_CMD_STOP;
 
             port->MIER = 0;
@@ -143,7 +143,7 @@ uint8_t I2CT4::endTransmission(uint8_t sendStop) {
             return 4; // NACK
         }
         if ((status & LPI2C_MSR_PLTF) || timeout > 50) {
-            port->MCR |= LPI2C_MCR_RTF | LPI2C_MCR_RRF; // clear FIFOs
+            port->MCR = port->MCR | (LPI2C_MCR_RTF | LPI2C_MCR_RRF); // clear FIFOs
             port->MTDR = LPI2C_MTDR_CMD_STOP; // try to send a stop
 
             port->MIER = 0;
@@ -265,14 +265,14 @@ uint8_t I2CT4::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) 
         // monitor status, check for error conditions
         const uint32_t status { port->MSR }; // pg 2884 & 2891
         if (status & LPI2C_MSR_ALF) {
-            port->MCR |= LPI2C_MCR_RTF | LPI2C_MCR_RRF; // clear FIFOs
+            port->MCR = port->MCR | (LPI2C_MCR_RTF | LPI2C_MCR_RRF); // clear FIFOs
             if (DEBUG_LEVEL_) {
                 printf_debug(PSTR("rF LPI2C_MSR_ALF\r\n"));
             }
             break;
         }
         if ((status & LPI2C_MSR_NDF) || (status & LPI2C_MSR_PLTF) || timeout > 50) {
-            port->MCR |= LPI2C_MCR_RTF | LPI2C_MCR_RRF; // clear FIFOs
+            port->MCR = port->MCR | (LPI2C_MCR_RTF | LPI2C_MCR_RRF); // clear FIFOs
             port->MTDR = LPI2C_MTDR_CMD_STOP; // try to send a stop
             if (DEBUG_LEVEL_) {
                 const uint32_t tmp { timeout };
@@ -352,7 +352,7 @@ uint8_t I2CT4::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) 
     isr_timeout = false;
     const uint32_t rx_fifo { (port->MFSR >> 16) & 7 };
     if (rx_fifo > 0) {
-        port->MCR |= LPI2C_MCR_RRF;
+        port->MCR = port->MCR | LPI2C_MCR_RRF;
         if (DEBUG_LEVEL_ >= 2) {
             printf_debug(PSTR("rF FIFO cleared\r\n"));
         }

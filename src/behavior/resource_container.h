@@ -74,20 +74,20 @@ public:
     FLASHMEM ResourceContainer() noexcept;
     ~ResourceContainer() = default;
 
-    template <class T, typename... Args>
+    template <class T>
     FLASHMEM typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
-        const std::string_view& container_name, const char* new_res, bool active, Args&&... args) {
+        const std::string_view& container_name, const char* new_res, bool active, auto&&... args) {
         ResourceContainer* p_container { get_resource<ResourceContainer>(container_name) };
         if (p_container) {
-            return p_container->create_resource<T>(new_res, active, std::forward<Args>(args)...);
+            return p_container->create_resource<T>(new_res, active, args...);
         }
         return nullptr;
     }
 
-    template <class T, typename... Args>
+    template <class T>
     FLASHMEM typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(
-        const std::string_view& name, bool active, Args&&... args) {
-        std::unique_ptr<ResourceBase> p_res { std::make_unique<Resource<T>>(std::forward<Args>(args)...) };
+        const std::string_view& name, bool active, auto&&... args) {
+        std::unique_ptr<ResourceBase> p_res { std::make_unique<Resource<T>>(args...) };
         Resource<T>* ptr { static_cast<Resource<T>*>(p_res.get()) };
         if (add_resource(name, std::move(p_res), active)) {
             return ptr;

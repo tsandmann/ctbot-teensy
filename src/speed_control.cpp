@@ -28,6 +28,7 @@
 #include "timer.h"
 
 #include "pid_v1.h"
+#include "crc32.h"
 
 
 namespace ctbot {
@@ -35,8 +36,8 @@ namespace ctbot {
 std::list<SpeedControl*> SpeedControl::controller_list_;
 
 SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
-    : direction_ { true }, setpoint_ {}, input_ {}, output_ {}, kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f },
-      p_pid_controller_ { new Pid { input_, output_, setpoint_, kp_, ki_, kd_, true } }, wheel_encoder_ { wheel_enc }, motor_ { motor } {
+    : direction_ { true }, input_ {}, output_ {}, p_pid_controller_ { new Pid { input_, output_, setpoint_, kp_, ki_, kd_, true } },
+      wheel_encoder_ { wheel_enc }, motor_ { motor } {
     if (!p_pid_controller_) {
         return;
     }
@@ -75,7 +76,7 @@ void SpeedControl::run() {
         pwm = static_cast<int>(output_);
     }
 
-    if (motor_.get() != direction_ ? pwm : -pwm) {
+    if (motor_.get() != (direction_ ? pwm : -pwm)) {
         motor_.set(direction_ ? pwm : -pwm);
     }
 }
@@ -94,6 +95,68 @@ void SpeedControl::set_parameters(const float kp, const float ki, const float kd
 void SpeedControl::controller() {
     for (auto p_ctrl : controller_list_) {
         p_ctrl->run();
+    }
+}
+
+
+std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
+SerialConnectionTeensy SpeedControlPico::serial_ { 6, 2'000'000UL };
+uint8_t SpeedControlPico::rx_buffer_[8192];
+
+SpeedControlPico::SpeedControlPico() : enc_speed_ {} {
+    controller_list_.push_back(this);
+
+    if (controller_list_.size() == 1) {
+        Serial6.addMemoryForRead(rx_buffer_, sizeof(rx_buffer_));
+        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 2048UL, &controller);
+    }
+}
+
+void SpeedControlPico::controller() {
+    SpeedData speed_data {};
+    size_t i {};
+    for (auto p_ctrl : controller_list_) {
+        speed_data.speed[i] = p_ctrl->setpoint_;
+        ++i;
+        if (i >= 2) {
+            break;
+        }
+    }
+
+    CRC32 crc;
+    auto ptr { reinterpret_cast<const uint8_t*>(&speed_data) };
+    speed_data.crc = CRC32::calculate(ptr, sizeof(speed_data) - sizeof(speed_data.crc));
+
+    serial_.send(&speed_data, sizeof(speed_data));
+
+    while (serial_.available() >= sizeof(EncData)) {
+        if (serial_.peek() != 0xaa) {
+            uint8_t tmp;
+            serial_.receive(&tmp, 1);
+            continue;
+        }
+
+        EncData enc_data;
+        serial_.receive(&enc_data, sizeof(EncData));
+        auto ptr { reinterpret_cast<const uint8_t*>(&enc_data) };
+        const auto checksum { CRC32::calculate(ptr, sizeof(enc_data) - sizeof(enc_data.crc)) };
+        if (checksum == enc_data.crc) {
+            size_t i {};
+            for (auto p_ctrl : controller_list_) {
+                p_ctrl->enc_speed_ = Encoder::rpm_to_speed(enc_data.rpm[i]); // enc_speed_ is in mm/s
+                ++i;
+                if (i >= 2) {
+                    break;
+                }
+            }
+            CtBot::get_instance().get_comm()->debug_printf<false>(
+                PSTR("EncData=%f\t%f mm/s\r\n"), Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]));
+        } else {
+            CtBot::get_instance().get_comm()->debug_printf<true>(
+                PSTR("SpeedControlPico::controller()(): invalid CRC received: %u\t%u\r\n"), checksum, enc_data.crc);
+        }
+
+        ::vTaskDelay(1);
     }
 }
 

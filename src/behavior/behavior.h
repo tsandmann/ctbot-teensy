@@ -73,10 +73,9 @@ class Behavior {
 
 protected:
     struct Registry {
-        template <typename... Args>
-        Registry(const std::string_view& name, Args&&... args) {
+        Registry(const std::string_view& name, auto&&... args) {
             if (CtBotConfig::BEHAVIOR_MODEL_AVAILABLE) {
-                CtBotBehavior::get_instance().register_behavior(name, std::forward<Args>(args)...);
+                CtBotBehavior::get_instance().register_behavior(name, std::forward<decltype(args)>(args)...);
             }
         }
 
@@ -128,8 +127,8 @@ protected:
         }
     }
 
-    template <bool ENABLED = true, typename... Args>
-    FLASHMEM_T auto debug_print(Args... args) const {
+    template <bool ENABLED = true>
+    FLASHMEM_T auto debug_print(PrintfArg auto const... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_print(args..., false);
         } else {
@@ -137,8 +136,8 @@ protected:
         }
     }
 
-    template <bool ENABLED = true, typename... Args>
-    FLASHMEM_T auto debug_printf(const Args&... args) const {
+    template <bool ENABLED = true>
+    FLASHMEM_T auto debug_printf(PrintfArg auto const... args) const {
         if (ENABLED) {
             return get_ctbot()->get_comm()->debug_printf<false>(args...);
         } else {
@@ -146,8 +145,7 @@ protected:
         }
     }
 
-    template <typename T>
-    FLASHMEM_T bool init_data(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_data(const std::string_view& name, auto*& p_res) const {
         return get_ctbot()->get_data()->get_resource(name, p_res);
     }
 
@@ -157,8 +155,7 @@ protected:
         return ptr != nullptr;
     }
 
-    template <typename T>
-    FLASHMEM_T bool init_actuator(const std::string_view& name, T*& p_res) const {
+    FLASHMEM_T bool init_actuator(const std::string_view& name, auto*& p_res) const {
         return get_ctbot()->get_actuators()->get_resource(name, p_res);
     }
 
@@ -182,9 +179,9 @@ protected:
         return static_cast<BasePtr>(behavior_factory<T>(static_cast<U1>(p1), static_cast<U2>(p2), static_cast<U3>(p3), static_cast<U4>(p4)));
     }
 
-    template <class T, typename... Args>
-    FLASHMEM_T static auto INIT(Args&&... args) {
-        return static_cast<BasePtr>(behavior_factory<T>(std::forward<Args>(args)...));
+    template <class T>
+    FLASHMEM_T static auto INIT(auto&&... args) {
+        return static_cast<BasePtr>(behavior_factory<T>(std::forward<decltype(args)>(args)...));
     }
 
 public:
@@ -214,41 +211,41 @@ public:
         abort_request_ = true;
     }
 
-    template <typename T, T min, T max, typename U>
-    bool set_actuator(Actuator<T, min, max>* actuator, const U& value) const {
+    template <typename T, T min, T max>
+    bool set_actuator(Actuator<T, min, max>* actuator, auto const& value) const {
         return actuator->add_value(static_cast<const T>(value), get_priority());
     }
 
-    template <class T, typename... Args>
-    static auto behavior_factory(Args&&... args) {
-        return std::make_unique<T>(std::forward<Args>(args)...);
+    template <class T>
+    static auto behavior_factory(auto&&... args) {
+        return std::make_unique<T>(args...);
     }
 
-    template <class T, typename... Args>
-    static void behavior_factory(std::unique_ptr<T>& ptr, Args&&... args) {
-        ptr = std::make_unique<T>(std::forward<Args>(args)...);
+    template <class T>
+    static void behavior_factory(std::unique_ptr<T>& ptr, auto&&... args) {
+        ptr = std::make_unique<T>(args...);
     }
 
-    template <class T, typename... Args>
-    void behavior_factory(std::unique_ptr<T>& ptr, bool block, Args&&... args) {
-        behavior_factory(ptr, std::forward<Args>(args)...);
+    template <class T>
+    void behavior_factory(std::unique_ptr<T>& ptr, bool block, auto&&... args) {
+        behavior_factory(ptr, args...);
 
         if (ptr && block) {
             ptr->wait();
         }
     }
 
-    template <class T, typename... Args>
-    auto behavior_factory(bool block, Args&&... args) {
+    template <class T>
+    auto behavior_factory(bool block, auto&&... args) {
         std::unique_ptr<T> ptr;
-        behavior_factory(ptr, block, std::forward<Args>(args)...);
+        behavior_factory(ptr, block, args...);
         return ptr;
     }
 
-    template <class T, typename... Args>
-    auto switch_to(Args&&... args) {
+    template <class T>
+    auto switch_to(auto&&... args) {
         std::unique_ptr<T> ptr;
-        behavior_factory(ptr, true, std::forward<Args>(args)...);
+        behavior_factory(ptr, true, args...);
         return ptr;
     }
 };
@@ -259,9 +256,8 @@ class BehaviorRunUntil : public Behavior {
     static constexpr bool DEBUG_ { true };
 
 public:
-    template <typename... Args>
-    BehaviorRunUntil(std::function<bool()> check_func, Args&&... args)
-        : Behavior(PSTR("BehaviorRunUntil")), p_beh_ { behavior_factory<Beh>(false, std::forward<Args>(args)...) }, func_ { check_func } {}
+    BehaviorRunUntil(std::function<bool()> check_func, auto&&... args)
+        : Behavior(PSTR("BehaviorRunUntil")), p_beh_ { behavior_factory<Beh>(false, args...) }, func_ { check_func } {}
 
 
     FLASHMEM virtual ~BehaviorRunUntil() override {

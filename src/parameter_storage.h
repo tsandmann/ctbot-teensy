@@ -37,7 +37,10 @@
 #include <string_view>
 #include <memory>
 #include <type_traits>
+#include <concepts>
 
+
+class FS;
 
 namespace ctbot {
 
@@ -53,6 +56,7 @@ namespace ctbot {
 class ParameterStorage {
     // FIXME: add documentation
 protected:
+    FS& fs_;
     const std::string config_file_;
     DynamicJsonDocument* p_parameter_doc_;
 
@@ -71,66 +75,50 @@ protected:
     void set_parameter(const std::string_view& key, const size_t index, const float value) noexcept;
 
 public:
-    FLASHMEM ParameterStorage(const std::string_view& config_file, const size_t buffer_size = 512);
+    FLASHMEM ParameterStorage(FS& fs, const std::string_view& config_file, const size_t buffer_size = 512);
     FLASHMEM ~ParameterStorage();
 
     std::unique_ptr<std::string> dump() const;
 
     bool flush() const;
 
-    template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
+    bool get(const std::string_view& key, std::unsigned_integral auto& value) const noexcept {
         uint32_t v;
         const bool res { get_parameter(key, v) };
         if (res) {
-            value = static_cast<T>(v);
+            value = static_cast<std::remove_reference<decltype(value)>::type>(v);
         }
         return res;
     }
 
-    template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
+    bool get(const std::string_view& key, std::signed_integral auto& value) const noexcept {
         int32_t v;
         const bool res { get_parameter(key, v) };
         if (res) {
-            value = static_cast<T>(v);
+            value = static_cast<std::remove_reference<decltype(value)>::type>(v);
         }
         return res;
     }
 
-    template <typename T>
-    typename std::enable_if<std::is_floating_point<T>::value, bool>::type get(const std::string_view& key, T& value) const noexcept {
+    bool get(const std::string_view& key, std::floating_point auto& value) const noexcept {
         float v;
         const bool res { get_parameter(key, v) };
         if (res) {
-            value = static_cast<T>(v);
+            value = static_cast<float>(v);
         }
         return res;
     }
 
-    template <typename T>
-    typename std::enable_if<std::is_fundamental<T>::value, bool>::type get(const std::string_view& key, const size_t index, T& value) const noexcept {
-        return get_parameter(key, index, value);
-    }
-
-    template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
+    void set(const std::string_view& key, std::unsigned_integral auto const value) noexcept {
         set_parameter(key, static_cast<uint32_t>(value));
     }
 
-    template <typename T>
-    typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
+    void set(const std::string_view& key, std::signed_integral auto const value) noexcept {
         set_parameter(key, static_cast<int32_t>(value));
     }
 
-    template <typename T>
-    typename std::enable_if<std::is_floating_point<T>::value, void>::type set(const std::string_view& key, const T value) noexcept {
+    void set(const std::string_view& key, std::floating_point auto const value) noexcept {
         set_parameter(key, static_cast<float>(value));
-    }
-
-    template <typename T>
-    typename std::enable_if<std::is_fundamental<T>::value, void>::type set(const std::string_view& key, const size_t index, const T& value) noexcept {
-        set_parameter(key, index, value);
     }
 };
 } // namespace ctbot

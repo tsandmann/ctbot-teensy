@@ -32,6 +32,7 @@
 #include <charconv>
 #include <functional>
 #include <deque>
+#include <concepts>
 
 
 namespace ctbot {
@@ -128,14 +129,12 @@ public:
 
     /**
      * @brief Split a string into space seperated tokens and return the first as integer argument
-     * @tparam T: Type of argument to get out
      * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
      * @return string_view to the last character interpreted
      */
-    template <typename T>
-    static std::string_view split_args(const std::string_view& args, T& x1) {
-        x1 = T {};
+    static std::string_view split_args(const std::string_view& args, std::integral auto& x1) {
+        x1 = {};
         auto l { args.find(' ') };
         if (l == args.npos) {
             return std::string_view {};
@@ -147,14 +146,12 @@ public:
 
     /**
      * @brief Split a string into space seperated tokens and return them as integer arguments
-     * @tparam T: Type of argument to get out
      * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
      * @param[out] xn: Parameter pack of references to next arguments
      * @return string_view to the last character interpreted
      */
-    template <typename T, typename... Args>
-    static std::string_view split_args(const std::string_view& args, T& x1, Args&... xn) {
+    static std::string_view split_args(const std::string_view& args, std::integral auto& x1, std::integral auto&... xn) {
         auto next_args { split_args(args, x1) };
         return split_args(next_args, xn...);
     }

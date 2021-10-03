@@ -23,6 +23,17 @@
 
 #include "Print.h"
 
+size_t Print::write(const uint8_t* buffer, size_t size) {
+    if (!buffer) {
+        return 0;
+    }
+    size_t count {};
+    while (size--) {
+        count += write(*buffer++);
+    }
+    return count;
+}
+
 size_t Print::print(long n) {
     uint8_t sign = 0;
 

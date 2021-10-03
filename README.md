@@ -2,6 +2,9 @@
 
 This is a very basic framework for the [c't-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
 
+[![Open in VS Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/tsandmann/ctbot-teensy)
+
+
 ## Summary
 
 This code was created for testing a new and simplified design of the c't-Bot software framework. The basic idea is to have a modular structured framework implemented in C++ built on modern language features.

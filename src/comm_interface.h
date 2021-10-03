@@ -38,6 +38,7 @@
 #include <memory>
 #include <mutex>
 #include <type_traits>
+#include <concepts>
 
 
 namespace ctbot {
@@ -45,6 +46,12 @@ namespace ctbot {
 class CtBot;
 class CmdParser;
 class SerialConnectionTeensy;
+
+template <typename T>
+concept Number = std::integral<T> || std::floating_point<T>;
+
+template <typename T>
+concept PrintfArg = std::integral<T> || std::floating_point<T> || std::is_pointer<T>::value;
 
 /**
  * @brief Abstraction layer for communication services
@@ -104,8 +111,7 @@ protected:
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-    template <typename... Args>
-    FLASHMEM static std::string* string_format(const char* format, const Args&... args) {
+    FLASHMEM static std::string* string_format(const char* format, PrintfArg auto const... args) {
         const auto size { get_format_size(format, args...) + 1 };
         if (size > 0) {
             return create_formatted_string(size, format, args...);
@@ -230,26 +236,23 @@ public:
     FLASHMEM size_t debug_print(const std::string_view& str, const bool block);
 
     /**
-     * @brief Write an integer or float out to SerialConnection
-     * @tparam T: Type of integer or float
+     * @brief Write a number out to SerialConnection
      * @param[in] v: Value
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    template <typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
-    FLASHMEM size_t debug_print(const T v, const bool block) {
+    FLASHMEM size_t debug_print(Number auto const v, const bool block) {
         return debug_print(std::to_string(v), block);
     }
 
     /**
      * @brief Write an formatted string (like std::printf) out to SerialConnection
      * @tparam BLOCK: Switch blocking mode
-     * @tparam Args: Values to print
      * @param[in] format: Format string
      * @return Number of characters written
      */
-    template <bool BLOCK = false, typename... Args>
-    FLASHMEM size_t debug_printf(const char* format, const Args&... args) {
+    template <bool BLOCK = false>
+    FLASHMEM size_t debug_printf(const char* format, PrintfArg auto const... args) {
         return debug_print(string_format(format, args...), BLOCK);
     }
 

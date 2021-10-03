@@ -24,75 +24,125 @@
 #pragma once
 
 #include "Arduino.h"
+#include "FS.h"
 
-#include <fstream>
-
-
-static constexpr uint8_t O_READ { 0X01 };
-static constexpr uint8_t O_RDONLY { O_READ };
-static constexpr uint8_t O_WRITE { 0X02 };
-static constexpr uint8_t O_WRONLY { O_WRITE };
-static constexpr uint8_t O_RDWR { O_READ | O_WRITE };
-static constexpr uint8_t O_ACCMODE { O_READ | O_WRITE };
-static constexpr uint8_t O_APPEND { 0X04 };
-static constexpr uint8_t O_SYNC { 0X08 };
-static constexpr uint8_t O_CREAT { 0X10 };
-static constexpr uint8_t O_EXCL { 0X20 };
-static constexpr uint8_t O_TRUNC { 0X40 };
+#include <string>
+#include <string_view>
+#include <cstdint>
+#include <cstdio>
+#include <cassert>
 
 
-class File : public Stream {
-    char name_[13];
-    std::fstream file_;
+// static constexpr uint8_t O_READ { 0X01 };
+// static constexpr uint8_t O_RDONLY { O_READ };
+// static constexpr uint8_t O_WRITE { 0X02 };
+// static constexpr uint8_t O_WRONLY { O_WRITE };
+// static constexpr uint8_t O_RDWR { O_READ | O_WRITE };
+// static constexpr uint8_t O_ACCMODE { O_READ | O_WRITE };
+// static constexpr uint8_t O_APPEND { 0X04 };
+// static constexpr uint8_t O_SYNC { 0X08 };
+// static constexpr uint8_t O_CREAT { 0X10 };
+// static constexpr uint8_t O_EXCL { 0X20 };
+// static constexpr uint8_t O_TRUNC { 0X40 };
 
-public:
-    File() = default;
-    File(std::fstream file, const char* name);
-    ~File();
-    virtual size_t write(const uint8_t) override;
-    virtual size_t write(const uint8_t* buf, size_t size) override;
-    virtual int read() override;
-    virtual int peek() override;
+#ifndef FIFO_SDIO
+static constexpr uint8_t FIFO_SDIO { 0 };
+#endif
+
+#ifndef DMA_SDIO
+static constexpr uint8_t DMA_SDIO { 1 };
+#endif
+
+// FIXME: untested!
+class FileImplStdio : public FileImpl {
+    FILE* p_file_;
+    const uint8_t mode_;
+    const std::string name_;
+
+    friend class SDClass;
+
+protected:
+    FileImplStdio() = default;
+    FileImplStdio(const std::string_view& file, const uint8_t mode);
+
+    virtual ~FileImplStdio();
+
+    virtual size_t read(void* buf, size_t nbyte) override;
+    virtual size_t write(const void* buf, size_t size) override;
     virtual int available() override;
+    virtual int peek() override;
     virtual void flush() override;
-    int read(void* buf, uint16_t nbyte);
-    bool seek(uint32_t pos);
-    // uint32_t position();
-    uint32_t size();
-    void close();
-    operator bool();
-    const char* name() {
-        return name_;
+    virtual bool truncate(uint64_t size = 0) override;
+    virtual bool seek(uint64_t pos, int mode) override;
+    virtual uint64_t position() override;
+    virtual uint64_t size() override;
+    virtual void close() override;
+    virtual bool isOpen() override {
+        return p_file_ != nullptr;
     }
-
-    bool isDirectory() {
-        return false;
+    virtual const char* name() override {
+        return name_.c_str();
     }
-    File openNextFile(uint8_t mode = 1) {
+    virtual bool isDirectory() override;
+    virtual File openNextFile(uint8_t mode = 0) override {
         (void) mode;
+        assert(false);
         return File {};
     }
-    // void rewindDirectory();
-
-    using Print::write;
+    virtual void rewindDirectory() override {}
+    virtual bool getCreateTime(DateTimeFields&) override {
+        return false;
+    }
+    virtual bool getModifyTime(DateTimeFields&) override {
+        return false;
+    }
+    virtual bool setCreateTime(const DateTimeFields&) override {
+        return false;
+    }
+    virtual bool setModifyTime(const DateTimeFields&) override {
+        return false;
+    }
 };
 
 
-class SDClass {
+class SdioConfig {
 public:
+    SdioConfig() {}
+
+    explicit SdioConfig(uint8_t) {}
+
+    uint8_t options() const {
+        return 0;
+    }
+
+    bool useDma() const {
+        return false;
+    }
+};
+
+
+class SDClass : public FS {
+public:
+    SDClass() : sdfs { *this } {}
+
     bool begin(uint8_t = 0) {
         return true;
     }
 
-    File open(const char* name, uint8_t mode = O_READ);
+    bool begin(const SdioConfig&) {
+        return true;
+    }
 
-    bool exists(const char* name);
+    virtual File open(const char* name, uint8_t mode = FILE_READ);
+    virtual bool exists(const char* filepath);
+    virtual bool mkdir(const char* filepath);
+    virtual bool rename(const char* oldfilepath, const char* newfilepath);
+    virtual bool remove(const char* filepath);
+    virtual bool rmdir(const char* filepath);
+    virtual uint64_t usedSize();
+    virtual uint64_t totalSize();
 
-    bool mkdir(const char* name);
-
-    bool remove(const char* name);
-
-    bool rmdir(const char* name);
+    SDClass& sdfs;
 };
 
 extern SDClass SD;

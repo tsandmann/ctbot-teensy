@@ -64,6 +64,10 @@ public:
     /** Size of buffer array in byte for raw encoder data */ // FIXME: calc correct size
     static constexpr uint8_t DATA_ARRAY_SIZE { CtBotConfig::ENCODER_MARKS <= 60 ? 32 : 64 };
 
+    static constexpr float rpm_to_speed(const float rpm) {
+        return rpm * WHEEL_PERIMETER / 60.f / 150.f;
+    }
+
     /**
      * @brief Construct a new Encoder object
      * @param[in] p_data: Pointer to data array to use where the raw input data is stored

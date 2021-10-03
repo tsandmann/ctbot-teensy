@@ -39,9 +39,11 @@ std::remove_all_extents<decltype(DigitalSensors::enc_data_l_)>::type DigitalSens
 decltype(DigitalSensors::enc_l_idx_) DigitalSensors::enc_l_idx_, DigitalSensors::enc_r_idx_;
 
 DigitalSensors::DigitalSensors(CtBot& ctbot)
-    : ctbot_ { ctbot }, ena_ { *ctbot_.get_ena() }, transport_ {}, enc_l_ { enc_data_l_, &enc_l_idx_, CtBotConfig::ENC_L_PIN },
-      enc_r_ { enc_data_r_, &enc_r_idx_, CtBotConfig::ENC_R_PIN }, rc5_ { CtBotConfig::RC5_PIN }, remote_control_ { rc5_, CtBotConfig::RC5_ADDR },
-      distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {}, mpu_last_update_ {}, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
+    : ctbot_ { ctbot }, ena_ { *ctbot_.get_ena() }, transport_ {}, enc_l_ { enc_data_l_, &enc_l_idx_,
+          CtBotConfig::EXTERNAL_SPEEDCTRL ? 255 : CtBotConfig::ENC_L_PIN },
+      enc_r_ { enc_data_r_, &enc_r_idx_, CtBotConfig::EXTERNAL_SPEEDCTRL ? 255 : CtBotConfig::ENC_R_PIN }, rc5_ { CtBotConfig::RC5_PIN },
+      remote_control_ { rc5_, CtBotConfig::RC5_ADDR }, distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {},
+      mpu_last_update_ {}, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
     ena_.off(EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT); // shutdown i2c sensors
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(10ms);
@@ -151,8 +153,10 @@ DigitalSensors::~DigitalSensors() {
 void DigitalSensors::update() {
     const auto now { Timer::get_ms() };
 
-    enc_l_.update();
-    enc_r_.update();
+    if (!CtBotConfig::EXTERNAL_SPEEDCTRL) {
+        enc_l_.update();
+        enc_r_.update();
+    }
     rc5_.update();
     remote_control_.update();
 

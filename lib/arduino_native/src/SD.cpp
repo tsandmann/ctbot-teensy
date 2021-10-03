@@ -23,99 +23,135 @@
 
 #include "SD.h"
 
-#include <cstdio>
+#include <filesystem>
+#include <limits>
 
 
-File::File(std::fstream file, const char* name) : file_ { std::move(file) } {
-    std::strncpy(name_, name, sizeof(name_) - 1);
-}
-
-File::~File() {
-    if (file_.is_open()) {
-        file_.close();
+FileImplStdio::FileImplStdio(const std::string_view& file, const uint8_t mode) : p_file_ {}, mode_ { mode }, name_ { file } {
+    std::string filemode { "rb" };
+    if (mode & FILE_WRITE) {
+        filemode = "a+b";
+    }
+    p_file_ = std::fopen(name_.data(), filemode.c_str());
+    if (mode & FILE_WRITE_BEGIN) {
+        std::rewind(p_file_);
     }
 }
 
-size_t File::write(const uint8_t data) {
-    file_.put(data);
-    return 1;
+FileImplStdio::~FileImplStdio() {
+    if (p_file_) {
+        std::fclose(p_file_);
+    }
 }
 
-size_t File::write(const uint8_t* buf, size_t size) {
-    file_.write(reinterpret_cast<const char*>(buf), size);
-    return size;
+size_t FileImplStdio::write(const void* buf, size_t nbyte) {
+    return std::fwrite(buf, 1, nbyte, p_file_);
 }
 
-int File::read() {
-    return file_.get();
+size_t FileImplStdio::read(void* buf, size_t nbyte) {
+    return std::fread(buf, 1, nbyte, p_file_);
 }
 
-int File::read(void* buf, uint16_t nbyte) {
-    auto ptr { reinterpret_cast<char*>(buf) };
-    file_.read(ptr, nbyte);
+int FileImplStdio::peek() {
+    const auto value { std::fgetc(p_file_) };
+    std::ungetc(value, p_file_);
 
-    return nbyte;
+    return value;
 }
 
-int File::peek() {
-    return file_.peek();
+int FileImplStdio::available() {
+    return size() - position();
 }
 
-int File::available() {
-    const auto pos { file_.tellg() };
-    auto fsize { file_.tellg() };
-    file_.seekg(0, std::ios::end);
-    fsize = file_.tellg() - fsize;
-    file_.seekg(pos, std::ios::beg);
-
-    return static_cast<int>(fsize);
+uint64_t FileImplStdio::position() {
+    return std::ftell(p_file_);
 }
 
-void File::flush() {
-    file_.flush();
+void FileImplStdio::flush() {
+    std::fflush(p_file_);
 }
 
-bool File::seek(uint32_t pos) {
-    file_.seekg(pos);
-    file_.seekp(pos);
+bool FileImplStdio::truncate(uint64_t size) {
+    if (mode_ == FILE_READ) {
+        return false;
+    }
+
+    fpos_t pos;
+    std::fgetpos(p_file_, &pos);
+    close();
+
+    std::error_code e;
+    std::filesystem::resize_file(name_, size, e);
+    if (e.value()) {
+        return false;
+    }
+    p_file_ = std::fopen(name_.data(), "a+b");
+    std::fsetpos(p_file_, &pos);
+
     return true;
 }
 
-uint32_t File::size() {
-    const auto pos { file_.tellg() };
-
-    file_.seekg(0, std::ios::beg);
-    auto fsize { file_.tellg() };
-
-    file_.seekg(0, std::ios::end);
-    fsize = file_.tellg() - fsize;
-
-    file_.seekg(pos, std::ios::beg);
-
-    return static_cast<uint32_t>(fsize);
+bool FileImplStdio::seek(uint64_t pos, int mode) {
+    return std::fseek(p_file_, pos, mode == SeekSet ? SEEK_SET : (mode == SeekEnd ? SEEK_END : SEEK_CUR)) == 0;
 }
 
-void File::close() {
-    file_.close();
+uint64_t FileImplStdio::size() {
+    std::error_code e;
+    return std::filesystem::file_size(name_, e);
 }
 
-File::operator bool() {
-    return file_.operator bool();
+void FileImplStdio::close() {
+    std::fclose(p_file_);
+    p_file_ = nullptr;
 }
 
-File SDClass::open(const char* name, uint8_t mode) {
-    std::fstream f;
-    f.open(name, std::ios::binary | (mode & O_WRITE ? std::ios::out : std::ios::in));
-    return File { std::move(f), name };
+
+bool FileImplStdio::isDirectory() {
+    std::error_code e;
+    return std::filesystem::is_directory(name_, e);
+}
+
+
+File SDClass::open(const char* filepath, uint8_t mode) {
+    return File { new FileImplStdio { filepath, mode } };
 }
 
 bool SDClass::exists(const char* name) {
-    std::ifstream f(name);
-    return f.good();
+    std::error_code e;
+    return std::filesystem::exists(name, e);
 }
 
 bool SDClass::remove(const char* name) {
-    return std::remove(name) == 0;
+    std::error_code e;
+    return std::filesystem::remove(name, e);
+}
+
+bool SDClass::mkdir(const char* filepath) {
+    std::error_code e;
+    return std::filesystem::create_directory(filepath, e);
+}
+
+bool SDClass::rename(const char* oldfilepath, const char* newfilepath) {
+    std::error_code e;
+    std::filesystem::rename(oldfilepath, newfilepath, e);
+    return e.value() == 0;
+}
+
+bool SDClass::rmdir(const char* filepath) {
+    std::error_code e;
+    return std::filesystem::remove_all(filepath, e) > 0;
+}
+
+uint64_t SDClass::usedSize() {
+    std::error_code e;
+    auto info { std::filesystem::space(".", e) };
+    return info.capacity - info.available;
+}
+
+uint64_t SDClass::totalSize() {
+    std::error_code e;
+    auto info { std::filesystem::space(".", e) };
+    return info.capacity;
 }
 
 SDClass SD;
