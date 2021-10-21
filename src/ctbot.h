@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "ctbot_config.h"
 #include "comm_interface.h"
 #include "arduino_freertos.h"
 
@@ -45,11 +46,14 @@ class AudioConnection;
 class AudioMixer4;
 class LuaWrapper;
 
+namespace arduino {
+class SerialIO;
+}
+
 /**
  * @brief Namespace for all c't-Bot classes and functionality
  */
 namespace ctbot {
-class SerialConnectionTeensy;
 class Sensors;
 class Motor;
 class SpeedControlBase;
@@ -95,8 +99,8 @@ protected:
     LedsI2c* p_leds_; /**< Pointer to led instance */
     LCDisplay* p_lcd_; /**< Pointer to LC display instance */
     TFTDisplay* p_tft_; /**< Pointer to TFT display instance */
-    SerialConnectionTeensy* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
-    SerialConnectionTeensy* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
+    arduino::SerialIO* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
+    arduino::SerialIO* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     ParameterStorage* p_parameter_;
@@ -335,11 +339,19 @@ public:
     }
 
     /**
-     * @brief Get the serial connection instance of USB serial port
-     * @return Pointer to serial connection instance
+     * @brief Get the SerialIO instance of USB serial port
+     * @return Pointer to SerialIO instance
      */
-    auto get_serial_usb_conn() const {
+    auto get_serial_usb() const {
         return p_serial_usb_;
+    }
+
+    /**
+     * @brief Get the SerialIO instance of command serial port
+     * @return Pointer to SerialIO instance
+     */
+    auto get_serial_cmd() const {
+        return CtBotConfig::UART_FOR_CMD ? p_serial_wifi_ : p_serial_usb_;
     }
 
     void add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active = true);

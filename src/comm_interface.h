@@ -41,11 +41,13 @@
 #include <concepts>
 
 
-namespace ctbot {
+namespace arduino {
+class SerialIO;
+}
 
+namespace ctbot {
 class CtBot;
 class CmdParser;
-class SerialConnectionTeensy;
 
 template <typename T>
 concept Number = std::integral<T> || std::floating_point<T>;
@@ -86,7 +88,7 @@ protected:
     using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
     static static_pool_t mem_pool_;
 
-    SerialConnectionTeensy& io_;
+    arduino::SerialIO& io_;
     bool echo_;
     int error_;
     char* p_input_;
@@ -143,10 +145,10 @@ public:
 
     /**
      * @brief Construct a new CommInterface object
-     * @param[in] io_connection: Reference to SerialConnection to use
+     * @param[in] io_connection: Reference to SerialIO to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    FLASHMEM CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo = false);
+    FLASHMEM CommInterface(arduino::SerialIO& io_connection, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterface object
@@ -290,11 +292,11 @@ protected:
 public:
     /**
      * @brief Construct a new CommInterfaceCmdParser object
-     * @param[in] io_connection: Reference to SerialConnection to use
+     * @param[in] io_connection: Reference to SerialIO to use
      * @param[in] parser: Reference to CmdParser to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    FLASHMEM CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo = false);
+    FLASHMEM CommInterfaceCmdParser(arduino::SerialIO& io_connection, CmdParser& parser, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterfaceCmdParser object

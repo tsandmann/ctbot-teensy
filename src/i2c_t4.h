@@ -29,6 +29,7 @@
 
 #include <cstdint>
 
+
 namespace arduino {
 class I2CT4 : public TwoWire {
     static constexpr uint8_t DEBUG_LEVEL_ { 1 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose

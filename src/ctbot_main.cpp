@@ -26,7 +26,7 @@
 #include "ctbot_config.h"
 #include "timer.h"
 #include "scheduler.h"
-#include "serial_connection_teensy.h"
+#include "serial_io.h"
 #include "tests.h"
 
 #include "arduino_freertos.h"
@@ -63,7 +63,7 @@ static FLASHMEM void init_task() {
     /* wait for USB device enumeration, terminal program connection, etc. */
     ::vTaskDelay(pdMS_TO_TICKS(CtBotConfig::BOOT_DELAY_MS));
 
-    EXC_PRINTF(PSTR("\r\nrunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
+    EXC_PRINTF(PSTR("\r\nRunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
 
     if (DEBUG) {
         EXC_PRINTF(PSTR("init_task():\r\n"));
@@ -275,16 +275,16 @@ FLASHMEM void loop() {}
  * @param[in] ptr: Pointer to data to write
  * @param[in] len: Number of bytes to write
  * @return Number of bytes written, -1 in case of an error
- * @note File handle parameter is ignored, any data is written to serial connection
+ * @note File handle parameter is ignored, any data is written to Serial
  */
 FLASHMEM int _write(int, char* ptr, int len) {
     using namespace ctbot;
 
-    static CtBot& ctbot { CtBot::get_instance() };
-    SerialConnectionTeensy* p_serial { ctbot.get_serial_usb_conn() };
+    CtBot& ctbot { CtBot::get_instance() };
+    arduino::SerialIO* p_serial { ctbot.get_serial_usb() };
 
     if (p_serial) {
-        const auto n { p_serial->send(reinterpret_cast<uint8_t*>(ptr), len) };
+        const auto n { p_serial->write(ptr, len) };
         p_serial->flush();
         return n;
     } else {
@@ -299,55 +299,30 @@ FLASHMEM uint8_t get_debug_led_pin() {
 }
 
 FLASHMEM void serialport_put(const char c) {
-    switch (ctbot::CtBotConfig::UART_FOR_CMD) {
-        case 0: ::Serial.print(c); break;
+    using namespace ctbot;
 
-        case 5: ::Serial5.print(c); break;
+    CtBot& ctbot { CtBot::get_instance() };
+    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
 
-#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-        case 7: ::Serial7.print(c); break;
-#endif
-
-        default: break;
+    if (p_serial) {
+        p_serial->write_direct(c);
+    } else {
+        arduino::Serial.write(c);
     }
 }
 
 FLASHMEM void serialport_flush() {
-    switch (ctbot::CtBotConfig::UART_FOR_CMD) {
-        case 0:
-            ::Serial.flush();
-            freertos::delay_ms(100);
-            break;
+    using namespace ctbot;
 
-        case 5:
-            while (::Serial5.availableForWrite() < 39) {
-#if defined ARDUINO_TEENSY35 || defined ARDUINO_TEENSY36
-                portDISABLE_INTERRUPTS();
-                uart4_status_isr();
-                portENABLE_INTERRUPTS();
-#endif
-#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-                portDISABLE_INTERRUPTS();
-                IRQHandler_Serial5();
-                portENABLE_INTERRUPTS();
-#endif
-            }
-            freertos::delay_ms(100);
-            break;
+    CtBot& ctbot { CtBot::get_instance() };
+    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
 
-#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-        case 7:
-            while (::Serial7.availableForWrite() < 39) {
-                portDISABLE_INTERRUPTS();
-                IRQHandler_Serial7();
-                portENABLE_INTERRUPTS();
-            }
-            freertos::delay_ms(100);
-            break;
-#endif
-
-        default: break;
+    if (p_serial) {
+        p_serial->flush_direct();
+    } else {
+        arduino::Serial.flush();
     }
+    freertos::delay_ms(100);
 }
 } // extern C
 

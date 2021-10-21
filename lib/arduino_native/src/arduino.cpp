@@ -24,6 +24,7 @@
 #include "arduino_freertos.h"
 #include "Wire.h"
 #include "SPI.h"
+#include "serial_posix.h"
 
 #include <chrono>
 #include <iostream>
@@ -203,6 +204,18 @@ HardwareSerial Serial5;
 HardwareSerial Serial6;
 HardwareSerial Serial7;
 HardwareSerial Serial8;
+
+namespace arduino::posix {
+SerialIOStreamAdapter Serial { arduino::Serial };
+SerialIOStreamAdapter Serial1 { arduino::Serial1 };
+SerialIOStreamAdapter Serial2 { arduino::Serial2 };
+SerialIOStreamAdapter Serial3 { arduino::Serial3 };
+SerialIOStreamAdapter Serial4 { arduino::Serial4 };
+SerialIOStreamAdapter Serial5 { arduino::Serial5 };
+SerialIOStreamAdapter Serial6 { arduino::Serial6 };
+SerialIOStreamAdapter Serial7 { arduino::Serial7 };
+SerialIOStreamAdapter Serial8 { arduino::Serial8 };
+} // namespace arduino::posix
 
 SPIClass SPI;
 SPIClass SPI1;

@@ -19,6 +19,7 @@
 #include "arduino_freertos.h"
 #include "AudioStream.h"
 #include "circular_buffer.h"
+#include "fr_stream_buffer.h"
 #include <string>
 #include <string_view>
 #include <cstdint>
@@ -59,7 +60,7 @@ private:
     std::thread* task_handle_;
     std::atomic<bool> task_running_;
     CircularBuffer<std::string*, TEXT_QUEUE_SIZE> text_queue_;
-    CircularBuffer<audio_block_t*, OUT_QUEUE_SIZE> out_queue_;
+    StreamBuffer<audio_block_t*, OUT_QUEUE_SIZE> out_queue_;
     audio_block_t* buffer_;
     size_t buffer_idx_;
     int16_t last_sample_;

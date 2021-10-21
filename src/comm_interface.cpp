@@ -25,9 +25,9 @@
 #include "comm_interface.h"
 #include "ctbot.h"
 #include "cmd_parser.h"
-#include "serial_connection_teensy.h"
 #include "timer.h"
 #include "scheduler.h"
+#include "serial_io.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -41,7 +41,7 @@ namespace ctbot {
 decltype(CommInterface::buffer_storage_) CommInterface::buffer_storage_;
 CommInterface::static_pool_t CommInterface::mem_pool_ { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
 
-CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_echo)
+CommInterface::CommInterface(arduino::SerialIO& io_connection, bool enable_echo)
     : io_ { io_connection }, echo_ { enable_echo }, error_ {}, p_input_ {}, output_queue_ { mem_pool_.try_allocate_array(
                                                                                 OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE) } {
     auto ptr { mem_pool_.try_allocate_array(INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE) };
@@ -53,11 +53,11 @@ CommInterface::CommInterface(SerialConnectionTeensy& io_connection, bool enable_
         p_input_ = p_input_buffer_->begin();
 
         input_task_ = CtBot::get_instance().get_scheduler()->task_add(
-            PSTR("commIN"), INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { return run_input(); });
+            PSTR("commIN"), INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { run_input(); });
     }
 
     output_task_ = CtBot::get_instance().get_scheduler()->task_add(
-        PSTR("commOUT"), OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { return run_output(); });
+        PSTR("commOUT"), OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { run_output(); });
 }
 
 CommInterface::~CommInterface() {
@@ -144,20 +144,27 @@ void CommInterface::flush() {
 }
 
 void CommInterface::run_output() {
+    using namespace std::chrono_literals;
+
     OutBufferElement element;
     while (output_queue_.try_pop(element)) {
         if (element.p_str_) {
-            io_.send(element.p_str_->c_str(), element.p_str_->length());
+            size_t written {};
+            while (true) { // FIXME: timeout?
+                written += io_.write(element.p_str_->c_str() + written, element.p_str_->length() - written, true);
+                if (written >= element.p_str_->length()) {
+                    break;
+                }
+                std::this_thread::sleep_for(1ms);
+            }
             delete element.p_str_;
         } else {
-            io_.send(&element.character_, sizeof(element.character_));
+            io_.write(&element.character_, sizeof(element.character_), true);
         }
     }
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(50ms);
 }
 
-CommInterfaceCmdParser::CommInterfaceCmdParser(SerialConnectionTeensy& io_connection, CmdParser& parser, bool enable_echo)
+CommInterfaceCmdParser::CommInterfaceCmdParser(arduino::SerialIO& io_connection, CmdParser& parser, bool enable_echo)
     : CommInterface { io_connection, enable_echo }, cmd_parser_ { parser }, history_view_ {} {
     cmd_parser_.set_echo(enable_echo);
 }
@@ -170,7 +177,7 @@ void CommInterfaceCmdParser::set_echo(bool value) {
 void CommInterfaceCmdParser::run_input() {
     while (io_.available()) {
         char c;
-        io_.receive(&c, 1);
+        io_.read(&c, 1);
 
         if (p_input_ >= p_input_buffer_->end()) {
             /* no buffer space left */
@@ -181,11 +188,12 @@ void CommInterfaceCmdParser::run_input() {
         if (c == '\n' || c == '\r') {
             if (io_.peek() == '\r' || io_.peek() == '\n' || io_.peek() == 0) {
                 char tmp;
-                io_.receive(&tmp, 1);
+                io_.read(&tmp, 1);
             }
             *p_input_ = 0;
             if (echo_) {
-                io_.send(PSTR("\r\n"), 2);
+                queue_debug_msg('\r', nullptr, false);
+                queue_debug_msg('\n', nullptr, false);
             }
             const std::string_view str { p_input_buffer_->begin(), static_cast<size_t>(p_input_ - p_input_buffer_->begin()) };
             cmd_parser_.parse(str, *this);
@@ -197,7 +205,9 @@ void CommInterfaceCmdParser::run_input() {
             if (p_input_ > p_input_buffer_->begin()) {
                 --p_input_;
                 if (echo_) {
-                    io_.send(PSTR("\b \b"), 3);
+                    queue_debug_msg('\b', nullptr, false);
+                    queue_debug_msg(' ', nullptr, false);
+                    queue_debug_msg('\b', nullptr, false);
                 }
             }
             continue;
@@ -206,7 +216,7 @@ void CommInterfaceCmdParser::run_input() {
             if (io_.peek() == 'A') {
                 /* UP */
                 char tmp;
-                io_.receive(&tmp, 1);
+                io_.read(&tmp, 1);
                 auto cmd { cmd_parser_.get_history(++history_view_) };
                 if (!cmd.empty()) {
                     update_line(cmd);
@@ -217,7 +227,7 @@ void CommInterfaceCmdParser::run_input() {
             } else if (io_.peek() == 'B') {
                 /* DOWN */
                 char tmp;
-                io_.receive(&tmp, 1);
+                io_.read(&tmp, 1);
                 if (history_view_ > 1) {
                     auto cmd { cmd_parser_.get_history(--history_view_) };
                     if (!cmd.empty()) {
@@ -236,22 +246,22 @@ void CommInterfaceCmdParser::run_input() {
         }
         *p_input_++ = c;
         if (echo_) {
-            io_.send(&c, 1);
+            queue_debug_msg(c, nullptr, false);
         }
     }
 }
 
 void CommInterfaceCmdParser::clear_line() {
-    io_.send("\r", 1);
+    queue_debug_msg('\r', nullptr, false);
     for (size_t i { 0 }; i < INPUT_BUFFER_SIZE; ++i) {
-        io_.send(" ", 1);
+        queue_debug_msg(' ', nullptr, false);
     }
-    io_.send("\r", 1);
+    queue_debug_msg('\r', nullptr, false);
 }
 
 void CommInterfaceCmdParser::update_line(const std::string_view& line) {
     clear_line();
-    io_.send(line);
+    debug_print(line, false);
 
     const size_t n { line.size() > INPUT_BUFFER_SIZE ? INPUT_BUFFER_SIZE : line.size() };
     std::strncpy(p_input_buffer_->begin(), line.data(), n);

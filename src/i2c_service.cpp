@@ -524,7 +524,7 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
             ret = (*p_transfer)->error;
             if (DEBUG_) {
                 (void) done;
-                printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(REG), done, ret);
+                printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(reg_addr), done, ret);
             }
             ::xTaskNotifyGive((*p_transfer)->caller);
         };
@@ -573,25 +573,25 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
                 if (DEBUG_) {
                     (void) p_transfer;
                     printf_debug(
-                        PSTR("I2C_Service::set_bit_internal<%u, %u>() write_callback done, err=%u\r\n"), sizeof(REG), sizeof(DATA), (*p_transfer)->error);
+                        PSTR("I2C_Service::set_bit_internal<%u, %u>() write_callback done, err=%u\r\n"), sizeof(reg), sizeof(DATA), (*p_transfer)->error);
                 }
                 transfer_done = true;
             });
 
             if (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_callback done, data=0x%x\r\n"), sizeof(REG), sizeof(DATA), data);
+                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_callback done, data=0x%x\r\n"), sizeof(reg), sizeof(DATA), data);
             }
         } else {
             ret = (*p_transfer)->error;
             if (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
+                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), ret);
             }
         }
     } };
 
     if (read_reg(addr, reg, data, read_callback)) {
         if (DEBUG_) {
-            printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(REG), sizeof(DATA));
+            printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(reg), sizeof(DATA));
         }
         return 10;
     }
@@ -603,7 +603,7 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
         if (ret) {
             // printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
         }
-        printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(0x%x, 0x%x, %u, %u) done\r\n"), sizeof(REG), sizeof(DATA), addr, reg, bit, value);
+        printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(0x%x, 0x%x, %u, %u) done\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit, value);
     }
 
     return ret;

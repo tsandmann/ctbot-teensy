@@ -28,6 +28,8 @@
 #include "WString.h"
 #include "Print.h"
 #include "Stream.h"
+#include "serial_io.h"
+#include "serial_posix.h"
 
 #include <cstdint>
 #include <atomic>

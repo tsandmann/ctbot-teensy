@@ -35,12 +35,14 @@
 #include "motor.h"
 #include "speed_control.h"
 #include "servo.h"
-#include "serial_connection_teensy.h"
 #include "help_texts.h"
 #include "cmd_parser.h"
 #include "cmd_script.h"
 #include "parameter_storage.h"
 #include "i2c_service.h"
+#include "serial_io.h"
+#include "serial_t3.h"
+#include "serial_t4.h"
 #include "tests.h"
 
 #include "timers.h"
@@ -110,8 +112,8 @@ FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
       p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {},
-      p_serial_usb_ { new SerialConnectionTeensy { 0, CtBotConfig::UART0_BAUDRATE } }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_parameter_ {},
-      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {}
+      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_parameter_ {}, p_audio_output_dac_ {}, p_audio_output_i2s_ {},
+      p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {}
 
 CtBot::~CtBot() {
     if (DEBUG) {
@@ -124,9 +126,6 @@ void CtBot::stop() {
 }
 
 __attribute__((noinline, used)) void terminate_handler() {
-    // volatile uint8_t* ptr { reinterpret_cast<uint8_t*>(1) };
-    // *ptr = 0;
-    // portINSTR_SYNC_BARRIER();
     configASSERT(0);
 }
 
@@ -156,9 +155,14 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
     if (CtBotConfig::UART_FOR_CMD != 0) {
-        p_serial_wifi_ = new SerialConnectionTeensy { CtBotConfig::UART_FOR_CMD, CtBotConfig::UART_WIFI_PIN_RX, CtBotConfig::UART_WIFI_PIN_TX,
-            CtBotConfig::UART_WIFI_BAUDRATE };
+        p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_FOR_CMD);
         configASSERT(p_serial_wifi_);
+        p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
+        p_serial_wifi_->setTX(CtBotConfig::UART_WIFI_PIN_TX);
+        if (!p_serial_wifi_->begin(CtBotConfig::UART_WIFI_BAUDRATE, 0, 64, 256)) {
+            p_comm_->debug_print(PSTR("p_serial_wifi_->begin() failed.\r\n"), true);
+        }
+
         p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
         if (CrashReport) {
             p_serial_wifi_->get_stream().print(CrashReport);
@@ -344,7 +348,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         },
         false);
 
-    p_comm_->debug_print(PSTR("\r\n*** c't-Bot init done. ***\r\n\nType \"help\" (or \"h\") to print help message\r\n\n"), true);
+    p_comm_->debug_print(PSTR("\r\n*** ct-Bot init done. Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". ***\r\n"), true);
+    p_comm_->flush();
+    p_comm_->debug_print(PSTR("\r\nType \"help\" (or \"h\") to print help message.\r\n\n"), true);
     p_comm_->flush();
 
     ready_ = set_ready;
@@ -701,7 +707,7 @@ FLASHMEM void CtBot::init_parser() {
             p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
             int32_t value {};
-            std::from_chars(val.cbegin(), std::prev(val.cend()), value);
+            std::from_chars(val.cbegin(), val.cend(), value);
             p_comm_->debug_printf<true>(PP_ARGS("value={}\r\n", value));
 
             p_parameter_->set<int32_t>(key, value);
@@ -814,7 +820,9 @@ FLASHMEM void CtBot::init_parser() {
         return true;
     });
 
-    p_parser_->register_cmd(PSTR("crash"), [](const std::string_view&) {
+    p_parser_->register_cmd(PSTR("crash"), [this](const std::string_view&) {
+        get_serial_cmd()->write_direct('\r');
+        get_serial_cmd()->write_direct('\n');
         volatile uint8_t* ptr { reinterpret_cast<uint8_t*>(1) };
         *ptr = 0;
         portINSTR_SYNC_BARRIER();
@@ -1169,10 +1177,6 @@ FLASHMEM void CtBot::shutdown() {
     if (DEBUG) {
         ::serialport_puts(PSTR("p_comm_ deleted."));
     }
-    delete p_serial_wifi_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_serial_wifi_ deleted."));
-    }
     delete p_parser_;
     if (DEBUG) {
         ::serialport_puts(PSTR("p_parser_ deleted."));
@@ -1180,11 +1184,6 @@ FLASHMEM void CtBot::shutdown() {
     delete p_scheduler_;
     if (DEBUG) {
         ::serialport_puts(PSTR("p_scheduler_ deleted."));
-    }
-    delete p_serial_usb_;
-    p_serial_usb_ = nullptr;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_serial_usb_ deleted."));
     }
 
     free_rtos_std::gthr_freertos::set_next_stacksize(384);

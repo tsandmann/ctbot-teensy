@@ -53,8 +53,9 @@ namespace ctbot {
  *  skinparam classAttributeIconSize 0
  * @enduml
  */
-class ParameterStorage {
-    // FIXME: add documentation
+class ParameterStorage { // FIXME: add documentation
+    static constexpr bool DEBUG_ { false };
+
 protected:
     FS& fs_;
     const std::string config_file_;

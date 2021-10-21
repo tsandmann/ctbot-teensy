@@ -26,7 +26,6 @@
 
 #include "encoder.h"
 #include "motor.h"
-#include "serial_connection_teensy.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -35,6 +34,10 @@
 
 
 class Pid;
+
+namespace arduino {
+class SerialIO;
+}
 
 namespace ctbot {
 
@@ -162,8 +165,7 @@ public:
 
 class SpeedControlPico : public SpeedControlBase {
     static std::list<SpeedControlPico*> controller_list_;
-    static SerialConnectionTeensy serial_;
-    static uint8_t rx_buffer_[8192];
+    static arduino::SerialIO& serial_;
 
     float enc_speed_; // mm/s
 

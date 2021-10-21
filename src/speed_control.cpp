@@ -26,6 +26,9 @@
 #include "ctbot.h"
 #include "scheduler.h"
 #include "timer.h"
+#include "serial_io.h"
+#include "serial_t3.h"
+#include "serial_t4.h"
 
 #include "pid_v1.h"
 #include "crc32.h"
@@ -100,14 +103,15 @@ void SpeedControl::controller() {
 
 
 std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
-SerialConnectionTeensy SpeedControlPico::serial_ { 6, 2'000'000UL };
-uint8_t SpeedControlPico::rx_buffer_[8192];
+arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(6) };
 
 SpeedControlPico::SpeedControlPico() : enc_speed_ {} {
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        Serial6.addMemoryForRead(rx_buffer_, sizeof(rx_buffer_));
+        serial_.setRX(25);
+        serial_.setTX(24);
+        serial_.begin(2'000'000UL, 0, 8192, 64);
         CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 2048UL, &controller);
     }
 }
@@ -127,17 +131,17 @@ void SpeedControlPico::controller() {
     auto ptr { reinterpret_cast<const uint8_t*>(&speed_data) };
     speed_data.crc = CRC32::calculate(ptr, sizeof(speed_data) - sizeof(speed_data.crc));
 
-    serial_.send(&speed_data, sizeof(speed_data));
+    serial_.write(&speed_data, sizeof(speed_data));
 
     while (serial_.available() >= sizeof(EncData)) {
         if (serial_.peek() != 0xaa) {
             uint8_t tmp;
-            serial_.receive(&tmp, 1);
+            serial_.read(&tmp, 1);
             continue;
         }
 
         EncData enc_data;
-        serial_.receive(&enc_data, sizeof(EncData));
+        serial_.read(&enc_data, sizeof(EncData));
         auto ptr { reinterpret_cast<const uint8_t*>(&enc_data) };
         const auto checksum { CRC32::calculate(ptr, sizeof(enc_data) - sizeof(enc_data.crc)) };
         if (checksum == enc_data.crc) {
