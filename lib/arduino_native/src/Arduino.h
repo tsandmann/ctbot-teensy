@@ -33,24 +33,23 @@
 
 #include <cstdint>
 #include <atomic>
-#include <thread>
-#include <mutex>
-#include <memory>
 #include <deque>
+#include <pthread.h>
 
 
 class StdinOutWrapper : public Stream {
 protected:
     std::atomic<bool> recv_running_;
+    pthread_t p_in_thread_;
+    pthread_mutex_t in_buffer_mutex_;
     std::deque<char> in_buffer_;
-    std::unique_ptr<std::thread> p_in_thread_;
-    std::mutex in_mutex_;
 
 public:
     StdinOutWrapper();
     ~StdinOutWrapper();
 
     virtual void begin(uint32_t);
+    virtual void end();
 
     virtual int available() override;
     virtual int peek() override;

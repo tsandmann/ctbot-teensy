@@ -45,6 +45,8 @@ class CommInterface;
  * @enduml
  */
 class Task {
+    static constexpr uint8_t DEBUG_LEVEL_ { 2 };
+
     friend class Scheduler;
 
 public:

@@ -92,7 +92,7 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
 
         sock_.async_connect(endpoint_it_->endpoint(), boost::bind(&SimConnection::handle_connect, this, boost::asio::placeholders::error));
 
-        while (true) {
+        while (CtBot::get_instance().get_ready()) {
             io_service_.poll();
             std::this_thread::sleep_for(1ms);
         }

@@ -57,6 +57,8 @@ class CommInterface;
  * @enduml
  */
 class Scheduler {
+    static constexpr uint8_t DEBUG_LEVEL_ { 2 };
+
 protected:
     static constexpr uint8_t DEFAULT_PRIORITY { 4 };
     static constexpr uint32_t DEFAULT_STACK_SIZE { 2 * 1024 }; // byte

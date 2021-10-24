@@ -116,8 +116,8 @@ FLASHMEM CtBot::CtBot()
       p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_lua_ {} {}
 
 CtBot::~CtBot() {
-    if (DEBUG) {
-        ::serialport_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance.\r\n"));
     }
 }
 
@@ -130,27 +130,37 @@ __attribute__((noinline, used)) void terminate_handler() {
 }
 
 FLASHMEM void CtBot::setup(const bool set_ready) {
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup()...\r\n"));
+    }
     std::set_terminate(terminate_handler);
     std::atexit([]() FLASHMEM {
-        if (DEBUG) {
-            ::serialport_puts(PSTR("exit()"));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("exit() called.\r\n"));
         }
 
         CtBot* ptr = &get_instance();
         delete ptr;
 
-        if (DEBUG) {
-            ::serialport_puts(PSTR("exit(): stopping scheduler, bye."));
+        if (DEBUG_LEVEL_ > 0) {
+            ::serialport_puts(PSTR("exit(): stopping scheduler, bye.\r\n"));
         }
 
         Scheduler::stop();
     });
 
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): creating scheduler...\r\n"));
+    }
     p_scheduler_ = new Scheduler;
     task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
     p_scheduler_->task_register(PSTR("Tmr Svc"), true);
     p_scheduler_->task_register(PSTR("YIELD"));
     p_scheduler_->task_register(PSTR("EVENT"));
+
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): tasks registered.\r\n"));
+    }
 
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
@@ -174,25 +184,44 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         }
     }
     configASSERT(p_comm_);
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): comm services inited.\r\n"));
+    }
 
     p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS, CtBotConfig::ENA_I2C_ADDR,
         CtBotConfig::ENA_I2C_BUS == 0 ?
             CtBotConfig::I2C0_FREQ :
             (CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
     configASSERT(p_ena_);
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): ENA created.\r\n"));
+    }
     p_ena_pwm_ = new LedsI2cEna { CtBotConfig::ENA_PWM_I2C_BUS, CtBotConfig::ENA_PWM_I2C_ADDR,
         CtBotConfig::ENA_PWM_I2C_BUS == 0 ?
             CtBotConfig::I2C0_FREQ :
             (CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ :
                                                  (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
     configASSERT(p_ena_pwm_);
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): ENA PWM created.\r\n"));
+    }
     p_ena_pwm_->set_pwm(LedTypesEna::ENC_L | LedTypesEna::ENC_R, 128);
     p_ena_pwm_->off(LedTypesEna::ENC_L | LedTypesEna::ENC_R);
     p_ena_pwm_->on(LedTypesEna::ENC_L | LedTypesEna::ENC_R);
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): ENA inited.\r\n"));
+    }
 
     p_sensors_ = new Sensors { *this };
     configASSERT(p_sensors_);
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): sensors created.\r\n"));
+    }
+
     p_sensors_->enable_sensors();
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): sensors enabled.\r\n"));
+    }
 
 
     if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
@@ -226,6 +255,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         arduino::digitalWriteFast(CtBotConfig::TFT_BACKLIGHT_PIN, true);
     }
 
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): SD-card init...\r\n"));
+    }
     if (CtBotConfig::SDCARD_AVAILABLE) {
         if (SD.sdfs.begin(SdioConfig(CtBotConfig::SDCARD_USE_DMA ? DMA_SDIO : FIFO_SDIO))) {
             p_parameter_ = new ParameterStorage { SD, PSTR("ctbot.jsn") };
@@ -234,6 +266,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             p_comm_->debug_print(PSTR("SD.sdfs.begin() failed.\r\n"), true);
         }
     }
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): SD-card init done.\r\n"));
+    }
+
 
     if (CtBotConfig::AUDIO_AVAILABLE) {
         portENTER_CRITICAL();
@@ -323,6 +359,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 
     init_parser();
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup(): init_parser() done.\r\n"));
+    }
 
     add_post_hook(
         PSTR("task"),
@@ -354,6 +393,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_comm_->flush();
 
     ready_ = set_ready;
+
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBot::setup() done.\r\n"));
+    }
 }
 
 FLASHMEM void CtBot::init_parser() {
@@ -1088,114 +1131,108 @@ FLASHMEM void CtBot::shutdown() {
     if (CtBotConfig::AUDIO_AVAILABLE) {
         if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
             delete p_audio_sine_;
-            if (DEBUG) {
-                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_sine_ deleted."));
+            if (DEBUG_LEVEL_ > 1) {
+                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_sine_ deleted.\r\n"));
             }
         }
         p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("audio")));
-        if (DEBUG) {
-            ::serialport_puts(PSTR("CtBot::shutdown(): audio task removed."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("CtBot::shutdown(): audio task removed.\r\n"));
         }
         for (auto& e : p_audio_conn_) {
             delete e;
         }
-        if (DEBUG) {
-            ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_conn_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_conn_ deleted.\r\n"));
         }
 
         for (auto& e : p_audio_mixer_) {
             delete e;
         }
-        if (DEBUG) {
-            ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_mixer_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_mixer_ deleted.\r\n"));
         }
 
         if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
             delete p_audio_output_i2s_;
-            if (DEBUG) {
-                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_i2s_ deleted."));
+            if (DEBUG_LEVEL_ > 1) {
+                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_i2s_ deleted.\r\n"));
             }
         }
         if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
             delete p_audio_output_dac_;
-            if (DEBUG) {
-                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_dac_ deleted."));
+            if (DEBUG_LEVEL_ > 1) {
+                ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_dac_ deleted.\r\n"));
             }
         }
 
         delete p_tts_;
-        if (DEBUG) {
-            ::serialport_puts(PSTR("CtBot::shutdown(): p_tts_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("CtBot::shutdown(): p_tts_ deleted.\r\n"));
         }
 
         delete p_play_wav_;
-        if (DEBUG) {
-            ::serialport_puts(PSTR("CtBot::shutdown(): p_play_wav_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("CtBot::shutdown(): p_play_wav_ deleted.\r\n"));
         }
     }
 
     delete p_parameter_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_parameter_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_parameter_ deleted.\r\n"));
     }
     if (CtBotConfig::TFT_AVAILABLE) {
         delete p_tft_;
-        if (DEBUG) {
-            ::serialport_puts(PSTR("p_tft_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("p_tft_ deleted.\r\n"));
         }
     }
     if (CtBotConfig::LCD_AVAILABLE) {
         delete p_lcd_;
-        if (DEBUG) {
-            ::serialport_puts(PSTR("p_lcd_ deleted."));
+        if (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("p_lcd_ deleted.\r\n"));
         }
     };
     delete p_leds_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_leds_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_leds_ deleted.\r\n"));
     }
     delete p_servos_[0];
     delete p_servos_[1];
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_servos_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_servos_ deleted.\r\n"));
     }
     delete p_speedcontrols_[0];
     delete p_speedcontrols_[1];
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_speedcontrols_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_speedcontrols_ deleted.\r\n"));
     }
     delete p_motors_[0];
     delete p_motors_[1];
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_motors_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_motors_ deleted.\r\n"));
     }
     delete p_sensors_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_sensors_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_sensors_ deleted.\r\n"));
     }
     delete p_comm_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_comm_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_comm_ deleted.\r\n"));
     }
     delete p_parser_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_parser_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_parser_ deleted.\r\n"));
     }
     delete p_scheduler_;
-    if (DEBUG) {
-        ::serialport_puts(PSTR("p_scheduler_ deleted."));
+    if (DEBUG_LEVEL_ > 1) {
+        ::serialport_puts(PSTR("p_scheduler_ deleted.\r\n"));
     }
 
-    free_rtos_std::gthr_freertos::set_next_stacksize(384);
-    auto p_exit_thread { std::make_unique<std::thread>([]() { std::exit(0); }) };
-    free_rtos_std::gthr_freertos::set_name(p_exit_thread.get(), PSTR("EXIT"));
-    free_rtos_std::gthr_freertos::set_priority(p_exit_thread.get(), 9);
+    ::vTaskPrioritySet(nullptr, 2);
+    xTaskCreate([](void*) { std::exit(0); }, PSTR("EXIT"), 512, nullptr, 1, nullptr);
 
-    ::vTaskPrioritySet(nullptr, 1);
-    ::vTaskDelay(1);
-
-    while (true) {
-    }
+    ::vTaskDelete(nullptr);
 }
 
 FLASHMEM void CtBot::add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active) {

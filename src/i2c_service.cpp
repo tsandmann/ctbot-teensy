@@ -326,7 +326,7 @@ uint8_t I2C_Service::read_reg(
 
     if (!callback) {
         while (!transfer_done) { // FIXME: timeout?
-            portYIELD();
+            ::vTaskDelay(1);
         }
         if (DEBUG_) {
             // printf_debug(PSTR("I2C_Service::read_reg<%u, %u>(): done, ret=%u, data=%u\r\n"), sizeof(REG), sizeof(DATA), ret, data);
@@ -456,7 +456,7 @@ uint8_t I2C_Service::write_reg(
 
     if (!callback) {
         while (!transfer_done) { // FIXME: timeout?
-            portYIELD();
+            ::vTaskDelay(1);
         }
         if (DEBUG_) {
             // printf_debug(PSTR("I2C_Service::write_reg<%u, %u>(): done, ret=%u\r\n"), sizeof(reg), sizeof(data), ret);
@@ -597,7 +597,7 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
     }
 
     while (!transfer_done) { // FIXME: timeout?
-        portYIELD();
+        ::vTaskDelay(1);
     }
     if (DEBUG_) {
         if (ret) {

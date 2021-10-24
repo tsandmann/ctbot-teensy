@@ -26,6 +26,9 @@
 #include "ctbot.h"
 #include "timer.h"
 #include "comm_interface.h"
+#include "serial_io.h"
+#include "serial_t3.h"
+#include "serial_t4.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"
@@ -48,17 +51,23 @@ Scheduler::Scheduler() : next_id_ {} {
 }
 
 Scheduler::~Scheduler() {
-    // ::serialport_puts("Scheduler::~Scheduler() entered.");
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("Scheduler::~Scheduler() entered.\r\n"));
+    }
     enter_critical_section();
     for (auto& t : tasks_) {
         if (t.second->name_ != PSTR("main")) {
-            // arduino::Serial.print("Scheduler::~Scheduler(): task 0x");
-            // arduino::Serial.print(t.second->id_, 16);
-            // arduino::Serial.print(" @ 0x");
-            // arduino::Serial.print(reinterpret_cast<uintptr_t>(t.second), 16);
-            // arduino::Serial.print(" will be blocked...");
+            if (DEBUG_LEVEL_ > 3) {
+                ::serialport_puts(PSTR("Scheduler::~Scheduler(): task "));
+                ::serialport_puts(std::to_string(t.second->id_).c_str());
+                ::serialport_puts(PSTR(" @ "));
+                ::serialport_puts(std::to_string(reinterpret_cast<uintptr_t>(t.second)).c_str()); // FIXME: print as hex
+                ::serialport_puts(PSTR(" will be blocked..."));
+            }
             t.second->state_ = 0;
-            // arduino::Serial.println(" done.");
+            if (DEBUG_LEVEL_ > 3) {
+                ::serialport_puts(PSTR(" done.\r\n"));
+            }
         } else {
 #ifdef __arm__
             p_main_task_ = t.second->handle_.p_thread->native_handle().get_native_handle();
@@ -66,45 +75,80 @@ Scheduler::~Scheduler() {
         }
     }
     exit_critical_section();
-    // ::serialport_puts("Scheduler::~Scheduler(): all tasks blocked.");
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("Scheduler::~Scheduler(): all tasks blocked.\r\n"));
+    }
 
     for (auto& t : tasks_) {
         if (t.second->name_ != PSTR("main") && t.second->name_ != PSTR("YIELD")) {
-            // arduino::Serial.print("Scheduler::~Scheduler(): task \"");
-            // arduino::Serial.print(t.second->name_.c_str());
-            // arduino::Serial.println("\" will be deleted...");
-            // arduino::Serial.flush();
+            if (DEBUG_LEVEL_ > 3) {
+                ::serialport_puts(PSTR("Scheduler::~Scheduler(): task \""));
+                ::serialport_puts(t.second->name_.c_str());
+                ::serialport_puts("\" will be deleted...\r\n");
+            }
             delete t.second;
-            freertos::delay_ms(20); // FIXME: needed?
-            // arduino::Serial.println("Scheduler::~Scheduler(): task delete done.");
-            // arduino::Serial.flush();
+            freertos::delay_ms(20); // FIXME: necessary to wait here?
+            if (DEBUG_LEVEL_ > 3) {
+                ::serialport_puts("Scheduler::~Scheduler(): task delete done.\r\n");
+            }
         }
     }
-    // ::serialport_puts("Scheduler::~Scheduler(): all tasks deleted.");
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("Scheduler::~Scheduler(): all tasks deleted.\r\n"));
+    }
 }
 
 void Scheduler::stop() {
-    // ::serialport_puts("Scheduler::stop()");
-    if (p_main_task_) {
-        ::vTaskSuspend(p_main_task_);
-        // ::serialport_puts("Scheduler::stop(): vTaskSuspend(p_main_task_) done.");
-        ::vTaskDelete(p_main_task_);
-        // ::serialport_puts("Scheduler::stop(): vTaskDelete(p_main_task_) done.");
+    auto& serial { arduino::get_serial(CtBotConfig::UART_FOR_CMD) };
+    if (DEBUG_LEVEL_ > 2) {
+        serial.write_direct(PSTR("Scheduler::stop()\r\n"));
     }
 
-    // size_t num_tasks { ::uxTaskGetNumberOfTasks() };
-    // std::vector<TaskStatus_t> task_data;
-    // task_data.resize(num_tasks);
-    // num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, nullptr);
-    // arduino::Serial.print("number of tasks: ");
-    // arduino::Serial.println(num_tasks, 10);
-    // for (uint8_t i {}; i < num_tasks; ++i) {
-    //     arduino::Serial.println(task_data[i].pcTaskName);
-    // }
+    if (p_main_task_) {
+        if (DEBUG_LEVEL_ > 2) {
+            serial.write_direct(PSTR("Scheduler::stop(): p_main_task has to be deleted...\r\n"));
+        }
 
-    freertos::print_ram_usage();
-    // arduino::Serial.print("free stack: ");
-    // arduino::Serial.println(::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t), 10);
+        ::vTaskSuspend(p_main_task_);
+        if (DEBUG_LEVEL_ > 2) {
+            serial.write_direct(PSTR("Scheduler::stop(): vTaskSuspend(p_main_task_) done.\r\n"));
+        }
+
+        ::vTaskDelete(p_main_task_);
+        if (DEBUG_LEVEL_ > 2) {
+            serial.write_direct(PSTR("Scheduler::stop(): vTaskDelete(p_main_task_) done.\r\n"));
+        }
+    }
+
+    if (DEBUG_LEVEL_ > 2) {
+        freertos::print_ram_usage();
+        serial.write_direct(PSTR("free stack: "));
+        serial.write_direct(std::to_string(::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t)).c_str());
+        serial.write_direct(PSTR("\r\n"));
+    }
+
+#ifdef CTBOT_SIMULATION
+    if (DEBUG_LEVEL_ > 2) {
+        size_t num_tasks { ::uxTaskGetNumberOfTasks() };
+        std::vector<TaskStatus_t> task_data { num_tasks };
+        uint32_t total_runtime;
+        num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
+        for (size_t i {}; i < num_tasks; ++i) {
+            serial.write_direct(PSTR("Task \""));
+            serial.write_direct(task_data.at(i).pcTaskName);
+            serial.write_direct(PSTR("\" ("));
+            serial.write_direct(std::to_string(task_data.at(i).uxCurrentPriority).c_str());
+            serial.write_direct(PSTR(") in state "));
+            serial.write_direct(std::to_string(task_data.at(i).eCurrentState).c_str());
+            serial.write_direct(PSTR("\r\n"));
+        }
+    }
+    arduino::Serial.end();
+#endif // CTBOT_SIMULATION
+
+    if (DEBUG_LEVEL_ > 1) {
+        serial.write_direct(PSTR("Scheduler::stop(): calling vTaskEndScheduler()...\r\n"));
+    }
     ::vTaskEndScheduler();
 }
 
@@ -180,13 +224,17 @@ uint16_t Scheduler::task_register(TaskHandle_t task, const bool external) {
 }
 
 bool Scheduler::task_remove(const uint16_t task_id) {
-    // ::serialport_puts("Scheduler::task_remove():");
+    if (DEBUG_LEVEL_ > 3) {
+        ::serialport_puts(PSTR("Scheduler::task_remove():\r\n"));
+    }
 
     Task* p_task;
     {
         std::unique_lock<std::mutex> lock(task_mutex_);
         if (tasks_.count(task_id)) {
-            // ::serialport_puts("Scheduler::task_remove(): task_id found.");
+            if (DEBUG_LEVEL_ > 3) {
+                ::serialport_puts(PSTR("Scheduler::task_remove(): task_id found.\r\n"));
+            }
             p_task = tasks_[task_id];
             tasks_.erase(task_id);
         } else {
@@ -195,7 +243,9 @@ bool Scheduler::task_remove(const uint16_t task_id) {
     }
     delete p_task;
 
-    // ::serialport_puts("Scheduler::task_remove() done.");
+    if (DEBUG_LEVEL_ > 3) {
+        ::serialport_puts(PSTR("Scheduler::task_remove() done.\r\n"));
+    }
     return true;
 }
 

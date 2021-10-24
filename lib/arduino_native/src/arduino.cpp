@@ -31,10 +31,14 @@
 #include <vector>
 #include <string>
 #include <limits>
+#include <thread>
+#include <cstdlib>
 #include <unistd.h>
+#include <signal.h>
 #include <termios.h>
-#include <poll.h>
 
+
+static struct termios t_old;
 
 namespace arduino {
 static auto g_start_time { std::chrono::high_resolution_clock::now() };
@@ -119,63 +123,110 @@ void attachInterruptVector(uint8_t irq, void (*function)(void)) {
 
 void software_isr() {}
 
-StdinOutWrapper::StdinOutWrapper() : recv_running_ {} {}
+StdinOutWrapper::StdinOutWrapper() : recv_running_ {}, p_in_thread_ { 0 } {}
 
 StdinOutWrapper::~StdinOutWrapper() {
-    if (recv_running_) {
-        recv_running_ = false;
-        p_in_thread_->join();
-    }
+    end();
 }
 
 void StdinOutWrapper::begin(uint32_t) {
+    // std::cout << "StdinOutWrapper::begin()\n";
+    pthread_mutex_init(&in_buffer_mutex_, nullptr);
     recv_running_ = true;
-    p_in_thread_ = std::make_unique<std::thread>([this]() {
-        while (recv_running_) {
-            if (key_pressed(100)) {
-                std::string line;
-                std::getline(std::cin, line); // FIXME: use ncurses?
-                line += '\n';
-                std::lock_guard<std::mutex> lck(in_mutex_);
-                std::copy(line.begin(), line.end(), std::inserter(in_buffer_, in_buffer_.end()));
+
+    pthread_create(
+        &p_in_thread_, nullptr,
+        [](void* ptr) -> void* {
+            StdinOutWrapper* p_this { reinterpret_cast<StdinOutWrapper*>(ptr) };
+
+            sigset_t set;
+            sigfillset(&set);
+            pthread_sigmask(SIG_SETMASK, &set, nullptr);
+
+            signal(SIGINT, [](int) {
+                tcsetattr(1, TCSANOW, &t_old);
+                _exit(1);
+            });
+
+            struct termios t;
+            tcgetattr(1, &t);
+            t_old = t;
+            t.c_lflag &= (~ECHO & ~ICANON);
+            t.c_cc[VMIN] = 0;
+            t.c_cc[VTIME] = 1;
+            tcsetattr(1, TCSANOW, &t);
+            std::atexit([]() { tcsetattr(1, TCSANOW, &t_old); });
+
+            while (p_this->recv_running_) {
+                char buf;
+                if (::read(1, &buf, 1) > 0) {
+                    const char c { static_cast<char>(buf) };
+                    pthread_mutex_lock(&p_this->in_buffer_mutex_);
+                    p_this->in_buffer_.push_back(c);
+                    pthread_mutex_unlock(&p_this->in_buffer_mutex_);
+                }
             }
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(100ms);
-        }
-        std::cout << "StdinOutWrapper::StdinOutWrapper(): recv thread finished.\n";
-    });
+
+            tcsetattr(1, TCSANOW, &t_old);
+
+            // std::cout << "StdinOutWrapper::begin(): recv thread finished.\n";
+            return nullptr;
+        },
+        this);
+
+    // std::cout << "StdinOutWrapper::begin() done.\n";
+}
+
+void StdinOutWrapper::end() {
+    // std::cout << "StdinOutWrapper::end()...\n";
+
+    recv_running_ = false;
+    if (p_in_thread_) {
+        pthread_join(p_in_thread_, nullptr);
+        p_in_thread_ = 0;
+    }
+
+    // std::cout << "StdinOutWrapper::end() done.\n";
 }
 
 int StdinOutWrapper::available() {
-    std::lock_guard<std::mutex> lck(in_mutex_);
     return in_buffer_.size();
 }
 
 int StdinOutWrapper::peek() {
-    std::lock_guard<std::mutex> lck(in_mutex_);
     if (in_buffer_.size()) {
-        return in_buffer_.front();
+        return static_cast<int>(in_buffer_.front());
     }
     return -1;
 }
 
 int StdinOutWrapper::read() {
     int ret { -1 };
-    std::lock_guard<std::mutex> lck(in_mutex_);
+
     if (in_buffer_.size()) {
         ret = static_cast<int>(in_buffer_.front());
+        pthread_mutex_lock(&in_buffer_mutex_);
         in_buffer_.pop_front();
+        pthread_mutex_unlock(&in_buffer_mutex_);
     }
     return ret;
 }
 
 size_t StdinOutWrapper::write(const uint8_t data) {
-    std::cout << static_cast<char>(data);
+    sigset_t set, old;
+    sigfillset(&set);
+    pthread_sigmask(SIG_SETMASK, &set, &old);
+    ::write(1, &data, 1);
+    pthread_sigmask(SIG_SETMASK, &old, nullptr);
     return 1;
 }
 
 size_t StdinOutWrapper::write(const uint8_t* buffer, size_t length) {
-    std::cout.write(reinterpret_cast<const char*>(buffer), length);
+    sigset_t set, old;
+    sigfillset(&set);
+    pthread_sigmask(SIG_SETMASK, &set, &old);
+    ::write(1, buffer, length);
+    pthread_sigmask(SIG_SETMASK, &old, nullptr);
     return length;
 }
 
@@ -183,16 +234,7 @@ int StdinOutWrapper::availableForWrite() {
     return std::numeric_limits<int>::max();
 }
 
-void StdinOutWrapper::flush() {
-    std::cout.flush();
-}
-
-bool StdinOutWrapper::key_pressed(uint32_t timeout_ms) {
-    struct pollfd pls[1];
-    pls[0].fd = STDIN_FILENO;
-    pls[0].events = POLLIN | POLLPRI;
-    return ::poll(pls, 1, timeout_ms) > 0;
-}
+void StdinOutWrapper::flush() {}
 
 
 StdinOutWrapper Serial;

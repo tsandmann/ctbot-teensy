@@ -42,6 +42,8 @@ public:
 
     LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t En, uint8_t Rw, uint8_t Rs, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7);
 
+    virtual ~LiquidCrystal_I2C() = default;
+
     virtual bool begin(uint8_t cols, uint8_t rows);
 
     virtual void send(uint8_t value, uint8_t mode);

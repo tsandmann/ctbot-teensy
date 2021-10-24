@@ -25,6 +25,7 @@
 #pragma once
 
 #include "serial_io.h"
+#include "ctbot_config.h"
 
 
 #ifdef CTBOT_SIMULATION
@@ -42,6 +43,10 @@ extern SerialIOStreamAdapter Serial8;
 } // namespace posix
 
 static inline constexpr SerialIO& get_serial(const uint8_t port) {
+    if (port == ctbot::CtBotConfig::UART_FOR_CMD) {
+        return arduino::posix::Serial;
+    }
+
     if (port == 1) {
         return arduino::posix::Serial1;
     } else if (port == 2) {
@@ -54,9 +59,13 @@ static inline constexpr SerialIO& get_serial(const uint8_t port) {
         return arduino::posix::Serial5;
     } else if (port == 6) {
         return arduino::posix::Serial6;
-    } else {
-        return arduino::posix::Serial;
+    } else if (port == 7) {
+        return arduino::posix::Serial7;
+    } else if (port == 8) {
+        return arduino::posix::Serial8;
     }
+
+    return arduino::posix::Serial;
 }
 } // namespace arduino
 #endif // CTBOT_SIMULATION

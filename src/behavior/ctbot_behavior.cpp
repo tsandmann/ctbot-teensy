@@ -58,6 +58,9 @@ const char CtBotBehavior::usage_text_beh[] { "\r\n"
 CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
 
 void CtBotBehavior::setup(const bool set_ready) {
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBotBehavior::setup()...\r\n"));
+    }
     CtBot::setup(false);
 
     p_parser_->register_cmd(PSTR("help"), 'h', [this](const std::string_view&) FLASHMEM {
@@ -213,6 +216,10 @@ void CtBotBehavior::setup(const bool set_ready) {
 
     ready_ = set_ready;
     beh_enabled_ = true;
+
+    if (DEBUG_LEVEL_ > 2) {
+        ::serialport_puts(PSTR("CtBotBehavior::setup() done.\r\n"));
+    }
 }
 
 void CtBotBehavior::add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh) {

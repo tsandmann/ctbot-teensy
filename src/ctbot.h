@@ -78,7 +78,7 @@ class ParameterStorage;
  */
 class CtBot {
 protected:
-    static constexpr bool DEBUG { false };
+    static constexpr uint8_t DEBUG_LEVEL_ { 1 };
 
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
     static constexpr uint8_t TASK_PRIORITY { 7 };

@@ -98,6 +98,12 @@ public:
 
     virtual void write_direct(const uint8_t c) const = 0;
 
+    void write_direct(const std::string_view& str) const {
+        for (const auto& c : str) {
+            write_direct(c);
+        }
+    }
+
     virtual void flush() const = 0;
 
     virtual void flush_direct() const = 0;
@@ -155,7 +161,7 @@ public:
 
     virtual void write_direct(const uint8_t c) const override {
         stream_.write(c);
-        stream_.flush();
+        flush_direct();
     }
 
     virtual void flush() const override {

@@ -33,6 +33,7 @@
 
 #include <thread>
 #include <memory>
+#include <cstring>
 
 
 static constexpr bool DEBUG { false };
@@ -50,14 +51,14 @@ tests::TaskWaitTest* g_wait_test {};
 } // namespace ctbot
 
 #ifndef EXC_PRINTF
-#define EXC_PRINTF(...) ::printf(__VA_ARGS__)
+#define EXC_PRINTF(...) ::serialport_puts(__VA_ARGS__)
 #endif
 
 /**
  * @brief Task to initialize everything
  * @note This task is suspended forever after initialization is done.
  */
-static FLASHMEM void init_task() {
+static FLASHMEM void init_task(void*) {
     using namespace ctbot;
 
     /* wait for USB device enumeration, terminal program connection, etc. */
@@ -141,7 +142,6 @@ static FLASHMEM void init_task() {
     }
 
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
-    ::vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
 
     if (DEBUG) {
         EXC_PRINTF(PSTR("deleting init task...\r\n"));
@@ -249,15 +249,12 @@ FLASHMEM __attribute__((noinline)) void setup() {
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
     if (DEBUG) {
-        printf_debug(PSTR("setup(): setting up init task...\r\n"));
+        EXC_PRINTF(PSTR("setup(): setting up init task...\r\n"));
     }
-    const auto last { free_rtos_std::gthr_freertos::set_next_stacksize(4096) };
-    auto p_init_thread { std::make_unique<std::thread>([]() { init_task(); }) };
-    free_rtos_std::gthr_freertos::set_name(p_init_thread.get(), PSTR("INIT"));
-    free_rtos_std::gthr_freertos::set_next_stacksize(last);
+    ::xTaskCreate(init_task, PSTR("INIT"), 4096 / sizeof(StackType_t), nullptr, configMAX_PRIORITIES - 1, nullptr);
 
     if (DEBUG) {
-        printf_debug(PSTR("setup(): calling ::vTaskStartScheduler()...\r\n"));
+        EXC_PRINTF(PSTR("setup(): calling ::vTaskStartScheduler()...\r\n"));
     }
     ::vTaskStartScheduler();
 
@@ -311,6 +308,20 @@ FLASHMEM void serialport_put(const char c) {
     }
 }
 
+FLASHMEM void serialport_puts(const char* str) {
+    using namespace ctbot;
+
+    CtBot& ctbot { CtBot::get_instance() };
+    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
+
+    const auto length { std::strlen(str) };
+    if (p_serial) {
+        p_serial->write_direct(str);
+    } else {
+        arduino::Serial.write(reinterpret_cast<const uint8_t*>(str), length);
+    }
+}
+
 FLASHMEM void serialport_flush() {
     using namespace ctbot;
 
@@ -349,14 +360,13 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    std::cout << "ct-Bot Teensy framework starting...\n";
+    ::serialport_puts("ct-Bot Teensy framework starting...\r\n");
 
     ctbot::SimConnection sim_conn { result["host"].as<std::string>(), result["port"].as<std::string>() };
     Serial.begin(0);
 
     setup();
 
-    std::cout << "exit.\n";
     return 0;
 }
 #endif // CTBOT_SIMULATION

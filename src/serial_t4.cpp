@@ -264,7 +264,6 @@ FLASHMEM bool SerialT4::begin(const uint32_t baud, const uint16_t format, const 
 }
 
 FLASHMEM void SerialT4::end() {
-    flush(); // wait for buffered data to send
     p_port_->CTRL = 0; // disable the TX and RX ...
 
     // Not sure if this is best, but I think most IO pins default to Mode 5? which appears to be digital IO?
