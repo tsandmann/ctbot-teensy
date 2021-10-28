@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    motor.cpp
- * @brief   c't-Bot motor driver
+ * @brief   Motor driver
  * @author  Timo Sandmann
  * @date    13.05.2018
  */

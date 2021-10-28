@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    behavior_legacy_wrapper.cpp
- * @brief   Support layer for ct-Bot legacy behaviors
+ * @brief   Support layer for legacy behaviors
  * @author  Timo Sandmann
  * @date    26.05.2019
  */
@@ -143,10 +143,10 @@ decltype(BehaviorGotoPos::reg1_) BehaviorGotoPos::reg1_ { REGISTRY_HELPER(
         return INIT<BehaviorGotoPos, int16_t, int16_t, int16_t, bool>(pos_x, pos_y, heading, relative);
     }) };
 
-decltype(
-    BehaviorGotoPos::reg2_) BehaviorGotoPos::reg2_ { REGISTRY_HELPER("GotoDist", [](const int16_t distance, const int8_t direction, const int16_t heading) {
-    return INIT<BehaviorGotoPos, int16_t, int8_t, int16_t>(distance, direction, heading);
-}) };
+decltype(BehaviorGotoPos::reg2_) BehaviorGotoPos::reg2_ { REGISTRY_HELPER(
+    "GotoDist", [](const int16_t distance, const int8_t direction, const int16_t heading) {
+        return INIT<BehaviorGotoPos, int16_t, int8_t, int16_t>(distance, direction, heading);
+    }) };
 
 BehaviorGotoPos::BehaviorGotoPos(int16_t pos_x, int16_t pos_y, int16_t heading, bool relative)
     : BehaviorLegacyWrapper { PSTR("GotoPosBeh"), legacy::bot_goto_pos_behaviour }, x_ { pos_x }, y_ { pos_y }, head_ { heading }, rel_ { relative }, dist_ {},
@@ -191,8 +191,8 @@ void BehaviorGotoPos::start() {
 
 
 #ifdef BEHAVIOUR_DRIVE_SQUARE_AVAILABLE
-decltype(
-    BehaviorDriveSquareLegacy::reg1_) BehaviorDriveSquareLegacy::reg1_ { REGISTRY_HELPER("DriveSquare", []() { return INIT<BehaviorDriveSquareLegacy>(); }) };
+decltype(BehaviorDriveSquareLegacy::reg1_) BehaviorDriveSquareLegacy::reg1_ { REGISTRY_HELPER(
+    "DriveSquare", []() { return INIT<BehaviorDriveSquareLegacy>(); }) };
 decltype(BehaviorDriveSquareLegacy::reg2_) BehaviorDriveSquareLegacy::reg2_ { REGISTRY_HELPER(
     "DriveSquareLen", [](const uint16_t length) { return INIT<BehaviorDriveSquareLegacy, uint16_t>(length); }) };
 

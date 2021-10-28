@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ namespace ctbot {
 /**
  * @brief LC Display driver implementation for devices with Hitachi HD44780 and PCF8574 i2c i/o expander
  *
- * @startuml{Display.png}
+ * @startuml{LCDisplay.png}
  *  !include display.puml
  *  set namespaceSeparator ::
  *  skinparam classAttributeIconSize 0

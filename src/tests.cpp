@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ namespace tests {
 
 BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ {} {
     arduino::pinMode(arduino::LED_BUILTIN, arduino::OUTPUT);
-    ctbot_.get_scheduler()->task_add("blinktest", TASK_PERIOD_MS, 512UL, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("blinktest"), TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
 
 void BlinkTest::run() {
@@ -58,7 +58,7 @@ void BlinkTest::run() {
 
 
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
-    ctbot_.get_scheduler()->task_add("ledtest", TASK_PERIOD_MS, 512UL, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("ledtest"), TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
 
 void LedTest::run() {
@@ -77,7 +77,7 @@ void LedTest::run() {
 
 
 LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ {} {
-    ctbot_.get_scheduler()->task_add("lcdtest", TASK_PERIOD_MS, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("lcdtest"), TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void LcdTest::run() {
@@ -87,14 +87,14 @@ void LcdTest::run() {
     ctbot_.get_lcd()->set_cursor((x_ % 80) / 20 + 1, x_ % 20 + 1);
     ctbot_.get_lcd()->print('*');
     ctbot_.get_lcd()->set_cursor(((x_ + 20) % 80) / 20 + 1, 1);
-    ctbot_.get_lcd()->print("Hello World :-)");
+    ctbot_.get_lcd()->print(PSTR("Hello World :-)"));
     ctbot_.get_lcd()->set_cursor(((x_ + 40) % 80) / 20 + 1, 1);
     ctbot_.get_lcd()->printf("%5u", static_cast<uint16_t>(x_));
 }
 
 
 EnaTest::EnaTest(CtBot& ctbot) : ctbot_ { ctbot }, ena_idx_ {} {
-    ctbot_.get_scheduler()->task_add("enatest", TASK_PERIOD_MS, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("enatest"), TASK_PERIOD_MS, [this]() { return run(); });
 }
 
 void EnaTest::run() {
@@ -106,7 +106,7 @@ void EnaTest::run() {
 
 
 SensorLcdTest::SensorLcdTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
-    ctbot.get_scheduler()->task_add("senstest", TASK_PERIOD_MS, 1'024UL, [this]() { return run(); });
+    ctbot.get_scheduler()->task_add(PSTR("senstest"), TASK_PERIOD_MS, 1'024UL, [this]() { return run(); });
 }
 
 SensorLcdTest::~SensorLcdTest() {
@@ -121,19 +121,19 @@ void SensorLcdTest::run() {
     auto const p_sens { ctbot_.get_sensors() };
 
     ctbot_.get_lcd()->set_cursor(1, 1);
-    ctbot_.get_lcd()->printf("P%03X %03X D=%4d %4d", p_sens->get_ldr_l(), p_sens->get_ldr_r(), p_sens->get_distance_l(), p_sens->get_distance_r());
+    ctbot_.get_lcd()->printf(PSTR("P%03X %03X D=%4d %4d"), p_sens->get_ldr_l(), p_sens->get_ldr_r(), p_sens->get_distance_l(), p_sens->get_distance_r());
 
     ctbot_.get_lcd()->set_cursor(2, 1);
-    ctbot_.get_lcd()->printf("B=%03X %03X L=%03X %03X ", p_sens->get_border_l(), p_sens->get_border_r(), p_sens->get_line_l(), p_sens->get_line_r());
+    ctbot_.get_lcd()->printf(PSTR("B=%03X %03X L=%03X %03X "), p_sens->get_border_l(), p_sens->get_border_r(), p_sens->get_line_l(), p_sens->get_line_r());
 
     ctbot_.get_lcd()->set_cursor(3, 1);
     ctbot_.get_lcd()->printf(
-        "R=%2d %2d T=%d ", std::labs(p_sens->get_enc_l().get()) % 100, std::labs(p_sens->get_enc_r().get()) % 100, p_sens->get_transport());
+        PSTR("R=%2d %2d T=%d "), std::labs(p_sens->get_enc_l().get()) % 100, std::labs(p_sens->get_enc_r().get()) % 100, p_sens->get_transport());
 
     ctbot_.get_lcd()->set_cursor(4, 1);
-    ctbot_.get_lcd()->printf("S=%4d %4d  ", static_cast<int16_t>(p_sens->get_enc_l().get_speed()), static_cast<int16_t>(p_sens->get_enc_r().get_speed()));
+    ctbot_.get_lcd()->printf(PSTR("S=%4d %4d  "), static_cast<int16_t>(p_sens->get_enc_l().get_speed()), static_cast<int16_t>(p_sens->get_enc_r().get_speed()));
     ctbot_.get_lcd()->set_cursor(4, 14);
-    ctbot_.get_lcd()->printf("RC=0x%02x", static_cast<int16_t>(p_sens->get_rc5().get_cmd()));
+    ctbot_.get_lcd()->printf(PSTR("RC=0x%02x"), static_cast<int16_t>(p_sens->get_rc5().get_cmd()));
 }
 
 
@@ -161,18 +161,18 @@ TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
 
             cv2_.notify_all();
 
-            ctbot_.get_comm()->debug_print("TaskWaitTest Thr 1: waiting for condition 1...\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("TaskWaitTest Thr 1: waiting for condition 1...\r\n"), true);
             ctbot_.get_comm()->flush();
             std::unique_lock<std::mutex> lk(m1_);
             cv1_.wait(lk);
         }
     });
-    free_rtos_std::gthr_freertos::set_name(p_thr1_, "wait_1");
+    free_rtos_std::gthr_freertos::set_name(p_thr1_, PSTR("wait_1"));
 
     free_rtos_std::gthr_freertos::set_next_stacksize(768);
     p_thr2_ = new std::thread([this]() {
         while (running_) {
-            ctbot_.get_comm()->debug_print("TaskWaitTest Thr 2: waiting for condition 2...\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("TaskWaitTest Thr 2: waiting for condition 2...\r\n"), true);
             ctbot_.get_comm()->flush();
             {
                 std::unique_lock<std::mutex> lk(m2_);
@@ -201,7 +201,7 @@ TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
 
     p_thr3_ = new std::thread([this]() {
         while (running_) {
-            ctbot_.get_comm()->debug_print("TaskWaitTest Thr 3: waiting for condition 2...\r\n", true);
+            ctbot_.get_comm()->debug_print(PSTR("TaskWaitTest Thr 3: waiting for condition 2...\r\n"), true);
             ctbot_.get_comm()->flush();
             {
                 std::unique_lock<std::mutex> lk(m2_);
@@ -216,16 +216,16 @@ TaskWaitTest::TaskWaitTest(CtBot& ctbot) : ctbot_(ctbot), running_ { true } {
             }
         }
     });
-    free_rtos_std::gthr_freertos::set_name(p_thr3_, "wait_3");
+    free_rtos_std::gthr_freertos::set_name(p_thr3_, PSTR("wait_3"));
 
     free_rtos_std::gthr_freertos::set_next_stacksize(last_stack_size);
 
-    ctbot_.get_scheduler()->task_register("wait_1");
-    ctbot_.get_scheduler()->task_register("wait_2");
+    ctbot_.get_scheduler()->task_register(PSTR("wait_1"));
+    ctbot_.get_scheduler()->task_register(PSTR("wait_2"));
 }
 
 TaskWaitTest::~TaskWaitTest() {
-    ctbot_.get_comm()->debug_print("TaskWaitTest::~TaskWaitTest(): exiting...\r\n", true);
+    ctbot_.get_comm()->debug_print(PSTR("TaskWaitTest::~TaskWaitTest(): exiting...\r\n"), true);
     ctbot_.get_comm()->flush();
 
     running_ = false;
@@ -251,7 +251,9 @@ TftTest::TftTest(CtBot& ctbot) : ctbot_(ctbot), p_tft_ {} {
     arduino::SPI.setMISO(12);
     arduino::SPI.setSCK(14);
     arduino::SPI.setCS(15);
-    p_tft_ = new Adafruit_ILI9341 { CtBotConfig::TFT_SPI == 0 ? &arduino::SPI : CtBotConfig::TFT_SPI == 1 ? &arduino::SPI1 : &arduino::SPI2,
+    p_tft_ = new Adafruit_ILI9341 { CtBotConfig::TFT_SPI == 0 ? &arduino::SPI :
+            CtBotConfig::TFT_SPI == 1                         ? &arduino::SPI1 :
+                                                                &arduino::SPI2,
         CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN, -1 };
     if (!p_tft_) {
         Scheduler::exit_critical_section();
@@ -270,14 +272,14 @@ TftTest::TftTest(CtBot& ctbot) : ctbot_(ctbot), p_tft_ {} {
     p_tft_->setRotation(CtBotConfig::TFT_ROTATION);
     p_tft_->fillRect(0, 0, p_tft_->width(), p_tft_->height(), TFTColors::BLACK);
 
-    ctbot_.get_scheduler()->task_add("tfttest", TASK_PERIOD_MS, 2, 2'048, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("tfttest"), TASK_PERIOD_MS, 2, 2'048, [this]() { return run(); });
 }
 
 void TftTest::run() {
     using namespace std::chrono_literals;
     auto& comm { *ctbot_.get_comm() };
 
-    comm.debug_print("\r\nBenchmark                Time\r\n", true);
+    comm.debug_print(PSTR("\r\nBenchmark                Time\r\n"), true);
     comm.debug_printf<true>(PP_ARGS("Text                     {.2} ms\r\n", testText() / 1'000.f));
     std::this_thread::sleep_for(1s);
 
@@ -310,7 +312,7 @@ unsigned long TftTest::testText() {
     p_tft_->setCursor(0, 0);
     p_tft_->setTextColor(TFTColors::WHITE);
     p_tft_->setTextSize(1);
-    p_tft_->println("Hello World!");
+    p_tft_->println(PSTR("Hello World!"));
     p_tft_->setTextColor(TFTColors::YELLOW);
     p_tft_->setTextSize(2);
     p_tft_->println(1234.56f);
@@ -320,23 +322,23 @@ unsigned long TftTest::testText() {
     p_tft_->println();
     p_tft_->setTextColor(TFTColors::GREEN);
     p_tft_->setTextSize(5);
-    p_tft_->println("Groop");
+    p_tft_->println(PSTR("Groop"));
     p_tft_->setTextSize(2);
-    p_tft_->println("I implore thee,");
+    p_tft_->println(PSTR("I implore thee,"));
     p_tft_->setTextSize(1);
-    p_tft_->println("my foonting turlingdromes.");
-    p_tft_->println("And hooptiously drangle me");
-    p_tft_->println("with crinkly bindlewurdles,");
-    p_tft_->println("Or I will rend thee");
-    p_tft_->println("in the gobberwarts");
-    p_tft_->println("with my blurglecruncheon,");
-    p_tft_->println("see if I don't!");
+    p_tft_->println(PSTR("my foonting turlingdromes."));
+    p_tft_->println(PSTR("And hooptiously drangle me"));
+    p_tft_->println(PSTR("with crinkly bindlewurdles,"));
+    p_tft_->println(PSTR("Or I will rend thee"));
+    p_tft_->println(PSTR("in the gobberwarts"));
+    p_tft_->println(PSTR("with my blurglecruncheon,"));
+    p_tft_->println(PSTR("see if I don't!"));
 
     p_tft_->setTextColor(TFTColors::WHITE);
     p_tft_->println(
-        "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into "
-        "the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice 'without "
-        "pictures or conversations?'");
+        PSTR("Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into "
+             "the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice 'without "
+             "pictures or conversations?'"));
 
     return arduino::micros() - start;
 }
@@ -516,12 +518,12 @@ TouchTest::TouchTest(CtBot& ctbot) : ctbot_(ctbot), p_touch_ {} {
     auto& comm { *ctbot_.get_comm() };
     if (touch_res) {
         // comm.debug_printf<true>(PP_ARGS("Touch controller {#x} detected.\r\n", p_touch_->getVersion()));
-        comm.debug_print("Touch controller detected.\r\n", true);
+        comm.debug_print(PSTR("Touch controller detected.\r\n"), true);
     } else {
-        comm.debug_print("Touch controller init failed.\r\n", true);
+        comm.debug_print(PSTR("Touch controller init failed.\r\n"), true);
     }
 
-    ctbot_.get_scheduler()->task_add("touchtest", TASK_PERIOD_MS, 1, 1'024, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("touchtest"), TASK_PERIOD_MS, 1, 1'024, [this]() { return run(); });
 }
 
 void TouchTest::run() {

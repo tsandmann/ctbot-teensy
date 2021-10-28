@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -241,8 +241,8 @@ void bot_save_waypos_behaviour(Behaviour_t* data) {
                         if (abs(pos_2.x - pos_1.x) <= 1) {
                             pos_2.x = pos_1.x;
                         }
-                        int8_t m_1 = (int8_t)(pos_1.x == pos_2.x ? 100 : abs((pos_1.y - pos_2.y) / (pos_1.x - pos_2.x)));
-                        int8_t m = (int8_t)(pos_0.x == pos_1.x ? 100 : abs((pos_0.y - pos_1.y) / (pos_0.x - pos_1.x)));
+                        int8_t m_1 = (int8_t) (pos_1.x == pos_2.x ? 100 : abs((pos_1.y - pos_2.y) / (pos_1.x - pos_2.x)));
+                        int8_t m = (int8_t) (pos_0.x == pos_1.x ? 100 : abs((pos_0.y - pos_1.y) / (pos_0.x - pos_1.x)));
                         LOG_DEBUG(" pos_2=(%d|%d)", pos_2.x, pos_2.y);
                         LOG_DEBUG(" pos_1=(%d|%d)", pos_1.x, pos_1.y);
                         LOG_DEBUG(" pos  =(%d|%d)", pos_0.x, pos_0.y);

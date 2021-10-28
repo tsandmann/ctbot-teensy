@@ -14,7 +14,7 @@
  * @author  Timo Sandmann
  * @date    15.04.2018
  * @note    Based on <http://clearwater.com.au/code/rc5> and <https://github.com/guyc/RC5>,
- *          adapted for use with the c't-Bot teensy framework and ported to C++14
+ *          adapted for use with the ct-Bot teensy framework and ported to C++14
  */
 
 #pragma once

@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -122,7 +122,7 @@ void bot_turn_behaviour(Behaviour_t* data) {
                 int16_t diff_9 = diff - 900;
                 if (diff_9 > 0) {
                     float x = diff_9 < 900 ? diff_9 / (float) (360.0 / M_PI * 10.0) : (float) (M_PI / 2.0); // (0; pi/2]
-                    new_speed = (int16_t)(sinf(x) * (float) d_max_speed); // [0; maxspeed - minspeed]
+                    new_speed = (int16_t) (sinf(x) * (float) d_max_speed); // [0; maxspeed - minspeed]
                 }
                 new_speed = new_speed + min_speed; // [min_speed; maxspeed]
 
@@ -162,7 +162,7 @@ void bot_turn_behaviour(Behaviour_t* data) {
                 new_err = 0;
             }
             LOG_DEBUG("new_err=%d", new_err);
-            uint16_t err_update = (uint16_t)((err + new_err) / 2);
+            uint16_t err_update = (uint16_t) ((err + new_err) / 2);
             LOG_DEBUG("updating err to %u", err_update);
             ctbot_eeprom_update_word(p_err, err_update);
 
@@ -195,7 +195,7 @@ Behaviour_t* bot_turn_speed(Behaviour_t* caller, int16_t degrees, int16_t minspe
     old_heading = heading_10_int;
 
     /* Drehrichtung ermitteln */
-    turn_direction = (int8_t)(degrees < 0 ? -1 : 0);
+    turn_direction = (int8_t) (degrees < 0 ? -1 : 0);
 
     /* Verhalten aktiv schalten */
     if (degrees) {

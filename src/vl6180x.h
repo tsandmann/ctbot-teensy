@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -111,7 +111,7 @@ class VL6180X {
     }
 
 public:
-    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR); // FIXME: pass I2C_Service
+    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR); // FIXME: pass I2C_Service?
 
     FLASHMEM bool init();
 

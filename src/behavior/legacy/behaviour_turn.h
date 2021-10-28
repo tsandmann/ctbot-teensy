@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -21,6 +21,8 @@
  * \file    behaviour_turn.h
  * \brief   Drehe den Bot
  * \author  Benjamin Benz
+ * \author  Torsten Evers
+ * \author  Timo Sandmann
  * \date    03.11.2006
  */
 

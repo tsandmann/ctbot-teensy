@@ -1,5 +1,5 @@
 ***************************************************************
-* PID Library for use with c't-Bot atmega framework - Version 1.2.0
+* PID Library for use with ct-Bot atmega framework - Version 1.2.0
 * based on Arduino PID Library - Version 1.1.1 by Brett Beauregard <br3ttb@gmail.com> brettbeauregard.com, licensed under a GPLv3 License
 *
 * This Library is licensed under a GPLv3 License

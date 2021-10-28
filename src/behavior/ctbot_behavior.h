@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -45,7 +45,7 @@ class Pose;
 class Speed;
 
 /**
- * @brief Main class of c't-Bot teensy framework with behaviors
+ * @brief Main class of ct-Bot teensy framework with behaviors
  *
  * @startuml{CtBotBehavior.png}
  *  !include behavior/ctbot_behavior.puml

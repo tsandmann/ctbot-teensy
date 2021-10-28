@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@
 /**
  * @file   behaviour_drive_distance.h
  * @brief  Bot faehrt ein Stueck
- * @author Benjamin Benz (bbe@heise.de)
+ * @author Benjamin Benz
  * @date   03.11.2006
  */
 
@@ -72,7 +72,7 @@ FLASHMEM static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t d
 FLASHMEM static Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir);
 
 FLASHMEM static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve __attribute__((unused)), const int16_t speed, const int16_t cm) {
-    return bot_goto_dist(caller, (int16_t)(cm * 10), (int8_t)(speed < 0 ? -1 : 1));
+    return bot_goto_dist(caller, (int16_t) (cm * 10), (int8_t) (speed < 0 ? -1 : 1));
 }
 #endif // USE_GOTO_POS_DIST
 #endif // BEHAVIOUR_DRIVE_DISTANCE_AVAILABLE

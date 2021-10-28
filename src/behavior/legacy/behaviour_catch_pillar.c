@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -473,7 +473,7 @@ void bot_catch_pillar_behaviour(Behaviour_t* data) {
                     dHead += 360.f;
                 }
                 LOG_DEBUG("dHead=%.2f", dHead);
-                int16_t dist = (int16_t)((DISTSENSOR_POS_SW * 2.f) / dHead * (180.f / M_PI_F));
+                int16_t dist = (int16_t) ((DISTSENSOR_POS_SW * 2.f) / dHead * (180.f / M_PI_F));
                 /* Objektkoordis berechnen */
                 LOG_DEBUG("heading=%.2f headingL=%.2f headingR=%.2f", heading, headingL, headingR);
                 if (dist > MAX_PILLAR_DISTANCE + 100) {

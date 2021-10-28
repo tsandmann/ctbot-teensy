@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    ctbot.h
- * @brief   Main class of c't-Bot teensy framework
+ * @brief   Main class of ct-Bot teensy framework
  * @author  Timo Sandmann
  * @date    13.05.2018
  */
@@ -51,7 +51,7 @@ class SerialIO;
 }
 
 /**
- * @brief Namespace for all c't-Bot classes and functionality
+ * @brief Namespace for all ct-Bot classes and functionality
  */
 namespace ctbot {
 class Sensors;
@@ -68,13 +68,7 @@ class Scheduler;
 class ParameterStorage;
 
 /**
- * @brief Main class of c't-Bot teensy framework, responsible for initialization and control loop execution
- *
- * @startuml{CtBot.png}
- *  !include ctbot.puml
- *  set namespaceSeparator ::
- *  skinparam classAttributeIconSize 0
- * @enduml
+ * @brief Main class of ct-Bot teensy framework, responsible for initialization and control loop execution
  */
 class CtBot {
 protected:
@@ -137,20 +131,6 @@ protected:
     /**
      * @brief Main task implementation
      * @note This method is run every TASK_PERIOD_MS ms, e.g. to update sensor data
-     *
-     * @startuml{CtBot_run.png}
-     *  activate CtBot
-     *  CtBot -> CtBot: setup()
-     *  activate CtBot
-     *  deactivate CtBot
-     *
-     *  loop every TASK_PERIOD_MS ms
-     *    CtBot -> Sensors: update()
-     *    activate Sensors
-     *    CtBot <-- Sensors
-     *    deactivate Sensors
-     *  end
-     * @enduml
      */
     virtual void run();
 
@@ -179,80 +159,12 @@ public:
 
     /**
      * @brief Setup method responsible for initialization and creating of instances for all components (sensors, motors, etc.)
-     *
-     * @startuml{CtBot_setup.png}
-     *  activate CtBot
-     *  CtBot -> Timer: init()
-     *  activate Timer
-     *  CtBot <-- Timer
-     *  deactivate Timer
-     *
-     *  create Scheduler
-     *  CtBot -> Scheduler: new
-     *  CtBot <-- Scheduler: p_scheduler_
-     *
-     *  CtBot -> Scheduler: task_add("main")
-     *  activate Scheduler
-     *  CtBot <-- Scheduler
-     *  deactivate Scheduler
-     *
-     *  create Sensors
-     *  CtBot -> Sensors: new
-     *  CtBot <-- Sensors: p_sensors_
-     *
-     *  create Motor
-     *  CtBot -> Motor: new(left)
-     *  CtBot <-- Motor: p_motors_[0]
-     *  CtBot -> Motor: new(right)
-     *  CtBot <-- Motor: p_motors_[1]
-     *
-     *  create SpeedControl
-     *  CtBot -> SpeedControl: new(left)
-     *  CtBot <-- SpeedControl: p_speedcontrols_[0]
-     *  CtBot -> SpeedControl: new(right)
-     *  CtBot <-- SpeedControl: p_speedcontrols_[1]
-     *
-     *  create Servo
-     *  CtBot -> Servo: new(1)
-     *  CtBot <-- Servo: p_servos_[0]
-     *  CtBot -> Servo: new(2)
-     *  CtBot <-- Servo: p_servos_[1]
-     *
-     *  create Leds
-     *  CtBot -> Leds: new
-     *  CtBot <-- Leds: p_leds_
-     *
-     *  create Display
-     *  CtBot -> Display: new
-     *  CtBot <-- Display: p_display_
-     *
-     *  create CmdParser
-     *  CtBot -> CmdParser: new
-     *  CtBot <-- CmdParser: p_parser_
-     *
-     *  create CommInterfaceCmdParser
-     *  CtBot -> CommInterfaceCmdParser: new(p_serial_, p_parser_, true)
-     *  CtBot <-- CommInterfaceCmdParser: p_comm_
-     *
-     *  CtBot -> CtBot:init_parser()
-     *  CtBot -> CommInterfaceCmdParser: debug_print("c't-Bot init done.")
-     *  activate CommInterfaceCmdParser
-     *  CtBot <-- CommInterfaceCmdParser
-     *  deactivate CommInterfaceCmdParser
-     * @enduml
+     * @param[in] set_ready: ready flag is set to this value at end of setup()
      */
     FLASHMEM virtual void setup(const bool set_ready);
 
     /**
      * @brief Stop the scheduler
-     *
-     * @startuml{CtBot_stop.png}
-     *  activate CtBot
-     *  CtBot -> Scheduler: stop()
-     *  activate Scheduler
-     *  CtBot <-- Scheduler
-     *  deactivate Scheduler
-     * @enduml
      */
     FLASHMEM void stop();
 

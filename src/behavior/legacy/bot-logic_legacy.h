@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    bot-logic_legacy.h
- * @brief   Support layer for ct-Bot legacy behaviors
+ * @brief   Support layer for legacy behaviors
  * @author  Timo Sandmann
  * @date    26.05.2019
  */
@@ -353,7 +353,7 @@ FLASHMEM size_t log_debug(const char* format, ...) __attribute__((format(printf,
  */
 static inline uint8_t timer_ms_passed_32(uint32_t* old_ticks, uint32_t ms) {
     uint32_t ticks = timer_get_tickCount32();
-    if ((uint32_t)(ticks - *old_ticks) > MS_TO_TICKS(ms)) {
+    if ((uint32_t) (ticks - *old_ticks) > MS_TO_TICKS(ms)) {
         *old_ticks = ticks;
         return 1;
     }
@@ -370,7 +370,7 @@ static inline uint8_t timer_ms_passed_32(uint32_t* old_ticks, uint32_t ms) {
  */
 static inline uint8_t timer_ms_passed_16(uint16_t* old_ticks, uint32_t ms) {
     uint16_t ticks = (uint16_t) timer_get_tickCount32();
-    if ((uint16_t)(ticks - *old_ticks) > MS_TO_TICKS(ms)) {
+    if ((uint16_t) (ticks - *old_ticks) > MS_TO_TICKS(ms)) {
         *old_ticks = ticks;
         return 1;
     }
@@ -387,7 +387,7 @@ static inline uint8_t timer_ms_passed_16(uint16_t* old_ticks, uint32_t ms) {
  */
 static inline uint8_t timer_ms_passed_8(uint8_t* old_ticks, uint16_t ms) {
     uint8_t ticks = (uint8_t) timer_get_tickCount32();
-    if ((uint8_t)(ticks - *old_ticks) > MS_TO_TICKS(ms)) {
+    if ((uint8_t) (ticks - *old_ticks) > MS_TO_TICKS(ms)) {
         *old_ticks = ticks;
         return 1;
     }
@@ -409,7 +409,7 @@ static inline int16_t is_obstacle_ahead(int16_t distance) {
     if (sensDistL - sensDistR == 0) {
         return 1;
     }
-    return (int16_t)(sensDistL - sensDistR);
+    return (int16_t) (sensDistL - sensDistR);
 }
 
 #ifndef __cplusplus
@@ -421,9 +421,9 @@ static inline int16_t is_obstacle_ahead(int16_t distance) {
  */
 static inline int16_t iroundf(float x) {
     if (x >= 0.f) {
-        return (int16_t)(x + 0.5f);
+        return (int16_t) (x + 0.5f);
     }
-    return (int16_t)(x - 0.5f);
+    return (int16_t) (x - 0.5f);
 }
 
 /**
@@ -487,7 +487,7 @@ static inline int32_t get_dist(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
     int16_t yt = y2 - y1;
 
     /* Abstandsermittlung nach dem guten alten Pythagoras ohne Ziehen der Wurzel */
-    return (int32_t)((int32_t) xt * (int32_t) xt) + (int32_t)((int32_t) yt * (int32_t) yt);
+    return (int32_t) ((int32_t) xt * (int32_t) xt) + (int32_t) ((int32_t) yt * (int32_t) yt);
 }
 
 /**
@@ -504,8 +504,8 @@ static inline position_t calc_point_in_distance(float alpha, int16_t dx, int16_t
     float sin_h = sinf(h);
 
     position_t dest;
-    dest.x = x_pos + (int16_t)((dx * cos_h) - (dy * sin_h));
-    dest.y = y_pos + (int16_t)((dy * cos_h) + (dx * sin_h));
+    dest.x = x_pos + (int16_t) ((dx * cos_h) - (dy * sin_h));
+    dest.y = y_pos + (int16_t) ((dy * cos_h) + (dx * sin_h));
     return dest;
 }
 

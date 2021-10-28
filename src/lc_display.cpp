@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,10 +34,8 @@
 namespace ctbot {
 
 LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C { CtBotConfig::LCD_I2C_BUS, 0x3f, 2, 1, 0, 4, 5, 6, 7 } } {
+    // FIXME: use I2C_Service
     Scheduler::enter_critical_section();
-    // arduino::Wire2.setSDA(CtBotConfig::I2C2_PIN_SDA);
-    // arduino::Wire2.setSCL(CtBotConfig::I2C2_PIN_SCL);
-
     p_impl_->begin(LINE_LENGTH, 4);
     p_impl_->setBacklightPin(3, LiquidCrystal_I2C::POSITIVE);
     p_impl_->setBacklight(false);

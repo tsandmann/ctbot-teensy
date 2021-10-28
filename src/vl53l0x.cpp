@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@ FLASHMEM bool VL53L0X::init() {
     /* switch to 2.8V mode */
     if (set_bit(VOLTAGE_MODE_REG, 0, 1)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): set_bit(VOLTAGE_MODE_REG) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): set_bit(VOLTAGE_MODE_REG) failed.\r\n"), true);
         }
         return false;
     }
@@ -69,7 +69,7 @@ FLASHMEM bool VL53L0X::init() {
 
     if (ret) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): set i2c standard mode failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): set i2c standard mode failed.\r\n"), true);
         }
         return false;
     }
@@ -81,7 +81,7 @@ FLASHMEM bool VL53L0X::init() {
     if (ret) {
         if (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print(
-                "VL53L0X::init(): disable SIGNAL_RATE_MSRC (bit 1) and SIGNAL_RATE_PRE_RANGE (bit 4) limit checks failed.\r\n", true);
+                PSTR("VL53L0X::init(): disable SIGNAL_RATE_MSRC (bit 1) and SIGNAL_RATE_PRE_RANGE (bit 4) limit checks failed.\r\n"), true);
         }
         return false;
     }
@@ -89,14 +89,14 @@ FLASHMEM bool VL53L0X::init() {
     /* set final range signal rate limit to 0.25 MCPS (million counts per second) */
     if (!set_signal_rate_limit(0.25f)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): set_signal_rate_limit() failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): set_signal_rate_limit() failed.\r\n"), true);
         }
         return false;
     }
 
     if (write_reg8(static_cast<uint8_t>(SEQUENCE_CONFIG_REG), 0xff)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): write(SYSTEM_SEQUENCE_REG) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): write(SYSTEM_SEQUENCE_REG) failed.\r\n"), true);
         }
         return false;
     }
@@ -105,7 +105,7 @@ FLASHMEM bool VL53L0X::init() {
     bool spad_type_is_aperture {};
     if (!get_spad_info(spad_count, spad_type_is_aperture)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): get_spad_info() failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): get_spad_info() failed.\r\n"), true);
         }
         return false;
     }
@@ -113,7 +113,7 @@ FLASHMEM bool VL53L0X::init() {
     std::array<uint8_t, 6> ref_spad_map;
     if (read_bytes(SPAD_ENABLES_REF_0_REG, ref_spad_map.data(), ref_spad_map.size())) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): read_bytes(SPAD_ENABLES_REF_0_REG) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): read_bytes(SPAD_ENABLES_REF_0_REG) failed.\r\n"), true);
         }
         return false;
     }
@@ -138,7 +138,7 @@ FLASHMEM bool VL53L0X::init() {
 
     if (write_bytes(SPAD_ENABLES_REF_0_REG, ref_spad_map.data(), ref_spad_map.size())) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): write_bytes(SPAD_ENABLES_REF_0_REG) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): write_bytes(SPAD_ENABLES_REF_0_REG) failed.\r\n"), true);
         }
         return false;
     }
@@ -273,9 +273,9 @@ FLASHMEM bool VL53L0X::init() {
 
     if (DEBUG_) {
         if (ret) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): failed.\r\n"), true);
         } else {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::init(): done.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::init(): done.\r\n"), true);
         }
     }
 
@@ -300,7 +300,7 @@ FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) con
     ret |= write_reg8(static_cast<uint8_t>(0x83), 0);
     if (ret) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_spad_info(): write() 1 failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_spad_info(): write() 1 failed.\r\n"), true);
         }
         return false;
     }
@@ -316,7 +316,7 @@ FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) con
     }
     if (!tmp1) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_spad_info(): read(0x83) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_spad_info(): read(0x83) failed.\r\n"), true);
         }
         return false;
     }
@@ -326,7 +326,7 @@ FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) con
     ret |= read_reg8(static_cast<uint8_t>(0x92), tmp2);
     if (ret) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_spad_info(): read(0x92) failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_spad_info(): read(0x92) failed.\r\n"), true);
         }
         return false;
     }
@@ -342,7 +342,7 @@ FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) con
     ret |= write_reg8(static_cast<uint8_t>(0x80), 0);
     if (ret) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_spad_info(): write() 2 failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_spad_info(): write() 2 failed.\r\n"), true);
         }
         return false;
     }
@@ -455,7 +455,7 @@ FLASHMEM bool VL53L0X::set_measurement_timing_budget(const uint32_t budget_us) c
 
         if (write_reg16(FINAL_RANGE_CONFIG_TIMEOUT_MACROP_REG_HI, timeout_encode(final_range_timeout_mclks))) {
             if (DEBUG_) {
-                CtBot::get_instance().get_comm()->debug_print("VL53L0X::set_measurement_timing_budget(): write16() failed.\r\n", true);
+                CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::set_measurement_timing_budget(): write16() failed.\r\n"), true);
             }
 
             return false;
@@ -551,7 +551,7 @@ FLASHMEM bool VL53L0X::set_signal_rate_limit(const float limit_mcps) const {
     // Q9.7 fixed point format (9 integer bits, 7 fractional bits)
     if (write_reg16(FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_REG, limit_mcps * (1 << 7))) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::set_signal_rate_limit(): write16() failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::set_signal_rate_limit(): write16() failed.\r\n"), true);
         }
         return false;
     }
@@ -562,13 +562,13 @@ FLASHMEM bool VL53L0X::set_signal_rate_limit(const float limit_mcps) const {
 FLASHMEM bool VL53L0X::set_address(const uint8_t addr) {
     if (addr > 127) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::set_address(): invalid address.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::set_address(): invalid address.\r\n"), true);
         }
         return false;
     }
     if (write_reg8(I2C_ADDRESS_REG, addr)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL53L0X::set_address(): write() failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::set_address(): write() failed.\r\n"), true);
         }
         return false;
     }
@@ -629,15 +629,15 @@ bool VL53L0X::get_dist_range(uint16_t& range_mm) const {
             if (!read_reg16(static_cast<uint8_t>(RESULT_RANGE_STATUS_REG + 10), mm)) {
                 range_mm = mm >= MIN_DISTANCE_ && mm <= MAX_DISTANCE_ ? mm : 9999;
             } else if (DEBUG_) {
-                CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_dist_range(): i2c error 2\r\n", true);
+                CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_dist_range(): i2c error 2\r\n"), true);
             }
             if (write_reg8(INTERRUPT_CLEAR_REG, 1) && DEBUG_) {
-                CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_dist_range(): i2c error 3\r\n", true);
+                CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_dist_range(): i2c error 3\r\n"), true);
             }
             return true;
         }
     } else if (DEBUG_) {
-        CtBot::get_instance().get_comm()->debug_print("VL53L0X::get_dist_range(): i2c error 1\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("VL53L0X::get_dist_range(): i2c error 1\r\n"), true);
     }
 
     return false;

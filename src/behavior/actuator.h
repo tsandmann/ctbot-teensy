@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -118,6 +118,7 @@ using Governor = Actuator<int16_t, min, max>;
  */
 using AMotor = Governor<-100, 100>;
 
+// Currently not used
 // /**
 //  * @brief Specialization for servos
 //  *
@@ -125,7 +126,7 @@ using AMotor = Governor<-100, 100>;
 //  * @tparam max Maximal useable value for the servo
 //  */
 // template <uint8_t min, uint8_t max>
-// using AServo = Actuator<uint8_t, min, max>; // FIXME: currently not used
+// using AServo = Actuator<uint8_t, min, max>;
 
 
 /**

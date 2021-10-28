@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@
 /**
  * @file    behaviour_simple.c
  * @brief   Ganz einfache Beispielverhalten
- * @author  Benjamin Benz (bbe@heise.de)
+ * @author  Benjamin Benz
  * @date    03.11.2006
  */
 
@@ -104,7 +104,7 @@ void bot_simple2_behaviour(Behaviour_t* data) {
     static int16_t max_dir;
     static int16_t dir;
 
-    int16_t light = (int16_t)((sensLDRL + sensLDRR) / 2);
+    int16_t light = (int16_t) ((sensLDRL + sensLDRR) / 2);
     int16_t free;
 
     switch (simple2_state) {
@@ -124,12 +124,12 @@ void bot_simple2_behaviour(Behaviour_t* data) {
 
             if (dir < 360) { // Noch nicht ganz rum?
                 bot_turn(data, 10); // drehen
-                dir = (int16_t)(dir + 10); // neue Position sichern
+                dir = (int16_t) (dir + 10); // neue Position sichern
             } else { // wir sind ganz rum
                 if (simple2_light == 0) {
                     bot_turn(data, max_dir); // zum Licht drehen
                 } else {
-                    bot_turn(data, (int16_t)(max_dir - 180)); // vom Licht wegdrehen
+                    bot_turn(data, (int16_t) (max_dir - 180)); // vom Licht wegdrehen
                 }
 
                 simple2_state = STATE_SIMPLE2_DRIVE; // Naechster Zustand
@@ -143,7 +143,7 @@ void bot_simple2_behaviour(Behaviour_t* data) {
             free = (free > SENS_IR_MAX_DIST) ? (int16_t) SENS_IR_MAX_DIST : free;
 
             if (free > SENS_IR_SAFE_DIST) {
-                bot_goto_dist(data, (int16_t)(free - SENS_IR_SAFE_DIST), 1); // nach vorn
+                bot_goto_dist(data, (int16_t) (free - SENS_IR_SAFE_DIST), 1); // nach vorn
                 simple2_state = STATE_SIMPLE2_INIT;
             } else
                 simple2_state = STATE_SIMPLE2_DONE; // beenden

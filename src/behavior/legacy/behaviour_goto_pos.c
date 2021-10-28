@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -98,12 +98,12 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
         case FIRST_TURN: {
             /* ungefaehr in die Zielrichtung drehen */
             LOG_DEBUG("first turn");
-            int16_t alpha = (int16_t) calc_angle_diff((int16_t)(dest_x - x_pos), (int16_t)(dest_y - y_pos));
+            int16_t alpha = (int16_t) calc_angle_diff((int16_t) (dest_x - x_pos), (int16_t) (dest_y - y_pos));
             if (drive_dir < 0) {
                 /* Winkelkorrektur, falls rueckwaerts */
-                alpha = (int16_t)(alpha + 180);
+                alpha = (int16_t) (alpha + 180);
                 if (alpha > 180) {
-                    alpha = (int16_t)(alpha - 360);
+                    alpha = (int16_t) (alpha - 360);
                 }
             }
             LOG_DEBUG("alpha=%d", alpha);
@@ -114,7 +114,7 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
                 return;
             }
             if (abs(alpha) > max_angle) {
-                int16_t to_turn = (int16_t)(abs(alpha) - (max_angle - 10));
+                int16_t to_turn = (int16_t) (abs(alpha) - (max_angle - 10));
                 if (alpha < 0) {
                     to_turn = (int16_t) -to_turn;
                 }
@@ -129,8 +129,8 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
             /* Kreisbogenfahrt zum Ziel berechnen */
             LOG_DEBUG("calc way...");
             /* Winkel- und Streckenbezeichnungen wie in -> Documentation/bot_goto_pos.png */
-            int16_t diff_x = (int16_t)(dest_x - x_pos);
-            int16_t diff_y = (int16_t)(dest_y - y_pos);
+            int16_t diff_x = (int16_t) (dest_x - x_pos);
+            int16_t diff_y = (int16_t) (dest_y - y_pos);
             float sin_alpha = heading_sin;
             float tan_alpha = heading_sin / heading_cos;
             if (drive_dir < 0) {
@@ -169,8 +169,8 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
             float x =
                 diff_to_target < 360L * 360L ? (float) diff_to_target / (float) ((360. / M_PI * 2.) * (360. / M_PI * 2.)) : (float) (M_PI / 2.); // (0; pi/2]
             LOG_DEBUG("x=%f", (double) x);
-            v_m = (int16_t)(sinf(x) * (float) (v_m_max - v_m_min)); // [0; v_m_max - v_m_min]
-            v_m = (int16_t)(v_m + v_m_min); // [v_m_min; v_m_max]
+            v_m = (int16_t) (sinf(x) * (float) (v_m_max - v_m_min)); // [0; v_m_max - v_m_min]
+            v_m = (int16_t) (v_m + v_m_min); // [v_m_min; v_m_max]
             if (drive_dir < 0) {
                 v_m = (int16_t) -v_m;
                 radius = -radius;
@@ -231,7 +231,7 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
             /* Aus Fehler neuen Korrekturwert berechnen und im EEPROM speichern */
             const int16_t error = (int16_t) margin;
             LOG_DEBUG("error=%d", error);
-            int16_t new_error = (int16_t)((error + diff) / 2);
+            int16_t new_error = (int16_t) ((error + diff) / 2);
             LOG_DEBUG("new_error=%d", new_error);
             if (new_error < MIN_TARGET_MARGIN) {
                 new_error = MIN_TARGET_MARGIN;
@@ -245,11 +245,11 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
             /* fast fertig, evtl. noch drehen */
             if (dest_head != 999) {
                 /* Noch in die gewuenschte Blickrichtung drehen */
-                int16_t to_turn = (int16_t)(dest_head - heading_int);
+                int16_t to_turn = (int16_t) (dest_head - heading_int);
                 if (to_turn > 180) {
-                    to_turn = (int16_t)(-360 + to_turn);
+                    to_turn = (int16_t) (-360 + to_turn);
                 } else if (to_turn < -180) {
-                    to_turn = (int16_t)(to_turn + 360);
+                    to_turn = (int16_t) (to_turn + 360);
                 }
                 LOG_DEBUG("to_turn=%d", to_turn);
                 bot_turn(data, to_turn);
@@ -307,22 +307,22 @@ Behaviour_t* bot_goto_pos(Behaviour_t* caller, int16_t x, int16_t y, int16_t hea
 
 Behaviour_t* bot_goto_pos_rel(Behaviour_t* caller, int16_t x, int16_t y, int16_t head) {
     /* Zielposition aus Verschiebung berechnen und bot_goto_pos() aufrufen */
-    return bot_goto_pos(caller, (int16_t)(x_pos + x), (int16_t)(y_pos + y), head);
+    return bot_goto_pos(caller, (int16_t) (x_pos + x), (int16_t) (y_pos + y), head);
 }
 
 Behaviour_t* bot_goto_dist_head(Behaviour_t* caller, int16_t distance, int8_t dir, int16_t head) {
     drive_dir = dir;
 
     /* Zielpunkt aus Blickrichtung und Distanz berechnen */
-    int16_t target_x = (int16_t)(distance * heading_cos);
-    int16_t target_y = (int16_t)(distance * heading_sin);
+    int16_t target_x = (int16_t) (distance * heading_cos);
+    int16_t target_y = (int16_t) (distance * heading_sin);
     if (drive_dir < 0) {
         // rueckwaerts
         target_x = (int16_t) -target_x;
         target_y = (int16_t) -target_y;
     }
-    target_x = (int16_t)(target_x + x_pos);
-    target_y = (int16_t)(target_y + y_pos);
+    target_x = (int16_t) (target_x + x_pos);
+    target_y = (int16_t) (target_y + y_pos);
     LOG_DEBUG("Zielpunkt=(%d|%d) head=%d", target_x, target_y, head);
     LOG_DEBUG("Richtung=%d", drive_dir);
     state = END;

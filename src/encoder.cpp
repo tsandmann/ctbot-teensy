@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    encoder.cpp
- * @brief   c't-Bot wheel encoder driver
+ * @brief   Wheel encoder driver
  * @author  Timo Sandmann
  * @date    13.05.2018
  */
@@ -36,7 +36,6 @@ Encoder::Encoder(uint32_t* p_data, volatile uint8_t* p_idx, const uint8_t pin)
     Scheduler::enter_critical_section();
     arduino::pinMode(pin, arduino::INPUT);
 
-    // FIXME: think about this...
     if (pin == CtBotConfig::ENC_L_PIN) {
         arduino::attachInterrupt(
             pin, []() { isr<CtBotConfig::ENC_L_PIN, DATA_ARRAY_SIZE>(DigitalSensors::enc_data_l_, &DigitalSensors::enc_l_idx_); }, arduino::CHANGE);

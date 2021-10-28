@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -174,13 +174,13 @@ FLASHMEM bool VL6180X::set_scaling(const uint8_t scaling) {
 FLASHMEM bool VL6180X::set_address(const uint8_t addr) {
     if (addr > 127) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL6180X::set_address(): invalid address.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL6180X::set_address(): invalid address.\r\n"), true);
         }
         return false;
     }
     if (write_reg8(I2C_ADDRESS_REG, addr)) {
         if (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print("VL6180X::set_address(): write() failed.\r\n", true);
+            CtBot::get_instance().get_comm()->debug_print(PSTR("VL6180X::set_address(): write() failed.\r\n"), true);
         }
         return false;
     }
@@ -206,15 +206,15 @@ bool VL6180X::get_dist_range(uint8_t& range_mm) const {
     if (!read_reg8(RESULT_INTERRUPT_STATUS_REG, data)) {
         if (data & 4) {
             if (read_reg8(RESULT_RANGE_VAL_REG, range_mm) && DEBUG_) {
-                CtBot::get_instance().get_comm()->debug_print("VL6180X::get_dist_range(): i2c error 2\r\n", true);
+                CtBot::get_instance().get_comm()->debug_print(PSTR("VL6180X::get_dist_range(): i2c error 2\r\n"), true);
             }
             if (write_reg8(SYSTEM_INTERRUPT_CLEAR_REG, 1) && DEBUG_) {
-                CtBot::get_instance().get_comm()->debug_print("VL6180X::get_dist_range(): i2c error 3\r\n", true);
+                CtBot::get_instance().get_comm()->debug_print(PSTR("VL6180X::get_dist_range(): i2c error 3\r\n"), true);
             }
             return true;
         }
     } else if (DEBUG_) {
-        CtBot::get_instance().get_comm()->debug_print("VL6180X::get_dist_range(): i2c error 1\r\n", true);
+        CtBot::get_instance().get_comm()->debug_print(PSTR("VL6180X::get_dist_range(): i2c error 1\r\n"), true);
     }
 
     return false;

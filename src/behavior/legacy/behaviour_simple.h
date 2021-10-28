@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@
 /**
  * @file    behaviour_simple.h
  * @brief   Ganz einfache Beispielverhalten
- * @author  Benjamin Benz (bbe@heise.de)
+ * @author  Benjamin Benz
  * @date    03.11.2006
  */
 

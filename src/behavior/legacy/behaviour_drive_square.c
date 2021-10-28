@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@
 /**
  * \file    behaviour_drive_square.c
  * \brief   Bot faehrt im Quadrat
- * \author  Benjamin Benz (bbe@heise.de)
+ * \author  Benjamin Benz
  * \date    03.11.2006
  */
 
@@ -136,12 +136,12 @@ Behaviour_t* bot_drive_square_len(Behaviour_t* caller, int16_t length) {
     /* Ecken des Quadrats berechnen */
     edges[3].x = x_pos;
     edges[3].y = y_pos;
-    edges[0].x = x_pos + (int16_t)(len * heading_cos);
-    edges[0].y = y_pos + (int16_t)(len * heading_sin);
-    edges[1].x = edges[0].x + (int16_t)(len * cosf(fmodf(heading + 90.f, 360.f) * (M_PI / 180.f)));
-    edges[1].y = edges[0].y + (int16_t)(len * sinf(fmodf(heading + 90.f, 360.f) * (M_PI / 180.f)));
-    edges[2].x = edges[1].x + (int16_t)(len * cosf(fmodf(heading + 180.f, 360.f) * (M_PI / 180.f)));
-    edges[2].y = edges[1].y + (int16_t)(len * sinf(fmodf(heading + 180.f, 360.f) * (M_PI / 180.f)));
+    edges[0].x = x_pos + (int16_t) (len * heading_cos);
+    edges[0].y = y_pos + (int16_t) (len * heading_sin);
+    edges[1].x = edges[0].x + (int16_t) (len * cosf(fmodf(heading + 90.f, 360.f) * (M_PI / 180.f)));
+    edges[1].y = edges[0].y + (int16_t) (len * sinf(fmodf(heading + 90.f, 360.f) * (M_PI / 180.f)));
+    edges[2].x = edges[1].x + (int16_t) (len * cosf(fmodf(heading + 180.f, 360.f) * (M_PI / 180.f)));
+    edges[2].y = edges[1].y + (int16_t) (len * sinf(fmodf(heading + 180.f, 360.f) * (M_PI / 180.f)));
 
     return switch_to_behaviour(caller, bot_drive_square_behaviour, BEHAVIOUR_OVERRIDE);
 }

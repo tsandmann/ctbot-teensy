@@ -14,4 +14,4 @@ stop bit S2 as an extension to the command value.
 See also <http://www.sbprojects.com/knowledge/ir/rc5.php>
 
 This library is a fork of the original [RC5 library by guyc](https://github.com/guyc/RC5) - it is adapted
-for use with the c't-Bot teensy framework and ported to C++14.
+for use with the ct-Bot teensy framework and ported to C++14.

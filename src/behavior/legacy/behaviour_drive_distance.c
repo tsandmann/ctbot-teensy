@@ -1,5 +1,5 @@
 /*
- * c't-Bot
+ * ct-Bot
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -20,7 +20,7 @@
 /**
  * @file   behaviour_drive_distance.c
  * @brief  Bot faehrt ein Stueck
- * @author Benjamin Benz (bbe@heise.de)
+ * @author Benjamin Benz
  * @date   03.11.2006
  */
 
@@ -36,10 +36,10 @@ void bot_drive(int8_t curve, int16_t speed) {
     // Wenn etwas ausgewichen wurde, bricht das Verhalten hier ab, sonst wuerde es evtl. die Handlungsanweisungen von bot_avoid_harm() stoeren.
     // if(bot_avoid_harm()) return;
     if (curve < 0) {
-        speedWishLeft = (int16_t)(speed * (1.f + 2.f * ((float) curve / 127.f)));
+        speedWishLeft = (int16_t) (speed * (1.f + 2.f * ((float) curve / 127.f)));
         speedWishRight = speed;
     } else if (curve > 0) {
-        speedWishRight = (int16_t)(speed * (1.f - 2.f * ((float) curve / 127.f)));
+        speedWishRight = (int16_t) (speed * (1.f - 2.f * ((float) curve / 127.f)));
         speedWishLeft = speed;
     } else {
         speedWishLeft = speed;
@@ -104,7 +104,7 @@ Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed
 
     int32_t tmp = cm;
     tmp *= 10 * ENCODER_MARKS;
-    tmp = (int32_t)((float) tmp / (float) WHEEL_PERIMETER);
+    tmp = (int32_t) ((float) tmp / (float) WHEEL_PERIMETER);
     int16_t marks_to_drive = (int16_t) tmp;
 
     int16_t* encoder;

@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -52,19 +52,19 @@ void ButtonTest::initialize_buttons() {
 
     buttons_.emplace_back(new Adafruit_GFX_Button);
     buttons_[0]->initButtonUL(
-        p_tft->get_context(), 0, 0 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::BLUE, TFTColors::WHITE, const_cast<char*>("Lines"), 2);
+        p_tft->get_context(), 0, 0 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::BLUE, TFTColors::WHITE, const_cast<char*>(PSTR("Lines")), 2);
 
     buttons_.emplace_back(new Adafruit_GFX_Button);
     buttons_[1]->initButtonUL(
-        p_tft->get_context(), 0, 1 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::GREEN, TFTColors::WHITE, const_cast<char*>("Rects"), 2);
+        p_tft->get_context(), 0, 1 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::GREEN, TFTColors::WHITE, const_cast<char*>(PSTR("Rects")), 2);
 
     buttons_.emplace_back(new Adafruit_GFX_Button);
     buttons_[2]->initButtonUL(
-        p_tft->get_context(), 0, 2 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::RED, TFTColors::WHITE, const_cast<char*>("Circles"), 2);
+        p_tft->get_context(), 0, 2 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::RED, TFTColors::WHITE, const_cast<char*>(PSTR("Circles")), 2);
 
     buttons_.emplace_back(new Adafruit_GFX_Button);
     buttons_[3]->initButtonUL(
-        p_tft->get_context(), 0, 3 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::NAVY, TFTColors::WHITE, const_cast<char*>("Tasks"), 2);
+        p_tft->get_context(), 0, 3 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::NAVY, TFTColors::WHITE, const_cast<char*>(PSTR("Tasks")), 2);
 
     draw_buttons();
 }
@@ -144,7 +144,7 @@ void ButtonTest::run() {
     switch (btn) {
         case Buttons::BTN_1: {
             ctbot_.get_tft()->set_text_color(TFTColors::BLUE);
-            center_print("Test Lines", true);
+            center_print(PSTR("Test Lines"), true);
 
             std::this_thread::sleep_for(750ms);
 
@@ -158,7 +158,7 @@ void ButtonTest::run() {
 
         case Buttons::BTN_2: {
             ctbot_.get_tft()->set_text_color(TFTColors::GREEN);
-            center_print("Test Rects", true);
+            center_print(PSTR("Test Rects"), true);
 
             std::this_thread::sleep_for(750ms);
 
@@ -172,7 +172,7 @@ void ButtonTest::run() {
 
         case Buttons::BTN_3: {
             ctbot_.get_tft()->set_text_color(TFTColors::RED);
-            center_print("Test Circles", true);
+            center_print(PSTR("Test Circles"), true);
 
             std::this_thread::sleep_for(750ms);
 
@@ -275,7 +275,7 @@ void ButtonTest::test_triangles() {
 ButtonTest::ButtonTest(CtBot& ctbot) : ctbot_(ctbot) {
     initialize_buttons();
 
-    ctbot_.get_scheduler()->task_add("TFT-Test", TASK_PERIOD_MS, 2, 8192, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 8192, [this]() { return run(); });
 }
 
 ButtonTest::~ButtonTest() {

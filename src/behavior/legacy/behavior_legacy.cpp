@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    behavior_legacy.cpp
- * @brief   Support layer for ct-Bot legacy behaviors
+ * @brief   Support layer for legacy behaviors
  * @author  Timo Sandmann
  * @date    26.05.2019
  */
@@ -482,7 +482,7 @@ void BehaviorLegacy::update_global_data() noexcept {
 
     legacy::sensDistL = p_sensors_->get_distance_l();
     legacy::sensDistR = p_sensors_->get_distance_r();
-    legacy::sensDistLRaw = 0; // FIXME: distance sensor data conversion
+    legacy::sensDistLRaw = 0; // FIXME: distance sensor data conversion?
     legacy::sensDistRRaw = 0;
     legacy::sensDistLToggle = static_cast<uint8_t>(~legacy::sensDistLToggle);
     legacy::sensDistRToggle = static_cast<uint8_t>(~legacy::sensDistRToggle);

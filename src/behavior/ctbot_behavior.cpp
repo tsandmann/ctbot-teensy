@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,12 +48,12 @@
 
 
 namespace ctbot {
-const char CtBotBehavior::usage_text_beh[] { "\r\n"
-                                             "beh (b)\r\n"
-                                             "\tstart BEHAVIOR [PARAMS]\tstart a behavior\r\n"
-                                             "\tstop\t\t\tstop a currently running behavior\r\n"
-                                             "\tlist\t\t\tshow a list of all registered behaviors\r\r"
-                                             "\r\n" };
+PROGMEM const char CtBotBehavior::usage_text_beh[] { "\r\n"
+                                                     "beh (b)\r\n"
+                                                     "\tstart BEHAVIOR [PARAMS]\tstart a behavior\r\n"
+                                                     "\tstop\t\t\tstop a currently running behavior\r\n"
+                                                     "\tlist\t\t\tshow a list of all registered behaviors\r\r"
+                                                     "\r\n" };
 
 CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
 
@@ -160,7 +160,7 @@ void CtBotBehavior::setup(const bool set_ready) {
     ResourceContainer* const p_model { p_data_->create_resource<ResourceContainer>(PSTR("model."), true) };
     Resource<Pose>* const p_pose_enc { p_model->create_resource<Pose>(PSTR("pose_enc"), true) };
     p_pose_enc->register_listener([p_model](const Resource<Pose>::basetype&) {
-        p_model->set_update_state(("pose_enc"));
+        p_model->set_update_state((PSTR("pose_enc")));
         return;
     });
 
@@ -181,7 +181,7 @@ void CtBotBehavior::setup(const bool set_ready) {
     auto p_governor_r = p_governors->create_actuator(PSTR("right"), true);
     configASSERT(p_governor_l && p_governor_r);
     p_governor_l->register_listener([p_governors](const AMotor::basetype&) {
-        p_governors->set_update_state(("left"));
+        p_governors->set_update_state((PSTR("left")));
         return;
     });
     p_governor_r->register_listener([p_governors](const AMotor::basetype&) {

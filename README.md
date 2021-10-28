@@ -1,13 +1,13 @@
-# c't-Bot Teensy framework
+# ct-Bot Teensy framework
 
-This is a very basic framework for the [c't-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
+This is a very basic framework for the [ct-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
 
 [![Open in VS Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/tsandmann/ctbot-teensy)
 
 
 ## Summary
 
-This code was created for testing a new and simplified design of the c't-Bot software framework. The basic idea is to have a modular structured framework implemented in C++ built on modern language features.
+This code was created for testing a new and simplified design of the ct-Bot software framework. The basic idea is to have a modular structured framework implemented in C++ built on modern language features.
 
 ### Notice
 
@@ -47,7 +47,7 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
       * goto `Screen and keyboard` settings and set `Add carriage return` to `Yes`
 1. Have fun with the command line interface
     * type `help` to get a list and description of available commands
-1. Cruise around with the c't-Bot using
+1. Cruise around with the ct-Bot using
     * your remote control: **arrow keys** for *forward*, *backward*, *left*, *right* and **power button** for *stop*
     * the command line interface: `set speed 30 30` for 30% of max speed on both wheels, `set speed 0 0` (or just `set speed`) to stop
 1. Press **play** on remote control to show a little easter egg on the command line interface :) or **I/II** to shutdown the bot :(

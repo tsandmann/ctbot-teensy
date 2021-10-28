@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2019 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    available_behaviours.h
- * @brief   Support layer for ct-Bot legacy behaviors
+ * @brief   Support layer for legacy behaviors
  * @author  Timo Sandmann
  * @date    26.05.2019
  */
@@ -91,7 +91,7 @@ extern BehaviourFunc_t bot_turn_behaviour;
 static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir);
 static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm) {
     (void) curve;
-    return bot_goto_dist(caller, (int16_t)(cm * 10), speed > 0 ? 1 : -1);
+    return bot_goto_dist(caller, (int16_t) (cm * 10), speed > 0 ? 1 : -1);
 }
 #else
 static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm) {

@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 /**
  * @file    ctbot_main.cpp
- * @brief   Entry point of c't-Bot teensy framework
+ * @brief   Entry point of ct-Bot teensy framework
  * @author  Timo Sandmann
  * @date    13.05.2018
  */
@@ -151,97 +151,7 @@ static FLASHMEM void init_task(void*) {
 
 extern "C" {
 /**
- * @brief Entry point for c't-Bot initialization
- *
- * @startuml{main.png}
- *  activate Main
- *  Main -> CtBot: get_instance()
- *  Main <-- CtBot: ctbot
- *
- *  Main -> CtBot: setup()
- *  activate CtBot
- *  create Scheduler
- *  CtBot -> Scheduler: new
- *  CtBot -> Scheduler: task_add("main")
- *  activate Scheduler
- *  CtBot <-- Scheduler
- *  deactivate Scheduler
- *
- *  Main <-- CtBot
- *  deactivate CtBot
- *
- *  alt BLINK_TEST_AVAILABLE == true
- *   create BlinkTest
- *   Main -> BlinkTest: new
- *   BlinkTest -> Scheduler: task_add("blinktest")
- *   activate Scheduler
- *   BlinkTest <-- Scheduler
- *   deactivate Scheduler
- *   activate BlinkTest
- *   Main <-- BlinkTest
- *  end
- *
- *  alt LED_TEST_AVAILABLE == true
- *   create LedTest
- *   Main -> LedTest: new
- *   LedTest -> Scheduler: task_add("ledtest")
- *   activate Scheduler
- *   LedTest <-- Scheduler
- *   deactivate Scheduler
- *   activate LedTest
- *   Main <-- LedTest
- *  end
- *
- *  alt LCD_TEST_AVAILABLE == true
- *   create LcdTest
- *   Main -> LcdTest: new
- *   LcdTest -> Scheduler: task_add("lcdtest")
- *   activate Scheduler
- *   LcdTest <-- Scheduler
- *   deactivate Scheduler
- *   activate LcdTest
- *   Main <-- LcdTest
- *  end
- *
- *  alt ENA_TEST_AVAILABLE == true
- *   create EnaTest
- *   Main -> EnaTest: new
- *   EnaTest -> Scheduler: task_add("enatest")
- *   activate Scheduler
- *   EnaTest <-- Scheduler
- *   deactivate Scheduler
- *   activate EnaTest
- *   Main <-- EnaTest
- *  end
- *
- *  alt SENS_LCD_TEST_AVAILABLE == true
- *   create SensorLcdTest
- *   Main -> SensorLcdTest: new
- *   SensorLcdTest -> Scheduler: task_add("senstest")
- *   activate Scheduler
- *   SensorLcdTest <-- Scheduler
- *   deactivate Scheduler
- *   activate SensorLcdTest
- *   Main <-- SensorLcdTest
- *  end
- *
- *  Main -> CtBot: start()
- *  activate CtBot
- *  ... **run until shutdown** ...
- *  Main <-- CtBot
- *  deactivate SensorLcdTest
- *  destroy SensorLcdTest
- *  deactivate EnaTest
- *  destroy EnaTest
- *  deactivate LcdTest
- *  destroy LcdTest
- *  deactivate LedTest
- *  destroy LedTest
- *  deactivate BlinkTest
- *  destroy BlinkTest
- *  note over Scheduler: tasks aren't really destroyed on shutdown
- *  deactivate CtBot
- * @enduml
+ * @brief Entry point for ct-Bot initialization
  */
 FLASHMEM __attribute__((noinline)) void setup() {
     using namespace ctbot;

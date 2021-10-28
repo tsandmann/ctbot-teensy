@@ -1,5 +1,5 @@
 /*
- * This file is part of the c't-Bot teensy framework.
+ * This file is part of the ct-Bot teensy framework.
  * Copyright (c) 2018 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
@@ -36,11 +36,10 @@ namespace ctbot {
 std::remove_all_extents<decltype(Rc5::input_data_)>::type Rc5::input_data_[Rc5::DATA_ARRAY_SIZE];
 decltype(Rc5::input_idx_) Rc5::input_idx_ {};
 
-Rc5::Rc5(const uint8_t pin) : last_idx_ {}, rc5_addr_ {}, rc5_cmd_ {}, rc5_toggle_ {}, p_impl_ { new RC5 } {
+Rc5::Rc5(const uint8_t pin) : last_idx_ {}, rc5_addr_ {}, rc5_cmd_ {}, rc5_toggle_ {}, p_impl_ { new RC5 {} } {
     Scheduler::enter_critical_section();
     arduino::pinMode(pin, arduino::INPUT_PULLUP);
 
-    // FIXME: think about this...
     arduino::attachInterrupt(
         pin, []() { isr<CtBotConfig::RC5_PIN, DATA_ARRAY_SIZE>(input_data_, &input_idx_); }, arduino::CHANGE);
     Scheduler::exit_critical_section();
@@ -74,9 +73,7 @@ bool Rc5::update() {
     if (diff_rc5) {
         if (DEBUG_) {
             CtBot& ctbot { CtBot::get_instance() };
-            ctbot.get_comm()->debug_print(PSTR("\r\ndiff_rc5="), false);
-            ctbot.get_comm()->debug_print(diff_rc5, false);
-            ctbot.get_comm()->debug_print(PSTR("\r\n"), false);
+            ctbot.get_comm()->debug_print(PSTR("\r\ndiff_rc5=%d\r\n"), diff_rc5);
         }
 
         for (auto i { last_idx_ }; i != idx; i = (i + 1) % DATA_ARRAY_SIZE) {
@@ -86,21 +83,8 @@ bool Rc5::update() {
 
             if (DEBUG_) {
                 CtBot& ctbot { CtBot::get_instance() };
-                ctbot.get_comm()->debug_print("i=", false);
-                ctbot.get_comm()->debug_print(i, false);
-                ctbot.get_comm()->debug_print('\t', false);
-                ctbot.get_comm()->debug_print("us=", false);
-                ctbot.get_comm()->debug_print(input_data_[i].us, false);
-                ctbot.get_comm()->debug_print("\r\n", false);
-                ctbot.get_comm()->debug_print("i_time=", false);
-                ctbot.get_comm()->debug_print(i_time, false);
-                ctbot.get_comm()->debug_print(" us\t", false);
-                ctbot.get_comm()->debug_print("diff_time=", false);
-                ctbot.get_comm()->debug_print(diff_time, false);
-                ctbot.get_comm()->debug_print(" us\t", false);
-                ctbot.get_comm()->debug_print("value=", false);
-                ctbot.get_comm()->debug_print(input_data_[i].value, false);
-                ctbot.get_comm()->debug_print("\r\n", false);
+                ctbot.get_comm()->debug_printf<false>(PSTR("i=%u\tus=%u\r\n"), i, input_data_[i].us);
+                ctbot.get_comm()->debug_printf<false>(PSTR("i_time=%u us\tdiff_time=%d us\tvalue=%u\r\n"), i_time, diff_time, input_data_[i].value);
             }
 
             if (p_impl_->read(rc5_toggle_, rc5_addr_, rc5_cmd_, input_data_[i].value, diff_time)) {
@@ -108,15 +92,7 @@ bool Rc5::update() {
 
                 if (DEBUG_) {
                     CtBot& ctbot { CtBot::get_instance() };
-                    ctbot.get_comm()->debug_print("addr=", false);
-                    ctbot.get_comm()->debug_print(rc5_addr_, false);
-                    ctbot.get_comm()->debug_print('\t', false);
-                    ctbot.get_comm()->debug_print("cmd=0x", false);
-                    ctbot.get_comm()->debug_print(rc5_cmd_, false);
-                    ctbot.get_comm()->debug_print('\t', false);
-                    ctbot.get_comm()->debug_print("toggle=", false);
-                    ctbot.get_comm()->debug_print(rc5_toggle_, false);
-                    ctbot.get_comm()->debug_print("\r\n", false);
+                    ctbot.get_comm()->debug_printf<false>(PSTR("addr=0x%x\tcmd=0x%x\ttoggle=%u\r\n"), rc5_addr_, rc5_cmd_, rc5_toggle_);
                 }
             }
         }
@@ -135,10 +111,6 @@ void Rc5::set_rc5(const uint8_t addr, const uint8_t cmd, bool toggle) {
     rc5_toggle_ = toggle;
     rc5_addr_ = addr;
     rc5_cmd_ = cmd;
-
-    // if (addr | cmd) {
-    //     ::printf("Rc5::set_rc5(): toggle=%u\taddr=%u\tcmd=%u\r\n", rc5_toggle_, rc5_addr_, rc5_cmd_);
-    // }
 }
 
 } // namespace ctbot
