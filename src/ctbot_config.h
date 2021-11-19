@@ -179,7 +179,7 @@ public:
 
     /* tft */
     static constexpr uint8_t TFT_SPI { 0 }; /**< ID of SPI port to use for tft controller */
-    static constexpr uint32_t TFT_SPI_FREQUENCY { 30'000'000UL };
+    static constexpr uint32_t TFT_SPI_FREQUENCY { 40'000'000UL };
     static constexpr uint8_t TFT_CS_PIN { SPI0_PIN_CS1 }; /**< Pin number of SPI chip select signal to use for tft controller */
     static constexpr uint8_t TFT_DC_PIN { SPI0_PIN_CS3 }; /**< Pin number of data/control signal to use for tft controller */
     static constexpr uint8_t TFT_BACKLIGHT_PIN { PWM_ERW_2_PIN }; /**< Pin number of backlight PWM control signal to use for tft display */

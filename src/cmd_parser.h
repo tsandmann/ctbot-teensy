@@ -66,18 +66,18 @@ public:
 
     /**
      * @brief Register a new command given as a string_view
-     * @param[in] cmd: Pointer to of command
+     * @param[in] cmd: Command
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    FLASHMEM void register_cmd(const std::string& cmd, func_t&& func);
+    FLASHMEM void register_cmd(const std::string_view& cmd, func_t&& func);
 
     /**
      * @brief Register a new command given as a string_view
-     * @param[in] cmd: Pointer to string of command
+     * @param[in] cmd: Command
      * @param[in] cmd_short: Shortcut for command as a single character
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    FLASHMEM void register_cmd(const std::string& cmd, const char cmd_short, func_t&& func);
+    FLASHMEM void register_cmd(const std::string_view& cmd, const char cmd_short, func_t&& func);
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered

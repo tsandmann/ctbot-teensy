@@ -283,7 +283,7 @@ FLASHMEM bool VL53L0X::init() {
 }
 
 FLASHMEM bool VL53L0X::get_spad_info(uint8_t& count, bool& type_is_aperture) const {
-#if defined __x86_64__ || defined __i386__
+#if defined __x86_64__ || defined __i386__ || defined __APPLE__ || defined __linux__
     return true; // FIXME: workaround for simulator
 #endif
 

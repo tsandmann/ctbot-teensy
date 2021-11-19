@@ -441,7 +441,6 @@ protected:
     static constexpr uint16_t TASK_PERIOD_MS { 50 }; /**< Scheduling period of tasks in ms */
 
     CtBot& ctbot_; /**< Reference to CtBot instance */
-    Adafruit_ILI9341* p_tft_;
 
     /* disable copy/move */
     TftTest(const TftTest&) = delete;

@@ -29,6 +29,7 @@
 #include "leds_i2c.h"
 
 #include <cstdint>
+#include <mutex>
 
 
 namespace ctbot {
@@ -54,6 +55,7 @@ protected:
     static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 }; // FIXME: calibrated value
 
     uint8_t last_adc_res_;
+    std::mutex adc_mutex_;
     uint16_t line_[2];
     uint16_t ldr_[2];
     uint16_t border_[2];

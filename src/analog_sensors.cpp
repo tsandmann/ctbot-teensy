@@ -48,14 +48,19 @@ AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, ldr_ { 0, 0 }
 }
 
 void AnalogSensors::update() {
-    line_[0] = analog_read(CtBotConfig::LINE_L_PIN, 10);
-    line_[1] = analog_read(CtBotConfig::LINE_R_PIN, 10);
-    ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 10, 4);
-    ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
-    border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
-    border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
-    bat_voltage_ = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 16)
-        * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / static_cast<float>((1 << BAT_ADC_RES) - 1));
+    uint16_t volt_raw;
+    {
+        std::lock_guard<std::mutex> lock { adc_mutex_ };
+
+        line_[0] = analog_read(CtBotConfig::LINE_L_PIN, 10);
+        line_[1] = analog_read(CtBotConfig::LINE_R_PIN, 10);
+        ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 10, 4);
+        ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
+        border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
+        border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
+        volt_raw = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 16);
+    }
+    bat_voltage_ = volt_raw * (3.33f * (static_cast<float>(BAT_VOLTAGE_R2 + BAT_VOLTAGE_R1) / BAT_VOLTAGE_R2) / static_cast<float>((1 << BAT_ADC_RES) - 1));
 }
 
 uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution, const uint8_t avg_num) {
@@ -64,14 +69,10 @@ uint16_t AnalogSensors::analog_read(const uint8_t pin, const uint8_t resolution,
     }
     if (last_adc_res_ != resolution && resolution >= 8 && resolution <= 16) {
         last_adc_res_ = resolution;
-        Scheduler::enter_critical_section(); // FIXME: don't disable scheduler (yield() is called in analogRead())
         arduino::analogReadResolution(resolution);
-    } else {
-        Scheduler::enter_critical_section();
     }
     arduino::analogReadAveraging(avg_num);
     const uint16_t ret { static_cast<uint16_t>(arduino::analogRead(pin)) };
-    Scheduler::exit_critical_section();
     return ret;
 }
 
