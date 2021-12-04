@@ -146,6 +146,10 @@ void Behavior::sleep_for_ms(const uint32_t time) {
 bool Behavior::exit() {
     if (!finished_) {
         finished_ = true;
+
+        set_actuator(get_motor_l(), 0);
+        set_actuator(get_motor_r(), 0);
+
         set_active(false);
 
         debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": notifying caller...\r\n", get_name().c_str()));
