@@ -367,7 +367,8 @@ FLASHMEM size_t BehaviorLegacy::print_log(const char* type, const size_t type_le
 }
 
 BehaviorLegacy::BehaviorLegacy(const std::string& name)
-    : Behavior { name, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, running_ {}, max_active_priority_ {}, behavior_ {} {
+    : Behavior { name, true, Behavior::DEFAULT_PRIORITY, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, running_ {}, max_active_priority_ { 255 }, behavior_ {} {
+    update_global_data();
     bot_behave_init();
     debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::BehaviorLegacy(\"{s}\").\r\n", name.c_str()));
 }
@@ -434,33 +435,48 @@ void BehaviorLegacy::abort_behavior(legacy::Behaviour_t* caller) {
 }
 
 void BehaviorLegacy::run() {
-    debug_print<DEBUG_>(PSTR("BehaviorLegacy::run().\r\n"));
+    if (max_active_priority_) {
+        // debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): wait for model at %u ms.\r\n"), Timer::get_ms());
+    }
+    wait_for_model_update();
 
-    while (!finished() && get_ctbot()->get_ready()) {
-        wait_for_model_update();
-
-        if (abort_request_) {
-            exit();
-            return;
-        }
-
-        bot_behave();
-
-        max_active_priority_ = 0;
-        for (auto job { behavior_ }; job; job = job->next) {
-            if (job->active) {
-                if (job->priority > max_active_priority_) {
-                    max_active_priority_ = job->priority;
-                }
-                break; // behavior list is sorted
-            }
-        }
-        // set_priority(max_active_priority_); // FIXME: set_priority() not implemented yet
+    if (max_active_priority_) {
+        // debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): model updated at %u ms.\r\n"), Timer::get_ms());
     }
 
-    debug_print<DEBUG_>(PSTR("BehaviorLegacy::run(): finished.\r\n"));
+    if (abort_request_) {
+        exit();
+        motor_update_done();
+        return;
+    }
 
-    exit();
+    const auto last_max_active { max_active_priority_ };
+
+    update_global_data();
+    bot_behave();
+
+    max_active_priority_ = 0;
+    for (auto job { behavior_ }; job; job = job->next) {
+        if (job->active) {
+            if (job->priority > max_active_priority_) {
+                max_active_priority_ = job->priority;
+            }
+            break; // behavior list is sorted
+        }
+    }
+    // set_priority(max_active_priority_); // FIXME: set_priority() not implemented yet
+    if (last_max_active != max_active_priority_) {
+        /* Aenderung in der Verhaltensaktivitaet */
+        set_active(max_active_priority_);
+    }
+    if (last_max_active) {
+        motor_update_done();
+    }
+
+    if (finished()) {
+        debug_print<DEBUG_>(PSTR("BehaviorLegacy::run(): finished.\r\n"));
+        exit();
+    }
 }
 
 void BehaviorLegacy::init() noexcept {
@@ -805,10 +821,6 @@ legacy::Behaviour_t* BehaviorLegacy::switch_to_behavior(legacy::Behaviour_t* fro
 
     // neues Verhalten aktivieren
     job->active = BEHAVIOUR_ACTIVE;
-    if (job->priority > max_active_priority_) {
-        max_active_priority_ = job->priority;
-        // set_priority(max_active_priority); // FIXME: set_priority() not implemented yet
-    }
     // Aufrufer sichern
     job->caller = from;
 

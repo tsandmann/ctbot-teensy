@@ -32,16 +32,13 @@
 
 #include "pprintpp.hpp"
 
-#include <thread>
-#include <chrono>
-
 
 namespace ctbot {
 
 decltype(BehaviorTurn::reg_) BehaviorTurn::reg_ { "turn", [](const int32_t p) { return INIT<BehaviorTurn, int16_t>(p); } };
 
 BehaviorTurn::BehaviorTurn(const int16_t degrees, const uint16_t priority, const uint16_t min_speed, const uint16_t max_speed)
-    : Behavior { PSTR("TurnBeh"), priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, min_speed_ { min_speed },
+    : Behavior { PSTR("TurnBeh"), true, priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, min_speed_ { min_speed },
       max_speed_ { max_speed }, state_ { State::TURN }, target_ {}, old_head_ {}, turn_direction_ {} {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorTurn::BehaviorTurn({},{},{},{})\r\n", degrees, priority, min_speed, max_speed));
 
@@ -74,7 +71,10 @@ BehaviorTurn::~BehaviorTurn() {
 
 void BehaviorTurn::run() {
     /* wait for sensor data to get updated */
+    debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): wait for model at %u ms.\r\n"), Timer::get_ms());
     wait_for_model_update();
+
+    debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): model updated at %u ms.\r\n"), Timer::get_ms());
 
     if (abort_request_) {
         state_ = State::ABORT;
@@ -130,9 +130,10 @@ void BehaviorTurn::run() {
         case State::END:
             /* wait for overrun finished */
             if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
+                motor_update_done();
+
                 /* wait for both wheel standing still for at least 100 ms */
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(100ms);
+                sleep_for_ms(100);
 
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                     print_pose(false);
@@ -141,6 +142,7 @@ void BehaviorTurn::run() {
                     /* everything done, exit this behavior */
                     exit();
                 }
+                return;
             }
             break;
 
@@ -149,6 +151,9 @@ void BehaviorTurn::run() {
             exit();
             break;
     }
+
+    debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): notify for motor update at %u ms.\r\n"), Timer::get_ms());
+    motor_update_done();
 }
 
 } // namespace ctbot

@@ -43,6 +43,8 @@ namespace ctbot {
  */
 class BehaviorTest : public Behavior {
     // FIXME: add documentation
+    static constexpr bool DEBUG_ { false };
+
 public:
     using Ptr = std::unique_ptr<BehaviorTest>;
 

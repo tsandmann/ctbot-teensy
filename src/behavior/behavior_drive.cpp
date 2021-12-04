@@ -26,11 +26,9 @@
 #include "ctbot_behavior.h"
 #include "scheduler.h"
 #include "speed.h"
+#include "timer.h"
 
 #include "pprintpp.hpp"
-
-#include <thread>
-#include <chrono>
 
 
 namespace ctbot {
@@ -38,7 +36,7 @@ namespace ctbot {
 decltype(BehaviorDrive::reg_) BehaviorDrive::reg_ { "drive", [](const int32_t p) { return INIT<BehaviorDrive, int16_t>(p); } };
 
 BehaviorDrive::BehaviorDrive(const int16_t distance, const uint16_t priority)
-    : Behavior { PSTR("DriveBeh"), priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, start_ {},
+    : Behavior { PSTR("DriveBeh"), true, priority, DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, start_ {},
       distance_2_ { distance * distance }, forward_ { distance >= 0 } {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorDrive::BehaviorDrive({},{})\r\n", distance, priority));
 
@@ -83,13 +81,14 @@ void BehaviorDrive::run() {
         case State::END:
             /* wait for overrun finished */
             if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
+                motor_update_done();
+
                 /* wait for both wheel standing still for at least 100 ms */
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(100ms);
+                sleep_for_ms(100);
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                     debug_print<DEBUG_>(PSTR("BehaviorDrive::run(): done.\r\n"));
                     if (DEBUG_) {
-                        std::this_thread::sleep_for(1s); // just for testing
+                        sleep_for_ms(1'000); // just for testing
                     }
 
                     /* everything done, exit this behavior */
@@ -100,10 +99,14 @@ void BehaviorDrive::run() {
             break;
 
         case State::ABORT:
+            motor_update_done();
             debug_print<DEBUG_>(PSTR("BehaviorDrive::run(): aborted.\r\n"));
             exit();
             return;
     }
+
+    debug_printf<DEBUG_>(PSTR("BehaviorDrive::run(): notify for motor update at %u ms.\r\n"), Timer::get_ms());
+    motor_update_done();
 
     /* print some debug output */
     if (DEBUG_) {

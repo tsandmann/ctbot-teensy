@@ -59,7 +59,7 @@ protected:
     virtual void run() override;
 
 private:
-    static constexpr bool DEBUG_ { true };
+    static constexpr bool DEBUG_ { false };
     static constexpr uint32_t STACK_SIZE { 4096 };
 
     static const Registry reg_;

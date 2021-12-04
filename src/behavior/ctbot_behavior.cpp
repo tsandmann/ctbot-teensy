@@ -24,7 +24,7 @@
 
 #include "ctbot_behavior.h"
 #include "ctbot_config.h"
-#include "help_texts.h"
+#include "ctbot_cli.h"
 #include "cmd_parser.h"
 #include "resource_container.h"
 #include "actuator.h"
@@ -58,16 +58,12 @@ PROGMEM const char CtBotBehavior::usage_text_beh[] { "\r\n"
 CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
 
 void CtBotBehavior::setup(const bool set_ready) {
-    if (DEBUG_LEVEL_ > 2) {
+    if (DEBUG_LEVEL_ >= 3) {
         ::serialport_puts(PSTR("CtBotBehavior::setup()...\r\n"));
     }
     CtBot::setup(false);
 
-    p_parser_->register_cmd(PSTR("help"), 'h', [this](const std::string_view&) FLASHMEM {
-        CtBotHelpTexts::print(*p_comm_);
-        p_comm_->debug_print(usage_text_beh, true);
-        return true;
-    });
+    p_cli_->add_helptext(usage_text_beh);
 
     p_parser_->register_cmd(PSTR("beh"), 'b', [this](const std::string_view& args) FLASHMEM {
         if (args.find(PSTR("start")) == 0) {
@@ -82,19 +78,25 @@ void CtBotBehavior::setup(const bool set_ready) {
             if (beh_it != behavior_list_.end()) {
                 const auto beh { beh_it->second };
                 const auto params { std::get<0>(beh_it->second) };
-                get_comm()->debug_printf<true>(PSTR("creating behavior \"%.*s\" with %u parameters...\r\n"), beh_name.size(), beh_name.data(), params);
+                if (DEBUG_LEVEL_ >= 3) {
+                    get_comm()->debug_printf<true>(PSTR("creating behavior \"%.*s\" with %u parameters...\r\n"), beh_name.size(), beh_name.data(), params);
+                }
 
                 switch (params) {
                     case 0:
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>()>>(std::get<1>(beh))();
-                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        if (DEBUG_LEVEL_ >= 4) {
+                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        }
                         break;
 
                     case 1: {
                         int32_t v {};
                         CmdParser::split_args(args.substr(e), v);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t)>>(std::get<1>(beh))(v);
-                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        if (DEBUG_LEVEL_ >= 4) {
+                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        }
                         break;
                     }
 
@@ -102,7 +104,9 @@ void CtBotBehavior::setup(const bool set_ready) {
                         int32_t v1 {}, v2 {};
                         CmdParser::split_args(args.substr(e), v1, v2);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2);
-                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        if (DEBUG_LEVEL_ >= 4) {
+                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        }
                         break;
                     }
 
@@ -111,7 +115,9 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2, v3);
                         p_beh_ =
                             std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2, v3);
-                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        if (DEBUG_LEVEL_ >= 4) {
+                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        }
                         break;
                     }
 
@@ -120,7 +126,9 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2, v3, v4);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)>>(
                             std::get<1>(beh))(v1, v2, v3, v4);
-                        get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        if (DEBUG_LEVEL_ >= 4) {
+                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                        }
                         break;
                     }
 
@@ -171,8 +179,11 @@ void CtBotBehavior::setup(const bool set_ready) {
     });
 
     p_model->register_listener([p_model, this](const ResourceContainer&) {
-        model_cond_.notify_all();
         p_model->reset_update_states();
+        if (DEBUG_LEVEL_ > 4) {
+            get_comm()->debug_printf<true>(PP_ARGS("model notify at {} ms.\r\n", Timer::get_ms()));
+        }
+        model_cond_.notify_all();
     });
 
     auto p_governors = p_actuators_->create_resource<ActuatorContainer<AMotor>>(PSTR("speed."), true);
@@ -180,44 +191,47 @@ void CtBotBehavior::setup(const bool set_ready) {
     auto p_governor_l = p_governors->create_actuator(PSTR("left"), true);
     auto p_governor_r = p_governors->create_actuator(PSTR("right"), true);
     configASSERT(p_governor_l && p_governor_r);
-    p_governor_l->register_listener([p_governors](const AMotor::basetype&) {
-        p_governors->set_update_state((PSTR("left")));
-        return;
-    });
-    p_governor_r->register_listener([p_governors](const AMotor::basetype&) {
-        p_governors->set_update_state(PSTR("right"));
-        return;
-    });
+    p_governor_l->register_listener([p_governors](const AMotor::basetype&) { p_governors->set_update_state((PSTR("left"))); });
+    p_governor_r->register_listener([p_governors](const AMotor::basetype&) { p_governors->set_update_state(PSTR("right")); });
 
     p_governors->register_listener([p_governors, this](const ResourceContainer& governors) {
         if (!beh_enabled_) {
             return;
         }
-        // get_comm()->debug_printf<true>(PP_ARGS("all governors set at {} ms.\r\n", Timer::get_ms()));
+        if (DEBUG_LEVEL_ > 4) {
+            get_comm()->debug_printf<true>(PP_ARGS("all governors set at {} ms.\r\n", Timer::get_ms()));
+        }
         AMotor* p_left;
         if (governors.get_resource(PSTR("left"), p_left)) {
             const int16_t left { p_left->read() };
             p_speedcontrols_[0]->set_speed(static_cast<float>(left));
-            // get_comm()->debug_printf<true>(PP_ARGS("speed left set to {}\r\n", left));
+            if (DEBUG_LEVEL_ > 4) {
+                get_comm()->debug_printf<true>(PP_ARGS("speed left set to {}\r\n", left));
+            }
         }
         AMotor* p_right;
         if (governors.get_resource(PSTR("right"), p_right)) {
             const int16_t right { p_right->read() };
             p_speedcontrols_[1]->set_speed(static_cast<float>(right));
-            // get_comm()->debug_printf<true>(PP_ARGS("speed right set to {}\r\n", right));
+            if (DEBUG_LEVEL_ > 4) {
+                get_comm()->debug_printf<true>(PP_ARGS("speed right set to {}\r\n", right));
+            }
         }
+
         p_governors->reset_update_states();
-        return;
     });
 
     if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
         BehaviorLegacy::init();
     }
 
+    p_actuators_->get_resource(PSTR("speed."), p_governors_);
+    configASSERT(p_governors_);
+
     ready_ = set_ready;
     beh_enabled_ = true;
 
-    if (DEBUG_LEVEL_ > 2) {
+    if (DEBUG_LEVEL_ >= 3) {
         ::serialport_puts(PSTR("CtBotBehavior::setup() done.\r\n"));
     }
 }
@@ -248,8 +262,20 @@ void CtBotBehavior::register_behavior(
 }
 
 void CtBotBehavior::run() {
+    using namespace std::chrono_literals;
+    static uint32_t last_time {};
+
     if (!ready_ || !beh_enabled_) {
         return;
+    }
+
+    if (DEBUG_LEVEL_ >= 4) {
+        const auto now { Timer::get_ms() };
+        const auto diff { now - last_time };
+        last_time = now;
+        if (diff > TASK_PERIOD_MS + 1) {
+            get_comm()->debug_printf<true>(PSTR("\nCtBotBehavior::run(): time diff=%u ms at %u ms.\r\n"), diff, now);
+        }
     }
 
     CtBot::run();
@@ -259,30 +285,43 @@ void CtBotBehavior::run() {
     auto& speed { *p_data_->get_resource<Speed>(PSTR("model.speed_enc")) };
     update_enc(pose.get_ref(), speed.get_ref());
 
-    if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
-        BehaviorLegacy::update_global_data();
+    const auto motor_requests { Behavior::get_motor_requests() };
+    p_motor_sync_ = std::make_unique<std::latch>(static_cast<ptrdiff_t>(motor_requests));
+    if (DEBUG_LEVEL_ >= 4 && motor_requests) {
+        get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): set motor barrier to %u\r\n"), motor_requests);
     }
 
     pose.notify();
     speed.notify();
 
-    // FIXME: use a condition to indicate behavior execution fisnished?
-    // get_comm()->debug_print("waiting for beh. condition.\r\n");
-    // std::unique_lock<std::mutex> lk(beh_mutex_);
-    // beh_cond_.wait(lk);
-    // get_comm()->debug_print("got beh. condition.\r\n");
 
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(5ms); // FIXME: wait time?
+    if (DEBUG_LEVEL_ >= 4 && motor_requests) {
+        get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): waiting for motor barrier(%u)...\r\n"), motor_requests);
+    }
+    const auto start { Timer::get_ms() };
+    while (!p_motor_sync_->try_wait() & (Timer::get_ms() - start < TASK_PERIOD_MS * 2)) {
+        std::this_thread::sleep_for(100us);
+    }
+    if (motor_requests) {
+        const auto barrier_done { Timer::get_ms() };
+        const auto diff { barrier_done - start };
+        if (diff < TASK_PERIOD_MS * 2) {
+            if (DEBUG_LEVEL_ >= 4) {
+                get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): motor barrier done at %u ms.\r\n"), barrier_done);
+            }
+        } else {
+            if (DEBUG_LEVEL_ >= 3) {
+                get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): motor barrier timeout: %u ms at %u ms.\r\n"), diff, barrier_done);
+            }
+        }
+    }
 
-    ActuatorContainer<AMotor>* p_governors;
-    p_actuators_->get_resource(PSTR("speed."), p_governors);
-    configASSERT(p_governors);
-
-    p_governors->commit_values();
+    p_governors_->commit_values();
 
     if (p_beh_ && p_beh_->finished()) {
-        get_comm()->debug_print(PSTR("deleting Behavior (p_beh_)\r\n"), true);
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print(PSTR("CtBotBehavior::run(): deleting Behavior (p_beh_)\r\n"), true);
+        }
         p_beh_.reset();
     }
 }
@@ -291,9 +330,18 @@ void CtBotBehavior::wait_for_model_update(std::atomic<bool>& abort) {
     using namespace std::chrono_literals;
 
     std::unique_lock<std::mutex> lk(model_mutex_);
-    while (model_cond_.wait_for(lk, 10ms) == std::cv_status::timeout) {
+    while (model_cond_.wait_for(lk, 100ms) == std::cv_status::timeout) {
         if (abort) {
             return;
+        }
+    }
+}
+
+void CtBotBehavior::motor_update_done() {
+    if (p_motor_sync_) {
+        p_motor_sync_->count_down();
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print(PSTR("CtBotBehavior::motor_update_done(): p_motor_sync_->count_down()\r\n"), true);
         }
     }
 }
@@ -307,18 +355,26 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
     /* check for under-/overflow */
     int32_t diff_l { enc_l - enc_last_l_ };
     if (diff_l > 255) {
-        // get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l > 255\r\n", true);
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l > 255\r\n", true);
+        }
         diff_l -= 32'768;
     } else if (diff_l < -255) {
-        // get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l < -255\r\n", true);
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l < -255\r\n", true);
+        }
         diff_l += 32'768;
     }
     int32_t diff_r { enc_r - enc_last_r_ };
     if (diff_r > 255) {
-        // get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r > 255\r\n", true);
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r > 255\r\n", true);
+        }
         diff_r -= 32'768;
     } else if (diff_r < -255) {
-        // get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r < -255\r\n", true);
+        if (DEBUG_LEVEL_ >= 4) {
+            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r < -255\r\n", true);
+        }
         diff_r += 32'768;
     }
 
@@ -371,8 +427,10 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
 }
 
 void CtBotBehavior::shutdown() {
-    get_comm()->debug_print(PSTR("CtBotBehavior::shutdown()\r\n"), true);
-    get_comm()->flush();
+    if (DEBUG_LEVEL_ >= 3) {
+        get_comm()->debug_print(PSTR("CtBotBehavior::shutdown()\r\n"), true);
+        get_comm()->flush();
+    }
 
     ready_ = false;
 

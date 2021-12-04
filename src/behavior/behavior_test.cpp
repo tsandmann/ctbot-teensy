@@ -28,20 +28,21 @@
 #include "actuator.h"
 #include "pose.h"
 #include "speed.h"
-
-#include <thread>
-#include <chrono>
+#include "timer.h"
 
 
 namespace ctbot {
 
 decltype(BehaviorTest::reg_) BehaviorTest::reg_ { "test", []() { return INIT<BehaviorTest>(); } };
 
-BehaviorTest::BehaviorTest() : Behavior { PSTR("TestBeh") }, mode_ {} {}
+BehaviorTest::BehaviorTest() : Behavior { PSTR("TestBeh"), true }, mode_ {} {}
 
 void BehaviorTest::run() {
-    using namespace std::chrono_literals;
+    /* wait for sensor data to get updated */
+    debug_printf<DEBUG_>(PSTR("BehaviorTest::run(): wait for model at %u ms.\r\n"), Timer::get_ms());
     wait_for_model_update();
+
+    debug_printf<DEBUG_>(PSTR("BehaviorTest::run(): model updated at %u ms.\r\n"), Timer::get_ms());
 
     // print_pose();
 
@@ -51,8 +52,12 @@ void BehaviorTest::run() {
                 set_actuator(get_motor_l(), -20);
                 set_actuator(get_motor_r(), 20);
             } else {
+                set_actuator(get_motor_l(), 0);
+                set_actuator(get_motor_r(), 0);
+
                 print_pose();
-                std::this_thread::sleep_for(1s);
+                motor_update_done();
+                sleep_for_ms(1'000);
                 mode_ = 1;
             }
             break;
@@ -62,13 +67,21 @@ void BehaviorTest::run() {
                 set_actuator(get_motor_l(), 20);
                 set_actuator(get_motor_r(), -20);
             } else {
+                set_actuator(get_motor_l(), 0);
+                set_actuator(get_motor_r(), 0);
+
                 print_pose();
-                std::this_thread::sleep_for(5s);
-                mode_ = 0;
+                motor_update_done();
+                sleep_for_ms(5'000);
+
                 exit();
+                return;
             }
             break;
     }
+
+    debug_printf<DEBUG_>(PSTR("BehaviorTest::run(): notify for motor update at %u ms.\r\n"), Timer::get_ms());
+    motor_update_done();
 }
 
 } // namespace ctbot

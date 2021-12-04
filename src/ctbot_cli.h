@@ -1,6 +1,6 @@
 /*
  * This file is part of the ct-Bot teensy framework.
- * Copyright (c) 2019 Timo Sandmann
+ * Copyright (c) 2021 Timo Sandmann
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,10 @@
  */
 
 /**
- * @file    help_texts.h
- * @brief   Texts for help message of console interface
+ * @file    ctbot_cli.h
+ * @brief   Command line interface
  * @author  Timo Sandmann
- * @date    31.08.2019
+ * @date    20.11.2021
  */
 
 #pragma once
@@ -32,11 +32,11 @@
 
 namespace ctbot {
 
+class CtBot;
 class CommInterface;
 
-class CtBotHelpTexts {
-    static std::vector<std::string_view> texts_;
-
+class CtBotCli {
+protected:
     PROGMEM static const char general_[];
     PROGMEM static const char config_[];
     PROGMEM static const char get_[];
@@ -48,9 +48,16 @@ class CtBotHelpTexts {
 
     FLASHMEM static std::string_view create_sv(const char* str);
 
-public:
-    FLASHMEM static void init();
+    CtBot* p_ctbot_;
+    std::vector<std::string_view> texts_;
 
-    FLASHMEM static void print(CommInterface& comm);
+public:
+    FLASHMEM CtBotCli(CtBot* p_ctbot);
+
+    FLASHMEM void add_helptext(const char* str);
+
+    FLASHMEM void init_commands();
+
+    FLASHMEM void print() const;
 };
 } // namespace ctbot

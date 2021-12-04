@@ -41,6 +41,7 @@ class AudioOutputAnalog;
 class AudioOutputI2S;
 class AudioPlaySdWav;
 class AudioSynthWaveformSine;
+class CtBotCli;
 class TTS;
 class AudioConnection;
 class AudioMixer4;
@@ -64,6 +65,7 @@ class LedsI2cEna;
 class LCDisplay;
 class TFTDisplay;
 class CmdParser;
+class CtBotCli;
 class Scheduler;
 class ParameterStorage;
 
@@ -71,9 +73,10 @@ class ParameterStorage;
  * @brief Main class of ct-Bot teensy framework, responsible for initialization and control loop execution
  */
 class CtBot {
-protected:
-    static constexpr uint8_t DEBUG_LEVEL_ { 1 };
+    static constexpr uint8_t DEBUG_LEVEL_ { 1 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose
 
+protected:
+    friend class CtBotCli;
     static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
     static constexpr uint8_t TASK_PRIORITY { 7 };
     static constexpr uint32_t STACK_SIZE { 2048 };
@@ -93,6 +96,7 @@ protected:
     LedsI2c* p_leds_; /**< Pointer to led instance */
     LCDisplay* p_lcd_; /**< Pointer to LC display instance */
     TFTDisplay* p_tft_; /**< Pointer to TFT display instance */
+    CtBotCli* p_cli_;
     arduino::SerialIO* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
     arduino::SerialIO* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
@@ -122,11 +126,6 @@ protected:
     CtBot(const CtBot&) = delete;
     void operator=(const CtBot&) = delete;
     CtBot(CtBot&&) = delete;
-
-    /**
-     * @brief Initialize command line parser, register the actions for every command
-     */
-    FLASHMEM void init_parser();
 
     /**
      * @brief Main task implementation

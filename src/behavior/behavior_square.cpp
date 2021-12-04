@@ -26,9 +26,6 @@
 #include "behavior_drive.h"
 #include "behavior_turn.h"
 
-#include <thread>
-#include <chrono>
-
 
 namespace ctbot {
 
@@ -36,20 +33,18 @@ namespace ctbot {
 decltype(BehaviorSquare::reg_) BehaviorSquare::reg_ { "square", []() { return INIT<BehaviorSquare>(); } };
 
 BehaviorSquare::BehaviorSquare(const uint16_t priority)
-    : Behavior { PSTR("DriveSquare"), priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, counter_ {} {
+    : Behavior { PSTR("DriveSquare"), false, priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, state_ { State::DRIVE }, counter_ {} {
     debug_print<DEBUG_>(PSTR("BehaviorSquare::BehaviorSquare(): init done.\r\n"));
 }
 
 void BehaviorSquare::run() {
-    using namespace std::chrono_literals;
-
     switch (state_) {
         case State::DRIVE:
             /* create drive behavior to drive 300 mm and wait for it to finish */
             p_sub_beh_ = switch_to<BehaviorDrive>(300);
 
             /* pause for 0.5s and switch to TURN state on next execution */
-            std::this_thread::sleep_for(500ms);
+            sleep_for_ms(500);
             state_ = State::TURN;
             break;
 
@@ -58,7 +53,7 @@ void BehaviorSquare::run() {
             p_sub_beh_ = switch_to<BehaviorTurn>(90);
 
             /* pause for 0.5s and switch to DRIVE state on next execution */
-            std::this_thread::sleep_for(500ms);
+            sleep_for_ms(500);
             state_ = State::DRIVE;
 
             /* check for a full square */

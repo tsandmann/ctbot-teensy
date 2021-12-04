@@ -75,10 +75,10 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
 
     p_io_thread_ = std::make_unique<std::thread>([this]() {
         using namespace std::chrono_literals;
-        while (!CtBot::get_instance().get_ready()) {
-            std::this_thread::sleep_for(100ms);
-        }
 
+        ::vTaskPrioritySet(nullptr, 1);
+        while (!CtBot::get_instance().get_ready()) {
+        }
         ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
 
         auto p_model { CtBotBehavior::get_instance().get_data()->get_resource<ResourceContainer>("model.") };
@@ -92,10 +92,15 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
 
         sock_.async_connect(endpoint_it_->endpoint(), boost::bind(&SimConnection::handle_connect, this, boost::asio::placeholders::error));
 
+        sigset_t set, old;
+        sigfillset(&set);
+        pthread_sigmask(SIG_SETMASK, &set, &old);
+
         while (CtBot::get_instance().get_ready()) {
             io_service_.poll();
             std::this_thread::sleep_for(1ms);
         }
+        pthread_sigmask(SIG_SETMASK, &old, nullptr);
     });
 
     free_rtos_std::gthr_freertos::set_name(p_io_thread_.get(), "ct-Sim");

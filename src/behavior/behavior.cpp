@@ -26,6 +26,7 @@
 #include "scheduler.h"
 #include "pose.h"
 #include "speed.h"
+#include "timer.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"
@@ -36,8 +37,11 @@
 
 namespace ctbot {
 
-Behavior::Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size)
-    : name_ { name }, finished_ {}, p_ctbot_ { &CtBotBehavior::get_instance() },
+std::set<Behavior*> Behavior::active_;
+std::mutex Behavior::active_mutex_;
+
+Behavior::Behavior(const std::string& name, const bool uses_motor, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size)
+    : name_ { name }, uses_motor_ { uses_motor }, finished_ {}, p_ctbot_ { &CtBotBehavior::get_instance() },
       p_sensors_ { get_ctbot()->get_sensors() }, p_left_ {}, p_right_ {}, p_pose_ {}, p_speed_ {}, abort_request_ {} {
     configASSERT(p_sensors_);
 
@@ -52,6 +56,8 @@ Behavior::Behavior(const std::string& name, const uint16_t priority, const uint1
     init_data_ptr(PSTR("model.speed_enc"), p_speed_); // current speed based on wheel encoder data
     configASSERT(p_speed_);
 
+    set_active(true);
+
     task_id_ = get_ctbot()->get_scheduler()->task_add(name, cycle_time_ms, priority, stack_size, [this]() {
         if (!finished()) {
             run();
@@ -59,10 +65,10 @@ Behavior::Behavior(const std::string& name, const uint16_t priority, const uint1
     });
 }
 
-Behavior::Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms)
-    : Behavior { name, priority, cycle_time_ms, DEFAULT_STACK_SIZE } {}
+Behavior::Behavior(const std::string& name, const bool uses_motor, const uint16_t priority, const uint16_t cycle_time_ms)
+    : Behavior { name, uses_motor, priority, cycle_time_ms, DEFAULT_STACK_SIZE } {}
 
-Behavior::Behavior(const std::string& name) : Behavior { name, DEFAULT_PRIORITY, DEFAULT_CYCLE_TIME, DEFAULT_STACK_SIZE } {}
+Behavior::Behavior(const std::string& name, const bool uses_motor) : Behavior { name, uses_motor, DEFAULT_PRIORITY, DEFAULT_CYCLE_TIME, DEFAULT_STACK_SIZE } {}
 
 Behavior::~Behavior() {
     debug_printf<DEBUG_>(PP_ARGS("Behavior::~Behavior() for \"{s}\": removing task {#x}...\r\n", get_name().c_str(), task_id_));
@@ -101,9 +107,46 @@ void Behavior::wait_for_model_update() {
     get_ctbot()->wait_for_model_update(abort_request_);
 }
 
+size_t Behavior::get_motor_requests() {
+    size_t n {};
+    {
+        std::lock_guard<std::mutex> lock { active_mutex_ };
+        for (auto e : active_) {
+            if (e->uses_motor_) {
+                ++n;
+            }
+        }
+    }
+    return n;
+}
+
+void Behavior::motor_update_done() {
+    get_ctbot()->motor_update_done();
+}
+
+void Behavior::set_active(const bool active) {
+    std::lock_guard<std::mutex> lock { active_mutex_ };
+    if (active) {
+        active_.insert(this);
+    } else {
+        active_.erase(this);
+    }
+}
+
+void Behavior::sleep_for_ms(const uint32_t time) {
+    const auto until { Timer::get_ms() + time };
+    while (Timer::get_ms() < until) {
+        wait_for_model_update();
+        if (uses_motor_) {
+            motor_update_done();
+        }
+    }
+}
+
 bool Behavior::exit() {
     if (!finished_) {
         finished_ = true;
+        set_active(false);
 
         debug_printf<DEBUG_>(PP_ARGS("Behavior::exit() for \"{s}\": notifying caller...\r\n", get_name().c_str()));
 

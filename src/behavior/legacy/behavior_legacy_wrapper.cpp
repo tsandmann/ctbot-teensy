@@ -41,7 +41,7 @@ namespace legacy {
 std::unordered_map<std::string /*name*/, legacy::Behaviour_t*> BehaviorLegacyWrapper::running_behaviors;
 
 BehaviorLegacyWrapper::BehaviorLegacyWrapper(const std::string& name, legacy::BehaviourFunc_t func)
-    : Behavior { name, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, beh_func_ { func } {}
+    : Behavior { name, false, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, beh_func_ { func } {}
 
 BehaviorLegacyWrapper::~BehaviorLegacyWrapper() {
     debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::~BehaviorLegacyWrapper().\r\n"));
@@ -84,7 +84,7 @@ void BehaviorLegacyWrapper::run() {
     auto& beh_legacy { *BehaviorLegacy::get_instance() };
     do {
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for(10ms); // FIXME: condition?
+        std::this_thread::sleep_for(100ms); // FIXME: condition?
         // debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): waiting for legacy behavior to finish...\r\n");
         // debug_flush<DEBUG_>();
     } while (get_ctbot()->get_ready() && beh_legacy.behavior_is_activated(beh_func_));

@@ -109,8 +109,8 @@ SpeedControlPico::SpeedControlPico() : enc_speed_ {} {
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        serial_.setRX(25);
-        serial_.setTX(24);
+        serial_.setRX(25); // GPIO_2
+        serial_.setTX(24); // GPIO_1
         serial_.begin(2'000'000UL, 0, 8192, 64);
         CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 2048UL, &controller);
     }
@@ -153,8 +153,8 @@ void SpeedControlPico::controller() {
                     break;
                 }
             }
-            CtBot::get_instance().get_comm()->debug_printf<false>(
-                PSTR("EncData=%f\t%f mm/s\r\n"), Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]));
+            CtBot::get_instance().get_comm()->debug_printf<false>(PSTR("SpeedControlPico::controller(): EncData=%f\t%f mm/s\r\n"),
+                Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]));
         } else {
             CtBot::get_instance().get_comm()->debug_printf<true>(
                 PSTR("SpeedControlPico::controller()(): invalid CRC received: %u\t%u\r\n"), checksum, enc_data.crc);

@@ -26,6 +26,7 @@
 
 #include "../ctbot.h"
 #include "resource_container.h"
+#include "actuator.h"
 
 #include <memory>
 #include <map>
@@ -36,6 +37,7 @@
 #include <tuple>
 #include <mutex>
 #include <condition_variable>
+#include <latch>
 #include <atomic>
 
 
@@ -54,6 +56,8 @@ class Speed;
  * @enduml
  */
 class CtBotBehavior : public CtBot {
+    static constexpr uint8_t DEBUG_LEVEL_ { 3 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose, 5: noisy
+
 protected:
     friend class CtBot; // allows protected constructor to enforce singleton pattern
 
@@ -62,6 +66,7 @@ protected:
     ResourceContainer::Ptr p_data_; /**< Top level resource container for sensor models */
     ResourceContainer::Ptr p_actuators_; /**< Top level resource container for for actuators */
     std::mutex model_mutex_;
+    std::unique_ptr<std::latch> p_motor_sync_;
     std::condition_variable model_cond_; /**< Pointer to condition for sensor model updates */
     int16_t enc_last_l_; /**< Last value of left wheel encoder */
     int16_t enc_last_r_; /**< Last value of right wheel encoder */
@@ -69,6 +74,7 @@ protected:
         behavior_list_; /**< List of all registered behaviors */
     std::unique_ptr<Behavior> p_beh_; /**< Pointer to currently running behavior started from command line */
     bool beh_enabled_;
+    ActuatorContainer<AMotor>* p_governors_;
 
     /**
      * @brief Constructor of main class
@@ -148,6 +154,8 @@ public:
         return p_actuators_.get();
     }
 
-    FLASHMEM void wait_for_model_update(std::atomic<bool>& abort);
+    void wait_for_model_update(std::atomic<bool>& abort);
+
+    void motor_update_done();
 };
 } // namespace ctbot

@@ -34,7 +34,7 @@ namespace ctbot {
 decltype(BehaviorFollowLine::reg_) BehaviorFollowLine::reg_ { "line", []() { return INIT<BehaviorFollowLine>(); } };
 
 BehaviorFollowLine::BehaviorFollowLine(const uint16_t priority)
-    : Behavior { PSTR("LineBeh"), priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, last_speed_l_ {}, last_speed_r_ {} {
+    : Behavior { PSTR("LineBeh"), true, priority, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, last_speed_l_ {}, last_speed_r_ {} {
     debug_printf<DEBUG_>(PP_ARGS("BehaviorFollowLine::BehaviorFollowLine({})\r\n", priority));
 }
 
@@ -50,7 +50,8 @@ void BehaviorFollowLine::run() {
     wait_for_model_update();
 
     if (abort_request_) {
-        debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): aborted.\r\n"));
+        debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): aborted.\r\n"));
+        motor_update_done();
         exit();
         return;
     }
@@ -58,12 +59,12 @@ void BehaviorFollowLine::run() {
     int16_t new_speed_l, new_speed_r;
     if (get_sensors()->get_line_l() >= LINE_TRESHOLD && get_sensors()->get_line_r() < LINE_TRESHOLD) {
         /* bot is driving on right edge of line */
-        debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): ON RIGHT EDGE OF LINE.\r\n"));
+        debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): ON RIGHT EDGE OF LINE.\r\n"));
         new_speed_l = SPEED_ON_LINE;
         new_speed_r = SPEED_ON_LINE;
     } else if (get_sensors()->get_line_l() < LINE_TRESHOLD) {
         /* bot is driving next to right edge of line -> turn to the left */
-        debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): NEXT TO RIGHT EDGE.\r\n"));
+        debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): NEXT TO RIGHT EDGE.\r\n"));
         new_speed_l = std::max<int16_t>(last_speed_l_ - 1, -SPEED_OFF_LINE); // decrease speed of left wheel down to -SPEED_OFF_LINE
         new_speed_r = std::min<int16_t>(last_speed_r_ + 1, SPEED_OFF_LINE); // increase speed of right wheel up to +SPEED_OFF_LINE
 
@@ -74,7 +75,7 @@ void BehaviorFollowLine::run() {
         }
     } else {
         /* bot is driving on line */
-        debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): ON LINE.\r\n"));
+        debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): ON LINE.\r\n"));
         debug_printf<DEBUG_>(PP_ARGS("FollowLineBeh::run(): current speed={} {}\r\n", get_motor_l()->read(), get_motor_r()->read()));
         new_speed_l = std::min<int16_t>(last_speed_l_ + 1, SPEED_OFF_LINE); // increase speed of left wheel up to +SPEED_OFF_LINE
         new_speed_r = std::max<int16_t>(last_speed_r_ - 1, -SPEED_OFF_LINE / 2); // decrease speed of right wheel down to -SPEED_OFF_LINE/2
@@ -95,8 +96,10 @@ void BehaviorFollowLine::run() {
     last_speed_r_ = new_speed_r;
 
     /* some debug output */
-    debug_printf<DEBUG_>(
-        PP_ARGS("FollowLineBeh::run(): line={#x} {#x} speed={} {}\r\n", get_sensors()->get_line_l(), get_sensors()->get_line_r(), new_speed_l, new_speed_r));
+    debug_printf<DEBUG_>(PP_ARGS("FollowLineBeh::run(): line={#x} {#x} speed={} {} at {} ms.\r\n", get_sensors()->get_line_l(), get_sensors()->get_line_r(),
+        new_speed_l, new_speed_r, Timer::get_ms()));
+
+    motor_update_done();
 }
 
 } // namespace ctbot

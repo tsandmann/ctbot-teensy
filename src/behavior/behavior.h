@@ -40,6 +40,7 @@
 #include <thread>
 #include <condition_variable>
 #include <functional>
+#include <set>
 
 
 namespace ctbot {
@@ -60,8 +61,12 @@ class Behavior {
     // FIXME: add documentation
     static constexpr bool DEBUG_ { true };
 
+    static std::set<Behavior*> active_;
+    static std::mutex active_mutex_;
+
     uint16_t task_id_;
     const std::string name_;
+    const bool uses_motor_;
     std::atomic<bool> finished_;
     CtBotBehavior* const p_ctbot_;
     std::mutex caller_mutex_;
@@ -119,6 +124,23 @@ protected:
     }
 
     void wait_for_model_update();
+
+    void motor_update_done();
+
+    void set_active(const bool active);
+
+    template <typename Rep, typename Period>
+    void sleep_for(const std::chrono::duration<Rep, Period>& time) {
+        const auto until { std::chrono::high_resolution_clock::now() + time };
+        while (std::chrono::high_resolution_clock::now() < until) {
+            wait_for_model_update();
+            if (uses_motor_) {
+                motor_update_done();
+            }
+        }
+    }
+
+    void sleep_for_ms(const uint32_t time);
 
     template <bool ENABLED = true>
     FLASHMEM void debug_flush() const {
@@ -187,11 +209,13 @@ protected:
 public:
     using BasePtr = std::unique_ptr<Behavior>;
 
-    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
+    static size_t get_motor_requests();
 
-    FLASHMEM Behavior(const std::string& name, const uint16_t priority, const uint16_t cycle_time_ms);
+    FLASHMEM Behavior(const std::string& name, const bool uses_motor, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size);
 
-    FLASHMEM Behavior(const std::string& name);
+    FLASHMEM Behavior(const std::string& name, const bool uses_motor, const uint16_t priority, const uint16_t cycle_time_ms);
+
+    FLASHMEM Behavior(const std::string& name, const bool uses_motor);
 
     FLASHMEM virtual ~Behavior();
 
