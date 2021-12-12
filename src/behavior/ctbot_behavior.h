@@ -68,8 +68,8 @@ protected:
     std::mutex model_mutex_;
     std::unique_ptr<std::latch> p_motor_sync_;
     std::condition_variable model_cond_; /**< Pointer to condition for sensor model updates */
-    int16_t enc_last_l_; /**< Last value of left wheel encoder */
-    int16_t enc_last_r_; /**< Last value of right wheel encoder */
+    int32_t enc_last_l_; /**< Last value of left wheel encoder */
+    int32_t enc_last_r_; /**< Last value of right wheel encoder */
     std::map<const std::string /* name */, std::tuple<uint8_t /* # parameter */, std::any /* factory functor */>, std::less<>>
         behavior_list_; /**< List of all registered behaviors */
     std::unique_ptr<Behavior> p_beh_; /**< Pointer to currently running behavior started from command line */

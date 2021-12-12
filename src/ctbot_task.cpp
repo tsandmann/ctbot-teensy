@@ -109,4 +109,12 @@ bool Task::resume() {
     return scheduler_.task_resume(id_);
 }
 
+TaskHandle_t Task::get_handle() const {
+    if (std_thread_) {
+        return handle_.p_thread->native_handle().get_native_handle();
+    }
+
+    return handle_.p_freertos_handle;
+}
+
 } // namespace ctbot

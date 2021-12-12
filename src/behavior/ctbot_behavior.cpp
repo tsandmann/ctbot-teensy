@@ -291,6 +291,13 @@ void CtBotBehavior::run() {
         get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): set motor barrier to %u\r\n"), motor_requests);
     }
 
+    if (DEBUG_LEVEL_ > 4 && (speed.get_ref().get_left() || speed.get_ref().get_right())) {
+        pose.get_ref().print(*get_comm());
+        get_comm()->debug_print(PSTR(" "), true);
+        speed.get_ref().print(*get_comm());
+        get_comm()->debug_print(PSTR("\r\n"), true);
+    }
+
     pose.notify();
     speed.notify();
 
@@ -331,6 +338,9 @@ void CtBotBehavior::wait_for_model_update(std::atomic<bool>& abort) {
 
     std::unique_lock<std::mutex> lk(model_mutex_);
     while (model_cond_.wait_for(lk, 100ms) == std::cv_status::timeout) {
+        if (DEBUG_LEVEL_ >= 3) {
+            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::wait_for_model_update(): TIMEOUT at %u ms, abort=%u\r\n"), Timer::get_ms(), abort.load());
+        }
         if (abort) {
             return;
         }
@@ -347,35 +357,26 @@ void CtBotBehavior::motor_update_done() {
 }
 
 bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
+    using namespace std::chrono_literals;
     /* position calculation based on https://github.com/tsandmann/ct-bot/blob/master/sensor.c#L232 by Torsten Evers */
 
-    const int16_t enc_l { p_sensors_->get_enc_l().get() };
-    const int16_t enc_r { p_sensors_->get_enc_r().get() };
+    const int32_t enc_l { p_speedcontrols_[0]->get_enc_counts() };
+    const int32_t enc_r { p_speedcontrols_[1]->get_enc_counts() };
 
-    /* check for under-/overflow */
     int32_t diff_l { enc_l - enc_last_l_ };
-    if (diff_l > 255) {
+    if (std::abs(diff_l) > 1'000) { // error check
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l > 255\r\n", true);
+            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::update_enc(): diff_l > 200: %d\tenc_l=%d\tenc_last_l=%d\r\n"), diff_l, enc_l, enc_last_l_);
         }
-        diff_l -= 32'768;
-    } else if (diff_l < -255) {
-        if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_l < -255\r\n", true);
-        }
-        diff_l += 32'768;
+        diff_l = 0;
     }
+
     int32_t diff_r { enc_r - enc_last_r_ };
-    if (diff_r > 255) {
+    if (std::abs(diff_r) > 1'000) { // error check
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r > 255\r\n", true);
+            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::update_enc(): diff_r > 200: %d\tenc_r=%d\tenc_last_r=%d\r\n"), diff_r, enc_r, enc_last_r_);
         }
-        diff_r -= 32'768;
-    } else if (diff_r < -255) {
-        if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print("CtBotBehavior::update_enc(): diff_r < -255\r\n", true);
-        }
-        diff_r += 32'768;
+        diff_r = 0;
     }
 
     if (diff_l != 0 || diff_r != 0) {
@@ -417,8 +418,8 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
         }
     }
 
-    const float speed_l { p_sensors_->get_enc_l().get_speed() };
-    const float speed_r { p_sensors_->get_enc_r().get_speed() };
+    const float speed_l { p_speedcontrols_[0]->get_enc_speed() };
+    const float speed_r { p_speedcontrols_[1]->get_enc_speed() };
     speed.set_left(speed_l);
     speed.set_right(speed_r);
     speed.set_center((speed_l + speed_r) / 2.f);

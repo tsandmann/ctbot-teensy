@@ -71,13 +71,14 @@ BehaviorTurn::~BehaviorTurn() {
 
 void BehaviorTurn::run() {
     /* wait for sensor data to get updated */
-    debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): wait for model at %u ms.\r\n"), Timer::get_ms());
+    debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): wait for model at %u ms. state=%u\r\n"), Timer::get_ms(), static_cast<uint8_t>(state_));
     wait_for_model_update();
 
     debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): model updated at %u ms.\r\n"), Timer::get_ms());
 
     if (abort_request_) {
         state_ = State::ABORT;
+        debug_printf<DEBUG_>(PSTR("BehaviorTurn::run(): aborted at %u ms.\r\n"), Timer::get_ms());
     }
 
     /* calculate remaining angle to turn */
@@ -99,7 +100,8 @@ void BehaviorTurn::run() {
 
     /* print some debug output */
     if (DEBUG_) {
-        // print_pose();
+        debug_printf<DEBUG_>(PP_ARGS("BehaviorTurn::run(): diff={.2}\r\n", diff));
+        print_pose();
     }
 
     switch (state_) {
@@ -115,7 +117,7 @@ void BehaviorTurn::run() {
                     new_speed = static_cast<int16_t>(std::sin(x) * static_cast<float>(d_max_speed)); // [0; max_speed_ - min_speed_]
                 }
                 new_speed = new_speed + min_speed_; // [min_speed_; max_speed_]
-                // debug_printf<DEBUG_>(PP_ARGS("BehaviorTurn::run(): new_speed={}\r\n", new_speed));
+                debug_printf<DEBUG_>(PP_ARGS("BehaviorTurn::run(): new_speed={}\r\n", new_speed));
 
                 set_actuator(get_motor_l(), turn_direction_ ? -new_speed : new_speed);
                 set_actuator(get_motor_r(), turn_direction_ ? new_speed : -new_speed);
@@ -132,8 +134,8 @@ void BehaviorTurn::run() {
             if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                 motor_update_done();
 
-                /* wait for both wheel standing still for at least 100 ms */
-                sleep_for_ms(100);
+                /* wait for both wheel standing still for at least 1s */
+                sleep_for_ms(1'000);
 
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
                     print_pose(false);

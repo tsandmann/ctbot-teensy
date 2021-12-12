@@ -55,7 +55,7 @@ protected:
 
 private:
     static constexpr bool DEBUG_ { false };
-    static constexpr int16_t SPEED { 20 };
+    static constexpr int16_t SPEED { 25 };
     static constexpr uint32_t STACK_SIZE { 2048 };
 
     static const Registry reg_;

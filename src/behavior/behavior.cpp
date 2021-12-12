@@ -82,7 +82,13 @@ Behavior::~Behavior() {
 }
 
 uint16_t Behavior::get_priority() const {
-    return get_ctbot()->get_scheduler()->task_get(task_id_)->get_priority();
+    const auto p_task { get_ctbot()->get_scheduler()->task_get(task_id_) };
+    if (!p_task) {
+        debug_printf<DEBUG_>(PSTR("Behavior::get_priority(): invalid task ID 0x%x\r\n"), task_id_);
+        return 0;
+    }
+
+    return p_task->get_priority();
 }
 
 void Behavior::wait() {

@@ -58,7 +58,10 @@ BehaviorDrive::~BehaviorDrive() {
 
 void BehaviorDrive::run() {
     /* wait for sensor data to get updated */
+    debug_printf<DEBUG_>(PSTR("BehaviorDrive::run(): wait for model at %u ms. state=%u\r\n"), Timer::get_ms(), static_cast<uint8_t>(state_));
     wait_for_model_update();
+
+    debug_printf<DEBUG_>(PSTR("BehaviorDrive::run(): model updated at %u ms.\r\n"), Timer::get_ms());
 
     if (abort_request_) {
         state_ = State::ABORT;

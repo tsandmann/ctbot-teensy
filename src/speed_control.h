@@ -64,6 +64,10 @@ public:
      */
     virtual float get_speed() const = 0;
 
+    virtual float get_enc_speed() const = 0;
+
+    virtual int32_t get_enc_counts() const = 0;
+
     /**
      * @return Current Kp parameter setting
      */
@@ -133,12 +137,12 @@ public:
      * @param[in] wheel_enc: Reference to wheel encoder to use for controller input (speed)
      * @param[in] motor: Reference to motor driver to use for controller output (PWM duty cycle)
      */
-    FLASHMEM SpeedControl(Encoder& wheel_enc, Motor& motor);
+    SpeedControl(Encoder& wheel_enc, Motor& motor);
 
     /**
      * @brief Destroy the Speed Control object
      */
-    FLASHMEM virtual ~SpeedControl();
+    virtual ~SpeedControl();
 
     virtual void set_speed(const float speed) override { // FIXME: move to base class?
         auto abs_speed(std::fabs(speed));
@@ -156,18 +160,27 @@ public:
     /**
      * @return Current wheel speed as reported by related wheel encoder
      */
-    auto get_enc_speed() const {
+    virtual float get_enc_speed() const override {
         return wheel_encoder_.get_speed();
+    }
+
+    virtual int32_t get_enc_counts() const override {
+        return wheel_encoder_.get();
     }
 
     FLASHMEM virtual void set_parameters(const float kp, const float ki, const float kd) override;
 };
 
 class SpeedControlPico : public SpeedControlBase {
+    static constexpr bool DEBUG_ { false };
+
     static std::list<SpeedControlPico*> controller_list_;
     static arduino::SerialIO& serial_;
 
     float enc_speed_; // mm/s
+    int32_t enc_counts_;
+    int32_t last_counts_;
+    bool reset_;
 
 protected:
     struct EncData {
@@ -181,10 +194,11 @@ protected:
 
     struct SpeedData {
         const uint8_t start;
+        uint8_t cmd;
         float speed[2];
         uint32_t crc;
 
-        constexpr SpeedData() : start { 0xaa }, speed {}, crc {} {}
+        constexpr SpeedData() : start { 0xaa }, cmd {}, speed {}, crc {} {}
     } __attribute__((__packed__));
 
 
@@ -205,11 +219,15 @@ public:
         return setpoint_ / 0.75f;
     }
 
-    auto get_enc_speed() const {
+    virtual float get_enc_speed() const override {
         return enc_speed_;
     }
 
-    FLASHMEM virtual void set_parameters(const float, const float, const float) override {
+    virtual int32_t get_enc_counts() const override {
+        return enc_counts_;
+    }
+
+    virtual void set_parameters(const float, const float, const float) override {
         return;
     }
 };

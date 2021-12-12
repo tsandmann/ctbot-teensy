@@ -133,36 +133,36 @@ protected:
     }
 
     PROGMEM static const SerialT4::hardware_t Serial1_hw;
-    FASTRUN static void isr_Serial1() {
+    static void isr_Serial1() {
         teensy4::Serial1.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial2_hw;
-    FASTRUN static void isr_Serial2() {
+    static void isr_Serial2() {
         teensy4::Serial2.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial3_hw;
-    FASTRUN static void isr_Serial3() {
+    static void isr_Serial3() {
         teensy4::Serial3.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial4_hw;
-    FASTRUN static void isr_Serial4() {
+    static void isr_Serial4() {
         teensy4::Serial4.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial5_hw;
-    FASTRUN static void isr_Serial5() {
+    static void isr_Serial5() {
         teensy4::Serial5.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial6_hw;
-    FASTRUN static void isr_Serial6() {
+    static void isr_Serial6() {
         teensy4::Serial6.isr();
     }
     PROGMEM static const SerialT4::hardware_t Serial7_hw;
-    FASTRUN static void isr_Serial7() {
+    static void isr_Serial7() {
         teensy4::Serial7.isr();
     }
 #ifdef ARDUINO_TEENSY41
     PROGMEM static const SerialT4::hardware_t Serial8_hw;
-    FASTRUN static void isr_Serial8() {
+    static void isr_Serial8() {
         teensy4::Serial8.isr();
     }
 #endif
@@ -181,7 +181,7 @@ protected:
     mutable TaskHandle_t tx_last_caller_;
     StreamHelper stream_helper_;
 
-    FASTRUN void isr();
+    void isr();
 
 public:
     SerialT4(const uint8_t index);

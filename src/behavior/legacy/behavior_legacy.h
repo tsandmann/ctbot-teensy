@@ -51,7 +51,7 @@ namespace legacy {
 } /* namespace legacy */
 
 class BehaviorLegacy : public Behavior {
-    static constexpr bool DEBUG_ { true };
+    static constexpr bool DEBUG_ { false };
     static constexpr uint32_t STACK_SIZE { 2048 };
 
     static Sensors* p_sensors_;

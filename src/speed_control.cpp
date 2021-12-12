@@ -38,7 +38,7 @@ namespace ctbot {
 
 std::list<SpeedControl*> SpeedControl::controller_list_;
 
-SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
+FLASHMEM SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     : direction_ { true }, input_ {}, output_ {}, p_pid_controller_ { new Pid { input_, output_, setpoint_, kp_, ki_, kd_, true } },
       wheel_encoder_ { wheel_enc }, motor_ { motor } {
     if (!p_pid_controller_) {
@@ -56,7 +56,7 @@ SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     }
 }
 
-SpeedControl::~SpeedControl() {
+FLASHMEM SpeedControl::~SpeedControl() {
     controller_list_.remove(this);
     delete p_pid_controller_;
     if (!controller_list_.size()) {
@@ -84,7 +84,7 @@ void SpeedControl::run() {
     }
 }
 
-void SpeedControl::set_parameters(const float kp, const float ki, const float kd) {
+FLASHMEM void SpeedControl::set_parameters(const float kp, const float ki, const float kd) {
     if (!p_pid_controller_) {
         return;
     }
@@ -105,7 +105,7 @@ void SpeedControl::controller() {
 std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
 arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(6) };
 
-SpeedControlPico::SpeedControlPico() : enc_speed_ {} {
+SpeedControlPico::SpeedControlPico() : enc_speed_ {}, enc_counts_ {}, last_counts_ {}, reset_ { true } {
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
@@ -117,21 +117,30 @@ SpeedControlPico::SpeedControlPico() : enc_speed_ {} {
 }
 
 void SpeedControlPico::controller() {
-    SpeedData speed_data {};
-    size_t i {};
-    for (auto p_ctrl : controller_list_) {
-        speed_data.speed[i] = p_ctrl->setpoint_;
-        ++i;
-        if (i >= 2) {
-            break;
-        }
+    if (!CtBot::get_instance().get_ready()) {
+        return;
     }
 
-    CRC32 crc;
-    auto ptr { reinterpret_cast<const uint8_t*>(&speed_data) };
-    speed_data.crc = CRC32::calculate(ptr, sizeof(speed_data) - sizeof(speed_data.crc));
+    {
+        SpeedData speed_data {};
+        size_t i {};
+        for (auto p_ctrl : controller_list_) {
+            if (p_ctrl->reset_) {
+                speed_data.cmd = 1;
+                p_ctrl->reset_ = false;
+            }
+            speed_data.speed[i] = p_ctrl->setpoint_;
+            ++i;
+            if (i >= 2) {
+                break;
+            }
+        }
 
-    serial_.write(&speed_data, sizeof(speed_data));
+        auto ptr { reinterpret_cast<const uint8_t*>(&speed_data) };
+        speed_data.crc = CRC32::calculate(ptr, sizeof(speed_data) - sizeof(speed_data.crc));
+
+        serial_.write(&speed_data, sizeof(speed_data));
+    }
 
     while (serial_.available() >= sizeof(EncData)) {
         if (serial_.peek() != 0xaa) {
@@ -147,20 +156,40 @@ void SpeedControlPico::controller() {
         if (checksum == enc_data.crc) {
             size_t i {};
             for (auto p_ctrl : controller_list_) {
+                if (enc_data.counts[i]) {
+                    p_ctrl->enc_counts_ = enc_data.counts[i];
+                }
                 p_ctrl->enc_speed_ = Encoder::rpm_to_speed(enc_data.rpm[i]); // enc_speed_ is in mm/s
                 ++i;
                 if (i >= 2) {
                     break;
                 }
             }
-            CtBot::get_instance().get_comm()->debug_printf<false>(PSTR("SpeedControlPico::controller(): EncData=%f\t%f mm/s\r\n"),
-                Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]));
+            if (DEBUG_) {
+                CtBot::get_instance().get_comm()->debug_printf<false>(PSTR("SpeedControlPico::controller(): EncData=%f\t%f mm/s\t%d\t%d counts\r\n"),
+                    Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]), enc_data.counts[0], enc_data.counts[1]);
+            }
         } else {
             CtBot::get_instance().get_comm()->debug_printf<true>(
                 PSTR("SpeedControlPico::controller()(): invalid CRC received: %u\t%u\r\n"), checksum, enc_data.crc);
         }
 
         ::vTaskDelay(1);
+    }
+
+    {
+        size_t i {};
+        for (auto p_ctrl : controller_list_) {
+            if (p_ctrl->enc_counts_ == p_ctrl->last_counts_) {
+                p_ctrl->enc_speed_ = 0;
+            } else {
+                p_ctrl->last_counts_ = p_ctrl->enc_counts_;
+            }
+            ++i;
+            if (i >= 2) {
+                break;
+            }
+        }
     }
 }
 

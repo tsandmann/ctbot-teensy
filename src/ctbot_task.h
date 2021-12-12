@@ -96,6 +96,8 @@ public:
         return name_;
     }
 
+    TaskHandle_t get_handle() const;
+
     /**
      * @brief Print task information to a CommInterface
      * @param[in] comm: Reference to CommInterface instance to print to

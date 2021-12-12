@@ -318,8 +318,8 @@ void CtBotCli::init_commands() {
         } else if (args.find(PSTR("ldr")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_ldr_l(), p_ctbot_->p_sensors_->get_ldr_r()));
         } else if (args.find(PSTR("speed")) == 0) {
-            const auto l { static_cast<int16_t>(p_ctbot_->p_sensors_->get_enc_l().get_speed()) };
-            const auto r { static_cast<int16_t>(p_ctbot_->p_sensors_->get_enc_r().get_speed()) };
+            const auto l { static_cast<int16_t>(p_ctbot_->p_speedcontrols_[0]->get_enc_speed()) };
+            const auto r { static_cast<int16_t>(p_ctbot_->p_speedcontrols_[1]->get_enc_speed()) };
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", l, r));
         } else if (args.find(PSTR("mpu")) == 0 && p_ctbot_->p_sensors_->get_mpu6050()) {
             auto [e1, e2, e3] = p_ctbot_->p_sensors_->get_mpu6050()->get_euler();
@@ -640,7 +640,7 @@ void CtBotCli::init_commands() {
 
     p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
         uint32_t duration;
-        CmdParser::split_args(args, duration);
+        std::from_chars(args.cbegin(), args.cend(), duration);
         std::this_thread::sleep_for(std::chrono::milliseconds(duration));
         return true;
     });
@@ -650,6 +650,19 @@ void CtBotCli::init_commands() {
         p_ctbot_->get_serial_cmd()->write_direct('\n');
 
         crash();
+        return true;
+    });
+
+    p_parser->register_cmd(PSTR("stack"), [this](const std::string_view& args) {
+        uint32_t task_id;
+        std::from_chars(args.cbegin(), args.cend(), task_id);
+        auto p_task { p_ctbot_->get_scheduler()->task_get(task_id) };
+        if (!p_task) {
+            return false;
+        }
+
+        p_task->print(*p_ctbot_->p_comm_);
+        freertos::print_stack_trace(p_task->get_handle());
         return true;
     });
 

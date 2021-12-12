@@ -152,7 +152,7 @@ protected:
     template <bool ENABLED = true>
     FLASHMEM_T auto debug_print(PrintfArg auto const... args) const {
         if (ENABLED) {
-            return get_ctbot()->get_comm()->debug_print(args..., false);
+            return get_ctbot()->get_comm()->debug_print(args..., true);
         } else {
             return static_cast<decltype(get_ctbot()->get_comm()->debug_print(args..., false))>(0);
         }
@@ -161,7 +161,7 @@ protected:
     template <bool ENABLED = true>
     FLASHMEM_T auto debug_printf(PrintfArg auto const... args) const {
         if (ENABLED) {
-            return get_ctbot()->get_comm()->debug_printf<false>(args...);
+            return get_ctbot()->get_comm()->debug_printf<true>(args...);
         } else {
             return static_cast<decltype(get_ctbot()->get_comm()->debug_printf<false>(args...))>(0);
         }

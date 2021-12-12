@@ -367,7 +367,8 @@ FLASHMEM size_t BehaviorLegacy::print_log(const char* type, const size_t type_le
 }
 
 BehaviorLegacy::BehaviorLegacy(const std::string& name)
-    : Behavior { name, true, Behavior::DEFAULT_PRIORITY, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, running_ {}, max_active_priority_ { 255 }, behavior_ {} {
+    : Behavior { name, true, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, running_ {},
+      max_active_priority_ { 255 }, behavior_ {} {
     update_global_data();
     bot_behave_init();
     debug_printf<DEBUG_>(PP_ARGS("BehaviorLegacy::BehaviorLegacy(\"{s}\").\r\n", name.c_str()));
@@ -435,13 +436,13 @@ void BehaviorLegacy::abort_behavior(legacy::Behaviour_t* caller) {
 }
 
 void BehaviorLegacy::run() {
-    if (max_active_priority_) {
-        // debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): wait for model at %u ms.\r\n"), Timer::get_ms());
+    if (max_active_priority_ != 255) {
+        debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): wait for model at %u ms. max_active_priority_=%u\r\n"), Timer::get_ms(), max_active_priority_);
     }
     wait_for_model_update();
 
-    if (max_active_priority_) {
-        // debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): model updated at %u ms.\r\n"), Timer::get_ms());
+    if (max_active_priority_ != 255) {
+        debug_printf<DEBUG_>(PSTR("BehaviorLegacy::run(): model updated at %u ms.\r\n"), Timer::get_ms());
     }
 
     if (abort_request_) {
@@ -464,10 +465,13 @@ void BehaviorLegacy::run() {
             break; // behavior list is sorted
         }
     }
+    if (max_active_priority_ == 0) {
+        max_active_priority_ = 255;
+    }
     // set_priority(max_active_priority_); // FIXME: set_priority() not implemented yet
     if (last_max_active != max_active_priority_) {
         /* Aenderung in der Verhaltensaktivitaet */
-        set_active(max_active_priority_);
+        set_active(max_active_priority_ != 255);
     }
     if (last_max_active) {
         motor_update_done();
