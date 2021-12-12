@@ -65,11 +65,11 @@ protected:
     virtual void run() override;
 
 private:
-    static constexpr bool DEBUG_ { false }; /**< switch for debug outputs to console */
+    static constexpr bool DEBUG_ { true }; /**< switch for debug outputs to console */
     static constexpr uint32_t STACK_SIZE { 2048 }; /**< stack size in byte for behavior task */
-    static constexpr uint16_t LINE_TRESHOLD { 0x3c0 }; /**< threshold value of line sensors for (black) line identification */
-    static constexpr int16_t SPEED_ON_LINE { 10 }; /**< max. speed in percentage terms for wheels, if bot is drivin on the line */
-    static constexpr int16_t SPEED_OFF_LINE { 20 }; /**< max. speed in percentage terms for wheels, if bot is drivin next to the line */
+    static constexpr uint16_t LINE_TRESHOLD { 300 }; /**< threshold value of line sensors for (black) line identification */
+    static constexpr int16_t SPEED_ON_LINE { 10 }; /**< max. speed in percentage terms for wheels, if bot is driving on the line */
+    static constexpr int16_t SPEED_OFF_LINE { 20 }; /**< max. speed in percentage terms for wheels, if bot is driving next to the line */
 
     static const Registry reg_; /**< helper object for global behavior registry */
 

@@ -220,6 +220,7 @@ void bot_goto_pos_behaviour(Behaviour_t* data) {
             if (v_enc_left != 0 || v_enc_right != 0) {
                 return;
             }
+            BLOCK_BEHAVIOUR(data, 1000);
 
             int16_t diff = (int16_t) diff_to_target;
             int16_t last_diff = (int16_t) last_diff_to_target;

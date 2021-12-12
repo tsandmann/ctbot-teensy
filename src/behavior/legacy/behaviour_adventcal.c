@@ -62,7 +62,7 @@ static uint8_t cancel_follow_line_on_border(void) {
     // if (sensBorderL>BORDER_DANGEROUS && sensBorderR>BORDER_DANGEROUS) {
     // fuer Real-Tests nur folgende Zeile nutzen und ggf. die Werte (0x2A0) an Schwarz-Werte des verwendeten Klebebandes anpassen, die der Bot uber die
     // Linien-Sensoren meldet
-    if (sensBorderL > 0x2A0 && sensBorderR > 0x2A0) {
+    if (sensBorderL > 600 && sensBorderR > 600) {
         // wenn die Abbruch-Bedingung erfuellt ist, die beiden Kanten-Sensoren also eine schwarze Linie sehen, meldet die Abbruch-Funktion mittels "return",
         // dass die Abbruch-Bedingung erfuellt ist und das Verhalten, einer Linie zu folgen, abgebrochen werden soll
         return 1;
@@ -107,7 +107,7 @@ void bot_adventcal_behaviour(Behaviour_t* data) {
         case STATE_ADVENTCAL_TURNTODELIVER:
             LOG_DEBUG("STATE_ADVENTCAL_TURNTODELIVER_BEGIN");
             // nicht ganz 180 Grad, damit das Liniensuchverhalten nicht dazu tendiert, den Bot in die falsche Richtung zu drehen
-            bot_turn(data, 170);
+            bot_turn(data, 180);
             LOG_DEBUG("STATE_ADVENTCAL_TURNTODELIVER_TURN_DONE");
             // bot_drive_distance(data, 0, BOT_SPEED_FOLLOW, 1);
             // LOG_DEBUG("STATE_ADVENTCAL_TURNTODELIVER_MOVE1CM_DONE");

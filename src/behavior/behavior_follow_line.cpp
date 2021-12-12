@@ -77,8 +77,8 @@ void BehaviorFollowLine::run() {
         /* bot is driving on line */
         debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): ON LINE.\r\n"));
         debug_printf<DEBUG_>(PP_ARGS("FollowLineBeh::run(): current speed={} {}\r\n", get_motor_l()->read(), get_motor_r()->read()));
-        new_speed_l = std::min<int16_t>(last_speed_l_ + 1, SPEED_OFF_LINE); // increase speed of left wheel up to +SPEED_OFF_LINE
-        new_speed_r = std::max<int16_t>(last_speed_r_ - 1, -SPEED_OFF_LINE / 2); // decrease speed of right wheel down to -SPEED_OFF_LINE/2
+        new_speed_l = std::min<int16_t>(last_speed_l_ + 2, SPEED_OFF_LINE); // increase speed of left wheel up to +SPEED_OFF_LINE
+        new_speed_r = std::max<int16_t>(last_speed_r_ - 2, -SPEED_OFF_LINE); // decrease speed of right wheel down to -SPEED_OFF_LINE/2
         debug_printf<DEBUG_>(PP_ARGS("FollowLineBeh::run(): new speed={} {}\r\n", new_speed_l, new_speed_r));
 
         if (new_speed_l == 0 && new_speed_r == 0) {
