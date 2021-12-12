@@ -325,7 +325,11 @@ uint8_t I2C_Service::read_reg(
     }
 
     if (!callback) {
-        while (!transfer_done) { // FIXME: timeout?
+        const auto start { ::xTaskGetTickCount() };
+        while (!transfer_done) {
+            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
+                return 20;
+            }
             ::vTaskDelay(1);
         }
         if (DEBUG_) {
@@ -455,7 +459,11 @@ uint8_t I2C_Service::write_reg(
     }
 
     if (!callback) {
-        while (!transfer_done) { // FIXME: timeout?
+        const auto start { ::xTaskGetTickCount() };
+        while (!transfer_done) {
+            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
+                return 20;
+            }
             ::vTaskDelay(1);
         }
         if (DEBUG_) {
@@ -596,7 +604,11 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
         return 10;
     }
 
-    while (!transfer_done) { // FIXME: timeout?
+    const auto start { ::xTaskGetTickCount() };
+    while (!transfer_done) {
+        if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
+            return 20;
+        }
         ::vTaskDelay(1);
     }
     if (DEBUG_) {
