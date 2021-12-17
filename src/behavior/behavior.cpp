@@ -27,6 +27,7 @@
 #include "pose.h"
 #include "speed.h"
 #include "timer.h"
+#include "logger.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"
@@ -170,10 +171,11 @@ bool Behavior::exit() {
 
 void Behavior::print_pose(const bool moving) const {
     if (!moving || get_speed()->get_left() || get_speed()->get_right()) {
-        get_pose()->print(*get_ctbot()->get_comm());
-        get_ctbot()->get_comm()->debug_print('\t', false);
-        get_speed()->print(*get_ctbot()->get_comm());
-        get_ctbot()->get_comm()->debug_print(PSTR("\r\n"), false);
+        get_ctbot()->get_logger()->begin(get_name());
+        get_pose()->print(*get_ctbot()->get_logger());
+        get_ctbot()->get_logger()->log('\t', false);
+        get_speed()->print(*get_ctbot()->get_logger());
+        get_ctbot()->get_logger()->log(PSTR("\r\n"), false);
     }
 }
 

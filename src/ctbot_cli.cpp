@@ -40,6 +40,7 @@
 #include "parameter_storage.h"
 #include "serial_io.h"
 #include "i2c_service.h"
+#include "logger.h"
 
 #ifndef sei
 #define sei() __enable_irq() // for Audio.h
@@ -50,9 +51,9 @@
 
 #include "pprintpp.hpp"
 #include "Audio.h"
-#include "SD.h"
 #include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 #include "tts.h"
+#include "freertos_time.h"
 
 #include <cstring>
 #include <thread>
@@ -391,6 +392,12 @@ void CtBotCli::init_commands() {
             } else {
                 return false;
             }
+        } else if (args.find(PSTR("time")) == 0) {
+            std::string tmp;
+            if (format_time(tmp, PSTR("%c UTC"))) {
+                p_ctbot_->get_comm()->debug_print(tmp, true);
+                p_ctbot_->get_comm()->debug_print(PSTR("\r\n"), true);
+            }
         } else {
             return false;
         }
@@ -537,6 +544,20 @@ void CtBotCli::init_commands() {
 
             p_ctbot_->p_parameter_->set<int32_t>(key, value);
             p_ctbot_->p_parameter_->flush();
+        } else if (args.find(PSTR("time")) == 0) {
+            const auto n { args.find(' ') };
+            if (n == args.npos) {
+                return false;
+            }
+            std::time_t time;
+            CmdParser::split_args(args, time);
+            if (time) {
+                const auto now { std::chrono::system_clock::from_time_t(time) };
+                free_rtos_std::set_system_clock(now);
+            } else {
+                p_ctbot_->get_logger()->log(PSTR("invalid time received\r\n"), true);
+                return false;
+            }
         } else {
             return false;
         }
@@ -631,11 +652,32 @@ void CtBotCli::init_commands() {
 
                 entry.close();
             }
-
-            return true;
+        } else if (args.find(PSTR("cat")) == 0) {
+            const auto s { args.find(' ') };
+            if (s == args.npos) {
+                return false;
+            }
+            const std::string path { args.substr(s + 1) };
+            if (!SD.exists(path.c_str())) {
+                p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
+                return false;
+            }
+            File file { SD.open(path.c_str()) };
+            while (file.available()) {
+                const auto c { file.read() };
+                if (c > 0) {
+                    p_ctbot_->p_comm_->debug_print(static_cast<char>(c), true);
+                    if (c == '\n') {
+                        p_ctbot_->p_comm_->debug_print('\r', true);
+                    }
+                }
+            }
+            p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
+        } else {
+            return false;
         }
 
-        return false;
+        return true;
     });
 
     p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
@@ -654,7 +696,7 @@ void CtBotCli::init_commands() {
     });
 
     p_parser->register_cmd(PSTR("stack"), [this](const std::string_view& args) {
-        uint32_t task_id;
+        uint32_t task_id { ~0U };
         std::from_chars(args.cbegin(), args.cend(), task_id);
         auto p_task { p_ctbot_->get_scheduler()->task_get(task_id) };
         if (!p_task) {
@@ -809,6 +851,15 @@ void CtBotCli::init_commands() {
             return true;
         });
     }
+}
+
+FLASHMEM bool CtBotCli::format_time(std::string& output, const char* format) const {
+    output.resize(32, '\0');
+    struct timeval tv;
+    ::gettimeofday(&tv, nullptr);
+    std::time_t t { tv.tv_sec };
+    struct tm* info { std::localtime(&t) };
+    return std::strftime(output.data(), output.size(), format, info) > 0 ? true : false;
 }
 
 } // namespace ctbot

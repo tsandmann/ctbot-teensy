@@ -151,7 +151,7 @@ public:
     static constexpr uint8_t GPIO_2_PIN { 25 }; /**< Pin number of GPIO 2 signal */
 
     /* motors */
-    static constexpr bool EXTERNAL_SPEEDCTRL { false };
+    static constexpr bool EXTERNAL_SPEEDCTRL { true };
     static constexpr bool MOT_L_DIR { false }; /**< Direction of rotation for left motor */
     static constexpr uint8_t MOT_L_PWM_PIN { 2 }; /**< Pin number of left motor pwm signal */
     static constexpr uint8_t MOT_L_DIR_PIN { 6 }; /**< Pin number of left motor direction signal */
@@ -169,7 +169,7 @@ public:
     static constexpr uint8_t SERVO_2_PIN { 23 }; /**< Pin number of servo 2 pwm signal */
 
     /* wheel encoders */
-    static constexpr uint8_t ENCODER_MARKS { 160 }; /**< Number of encoder marks on a wheel */
+    static constexpr uint16_t ENCODER_MARKS { EXTERNAL_SPEEDCTRL ? 1'800 : 160 }; /**< Number of encoder marks on a wheel */
 
     /* audio output channels */
     static constexpr uint8_t AUDIO_CHANNELS { 2 };

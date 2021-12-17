@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "logger.h"
 #include "circular_buffer.h"
 #include "memory_pool.hpp"
 #include "static_allocator.hpp"
@@ -49,11 +50,6 @@ namespace ctbot {
 class CtBot;
 class CmdParser;
 
-template <typename T>
-concept Number = std::integral<T> || std::floating_point<T>;
-
-template <typename T>
-concept PrintfArg = std::integral<T> || std::floating_point<T> || std::is_pointer<T>::value;
 
 /**
  * @brief Abstraction layer for communication services
@@ -64,7 +60,7 @@ concept PrintfArg = std::integral<T> || std::floating_point<T> || std::is_pointe
  *  skinparam classAttributeIconSize 0
  * @enduml
  */
-class CommInterface {
+class CommInterface : public LoggerTarget {
 protected:
     friend class CtBot;
     friend class TFTDisplay;
@@ -107,22 +103,6 @@ protected:
 
     FLASHMEM size_t queue_debug_msg(const char c, const std::string* p_str, const bool block);
 
-    FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
-
-    FLASHMEM static std::string* create_formatted_string(const size_t size, const char* format, ...);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-    FLASHMEM static std::string* string_format(const char* format, PrintfArg auto const... args) {
-        const auto size { get_format_size(format, args...) + 1 };
-        if (size > 0) {
-            return create_formatted_string(size, format, args...);
-        } else {
-            return nullptr;
-        }
-    }
-#pragma GCC diagnostic pop
-
 public:
     enum class Color : uint8_t {
         BLACK = 0,
@@ -154,6 +134,10 @@ public:
      * @brief Destroy the CommInterface object
      */
     FLASHMEM virtual ~CommInterface();
+
+    virtual void begin(const std::string_view& prefix) const override;
+    virtual size_t log(const char c, const bool block) override;
+    virtual size_t log(const std::string_view& str, const bool block) override;
 
     /**
      * @return Current character echo mode setting
@@ -193,9 +177,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const char c, const bool block) {
-        return queue_debug_msg(c, nullptr, block);
-    }
+    FLASHMEM size_t debug_print(const char c, const bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -243,7 +225,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(Number auto const v, const bool block) {
+    FLASHMEM size_t debug_print(logger::Number auto const v, const bool block) {
         return debug_print(std::to_string(v), block);
     }
 
@@ -254,14 +236,14 @@ public:
      * @return Number of characters written
      */
     template <bool BLOCK = false>
-    FLASHMEM size_t debug_printf(const char* format, PrintfArg auto const... args) {
-        return debug_print(string_format(format, args...), BLOCK);
+    FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto const... args) {
+        return debug_print(Logger::string_format(format, args...), BLOCK);
     }
 
     /**
      * @brief Wait for any outstanding transmission on the serial connection to complete
      */
-    FLASHMEM void flush();
+    FLASHMEM virtual void flush() override;
 };
 
 

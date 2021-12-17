@@ -25,7 +25,7 @@
 #pragma once
 
 #include "ctbot_config.h"
-#include "comm_interface.h"
+#include "logger.h"
 
 #include <cstdint>
 #include <string>
@@ -151,7 +151,7 @@ public:
      */
     template <typename... Args>
     FLASHMEM uint8_t printf(const char* format, const Args&... args) const {
-        return print(CommInterface::string_format(format, args...));
+        return print(Logger::string_format(format, args...));
     }
 
     int16_t get_cursor_x() const;

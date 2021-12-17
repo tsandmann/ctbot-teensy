@@ -25,6 +25,12 @@
 #include "parameter_storage.h"
 #include "ctbot.h"
 
+#ifdef ArduinoFiles_h
+#undef FILE_READ
+#endif
+#ifdef ArduinoFiles_h
+#undef FILE_WRITE
+#endif
 #include "FS.h"
 
 

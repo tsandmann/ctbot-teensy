@@ -27,6 +27,7 @@
 #include "ctbot_config.h"
 #include "ctbot_behavior.h"
 #include "actuator.h"
+#include "logger.h"
 
 #include "pprintpp.hpp"
 #include "avr/pgmspace.h"
@@ -145,25 +146,27 @@ protected:
     template <bool ENABLED = true>
     FLASHMEM void debug_flush() const {
         if (ENABLED) {
-            get_ctbot()->get_comm()->flush();
+            get_ctbot()->get_logger()->flush();
         }
     }
 
     template <bool ENABLED = true>
-    FLASHMEM_T auto debug_print(PrintfArg auto const... args) const {
+    FLASHMEM_T auto debug_print(logger::PrintfArg auto const... args) const {
         if (ENABLED) {
-            return get_ctbot()->get_comm()->debug_print(args..., true);
+            get_ctbot()->get_logger()->begin(get_name());
+            return get_ctbot()->get_logger()->log(args..., true);
         } else {
-            return static_cast<decltype(get_ctbot()->get_comm()->debug_print(args..., false))>(0);
+            return static_cast<decltype(get_ctbot()->get_logger()->log(args..., false))>(0);
         }
     }
 
     template <bool ENABLED = true>
-    FLASHMEM_T auto debug_printf(PrintfArg auto const... args) const {
+    FLASHMEM_T auto debug_printf(logger::PrintfArg auto const... args) const {
         if (ENABLED) {
-            return get_ctbot()->get_comm()->debug_printf<true>(args...);
+            get_ctbot()->get_logger()->begin(get_name());
+            return get_ctbot()->get_logger()->log<true>(args...);
         } else {
-            return static_cast<decltype(get_ctbot()->get_comm()->debug_printf<false>(args...))>(0);
+            return static_cast<decltype(get_ctbot()->get_logger()->log<false>(args...))>(0);
         }
     }
 

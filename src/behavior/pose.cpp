@@ -23,13 +23,13 @@
  */
 
 #include "pose.h"
-#include "comm_interface.h"
+#include "logger.h"
 
 #include "pprintpp.hpp"
 
 
 namespace ctbot {
-void Pose::print(CommInterface& comm) const {
-    comm.debug_printf<false>(PP_ARGS("\\{x={.2} y={.2} heading={.2}}", get_x(), get_y(), get_heading()));
+void Pose::print(Logger& logger) const {
+    logger.log<false>(PP_ARGS("\\{x={.2} y={.2} heading={.2}}", get_x(), get_y(), get_heading()));
 }
 } // namespace ctbot

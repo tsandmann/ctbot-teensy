@@ -29,7 +29,7 @@
 
 
 namespace ctbot {
-class CommInterface;
+class Logger;
 
 /**
  * @brief Speed representation
@@ -125,11 +125,11 @@ public:
     }
 
     /**
-     * @brief Print speed out to a SerialConnection
+     * @brief Print speed out to a logger
      *
-     * @param[in] comm Reference to communication interface to use
+     * @param[in] comm Reference to logger to use
      */
-    FLASHMEM void print(CommInterface& comm) const;
+    FLASHMEM void print(Logger& logger) const;
 };
 
 } // namespace ctbot

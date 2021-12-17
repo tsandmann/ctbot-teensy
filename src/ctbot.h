@@ -68,6 +68,8 @@ class CmdParser;
 class CtBotCli;
 class Scheduler;
 class ParameterStorage;
+class Logger;
+class LoggerTargetFile;
 
 /**
  * @brief Main class of ct-Bot teensy framework, responsible for initialization and control loop execution
@@ -101,6 +103,8 @@ protected:
     arduino::SerialIO* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
+    Logger* p_logger_;
+    LoggerTargetFile* p_logger_file_;
     ParameterStorage* p_parameter_;
     AudioOutputAnalog* p_audio_output_dac_;
     AudioOutputI2S* p_audio_output_i2s_;
@@ -112,6 +116,7 @@ protected:
     std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> pre_hooks_;
     std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> post_hooks_;
     TimerHandle_t p_watch_timer_;
+    TimerHandle_t p_clock_timer_;
     LuaWrapper* p_lua_;
 
 
@@ -138,6 +143,8 @@ protected:
      * @details All motors, servos, leds, sensors are stopped / shut down and all tasks are suspended.
      */
     FLASHMEM virtual void shutdown();
+
+    FLASHMEM void update_clock();
 
 public:
     /**
@@ -245,8 +252,16 @@ public:
         return p_comm_;
     }
 
+    auto get_logger() const {
+        return p_logger_;
+    }
+
     auto get_cmd_parser() const {
         return p_parser_;
+    }
+
+    auto get_cli() const {
+        return p_cli_;
     }
 
     /**

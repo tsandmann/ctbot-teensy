@@ -23,13 +23,13 @@
  */
 
 #include "speed.h"
-#include "comm_interface.h"
+#include "logger.h"
 
 #include "pprintpp.hpp"
 
 
 namespace ctbot {
-void Speed::print(CommInterface& comm) const {
-    comm.debug_printf<false>(PP_ARGS("\\{v_left={} v_right={} v_center={}}", get_left(), get_right(), get_center()));
+void Speed::print(Logger& logger) const {
+    logger.log<false>(PP_ARGS("\\{v_left={} v_right={} v_center={}}", get_left(), get_right(), get_center()));
 }
 } // namespace ctbot

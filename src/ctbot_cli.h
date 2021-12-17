@@ -51,6 +51,7 @@ protected:
     CtBot* p_ctbot_;
     std::vector<std::string_view> texts_;
 
+
 public:
     FLASHMEM CtBotCli(CtBot* p_ctbot);
 
@@ -59,5 +60,7 @@ public:
     FLASHMEM void init_commands();
 
     FLASHMEM void print() const;
+
+    FLASHMEM bool format_time(std::string& output, const char* format = "%c") const;
 };
 } // namespace ctbot

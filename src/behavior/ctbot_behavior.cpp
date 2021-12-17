@@ -26,6 +26,7 @@
 #include "ctbot_config.h"
 #include "ctbot_cli.h"
 #include "cmd_parser.h"
+#include "logger.h"
 #include "resource_container.h"
 #include "actuator.h"
 #include "sensors.h"
@@ -79,14 +80,15 @@ void CtBotBehavior::setup(const bool set_ready) {
                 const auto beh { beh_it->second };
                 const auto params { std::get<0>(beh_it->second) };
                 if (DEBUG_LEVEL_ >= 3) {
-                    get_comm()->debug_printf<true>(PSTR("creating behavior \"%.*s\" with %u parameters...\r\n"), beh_name.size(), beh_name.data(), params);
+                    get_logger()->begin();
+                    get_logger()->log<true>(PSTR("creating behavior \"%.*s\" with %u parameter(s)...\r\n"), beh_name.size(), beh_name.data(), params);
                 }
 
                 switch (params) {
                     case 0:
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>()>>(std::get<1>(beh))();
                         if (DEBUG_LEVEL_ >= 4) {
-                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                            get_logger()->log(PSTR(" done.\r\n"), true); // FIXME: timestamp for log?
                         }
                         break;
 
@@ -95,7 +97,7 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t)>>(std::get<1>(beh))(v);
                         if (DEBUG_LEVEL_ >= 4) {
-                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                            get_logger()->log(PSTR(" done.\r\n"), true);
                         }
                         break;
                     }
@@ -105,7 +107,7 @@ void CtBotBehavior::setup(const bool set_ready) {
                         CmdParser::split_args(args.substr(e), v1, v2);
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2);
                         if (DEBUG_LEVEL_ >= 4) {
-                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                            get_logger()->log(PSTR(" done.\r\n"), true);
                         }
                         break;
                     }
@@ -116,7 +118,7 @@ void CtBotBehavior::setup(const bool set_ready) {
                         p_beh_ =
                             std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2, v3);
                         if (DEBUG_LEVEL_ >= 4) {
-                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                            get_logger()->log(PSTR(" done.\r\n"), true);
                         }
                         break;
                     }
@@ -127,7 +129,7 @@ void CtBotBehavior::setup(const bool set_ready) {
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)>>(
                             std::get<1>(beh))(v1, v2, v3, v4);
                         if (DEBUG_LEVEL_ >= 4) {
-                            get_comm()->debug_print(PSTR(" done.\r\n"), true);
+                            get_logger()->log(PSTR(" done.\r\n"), true);
                         }
                         break;
                     }
@@ -181,7 +183,8 @@ void CtBotBehavior::setup(const bool set_ready) {
     p_model->register_listener([p_model, this](const ResourceContainer&) {
         p_model->reset_update_states();
         if (DEBUG_LEVEL_ > 4) {
-            get_comm()->debug_printf<true>(PP_ARGS("model notify at {} ms.\r\n", Timer::get_ms()));
+            get_logger()->begin();
+            get_logger()->log<true>(PP_ARGS("model notify at {} ms.\r\n", Timer::get_ms()));
         }
         model_cond_.notify_all();
     });
@@ -199,14 +202,16 @@ void CtBotBehavior::setup(const bool set_ready) {
             return;
         }
         if (DEBUG_LEVEL_ > 4) {
-            get_comm()->debug_printf<true>(PP_ARGS("all governors set at {} ms.\r\n", Timer::get_ms()));
+            get_logger()->begin();
+            get_logger()->log<true>(PP_ARGS("all governors set at {} ms.\r\n", Timer::get_ms()));
         }
         AMotor* p_left;
         if (governors.get_resource(PSTR("left"), p_left)) {
             const int16_t left { p_left->read() };
             p_speedcontrols_[0]->set_speed(static_cast<float>(left));
             if (DEBUG_LEVEL_ > 4) {
-                get_comm()->debug_printf<true>(PP_ARGS("speed left set to {}\r\n", left));
+                get_logger()->begin();
+                get_logger()->log<true>(PP_ARGS("speed left set to {}\r\n", left));
             }
         }
         AMotor* p_right;
@@ -214,7 +219,8 @@ void CtBotBehavior::setup(const bool set_ready) {
             const int16_t right { p_right->read() };
             p_speedcontrols_[1]->set_speed(static_cast<float>(right));
             if (DEBUG_LEVEL_ > 4) {
-                get_comm()->debug_printf<true>(PP_ARGS("speed right set to {}\r\n", right));
+                get_logger()->begin();
+                get_logger()->log<true>(PP_ARGS("speed right set to {}\r\n", right));
             }
         }
 
@@ -274,7 +280,8 @@ void CtBotBehavior::run() {
         const auto diff { now - last_time };
         last_time = now;
         if (diff > TASK_PERIOD_MS + 1) {
-            get_comm()->debug_printf<true>(PSTR("\nCtBotBehavior::run(): time diff=%u ms at %u ms.\r\n"), diff, now);
+            get_logger()->begin();
+            get_logger()->log<true>(PSTR("\nCtBotBehavior::run(): time diff=%u ms at %u ms.\r\n"), diff, now);
         }
     }
 
@@ -288,14 +295,16 @@ void CtBotBehavior::run() {
     const auto motor_requests { Behavior::get_motor_requests() };
     p_motor_sync_ = std::make_unique<std::latch>(static_cast<ptrdiff_t>(motor_requests));
     if (DEBUG_LEVEL_ >= 4 && motor_requests) {
-        get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): set motor barrier to %u\r\n"), motor_requests);
+        get_logger()->begin();
+        get_logger()->log<true>(PSTR("CtBotBehavior::run(): set motor barrier to %u\r\n"), motor_requests);
     }
 
     if (DEBUG_LEVEL_ > 4 && (speed.get_ref().get_left() || speed.get_ref().get_right())) {
-        pose.get_ref().print(*get_comm());
-        get_comm()->debug_print(PSTR(" "), true);
-        speed.get_ref().print(*get_comm());
-        get_comm()->debug_print(PSTR("\r\n"), true);
+        get_logger()->begin();
+        pose.get_ref().print(*get_logger());
+        get_logger()->log(PSTR(" "), true);
+        speed.get_ref().print(*get_logger());
+        get_logger()->log(PSTR("\r\n"), true);
     }
 
     pose.notify();
@@ -303,7 +312,8 @@ void CtBotBehavior::run() {
 
 
     if (DEBUG_LEVEL_ >= 4 && motor_requests) {
-        get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): waiting for motor barrier(%u)...\r\n"), motor_requests);
+        get_logger()->begin();
+        get_logger()->log<true>(PSTR("CtBotBehavior::run(): waiting for motor barrier(%u)...\r\n"), motor_requests);
     }
     const auto start { Timer::get_ms() };
     while (!p_motor_sync_->try_wait() & (Timer::get_ms() - start < TASK_PERIOD_MS * 2)) {
@@ -314,11 +324,13 @@ void CtBotBehavior::run() {
         const auto diff { barrier_done - start };
         if (diff < TASK_PERIOD_MS * 2) {
             if (DEBUG_LEVEL_ >= 4) {
-                get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): motor barrier done at %u ms.\r\n"), barrier_done);
+                get_logger()->begin();
+                get_logger()->log<true>(PSTR("CtBotBehavior::run(): motor barrier done at %u ms.\r\n"), barrier_done);
             }
         } else {
             if (DEBUG_LEVEL_ >= 3) {
-                get_comm()->debug_printf<true>(PSTR("CtBotBehavior::run(): motor barrier timeout: %u ms at %u ms.\r\n"), diff, barrier_done);
+                get_logger()->begin();
+                get_logger()->log<true>(PSTR("CtBotBehavior::run(): motor barrier timeout: %u ms at %u ms.\r\n"), diff, barrier_done);
             }
         }
     }
@@ -327,7 +339,8 @@ void CtBotBehavior::run() {
 
     if (p_beh_ && p_beh_->finished()) {
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print(PSTR("CtBotBehavior::run(): deleting Behavior (p_beh_)\r\n"), true);
+            get_logger()->begin();
+            get_logger()->log(PSTR("CtBotBehavior::run(): deleting Behavior (p_beh_)\r\n"), true);
         }
         p_beh_.reset();
     }
@@ -339,7 +352,8 @@ void CtBotBehavior::wait_for_model_update(std::atomic<bool>& abort) {
     std::unique_lock<std::mutex> lk(model_mutex_);
     while (model_cond_.wait_for(lk, 100ms) == std::cv_status::timeout) {
         if (DEBUG_LEVEL_ >= 3) {
-            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::wait_for_model_update(): TIMEOUT at %u ms, abort=%u\r\n"), Timer::get_ms(), abort.load());
+            get_logger()->begin();
+            get_logger()->log<true>(PSTR("CtBotBehavior::wait_for_model_update(): TIMEOUT at %u ms, abort=%u\r\n"), Timer::get_ms(), abort.load());
         }
         if (abort) {
             return;
@@ -351,7 +365,8 @@ void CtBotBehavior::motor_update_done() {
     if (p_motor_sync_) {
         p_motor_sync_->count_down();
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_print(PSTR("CtBotBehavior::motor_update_done(): p_motor_sync_->count_down()\r\n"), true);
+            get_logger()->begin();
+            get_logger()->log(PSTR("CtBotBehavior::motor_update_done(): p_motor_sync_->count_down()\r\n"), true);
         }
     }
 }
@@ -366,7 +381,8 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
     int32_t diff_l { enc_l - enc_last_l_ };
     if (std::abs(diff_l) > 1'000) { // error check
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::update_enc(): diff_l > 200: %d\tenc_l=%d\tenc_last_l=%d\r\n"), diff_l, enc_l, enc_last_l_);
+            get_logger()->begin();
+            get_logger()->log<true>(PSTR("CtBotBehavior::update_enc(): diff_l > 200: %d\tenc_l=%d\tenc_last_l=%d\r\n"), diff_l, enc_l, enc_last_l_);
         }
         diff_l = 0;
     }
@@ -374,7 +390,8 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
     int32_t diff_r { enc_r - enc_last_r_ };
     if (std::abs(diff_r) > 1'000) { // error check
         if (DEBUG_LEVEL_ >= 4) {
-            get_comm()->debug_printf<true>(PSTR("CtBotBehavior::update_enc(): diff_r > 200: %d\tenc_r=%d\tenc_last_r=%d\r\n"), diff_r, enc_r, enc_last_r_);
+            get_logger()->begin();
+            get_logger()->log<true>(PSTR("CtBotBehavior::update_enc(): diff_r > 200: %d\tenc_r=%d\tenc_last_r=%d\r\n"), diff_r, enc_r, enc_last_r_);
         }
         diff_r = 0;
     }
@@ -429,8 +446,9 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
 
 void CtBotBehavior::shutdown() {
     if (DEBUG_LEVEL_ >= 3) {
-        get_comm()->debug_print(PSTR("CtBotBehavior::shutdown()\r\n"), true);
-        get_comm()->flush();
+        get_logger()->begin();
+        get_logger()->log(PSTR("CtBotBehavior::shutdown()\r\n"), true);
+        get_logger()->flush();
     }
 
     ready_ = false;
