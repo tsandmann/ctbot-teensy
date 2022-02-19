@@ -32,8 +32,6 @@
 
 
 namespace arduino {
-class SerialIOStreamAdapter;
-
 
 class SerialIO {
 public:
