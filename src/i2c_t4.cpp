@@ -374,6 +374,7 @@ FASTRUN void I2CT4::isr1() {
             portYIELD_FROM_ISR(higher_woken);
         }
     }
+    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
 }
 
 FASTRUN void I2CT4::isr2() {
@@ -389,6 +390,7 @@ FASTRUN void I2CT4::isr2() {
             portYIELD_FROM_ISR(higher_woken);
         }
     }
+    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
 }
 
 FASTRUN void I2CT4::isr3() {
@@ -404,6 +406,7 @@ FASTRUN void I2CT4::isr3() {
             portYIELD_FROM_ISR(higher_woken);
         }
     }
+    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
 }
 } // namespace arduino
 

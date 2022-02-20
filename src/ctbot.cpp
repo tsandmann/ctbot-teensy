@@ -351,6 +351,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
                     BaseType_t higher_woken { pdFALSE };
                     ::vTaskNotifyGiveFromISR(audio_task_, &higher_woken);
                     portYIELD_FROM_ISR(higher_woken);
+                    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
                 }
             });
         } else {

@@ -515,6 +515,7 @@ FASTRUN void SerialT4::isr() {
     }
 
     portYIELD_FROM_ISR(reschedule);
+    portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
 }
 
 
