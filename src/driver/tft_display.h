@@ -28,8 +28,8 @@
 #include "logger.h"
 
 #include <cstdint>
-#include <string>
 #include <memory>
+#include <string>
 
 
 class Adafruit_ILI9341;

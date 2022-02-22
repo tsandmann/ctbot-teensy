@@ -22,16 +22,16 @@
  * @date    18.12.2019
  */
 
+#include "pos_store.h"
+
 #include "../position_store.h"
 #include "behavior_legacy.h"
 
+#include <cstdint>
+
 
 namespace ctbot {
-
-using namespace legacy;
-
-#include "pos_store.h"
-
+namespace legacy {
 extern "C" {
 pos_store_t* (*pos_store_create_size)(Behaviour_t*, void*, const pos_store_size_t)(&PositionStoreLegacy::pos_store_create_size);
 pos_store_t* (*pos_store_create)(Behaviour_t*, void*) (&PositionStoreLegacy::pos_store_create);
@@ -49,5 +49,6 @@ uint8_t (*pos_store_push)(pos_store_t*, const position_t)(&PositionStoreLegacy::
 uint8_t (*pos_store_queue)(pos_store_t*, const position_t)(&PositionStoreLegacy::pos_store_queue);
 uint8_t (*pos_store_dequeue)(pos_store_t*, position_t*)(&PositionStoreLegacy::pos_store_dequeue);
 uint8_t (*pos_store_top)(pos_store_t*, position_t*, const uint8_t)(&PositionStoreLegacy::pos_store_top);
-}
-} /* namespace ctbot */
+} // extern C
+} // namespace legacy
+} // namespace ctbot

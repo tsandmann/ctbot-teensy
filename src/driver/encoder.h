@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "timer.h"
 #include "ctbot_config.h"
+#include "timer.h"
 
 #include "arduino_freertos.h"
 

@@ -8,12 +8,12 @@
 
 #pragma once
 
+#include <boost/crc.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <cstdint>
 #include <iostream>
-#include <vector>
 #include <type_traits>
-#include <boost/asio/streambuf.hpp>
-#include <boost/crc.hpp>
+#include <vector>
 
 
 namespace ctbot {

@@ -23,6 +23,7 @@
  */
 
 #include "speed.h"
+
 #include "logger.h"
 
 #include "pprintpp.hpp"

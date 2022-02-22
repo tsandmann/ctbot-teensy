@@ -23,42 +23,45 @@
  */
 
 #include "ctbot.h"
+
 #include "behavior/ctbot_behavior.h"
-#include "ctbot_config.h"
-#include "scheduler.h"
-#include "leds_i2c.h"
-#include "lc_display.h"
-#include "tft_display.h"
-#include "ena_i2c.h"
-#include "sensors.h"
-#include "mpu_6050.h"
-#include "motor.h"
-#include "speed_control.h"
-#include "servo.h"
+
 #include "cmd_parser.h"
-#include "logger.h"
 #include "cmd_script.h"
 #include "ctbot_cli.h"
-#include "parameter_storage.h"
 #include "i2c_service.h"
-#include "serial_io.h"
-#include "serial_t3.h"
-#include "serial_t4.h"
-#include "tests.h"
+#include "logger.h"
+#include "parameter_storage.h"
+#include "scheduler.h"
+#include "sensors.h"
+#include "speed_control.h"
 
-#include "timers.h"
-#include "pprintpp.hpp"
+#include "driver/ena_i2c.h"
+#include "driver/lc_display.h"
+#include "driver/leds_i2c.h"
+#include "driver/motor.h"
+#include "driver/mpu_6050.h"
+#include "driver/servo.h"
+#include "driver/serial_io.h"
+#include "driver/serial_t3.h"
+#include "driver/serial_t4.h"
+#include "driver/tft_display.h"
+
+#include "test/tests.h"
+
 #include "lua_wrapper.h"
+#include "pprintpp.hpp"
+#include "timers.h"
 
-#include <cstdlib>
-#include <cinttypes>
-#include <string>
-#include <charconv>
-#include <cstring>
 #include <array>
-#include <tuple>
-#include <thread>
+#include <charconv>
 #include <chrono>
+#include <cinttypes>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <thread>
+#include <tuple>
 
 #ifndef sei
 #define sei() __enable_irq() // for Audio.h
@@ -66,7 +69,6 @@
 #ifndef cli
 #define cli() __disable_irq() // for Audio.h
 #endif
-
 #include "Audio.h"
 #include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 #include "tts.h"

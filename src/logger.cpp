@@ -23,6 +23,7 @@
  */
 
 #include "logger.h"
+
 #include "ctbot.h"
 #include "ctbot_cli.h"
 
@@ -34,8 +35,8 @@
 #endif
 #include "FS.h"
 
-#include <cstdarg>
 #include <cstdio>
+#include <cstdarg>
 
 
 namespace ctbot {

@@ -23,13 +23,14 @@
  */
 
 #include "i2c_service.h"
+
 #include "queue.h"
 
 #include <atomic>
 
 
 #if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-#include "i2c_t4.h"
+#include "driver/i2c_t4.h"
 namespace I2C_NS = arduino::teensy4;
 #else
 namespace I2C_NS = arduino;

@@ -26,15 +26,15 @@
 
 #include "resource.h"
 
-#include <memory>
-#include <string>
-#include <string_view>
-#include <vector>
+#include <functional>
 #include <list>
 #include <map>
-#include <tuple>
-#include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <vector>
 
 
 namespace ctbot {

@@ -23,6 +23,7 @@
  */
 
 #include "pose.h"
+
 #include "logger.h"
 
 #include "pprintpp.hpp"

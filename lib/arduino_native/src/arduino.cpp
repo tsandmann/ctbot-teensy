@@ -22,20 +22,20 @@
  */
 
 #include "arduino_freertos.h"
-#include "Wire.h"
 #include "SPI.h"
+#include "Wire.h"
 #include "serial_posix.h"
 
 #include <chrono>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <limits>
-#include <thread>
 #include <cstdlib>
-#include <unistd.h>
+#include <iostream>
+#include <limits>
 #include <signal.h>
+#include <string>
 #include <termios.h>
+#include <thread>
+#include <unistd.h>
+#include <vector>
 
 
 static struct termios t_old;

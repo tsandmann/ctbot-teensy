@@ -30,8 +30,8 @@
 #ifdef BEHAVIOUR_DRIVE_STACK_AVAILABLE
 #include "pos_store.h"
 
-#include <stdlib.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 //#define DEBUG
 

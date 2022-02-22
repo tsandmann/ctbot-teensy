@@ -23,6 +23,7 @@
  */
 
 #include "behavior_follow_line.h"
+
 #include "sensors.h"
 
 #include <algorithm>

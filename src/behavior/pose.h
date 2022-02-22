@@ -26,8 +26,8 @@
 
 #include "speed.h"
 
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 
 

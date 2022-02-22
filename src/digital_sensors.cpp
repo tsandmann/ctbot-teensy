@@ -23,11 +23,13 @@
  */
 
 #include "digital_sensors.h"
+
 #include "ctbot.h"
 #include "scheduler.h"
-#include "vl53l0x.h"
-#include "vl6180x.h"
-#include "mpu_6050.h"
+
+#include "driver/mpu_6050.h"
+#include "driver/vl53l0x.h"
+#include "driver/vl6180x.h"
 
 #include "arduino_freertos.h"
 

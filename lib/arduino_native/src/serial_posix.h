@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "serial_io.h"
 #include "ctbot_config.h"
+#include "driver/serial_io.h"
 
 
 #ifdef CTBOT_SIMULATION

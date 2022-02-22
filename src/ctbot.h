@@ -24,15 +24,16 @@
 
 #pragma once
 
-#include "ctbot_config.h"
 #include "comm_interface.h"
+#include "ctbot_config.h"
+
 #include "arduino_freertos.h"
 
-#include <string>
-#include <string_view>
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 

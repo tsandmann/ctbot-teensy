@@ -23,16 +23,15 @@
 
 #pragma once
 
-#include "Wire.h"
-#include "SPI.h"
-#include "WString.h"
 #include "Print.h"
+#include "SPI.h"
 #include "Stream.h"
-#include "serial_io.h"
+#include "Wire.h"
+#include "WString.h"
 #include "serial_posix.h"
 
-#include <cstdint>
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <pthread.h>
 

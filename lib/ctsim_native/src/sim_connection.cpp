@@ -9,27 +9,27 @@
 #include "sim_connection.h"
 #include "command.h"
 #include "../../../src/ctbot.h"
-#include "../../../src/behavior/ctbot_behavior.h"
 #include "../../../src/ctbot_config.h"
-#include "../../../src/motor.h"
-#include "../../../src/speed_control.h"
-#include "../../../src/servo.h"
-#include "../../../src/leds_i2c.h"
-#include "../../../src/sensors.h"
-#include "../../../src/encoder.h"
 #include "../../../src/i2c_service.h"
-#include "../../../src/vl53l0x.h"
-#include "../../../src/vl6180x.h"
-#include "../../../src/lc_display.h"
+#include "../../../src/sensors.h"
+#include "../../../src/speed_control.h"
+#include "../../../src/behavior/ctbot_behavior.h"
+#include "../../../src/driver/encoder.h"
+#include "../../../src/driver/lc_display.h"
+#include "../../../src/driver/leds_i2c.h"
+#include "../../../src/driver/motor.h"
+#include "../../../src/driver/servo.h"
+#include "../../../src/driver/vl53l0x.h"
+#include "../../../src/driver/vl6180x.h"
 
 #include "circular_buffer.h"
 #include "arduino_freertos.h"
 #include "LiquidCrystal_I2C.h"
 
-#include <iostream>
-#include <chrono>
-#include <boost/system/system_error.hpp>
 #include <boost/bind/bind.hpp>
+#include <boost/system/system_error.hpp>
+#include <chrono>
+#include <iostream>
 
 
 namespace arduino {

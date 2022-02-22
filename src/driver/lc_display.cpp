@@ -23,6 +23,7 @@
  */
 
 #include "lc_display.h"
+
 #include "scheduler.h"
 
 #include "LiquidCrystal_I2C.h"

@@ -27,13 +27,13 @@
 #include "resource.h"
 #include "resource_container.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <map>
-#include <tuple>
 #include <memory>
-#include <algorithm>
 #include <mutex>
+#include <tuple>
 
 
 namespace ctbot {

@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include "encoder.h"
-#include "motor.h"
+#include "driver/encoder.h"
+#include "driver/motor.h"
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <cmath>
 #include <list>
 
 

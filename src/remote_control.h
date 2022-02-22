@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "rc5_int.h"
+#include "driver/rc5_int.h"
 
 #include <functional>
 #include <map>

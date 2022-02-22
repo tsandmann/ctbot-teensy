@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "digital_sensors.h"
 #include "analog_sensors.h"
+#include "digital_sensors.h"
 
 
 namespace ctbot {

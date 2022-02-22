@@ -25,21 +25,22 @@
 #pragma once
 
 #include "logger.h"
+
 #include "circular_buffer.h"
 #include "memory_pool.hpp"
-#include "static_allocator.hpp"
 #include "namespace_alias.hpp"
+#include "static_allocator.hpp"
 
 #include "avr/pgmspace.h"
 
-#include <cstdint>
 #include <array>
-#include <string>
-#include <string_view>
+#include <concepts>
+#include <cstdint>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <string_view>
 #include <type_traits>
-#include <concepts>
 
 
 namespace arduino {

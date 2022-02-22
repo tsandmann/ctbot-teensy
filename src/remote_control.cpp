@@ -23,10 +23,12 @@
  */
 
 #include "remote_control.h"
+
 #include "ctbot.h"
 #include "sensors.h"
 #include "speed_control.h"
-#include "servo.h"
+
+#include "driver/servo.h"
 
 
 namespace ctbot {

@@ -22,10 +22,11 @@
  * @date    04.04.2021
  */
 
-#include "arduino_freertos.h"
 #include "ctbot.h"
 #include "mpu_6050.h"
+
 #include "MPU6050.h"
+#include "arduino_freertos.h"
 
 
 namespace ctbot {

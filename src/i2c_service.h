@@ -27,8 +27,8 @@
 #include "arduino_freertos.h"
 
 #include <array>
-#include <functional>
 #include <concepts>
+#include <functional>
 
 
 struct QueueDefinition;

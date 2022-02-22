@@ -27,8 +27,8 @@
 #include "ctbot_config.h"
 #include "i2c_service.h"
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 
 namespace ctbot {

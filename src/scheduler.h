@@ -28,14 +28,14 @@
 #include "ctbot_task.h"
 
 #include <cstdint>
-#include <vector>
+#include <functional>
 #include <list>
 #include <map>
+#include <mutex>
 #include <string>
 #include <string_view>
-#include <functional>
 #include <thread>
-#include <mutex>
+#include <vector>
 
 
 extern "C" {

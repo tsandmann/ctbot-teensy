@@ -23,10 +23,11 @@
  */
 
 #include "encoder.h"
-#include "digital_sensors.h"
-#include "timer.h"
-#include "scheduler.h"
+
 #include "ctbot.h"
+#include "digital_sensors.h"
+#include "scheduler.h"
+#include "timer.h"
 
 
 namespace ctbot {

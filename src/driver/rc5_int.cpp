@@ -23,8 +23,9 @@
  */
 
 #include "rc5_int.h"
-#include "scheduler.h"
+
 #include "ctbot.h"
+#include "scheduler.h"
 
 #include "rc5.h"
 

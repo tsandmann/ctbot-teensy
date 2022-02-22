@@ -7,6 +7,7 @@
  */
 
 #include "command.h"
+
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 

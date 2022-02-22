@@ -24,16 +24,18 @@
 
 #include "ctbot.h"
 #include "ctbot_config.h"
-#include "timer.h"
 #include "scheduler.h"
-#include "serial_io.h"
-#include "tests.h"
+#include "timer.h"
+
+#include "driver/serial_io.h"
+
+#include "test/tests.h"
 
 #include "arduino_freertos.h"
 
-#include <thread>
-#include <memory>
 #include <cstring>
+#include <memory>
+#include <thread>
 
 
 static constexpr bool DEBUG { false };

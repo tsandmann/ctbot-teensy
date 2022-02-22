@@ -24,15 +24,16 @@
 
 #pragma once
 
-#include "encoder.h"
-#include "rc5_int.h"
-#include "remote_control.h"
 #include "ctbot_config.h"
-#include "ena_i2c.h"
-#include "leds_i2c.h"
+#include "remote_control.h"
 
-#include <cstdint>
+#include "driver/ena_i2c.h"
+#include "driver/encoder.h"
+#include "driver/leds_i2c.h"
+#include "driver/rc5_int.h"
+
 #include <array>
+#include <cstdint>
 
 
 namespace ctbot {

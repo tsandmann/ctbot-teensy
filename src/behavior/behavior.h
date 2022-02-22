@@ -24,24 +24,24 @@
 
 #pragma once
 
-#include "ctbot_config.h"
-#include "ctbot_behavior.h"
 #include "actuator.h"
+#include "ctbot_behavior.h"
+#include "ctbot_config.h"
 #include "logger.h"
 
 #include "pprintpp.hpp"
 #include "avr/pgmspace.h"
 
-#include <cstdint>
-#include <string_view>
-#include <memory>
-#include <mutex>
 #include <atomic>
 #include <chrono>
-#include <thread>
 #include <condition_variable>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <mutex>
 #include <set>
+#include <string_view>
+#include <thread>
 
 
 namespace ctbot {

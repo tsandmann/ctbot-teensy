@@ -220,4 +220,4 @@ public:
     static uint8_t pos_store_top(pos_store_t* store, legacy::position_t* pos, const uint8_t index) noexcept;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot

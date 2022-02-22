@@ -26,8 +26,8 @@
 
 #include "pprintpp.hpp"
 
-#include <thread>
 #include <chrono>
+#include <thread>
 
 
 namespace ctbot {

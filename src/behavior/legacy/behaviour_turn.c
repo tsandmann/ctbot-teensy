@@ -42,8 +42,8 @@
 uint16_t EEPROM turn_err[6] = TURN_ERR; /**< Fehler bei Drehungen (im EEPROM gespeichert) */
 
 #ifdef BEHAVIOUR_TURN_AVAILABLE
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
 
 #ifndef DEBUG_TURN
 #undef LOG_DEBUG

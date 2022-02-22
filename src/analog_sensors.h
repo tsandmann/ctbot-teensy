@@ -25,8 +25,9 @@
 #pragma once
 
 #include "ctbot_config.h"
-#include "ena_i2c.h"
-#include "leds_i2c.h"
+
+#include "driver/ena_i2c.h"
+#include "driver/leds_i2c.h"
 
 #include <cstdint>
 #include <mutex>

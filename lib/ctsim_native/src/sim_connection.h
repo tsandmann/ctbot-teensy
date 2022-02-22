@@ -11,14 +11,14 @@
 #include "command.h"
 #include "../../../src/behavior/resource.h"
 
-#include <cstdint>
-#include <vector>
-#include <list>
-#include <functional>
-#include <memory>
-#include <map>
-#include <thread>
 #include <boost/asio.hpp>
+#include <cstdint>
+#include <functional>
+#include <list>
+#include <map>
+#include <memory>
+#include <thread>
+#include <vector>
 
 
 class TwoWire;

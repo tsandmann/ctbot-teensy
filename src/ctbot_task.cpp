@@ -23,8 +23,9 @@
  */
 
 #include "ctbot_task.h"
-#include "scheduler.h"
+
 #include "comm_interface.h"
+#include "scheduler.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"

@@ -23,15 +23,17 @@
  */
 
 #include "speed_control.h"
+
 #include "ctbot.h"
 #include "scheduler.h"
 #include "timer.h"
-#include "serial_io.h"
-#include "serial_t3.h"
-#include "serial_t4.h"
 
-#include "pid_v1.h"
+#include "driver/serial_io.h"
+#include "driver/serial_t3.h"
+#include "driver/serial_t4.h"
+
 #include "crc32.h"
+#include "pid_v1.h"
 
 
 namespace ctbot {

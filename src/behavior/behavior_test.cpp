@@ -23,10 +23,11 @@
  */
 
 #include "behavior_test.h"
-#include "ctbot_behavior.h"
-#include "scheduler.h"
+
 #include "actuator.h"
+#include "ctbot_behavior.h"
 #include "pose.h"
+#include "scheduler.h"
 #include "speed.h"
 #include "timer.h"
 

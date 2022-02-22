@@ -23,17 +23,18 @@
  */
 
 #include "behavior.h"
-#include "scheduler.h"
+
+#include "logger.h"
 #include "pose.h"
+#include "scheduler.h"
 #include "speed.h"
 #include "timer.h"
-#include "logger.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"
 
-#include <thread>
 #include <chrono>
+#include <thread>
 
 
 namespace ctbot {

@@ -25,20 +25,21 @@
 #pragma once
 
 #include "../ctbot.h"
-#include "resource_container.h"
-#include "actuator.h"
 
-#include <memory>
+#include "actuator.h"
+#include "resource_container.h"
+
+#include <any>
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <latch>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
-#include <functional>
-#include <any>
 #include <tuple>
-#include <mutex>
-#include <condition_variable>
-#include <latch>
-#include <atomic>
 
 
 namespace ctbot {

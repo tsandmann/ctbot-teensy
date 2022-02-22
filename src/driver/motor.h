@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "encoder.h"
+#include "driver/encoder.h"
 
 #include <cstdint>
 

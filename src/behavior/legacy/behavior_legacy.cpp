@@ -23,20 +23,22 @@
  */
 
 #include "behavior_legacy.h"
-#include "../../sensors.h"
-#include "../../leds_i2c.h"
-#include "../../lc_display.h"
-#include "../../servo.h"
+
 #include "../pose.h"
 #include "../speed.h"
-#include "../behavior_servo.h"
-#include "../behavior_turn.h"
 #include "../behavior_drive.h"
-#include "../behavior_square.h"
 #include "../behavior_follow_line.h"
+#include "../behavior_servo.h"
+#include "../behavior_square.h"
+#include "../behavior_turn.h"
 
-#include <cstdio>
+#include "../../sensors.h"
+#include "../../driver/lc_display.h"
+#include "../../driver/leds_i2c.h"
+#include "../../driver/servo.h"
+
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 

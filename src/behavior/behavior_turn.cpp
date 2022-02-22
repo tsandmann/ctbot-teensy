@@ -24,11 +24,12 @@
  */
 
 #include "behavior_turn.h"
+
 #include "ctbot_behavior.h"
-#include "scheduler.h"
-#include "timer.h"
 #include "pose.h"
+#include "scheduler.h"
 #include "speed.h"
+#include "timer.h"
 
 #include "pprintpp.hpp"
 

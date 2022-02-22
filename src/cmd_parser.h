@@ -24,15 +24,15 @@
 
 #pragma once
 
+#include <charconv>
+#include <concepts>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
+#include <functional>
 #include <map>
 #include <string>
 #include <string_view>
-#include <charconv>
-#include <functional>
-#include <deque>
-#include <concepts>
 
 
 namespace ctbot {

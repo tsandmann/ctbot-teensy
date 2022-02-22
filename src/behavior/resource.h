@@ -24,10 +24,10 @@
 
 #pragma once
 
-#include <memory>
-#include <list>
-#include <tuple>
 #include <functional>
+#include <list>
+#include <memory>
+#include <tuple>
 #include <type_traits>
 
 

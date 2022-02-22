@@ -23,8 +23,9 @@
  */
 
 #include "behavior_servo.h"
+
 #include "../sensors.h"
-#include "../servo.h"
+#include "../driver/servo.h"
 
 
 namespace ctbot {

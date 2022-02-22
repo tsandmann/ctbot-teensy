@@ -23,12 +23,14 @@
  */
 
 #include "scheduler.h"
+
 #include "ctbot.h"
-#include "timer.h"
 #include "comm_interface.h"
-#include "serial_io.h"
-#include "serial_t3.h"
-#include "serial_t4.h"
+#include "timer.h"
+
+#include "driver/serial_io.h"
+#include "driver/serial_t3.h"
+#include "driver/serial_t4.h"
 
 #include "pprintpp.hpp"
 #include "arduino_freertos.h"

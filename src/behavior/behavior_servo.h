@@ -26,8 +26,8 @@
 
 #include "behavior.h"
 
-#include <memory>
 #include <chrono>
+#include <memory>
 
 
 namespace ctbot {

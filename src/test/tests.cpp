@@ -23,13 +23,15 @@
  */
 
 #include "tests.h"
+
 #include "ctbot.h"
 #include "scheduler.h"
-#include "leds_i2c.h"
-#include "ena_i2c.h"
 #include "sensors.h"
-#include "lc_display.h"
-#include "tft_display.h"
+
+#include "driver/ena_i2c.h"
+#include "driver/lc_display.h"
+#include "driver/leds_i2c.h"
+#include "driver/tft_display.h"
 
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"

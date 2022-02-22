@@ -23,19 +23,21 @@
  */
 
 #include "tests.h"
+
 #include "ctbot.h"
 #include "scheduler.h"
 #include "timer.h"
-#include "tft_display.h"
+
+#include "driver/tft_display.h"
 
 #include "Adafruit_GFX.h"
 #include "arduino_freertos.h"
 #include "pprintpp.hpp"
 
-#include <thread>
 #include <chrono>
-#include <cstring>
 #include <cmath>
+#include <cstring>
+#include <thread>
 
 
 namespace freertos {

@@ -25,15 +25,16 @@
 #pragma once
 
 #include "../behavior.h"
+#include "bot-logic_legacy.h"
 
 #include "pprintpp.hpp"
 
-#include <thread>
-#include <memory>
-#include <vector>
-#include <map>
-#include <tuple>
 #include <cstdarg>
+#include <map>
+#include <memory>
+#include <thread>
+#include <tuple>
+#include <vector>
 
 
 namespace ctbot {
@@ -44,11 +45,6 @@ class Speed;
 class Leds;
 class Lcd;
 
-namespace legacy {
-
-#include "bot-logic_legacy.h"
-
-} /* namespace legacy */
 
 class BehaviorLegacy : public Behavior {
     static constexpr bool DEBUG_ { false };
@@ -396,4 +392,4 @@ public:
     FLASHMEM uint8_t display_puts(const char* text) const noexcept;
 };
 
-} /* namespace ctbot */
+} // namespace ctbot

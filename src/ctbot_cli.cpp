@@ -23,24 +23,26 @@
  */
 
 #include "ctbot_cli.h"
+
 #include "ctbot.h"
 #include "ctbot_config.h"
-#include "comm_interface.h"
 #include "cmd_parser.h"
 #include "cmd_script.h"
-#include "speed_control.h"
-#include "scheduler.h"
-#include "leds_i2c.h"
-#include "sensors.h"
-#include "lc_display.h"
-#include "tft_display.h"
-#include "mpu_6050.h"
-#include "motor.h"
-#include "servo.h"
-#include "parameter_storage.h"
-#include "serial_io.h"
+#include "comm_interface.h"
 #include "i2c_service.h"
 #include "logger.h"
+#include "parameter_storage.h"
+#include "scheduler.h"
+#include "sensors.h"
+#include "speed_control.h"
+
+#include "driver/lc_display.h"
+#include "driver/leds_i2c.h"
+#include "driver/motor.h"
+#include "driver/mpu_6050.h"
+#include "driver/servo.h"
+#include "driver/serial_io.h"
+#include "driver/tft_display.h"
 
 #ifndef sei
 #define sei() __enable_irq() // for Audio.h
@@ -55,10 +57,10 @@
 #include "tts.h"
 #include "freertos_time.h"
 
-#include <cstring>
-#include <thread>
 #include <chrono>
 #include <cinttypes>
+#include <cstring>
+#include <thread>
 
 
 namespace ctbot {

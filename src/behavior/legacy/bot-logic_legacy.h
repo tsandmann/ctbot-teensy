@@ -27,12 +27,16 @@
 #include "avr/pgmspace.h"
 
 #ifdef __cplusplus
+#include <cstddef>
 #include <cstdint>
+namespace ctbot {
+namespace legacy {
 #else
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 #endif // __cplusplus
 
 
@@ -557,5 +561,7 @@ extern const int DOOR_OPEN; /**< Linker Anschlag des Servos */
 extern const int SERVO_OFF;
 
 #ifdef __cplusplus
-}
+} // extern C
+} // namespace legacy
+} // namespace ctbot
 #endif // __cplusplus

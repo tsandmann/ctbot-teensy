@@ -26,11 +26,13 @@
 
 #include "bot-logic_legacy.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-#include <stdint.h>
+#ifdef __cplusplus
+namespace ctbot {
+namespace legacy {
+extern "C" {
+#endif // __cplusplus
+
 
 #define POS_STORE_SIZE 256 /**< (maximale) Groesse des Positionsspeichers (pro Platz) */
 
@@ -55,5 +57,7 @@ extern uint8_t (*pos_store_dequeue)(pos_store_t*, position_t*);
 extern uint8_t (*pos_store_top)(pos_store_t*, position_t*, const uint8_t);
 
 #ifdef __cplusplus
-}
-#endif
+} // extern C
+} // namespace legacy
+} // namespace ctbot
+#endif // __cplusplus
