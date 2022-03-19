@@ -2,8 +2,7 @@
 
 This is a very basic framework for the [ct-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
 
-[![Open in VS Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/tsandmann/ctbot-teensy)
-
+[![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#ctbot:matrix.org)
 
 ## Summary
 
