@@ -44,7 +44,7 @@ decltype(I2C_Service::freq_) I2C_Service::freq_;
 
 bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda, const uint8_t pin_scl) {
     if (bus >= i2c_task_.size()) {
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             printf_debug(PSTR("I2C_Service::init(%u, %u, %u, %u): invalid bus.\r\n"), bus, freq, pin_sda, pin_scl);
         }
         return false;
@@ -54,7 +54,7 @@ bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin
         return true;
     }
 
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         printf_debug(PSTR("I2C_Service::init(%u, %u, %u, %u)...\r\n"), bus, freq, pin_sda, pin_scl);
     }
 
@@ -105,7 +105,7 @@ bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin
         uintptr_t x { bus };
         void* param { reinterpret_cast<void*>(x) };
         if (::xTaskCreate(run, PSTR("I2C Svc"), 512, param, 8, &i2c_task_[bus]) != pdTRUE) {
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::init(): xTaskCreate() failed\r\n"));
             }
             ::vQueueDelete(i2c_queue_[bus]);
@@ -117,7 +117,7 @@ bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin
     freq_[bus] = freq;
     init_[bus] = true;
 
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         printf_debug(PSTR("I2C_Service::init(%u, %u, %u, %u) done\r\n"), bus, freq, pin_sda, pin_scl);
     }
 
@@ -134,7 +134,7 @@ void I2C_Service::finish_transfer(const bool success, I2C_Transfer* transfer) {
 
 void I2C_Service::run(void* param) {
     const uintptr_t bus { reinterpret_cast<uintptr_t>(param) };
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         printf_debug(PSTR("I2C_Service::run(): bus=%u\r\n"), bus);
     }
 
@@ -147,7 +147,7 @@ void I2C_Service::run(void* param) {
             if (!transfer) {
                 continue;
             }
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("\r\nI2C_Service::run(): transfer %u for 0x%x received:\r\n"), ++id, transfer->addr);
                 if (transfer->size1) {
                     printf_debug(PSTR("\ttype1=%c\tsize1=%u\tdata1=0x%x\r\n"), transfer->type1 ? 'r' : 'w', transfer->size1,
@@ -171,7 +171,7 @@ void I2C_Service::run(void* param) {
                     uint8_t* ptr { buffer };
                     for (int i { to_send - 1 }; i >= 0; --i) {
                         *ptr = static_cast<uint8_t>(transfer->data1.data >> (i << 3));
-                        if (DEBUG_) {
+                        if constexpr (DEBUG_) {
                             // printf_debug(PSTR("I2C_Service::run(): write buffer[%u]=0x%x\r\n"), ptr - buffer, *ptr);
                         }
                         ++ptr;
@@ -180,7 +180,7 @@ void I2C_Service::run(void* param) {
                 }
 
                 if (p_i2c_[bus]->write(transfer->data1.ptr, to_send) != to_send) {
-                    if (DEBUG_) {
+                    if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): write() 1 FAILED\r\n"));
                     }
                     transfer->error = 1;
@@ -191,7 +191,7 @@ void I2C_Service::run(void* param) {
                 if (!transfer->size2 || transfer->type2) {
                     const auto status { p_i2c_[bus]->endTransmission(transfer->size2 && transfer->type2 ? 0 : 1) };
                     if (status) {
-                        if (DEBUG_) {
+                        if constexpr (DEBUG_) {
                             printf_debug(PSTR("I2C_Service::run(): endTransmission() FAILED: %u\r\n"), status);
                         }
                         transfer->error = 2;
@@ -212,7 +212,7 @@ void I2C_Service::run(void* param) {
                     uint8_t* ptr { buffer };
                     for (auto i { to_send - 1 }; i >= 0; --i) {
                         *ptr = static_cast<uint8_t>(transfer->data2.data >> (i << 3));
-                        if (DEBUG_) {
+                        if constexpr (DEBUG_) {
                             // printf_debug(PSTR("I2C_Service::run(): write buffer[%u]=0x%x\r\n"), ptr - buffer, *ptr);
                         }
                         ++ptr;
@@ -221,7 +221,7 @@ void I2C_Service::run(void* param) {
                 }
 
                 if (p_i2c_[bus]->write(transfer->data2.ptr, to_send) != to_send) {
-                    if (DEBUG_) {
+                    if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): write() 2 FAILED\r\n"));
                     }
                     transfer->error = 3;
@@ -231,7 +231,7 @@ void I2C_Service::run(void* param) {
 
                 const auto status { p_i2c_[bus]->endTransmission(1) };
                 if (status) {
-                    if (DEBUG_) {
+                    if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): endTransmission() FAILED: %u\r\n"), status);
                     }
                     transfer->error = 4;
@@ -242,7 +242,7 @@ void I2C_Service::run(void* param) {
                 /* 2nd transfer read */
                 const auto to_read { transfer->size2 };
                 if (p_i2c_[bus]->requestFrom(static_cast<uint8_t>(transfer->addr), to_read, static_cast<uint8_t>(1)) != to_read) {
-                    if (DEBUG_) {
+                    if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): requestFrom() FAILED\r\n"));
                     }
                     transfer->error = 5;
@@ -250,7 +250,7 @@ void I2C_Service::run(void* param) {
                     continue;
                 }
 
-                if (to_read <= 4) {
+                if (to_read <= sizeof(I2C_Transfer::data2.data)) {
                     if (p_i2c_[bus]->readBytes(buffer, to_read) != to_read) {
                         transfer->error = 6;
                         finish_transfer(false, transfer, id);
@@ -261,18 +261,18 @@ void I2C_Service::run(void* param) {
                     uint8_t* ptr { buffer };
                     for (auto i { to_read - 1 }; i >= 0; --i) {
                         transfer->data2.data |= static_cast<uint32_t>(*ptr) << (i << 3);
-                        if (DEBUG_) {
+                        if constexpr (DEBUG_) {
                             // printf_debug(PSTR("I2C_Service::run(): read buffer[%u]=0x%x\r\n"), ptr - buffer, *ptr);
                         }
                         ++ptr;
                     }
-                    if (DEBUG_) {
+                    if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): rx_data.data=0x%x\r\n"), transfer->data2.data);
                     }
                 } else {
-                    /* to_read > 4 */
+                    /* to_read > sizeof(I2C_Transfer::data2.data) */
                     if (p_i2c_[bus]->readBytes(transfer->data2.ptr, to_read) != to_read) {
-                        if (DEBUG_) {
+                        if constexpr (DEBUG_) {
                             printf_debug(PSTR("I2C_Service::run(): readBytes() FAILED\r\n"));
                         }
                         transfer->error = 7;
@@ -283,7 +283,7 @@ void I2C_Service::run(void* param) {
             }
 
             finish_transfer(true, transfer, id);
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("\r\nI2C_Service::run(): transfer %u completed\r\n\n"), id);
             }
         }
@@ -314,7 +314,7 @@ uint8_t I2C_Service::read_reg(
                 data = static_cast<std::remove_reference<decltype(data)>::type>((*p_transfer)->data2.data);
             }
             ret = (*p_transfer)->error;
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::read_reg<%u, %u>() callback, data=0x%x, err=%u\r\n"), sizeof(reg), sizeof(data), data, ret);
             }
             transfer_done = true;
@@ -333,7 +333,7 @@ uint8_t I2C_Service::read_reg(
             }
             ::vTaskDelay(1);
         }
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             // printf_debug(PSTR("I2C_Service::read_reg<%u, %u>(): done, ret=%u, data=%u\r\n"), sizeof(REG), sizeof(DATA), ret, data);
         }
     }
@@ -398,7 +398,7 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
         transfer->caller = ::xTaskGetCurrentTaskHandle();
         transfer->callback = [&ret](const bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 (void) done;
                 printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, ret);
             }
@@ -415,7 +415,7 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
     }
 
     ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         // printf_debug(PSTR("I2C_Service::read_bytes(): done, err=%u\r\n"), ret);
     }
 
@@ -444,7 +444,7 @@ uint8_t I2C_Service::write_reg(
         transfer_done = false;
         transfer->callback = [&transfer_done, &ret](const bool, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::write_reg<%u, %u>() callback done, err=%u\r\n"), sizeof(reg), sizeof(data), ret);
             }
             transfer_done = true;
@@ -453,7 +453,7 @@ uint8_t I2C_Service::write_reg(
 
     if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) {
         // FIXME: timeout?
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             printf_debug(PSTR("I2C_Service::write_reg<%u, %u>() transfer queueing FAILED\r\n"), sizeof(reg), sizeof(data));
         }
         return 100;
@@ -467,7 +467,7 @@ uint8_t I2C_Service::write_reg(
             }
             ::vTaskDelay(1);
         }
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             // printf_debug(PSTR("I2C_Service::write_reg<%u, %u>(): done, ret=%u\r\n"), sizeof(reg), sizeof(data), ret);
         }
     }
@@ -531,7 +531,7 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
         transfer->caller = ::xTaskGetCurrentTaskHandle();
         transfer->callback = [&ret](const bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 (void) done;
                 printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(reg_addr), done, ret);
             }
@@ -549,7 +549,7 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
     }
 
     ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         // printf_debug(PSTR("I2C_Service::write_bytes<%u>(): done, ret=%u\r\n"), ret, sizeof(reg));
     }
 
@@ -567,7 +567,7 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bit_internal<>(): invalid reg size");
     static_assert(sizeof(DATA) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::set_bit_internal<>(): invalid DATA size");
 
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(0x%x, 0x%x, %u, %u)\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit, value);
     }
 
@@ -579,7 +579,7 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
             data = static_cast<DATA>((*p_transfer)->data2.data);
             value ? data |= 1 << bit : data &= ~(1 << bit);
             ret = write_reg(addr, reg, data, [&transfer_done](const bool, I2C_Transfer** p_transfer) {
-                if (DEBUG_) {
+                if constexpr (DEBUG_) {
                     (void) p_transfer;
                     printf_debug(
                         PSTR("I2C_Service::set_bit_internal<%u, %u>() write_callback done, err=%u\r\n"), sizeof(reg), sizeof(DATA), (*p_transfer)->error);
@@ -587,19 +587,19 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
                 transfer_done = true;
             });
 
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_callback done, data=0x%x\r\n"), sizeof(reg), sizeof(DATA), data);
             }
         } else {
             ret = (*p_transfer)->error;
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), ret);
             }
         }
     } };
 
     if (read_reg(addr, reg, data, read_callback)) {
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(reg), sizeof(DATA));
         }
         return 10;
@@ -612,7 +612,7 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
         }
         ::vTaskDelay(1);
     }
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         if (ret) {
             // printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
         }
@@ -659,7 +659,7 @@ void I2C_Service::test(const uint16_t addr, const uint32_t rx, const uint32_t tx
         if (callback) {
             callback(false, &data);
             if (data) {
-                if (DEBUG_) {
+                if constexpr (DEBUG_) {
                     printf_debug(PSTR("I2C_Service::test(): deleting data with addr=0x%x\r\n"), data->addr);
                 }
                 delete data;
@@ -667,7 +667,7 @@ void I2C_Service::test(const uint16_t addr, const uint32_t rx, const uint32_t tx
         }
     }
 
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         printf_debug("I2C_Service::test(): data for 0x%x sent.r\n", data->addr);
     }
 }

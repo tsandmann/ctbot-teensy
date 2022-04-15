@@ -53,7 +53,7 @@ void BehaviorFollowLine::run() {
     if (abort_request_) {
         debug_print<DEBUG_>(PSTR("FollowLineBeh::run(): aborted.\r\n"));
         motor_update_done();
-        exit();
+        exit(RESULT_FAILURE);
         return;
     }
 

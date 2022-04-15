@@ -154,7 +154,7 @@ protected:
     std::array<uint8_t, 8> pwm_dt_;
 
     FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, status_ { LedTypesEna::NONE },
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, status_ { static_cast<T>(LedTypesEna::NONE) },
           init_ {} { // FIXME: read initial status from device
         if (write_reg8(MODE1_REG, 0)) {
             return;

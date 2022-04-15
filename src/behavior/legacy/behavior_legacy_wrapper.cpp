@@ -28,20 +28,17 @@
 
 #include <chrono>
 #include <thread>
+#include <cstring>
 
 
 namespace ctbot {
-
-extern "C" {
-namespace legacy {
-#include "available_behaviours.h"
-}
-}
-
 std::unordered_map<std::string /*name*/, legacy::Behaviour_t*> BehaviorLegacyWrapper::running_behaviors;
 
 BehaviorLegacyWrapper::BehaviorLegacyWrapper(const std::string& name, legacy::BehaviourFunc_t func)
-    : Behavior { name, false, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, beh_func_ { func } {}
+    : Behavior { name, false, Behavior::DEFAULT_PRIORITY - 1, Behavior::DEFAULT_CYCLE_TIME, STACK_SIZE }, beh_func_ { func } {
+    std::memset(&caller_dummy_, 0, sizeof(caller_dummy_));
+    caller_dummy_.subResult = BehaviorLegacy::BEHAVIOUR_SUBSUCCESS;
+}
 
 BehaviorLegacyWrapper::~BehaviorLegacyWrapper() {
     debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::~BehaviorLegacyWrapper().\r\n"));
@@ -61,7 +58,7 @@ void BehaviorLegacyWrapper::run() {
     if (running_behaviors[get_name()]) {
         debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): legacy behavior already running!\r\n"));
 
-        exit();
+        exit(RESULT_FAILURE);
         return;
     }
 
@@ -69,7 +66,7 @@ void BehaviorLegacyWrapper::run() {
     if (!ptr) {
         debug_print<DEBUG_>(PSTR("BehaviorLegacyWrapper::run(): legacy behavior not registered!\r\n"));
 
-        exit();
+        exit(RESULT_FAILURE);
         return;
     }
 
@@ -93,7 +90,7 @@ void BehaviorLegacyWrapper::run() {
 
     running_behaviors[get_name()] = nullptr;
 
-    exit();
+    exit(caller_dummy_.subResult == BehaviorLegacy::BEHAVIOUR_SUBSUCCESS ? RESULT_SUCCESS : RESULT_FAILURE);
 }
 
 void BehaviorLegacyWrapper::cleanup() {
@@ -119,7 +116,7 @@ BehaviorDriveDistance::BehaviorDriveDistance(const int8_t curve, const int16_t s
 }
 
 void BehaviorDriveDistance::start() {
-    legacy::bot_drive_distance(nullptr, curve_, speed_, length_);
+    legacy::bot_drive_distance(&caller_dummy_, curve_, speed_, length_);
 }
 #endif // ! BEHAVIOUR_GOTO_POS_AVAILABLE && BEHAVIOUR_DRIVE_DISTANCE_AVAILABLE
 
@@ -132,7 +129,7 @@ BehaviorSimple::BehaviorSimple() : BehaviorLegacyWrapper { PSTR("SimpleBeh"), le
 }
 
 void BehaviorSimple::start() {
-    legacy::bot_simple(nullptr);
+    legacy::bot_simple(&caller_dummy_);
 }
 #endif // BEHAVIOUR_SIMPLE_AVAILABLE
 
@@ -172,19 +169,19 @@ void BehaviorGotoPos::start() {
     if (dist_ && head_ == -1) {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::start(): calling bot_goto_dist({}, {}) ...\r\n", dist_, static_cast<int16_t>(dir_)));
 
-        legacy::bot_goto_dist(nullptr, dist_, dir_);
+        legacy::bot_goto_dist(&caller_dummy_, dist_, dir_);
     } else if (dist_) {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::start(): calling bot_goto_dist_head({}, {}, {}) ...\r\n", dist_, static_cast<int16_t>(dir_), head_));
 
-        legacy::bot_goto_dist_head(nullptr, dist_, dir_, head_);
+        legacy::bot_goto_dist_head(&caller_dummy_, dist_, dir_, head_);
     } else if (rel_) {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::start(): calling bot_goto_pos_rel({}, {}, {}) ...\r\n", x_, y_, head_));
 
-        legacy::bot_goto_pos_rel(nullptr, x_, y_, head_);
+        legacy::bot_goto_pos_rel(&caller_dummy_, x_, y_, head_);
     } else {
         debug_printf<DEBUG_>(PP_ARGS("BehaviorGotoPos::start(): calling bot_goto_pos({}, {}, {}) ...\r\n", x_, y_, head_));
 
-        legacy::bot_goto_pos(nullptr, x_, y_, head_);
+        legacy::bot_goto_pos(&caller_dummy_, x_, y_, head_);
     }
 }
 #endif // BEHAVIOUR_GOTO_POS_AVAILABLE
@@ -206,7 +203,7 @@ BehaviorDriveSquareLegacy::BehaviorDriveSquareLegacy(const uint16_t length)
 }
 
 void BehaviorDriveSquareLegacy::start() {
-    legacy::bot_drive_square_len(nullptr, length_);
+    legacy::bot_drive_square_len(&caller_dummy_, length_);
 }
 #endif // BEHAVIOUR_DRIVE_SQUARE_AVAILABLE
 
@@ -226,7 +223,7 @@ BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(uint8_t mode, int16_t max_t
 BehaviorCatchPillarLegacy::BehaviorCatchPillarLegacy(const uint8_t mode) : BehaviorCatchPillarLegacy(mode, 360) {}
 
 void BehaviorCatchPillarLegacy::start() {
-    legacy::bot_catch_pillar(nullptr, mode_);
+    legacy::bot_catch_pillar(&caller_dummy_, mode_);
 }
 
 
@@ -238,9 +235,22 @@ BehaviorUnloadPillarLegacy::BehaviorUnloadPillarLegacy() : BehaviorLegacyWrapper
 }
 
 void BehaviorUnloadPillarLegacy::start() {
-    legacy::bot_unload_pillar(nullptr);
+    legacy::bot_unload_pillar(&caller_dummy_);
 }
 #endif // BEHAVIOUR_CATCH_PILLAR_AVAILABLE
+
+
+#ifdef BEHAVIOUR_DRIVE_STACK_AVAILABLE
+decltype(BehaviorDriveStack::reg_) BehaviorDriveStack::reg_ { REGISTRY_HELPER("DriveStack", []() { return INIT<BehaviorDriveStack>(); }) };
+
+BehaviorDriveStack::BehaviorDriveStack() : BehaviorLegacyWrapper { PSTR("DriveStackBeh"), legacy::bot_drive_stack_behaviour } {
+    debug_print<DEBUG_>(PSTR("BehaviorDriveStack::BehaviorDriveStack().\r\n"));
+}
+
+void BehaviorDriveStack::start() {
+    legacy::bot_drive_stack(&caller_dummy_);
+}
+#endif // BEHAVIOUR_DRIVE_STACK_AVAILABLE
 
 
 #ifdef BEHAVIOUR_ADVENTCAL_AVAILABLE
@@ -251,7 +261,7 @@ BehaviorAdventcal::BehaviorAdventcal() : BehaviorLegacyWrapper { PSTR("AdventBeh
 }
 
 void BehaviorAdventcal::start() {
-    legacy::bot_adventcal(nullptr);
+    legacy::bot_adventcal(&caller_dummy_);
 }
 #endif // BEHAVIOUR_ADVENTCAL_AVAILABLE
 

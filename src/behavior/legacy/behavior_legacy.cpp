@@ -448,7 +448,7 @@ void BehaviorLegacy::run() {
     }
 
     if (abort_request_) {
-        exit();
+        exit(RESULT_FAILURE);
         motor_update_done();
         return;
     }
@@ -481,7 +481,7 @@ void BehaviorLegacy::run() {
 
     if (finished()) {
         debug_print<DEBUG_>(PSTR("BehaviorLegacy::run(): finished.\r\n"));
-        exit();
+        exit(RESULT_SUCCESS);
     }
 }
 

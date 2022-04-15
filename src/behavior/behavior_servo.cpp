@@ -46,7 +46,7 @@ void BehaviorServo::run() {
     using namespace std::chrono_literals;
 
     if (!p_servo_ || active_[servo_nr_]) {
-        exit();
+        exit(RESULT_FAILURE);
         return;
     }
 
@@ -76,7 +76,7 @@ void BehaviorServo::run() {
 
     active_[servo_nr_] = false;
 
-    exit();
+    exit(RESULT_SUCCESS);
 }
 
 } /* namespace ctbot */

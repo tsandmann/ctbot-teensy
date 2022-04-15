@@ -139,11 +139,11 @@ void BehaviorTurn::run() {
                 sleep_for_ms(1'000);
 
                 if (get_speed()->get_left() == 0 && get_speed()->get_right() == 0) {
-                    print_pose(false);
+                    print_pose(true);
                     debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): done.\r\n"));
 
                     /* everything done, exit this behavior */
-                    exit();
+                    exit(RESULT_SUCCESS);
                 }
                 return;
             }
@@ -151,7 +151,7 @@ void BehaviorTurn::run() {
 
         case State::ABORT:
             debug_print<DEBUG_>(PSTR("BehaviorTurn::run(): aborted.\r\n"));
-            exit();
+            exit(RESULT_FAILURE);
             break;
     }
 

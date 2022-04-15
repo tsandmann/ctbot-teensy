@@ -75,7 +75,7 @@ void BehaviorTest::run() {
                 motor_update_done();
                 sleep_for_ms(5'000);
 
-                exit();
+                exit(RESULT_SUCCESS);
                 return;
             }
             break;

@@ -33,6 +33,17 @@
 
 namespace ctbot {
 
+extern "C" {
+namespace legacy {
+#include "available_behaviours.h"
+
+#ifdef BEHAVIOUR_DRIVE_STACK_AVAILABLE
+void bot_push_actpos(Behaviour_t* caller, uint8_t stack);
+void bot_save_waypos(Behaviour_t* caller, uint8_t optimize);
+#endif // BEHAVIOUR_DRIVE_STACK_AVAILABLE
+} // namespace legacy
+}
+
 class BehaviorLegacyWrapper : public Behavior {
     static constexpr bool DEBUG_ { true };
     static constexpr uint32_t STACK_SIZE { 2048 };
@@ -49,6 +60,7 @@ protected:
     static std::unordered_map<std::string /*name*/, legacy::Behaviour_t* /* pointer to behavior */> running_behaviors;
 
     const legacy::BehaviourFunc_t beh_func_;
+    legacy::Behaviour_t caller_dummy_;
 
     FLASHMEM virtual void start() = 0;
     FLASHMEM virtual void run() override;
@@ -150,6 +162,17 @@ class BehaviorUnloadPillarLegacy : public BehaviorLegacyWrapper {
 
 public:
     BehaviorUnloadPillarLegacy();
+
+protected:
+    FLASHMEM virtual void start() override;
+};
+
+class BehaviorDriveStack : public BehaviorLegacyWrapper {
+    static constexpr bool DEBUG_ { true };
+    static Registry reg_;
+
+public:
+    BehaviorDriveStack();
 
 protected:
     FLASHMEM virtual void start() override;

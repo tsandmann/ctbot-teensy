@@ -409,27 +409,28 @@ void CtBotCli::init_commands() {
 
     p_parser->register_cmd(PSTR("set"), 's', [this](const std::string_view& args) {
         if (args.find(PSTR("speed")) == 0) {
-            const auto n { args.find(' ') };
-            if (n == args.npos) {
+            float left {}, right {};
+            const auto res { CmdParser::split_args(args, left, right) };
+            if (!res.size()) {
                 p_ctbot_->p_speedcontrols_[0]->set_speed(0.f);
                 p_ctbot_->p_speedcontrols_[1]->set_speed(0.f);
-                return false;
+                return true;
             }
-            char* p_end;
-            const float left { std::strtof(args.data() + n, &p_end) };
-            const float right { std::strtof(p_end, nullptr) };
+
             p_ctbot_->p_speedcontrols_[0]->set_speed(left);
             p_ctbot_->p_speedcontrols_[1]->set_speed(right);
         } else if (args.find(PSTR("motor")) == 0) {
             if (p_ctbot_->p_motors_[0] && p_ctbot_->p_motors_[1]) {
                 int16_t left, right;
                 CmdParser::split_args(args, left, right);
+
                 p_ctbot_->p_motors_[0]->set(left);
                 p_ctbot_->p_motors_[1]->set(right);
             }
         } else if (args.find(PSTR("servo")) == 0) {
             uint8_t s1, s2;
             CmdParser::split_args(args, s1, s2);
+
             if (!s2) {
                 if (args.find(' ', 7) == args.npos) {
                     /* s2 not set */
@@ -477,10 +478,12 @@ void CtBotCli::init_commands() {
         } else if (args.find(PSTR("led")) == 0) {
             uint8_t led;
             CmdParser::split_args(args, led);
+
             p_ctbot_->p_leds_->set(static_cast<LedTypes>(led));
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdbl")) == 0) {
             bool v;
             CmdParser::split_args(args, v);
+
             p_ctbot_->p_lcd_->set_backlight(v);
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcd")) == 0) {
             uint8_t line, column;
@@ -495,12 +498,10 @@ void CtBotCli::init_commands() {
             }
             p_ctbot_->p_lcd_->print(sv.substr(1));
         } else if (CtBotConfig::TFT_AVAILABLE && args.find(PSTR("tftbl")) == 0) {
-            const auto n { args.find(' ') };
-            if (n == args.npos) {
-                return false;
-            }
-            const float v { std::strtof(args.data() + n, nullptr) };
-            p_ctbot_->p_tft_->set_backlight(v);
+            float value {};
+            CmdParser::split_args(args, value);
+
+            p_ctbot_->p_tft_->set_backlight(value);
         } else if (args.find(PSTR("paramf")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
@@ -518,7 +519,12 @@ void CtBotCli::init_commands() {
             const std::string_view val { args.substr(e + 1) };
             p_ctbot_->p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
-            const float value { std::strtof(val.data(), nullptr) };
+            float value {};
+            auto res { CmdParser::split_args(val, value) };
+            if (!res.size()) {
+                return false;
+            }
+
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("value={}\r\n", value));
 
             p_ctbot_->p_parameter_->set<float>(key, value);
@@ -541,7 +547,11 @@ void CtBotCli::init_commands() {
             p_ctbot_->p_comm_->debug_printf<true>(PSTR("val=\"%.*s\"\r\n"), val.size(), val.data());
 
             int32_t value {};
-            std::from_chars(val.cbegin(), val.cend(), value);
+            auto res { CmdParser::split_args(val, value) };
+            if (!res.size()) {
+                return false;
+            }
+
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("value={}\r\n", value));
 
             p_ctbot_->p_parameter_->set<int32_t>(key, value);
@@ -553,6 +563,7 @@ void CtBotCli::init_commands() {
             }
             std::time_t time;
             CmdParser::split_args(args, time);
+
             if (time) {
                 const auto now { std::chrono::system_clock::from_time_t(time) };
                 free_rtos_std::set_system_clock(now);
@@ -583,20 +594,21 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_audio_sine_->frequency(0.f);
                 }
             } else if (args.find(PSTR("vol")) == 0) {
-                const auto n { args.find(' ') };
-                if (n == args.npos) {
+                float volume {};
+                auto res { CmdParser::split_args(args, volume) };
+                if (!res.size()) {
                     return false;
                 }
-                const float volume { std::strtof(args.data() + n, nullptr) };
+
                 for (auto& e : p_ctbot_->p_audio_mixer_) {
                     e->gain(0, volume);
                     e->gain(1, volume);
                     e->gain(2, volume);
                 }
-
             } else if (args.find(PSTR("pitch")) == 0) {
                 uint8_t pitch;
                 CmdParser::split_args(args, pitch);
+
                 p_ctbot_->p_tts_->set_pitch(pitch);
             } else if (args.find(PSTR("speak")) == 0) {
                 if (p_ctbot_->p_tts_->is_playing()) {
@@ -608,11 +620,12 @@ void CtBotCli::init_commands() {
                     return p_ctbot_->p_tts_->speak(args.substr(s + 1), true);
                 }
             } else if (CtBotConfig::AUDIO_TEST_AVAILABLE && args.find(PSTR("sine")) == 0) {
-                const auto n { args.find(' ') };
-                if (n == args.npos) {
+                float freq {};
+                auto res { CmdParser::split_args(args, freq) };
+                if (!res.size()) {
                     return false;
                 }
-                const float freq { std::strtof(args.data() + n, nullptr) };
+
                 p_ctbot_->p_audio_sine_->frequency(freq);
             } else {
                 return false;
@@ -684,7 +697,11 @@ void CtBotCli::init_commands() {
 
     p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
         uint32_t duration;
-        std::from_chars(args.cbegin(), args.cend(), duration);
+        auto res { CmdParser::split_args(args, duration) };
+        if (!res.size()) {
+            return false;
+        }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(duration));
         return true;
     });
@@ -699,7 +716,8 @@ void CtBotCli::init_commands() {
 
     p_parser->register_cmd(PSTR("stack"), [this](const std::string_view& args) {
         uint32_t task_id { ~0U };
-        std::from_chars(args.cbegin(), args.cend(), task_id);
+        CmdParser::split_args(args, task_id);
+
         auto p_task { p_ctbot_->get_scheduler()->task_get(task_id) };
         if (!p_task) {
             return false;
@@ -749,6 +767,7 @@ void CtBotCli::init_commands() {
                 uint8_t bus;
                 uint16_t freq;
                 CmdParser::split_args(args, bus, freq);
+
                 delete p_i2c;
                 p_i2c = new I2C_Service { bus, static_cast<uint32_t>(freq * 1000UL), CtBotConfig::I2C0_PIN_SDA,
                     CtBotConfig::I2C0_PIN_SCL }; // FIXME: other bus pins
@@ -759,6 +778,7 @@ void CtBotCli::init_commands() {
             } else if (args.find(PSTR("read8")) == 0) {
                 uint8_t addr;
                 CmdParser::split_args(args, addr);
+
                 uint8_t data {};
                 if (p_i2c->read_reg(dev_addr, addr, data)) {
                     return false;
@@ -769,6 +789,7 @@ void CtBotCli::init_commands() {
             } else if (args.find(PSTR("read16")) == 0) {
                 uint8_t addr;
                 CmdParser::split_args(args, addr);
+
                 uint16_t data {};
                 if (p_i2c->read_reg(dev_addr, addr, data)) {
                     return false;
@@ -779,6 +800,7 @@ void CtBotCli::init_commands() {
             } else if (args.find(PSTR("read32")) == 0) {
                 uint8_t addr;
                 CmdParser::split_args(args, addr);
+
                 uint32_t data {};
                 if (p_i2c->read_reg(dev_addr, addr, data)) {
                     return false;
@@ -790,6 +812,7 @@ void CtBotCli::init_commands() {
                 uint8_t addr;
                 uint8_t data;
                 CmdParser::split_args(args, addr, data);
+
                 if (p_i2c->write_reg(dev_addr, addr, data)) {
                     return false;
                 } else {
@@ -800,6 +823,7 @@ void CtBotCli::init_commands() {
                 uint8_t addr;
                 uint16_t data;
                 CmdParser::split_args(args, addr, data);
+
                 if (p_i2c->write_reg(dev_addr, addr, data)) {
                     return false;
                 } else {
@@ -810,6 +834,7 @@ void CtBotCli::init_commands() {
                 uint8_t addr;
                 uint32_t data;
                 CmdParser::split_args(args, addr, data);
+
                 if (p_i2c->write_reg(dev_addr, addr, data)) {
                     return false;
                 } else {
@@ -820,6 +845,7 @@ void CtBotCli::init_commands() {
                 uint8_t addr;
                 uint8_t bit;
                 CmdParser::split_args(args, addr, bit);
+
                 if (p_i2c->set_bit(dev_addr, addr, bit, true)) {
                     return false;
                 } else {
@@ -832,6 +858,7 @@ void CtBotCli::init_commands() {
                 uint8_t addr;
                 uint8_t bit;
                 CmdParser::split_args(args, addr, bit);
+
                 if (p_i2c->set_bit(dev_addr, addr, bit, false)) {
                     return false;
                 } else {

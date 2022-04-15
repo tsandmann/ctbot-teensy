@@ -84,7 +84,8 @@ void bot_save_waypos_behaviour(Behaviour_t* data);
 /**
  * Botenfunktion: Verhalten um sich entlang des Fahrweges relevante Koordinaten auf dem Stack zu merken
  * @param *caller   Der Verhaltensdatensatz des Aufrufers
- * @param optimize  Optimierungslevel (unnoetige Stackeintraege werden automatisch geloescht)
+ * @param optimize  Optimierungslevel, unnoetige Stackeintraege werden automatisch geloescht:
+ *                  1 -> Positionen entfernen, die auf einer Linie liegen; 2 -> zusaetzlich Schleifen entfernen
  */
 FLASHMEM void bot_save_waypos(Behaviour_t* caller, uint8_t optimize);
 

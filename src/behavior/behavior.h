@@ -69,6 +69,7 @@ class Behavior {
     const std::string name_;
     const bool uses_motor_;
     std::atomic<bool> finished_;
+    int32_t result_;
     CtBotBehavior* const p_ctbot_;
     std::mutex caller_mutex_;
     std::condition_variable caller_cv_;
@@ -96,9 +97,9 @@ protected:
 
     virtual void run() = 0;
 
-    bool exit();
+    bool exit(int32_t result);
 
-    FLASHMEM void print_pose(const bool moving = true) const;
+    FLASHMEM void print_pose(const bool override_moving = false) const;
 
     auto get_ctbot() const {
         return p_ctbot_;
@@ -210,6 +211,9 @@ protected:
     }
 
 public:
+    static constexpr int32_t RESULT_SUCCESS { 0 };
+    static constexpr int32_t RESULT_FAILURE { -1 };
+
     using BasePtr = std::unique_ptr<Behavior>;
 
     static size_t get_motor_requests();
@@ -232,6 +236,10 @@ public:
 
     bool finished() const {
         return finished_;
+    }
+
+    auto get_result() const {
+        return result_;
     }
 
     void abort_beh() {
@@ -275,6 +283,13 @@ public:
         behavior_factory(ptr, true, args...);
         return ptr;
     }
+
+    template <class T>
+    auto start_async(auto&&... args) {
+        std::unique_ptr<T> ptr;
+        behavior_factory(ptr, false, args...);
+        return ptr;
+    }
 };
 
 
@@ -314,7 +329,7 @@ protected:
             debug_printf<DEBUG_>(PP_ARGS("BehaviorRunUntil::run(): behavior \"{s}\" finished.\r\n", p_beh_->get_name().c_str()));
         }
 
-        exit();
+        exit(RESULT_SUCCESS);
     }
 };
 

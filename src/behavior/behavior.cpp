@@ -43,7 +43,7 @@ std::set<Behavior*> Behavior::active_;
 std::mutex Behavior::active_mutex_;
 
 Behavior::Behavior(const std::string& name, const bool uses_motor, const uint16_t priority, const uint16_t cycle_time_ms, const uint32_t stack_size)
-    : name_ { name }, uses_motor_ { uses_motor }, finished_ {}, p_ctbot_ { &CtBotBehavior::get_instance() },
+    : name_ { name }, uses_motor_ { uses_motor }, finished_ {}, result_ {}, p_ctbot_ { &CtBotBehavior::get_instance() },
       p_sensors_ { get_ctbot()->get_sensors() }, p_left_ {}, p_right_ {}, p_pose_ {}, p_speed_ {}, abort_request_ {} {
     configASSERT(p_sensors_);
 
@@ -151,9 +151,10 @@ void Behavior::sleep_for_ms(const uint32_t time) {
     }
 }
 
-bool Behavior::exit() {
+bool Behavior::exit(int32_t result) {
     if (!finished_) {
         finished_ = true;
+        result_ = result;
 
         set_actuator(get_motor_l(), 0);
         set_actuator(get_motor_r(), 0);
@@ -170,8 +171,8 @@ bool Behavior::exit() {
     return false;
 }
 
-void Behavior::print_pose(const bool moving) const {
-    if (!moving || get_speed()->get_left() || get_speed()->get_right()) {
+void Behavior::print_pose(const bool override_moving) const {
+    if (override_moving || get_speed()->get_left() || get_speed()->get_right()) {
         get_ctbot()->get_logger()->begin(get_name());
         get_pose()->print(*get_ctbot()->get_logger());
         get_ctbot()->get_logger()->log('\t', false);

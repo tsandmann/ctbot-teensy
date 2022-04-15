@@ -39,6 +39,11 @@ namespace ctbot {
 
 class CommInterface;
 
+namespace detail {
+template <typename T>
+concept Number = std::integral<T> || std::floating_point<T>;
+}
+
 /**
  * @brief Simple parser for console commands
  *
@@ -122,9 +127,14 @@ public:
             return std::string_view {};
         }
         ++l;
-        auto ptr { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
         b = x1;
-        return args.substr(ptr.ptr - args.cbegin());
+
+        if (res.ec == std::errc()) {
+            return args.substr(res.ptr - args.cbegin());
+        }
+
+        return std::string_view {};
     }
 
     /**
@@ -140,8 +150,43 @@ public:
             return std::string_view {};
         }
         ++l;
-        auto ptr { std::from_chars(args.cbegin() + l, args.cend(), x1) };
-        return args.substr(ptr.ptr - args.cbegin());
+
+        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        if (res.ec == std::errc()) {
+            return args.substr(res.ptr - args.cbegin());
+        }
+
+        return std::string_view {};
+    }
+
+    /**
+     * @brief Split a string into space seperated tokens and return the first as float argument
+     * @param[in] args: Reference to input string as string_view
+     * @param[out] x1: Reference to first output argument
+     * @return string_view to the last character interpreted
+     */
+    static std::string_view split_args(const std::string_view& args, std::floating_point auto& x1) {
+        x1 = {};
+        auto l { args.find(' ') };
+        if (l == args.npos) {
+            return std::string_view {};
+        }
+        ++l;
+
+#if __GNUC__ >= 12
+        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        if (res.ec == std::errc()) {
+            return args.substr(res.ptr - args.cbegin());
+        }
+#else // __GNUC__ < 12
+        char* p_end;
+        x1 = std::strtof(args.cbegin() + l, &p_end);
+        if (p_end != args.cbegin() + l) {
+            return args.substr(p_end - args.cbegin());
+        }
+#endif // __GNUC__
+
+        return std::string_view {};
     }
 
     /**
@@ -151,7 +196,7 @@ public:
      * @param[out] xn: Parameter pack of references to next arguments
      * @return string_view to the last character interpreted
      */
-    static std::string_view split_args(const std::string_view& args, std::integral auto& x1, std::integral auto&... xn) {
+    static std::string_view split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) {
         auto next_args { split_args(args, x1) };
         return split_args(next_args, xn...);
     }

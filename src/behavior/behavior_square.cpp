@@ -65,7 +65,7 @@ void BehaviorSquare::run() {
                 }
 
                 /* exit behavior */
-                exit();
+                exit(RESULT_SUCCESS);
             }
             break;
     }

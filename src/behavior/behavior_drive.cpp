@@ -96,8 +96,8 @@ void BehaviorDrive::run() {
                     }
 
                     /* everything done, exit this behavior */
-                    print_pose(false);
-                    exit();
+                    print_pose(true);
+                    exit(RESULT_SUCCESS);
                 }
             }
             break;
@@ -105,7 +105,7 @@ void BehaviorDrive::run() {
         case State::ABORT:
             motor_update_done();
             debug_print<DEBUG_>(PSTR("BehaviorDrive::run(): aborted.\r\n"));
-            exit();
+            exit(RESULT_FAILURE);
             return;
     }
 
