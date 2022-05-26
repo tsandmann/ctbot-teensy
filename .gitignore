@@ -16,6 +16,7 @@
 
 /doc/html
 /doc/out
+/logs.txt
 
 *.i
 *.ii
