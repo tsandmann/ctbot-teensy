@@ -98,7 +98,7 @@ FLASHMEM Logger::Logger() {}
 size_t Logger::get_format_size(const char* format, ...) {
     va_list vl;
     va_start(vl, format);
-    const auto size { std::vsnprintf(nullptr, 0, format, vl) + 1 };
+    const auto size { std::vsnprintf(nullptr, 0, format, vl) };
     va_end(vl);
     return size;
 }
@@ -106,8 +106,9 @@ size_t Logger::get_format_size(const char* format, ...) {
 std::string Logger::create_formatted_string(const size_t size, const char* format, ...) {
     va_list vl;
     va_start(vl, format);
-    auto str { std::string(size + 32, '\0') };
-    std::vsnprintf(str.data(), size, format, vl);
+    auto str { std::string(size + 1, '\0') };
+    const auto n { std::vsnprintf(str.data(), size + 1, format, vl) };
+    str.resize(n);
     va_end(vl);
 
     return str;
