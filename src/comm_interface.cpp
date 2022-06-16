@@ -42,9 +42,16 @@ namespace ctbot {
 decltype(CommInterface::buffer_storage_) CommInterface::buffer_storage_;
 CommInterface::static_pool_t CommInterface::mem_pool_ { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
 
+PROGMEM static const char _log_prefix_[] { "<log>\r\n" };
+PROGMEM static const char _log_postfix_[] { "</log>\r\n" };
+
+const std::string_view CommInterface::log_prefix_ { _log_prefix_ };
+const std::string_view CommInterface::log_postfix_ { _log_postfix_ };
+
 FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool enable_echo)
-    : io_ { io_connection }, echo_ { enable_echo }, error_ {}, p_input_ {}, output_queue_ { mem_pool_.try_allocate_array(
-                                                                                OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE) } {
+    : io_ { io_connection }, echo_ { enable_echo }, viewer_enabled_ { false }, error_ {}, p_input_ {}, output_queue_ {
+          mem_pool_.try_allocate_array(OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE)
+      } {
     auto ptr { mem_pool_.try_allocate_array(INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE) };
     if (ptr) {
         p_input_buffer_ = new (ptr) std::array<char, INPUT_BUFFER_SIZE>;
@@ -85,11 +92,27 @@ FLASHMEM size_t CommInterface::queue_debug_msg(const char c, const std::string* 
 void CommInterface::begin(const std::string_view&) const {}
 
 size_t CommInterface::log(const char c, const bool block) {
-    return debug_print(c, block);
+    if (viewer_enabled_) { // FIXME: prefix/postfix is not atomic
+        debug_print(log_prefix_, block);
+    }
+    const auto ret { debug_print(c, block) };
+    if (viewer_enabled_) {
+        debug_print(log_postfix_, block);
+    }
+
+    return ret;
 }
 
 size_t CommInterface::log(const std::string_view& str, const bool block) {
-    return debug_print(str, block);
+    if (viewer_enabled_) { // FIXME: prefix/postfix is not atomic
+        debug_print(log_prefix_, block);
+    }
+    const auto ret { debug_print(str, block) };
+    if (viewer_enabled_) {
+        debug_print(log_postfix_, block);
+    }
+
+    return ret;
 }
 
 void CommInterface::set_color(const Color fg, const Color bg) {
@@ -129,8 +152,8 @@ FLASHMEM size_t CommInterface::debug_print(const std::string_view& str, const bo
 }
 
 // FLASHMEM size_t CommInterface::debug_print(const arduino::String& str, const bool block) {
-//     auto p_str { std::make_unique<std::string>(str.c_str(), str.length()) };
-//     return queue_debug_msg('\0', std::move(p_str), block);
+//     auto p_str { new std::string(str.c_str(), str.length()) };
+//     return queue_debug_msg('\0', p_str, block);
 // }
 
 FLASHMEM void CommInterface::flush() {

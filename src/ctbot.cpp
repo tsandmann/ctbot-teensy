@@ -426,6 +426,48 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 }
 
+bool CtBot::publish_sensordata() {
+    if (!p_comm_ || !p_sensors_) {
+        return false;
+    }
+
+    // FIXME: make output atomic?
+    p_comm_->debug_print(PSTR("<sensors>\r\n"), true);
+    p_comm_->debug_printf<true>(PP_ARGS("dist: {} {}\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("enc: {} {}\r\n", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
+    p_comm_->debug_printf<true>(PP_ARGS("border: {} {}\r\n", p_sensors_->get_border_l(), p_sensors_->get_border_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("line: {} {}\r\n", p_sensors_->get_line_l(), p_sensors_->get_line_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("trans: {} {}\r\n", p_sensors_->get_transport(), p_sensors_->get_transport_mm()));
+    p_comm_->debug_printf<true>(
+        PP_ARGS("rc5: {} {} {}\r\n", p_sensors_->get_rc5().get_addr(), p_sensors_->get_rc5().get_cmd(), p_sensors_->get_rc5().get_toggle()));
+    p_comm_->debug_printf<true>(PP_ARGS("bat: {.2} {.2}\r\n", p_sensors_->get_bat_voltage(), p_sensors_->get_bat_voltage() / 4.f));
+    p_comm_->debug_printf<true>(
+        PP_ARGS("speed: {} {}\r\n", static_cast<int16_t>(p_speedcontrols_[0]->get_enc_speed()), static_cast<int16_t>(p_speedcontrols_[1]->get_enc_speed())));
+    if (p_sensors_->get_mpu6050()) {
+        auto [e1, e2, e3] = p_sensors_->get_mpu6050()->get_euler();
+        auto [y, p, r] = p_sensors_->get_mpu6050()->get_ypr();
+        p_comm_->debug_printf<true>(PP_ARGS("mpu_e: {9.4} {9.4} {9.4}\r\n", e1, e2, e3));
+        p_comm_->debug_printf<true>(PP_ARGS("mpu_ypr: {9.4} {9.4} {9.4}\r\n", y, p, r));
+    }
+    p_comm_->debug_print(PSTR("</sensors>\r\n"), true);
+
+    // FIXME: make output atomic?
+    p_comm_->debug_print(PSTR("<actuators>\r\n"), true);
+    if (p_motors_[0] && p_motors_[1]) {
+        p_comm_->debug_printf<true>(PP_ARGS("motor: {} {}\r\n", p_motors_[0]->get(), p_motors_[1]->get()));
+    }
+    p_comm_->debug_printf<true>(PP_ARGS("servo1: {} [{s}]\r\n", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on") : PSTR("off")));
+    if (p_servos_[1]) {
+        p_comm_->debug_printf<true>(PP_ARGS("servo2: {} [{s}]\r\n", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? PSTR("on") : PSTR("off")));
+    }
+    if (p_leds_) {
+        p_comm_->debug_printf<true>(PP_ARGS("leds: {}\r\n", static_cast<uint8_t>(p_leds_->get())));
+    }
+    p_comm_->debug_print(PSTR("</actuators>\r\n"), true);
+
+    return true;
+}
+
 void CtBot::run() {
     if (!ready_) {
         return;
@@ -442,7 +484,7 @@ void CtBot::run() {
     // if (CtBotConfig::LUA_AVAILABLE && p_lua_) {
     //     static uint32_t last_lua {};
     //     const auto now { Timer::get_ms() };
-    //     if (now - last_lua > 2000U) {
+    //     if (now - last_lua > 2'000U) {
     //         last_lua = now;
 
     //         const auto ret { p_lua_->Lua_dostring("print('Hello world!', 42)") };
@@ -457,6 +499,18 @@ void CtBot::run() {
     for (const auto& e : post_hooks_) {
         if (std::get<1>(e.second)) {
             std::get<0>(e.second)();
+        }
+    }
+
+    static uint32_t last_viewer {};
+    const auto now { Timer::get_ms() };
+    if (now - last_viewer > 100U) {
+        last_viewer = now;
+
+        if (p_comm_->get_viewer_enabled()) {
+            if (!publish_sensordata()) {
+                p_logger_->log(PSTR("CtBot::publish_sensordata() failed.\r\n"), true);
+            }
         }
     }
 

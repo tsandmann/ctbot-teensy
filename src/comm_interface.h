@@ -85,8 +85,12 @@ protected:
     using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
     static static_pool_t mem_pool_;
 
+    static const std::string_view log_prefix_;
+    static const std::string_view log_postfix_;
+
     arduino::SerialIO& io_;
     bool echo_;
+    bool viewer_enabled_;
     int error_;
     char* p_input_;
     CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> output_queue_;
@@ -147,6 +151,10 @@ public:
         return echo_;
     }
 
+    auto get_viewer_enabled() const {
+        return viewer_enabled_;
+    }
+
     /**
      * @return Last error code
      */
@@ -167,6 +175,10 @@ public:
      * @note Pure virtual method, override for specialized implementations
      */
     FLASHMEM virtual void set_echo(bool value) = 0;
+
+    FLASHMEM void enable_remoteviewer(bool value) {
+        viewer_enabled_ = value;
+    }
 
     void set_color(const Color fg, const Color bg);
 
@@ -240,6 +252,8 @@ public:
     FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto const... args) {
         return debug_print(Logger::string_format(format, args...), BLOCK);
     }
+
+    // FLASHMEM size_t debug_print(const arduino::String& str, const bool block);
 
     /**
      * @brief Wait for any outstanding transmission on the serial connection to complete

@@ -147,6 +147,8 @@ protected:
 
     FLASHMEM void update_clock();
 
+    bool publish_sensordata();
+
 public:
     /**
      * @brief Get the one and only instance of this class (singleton)

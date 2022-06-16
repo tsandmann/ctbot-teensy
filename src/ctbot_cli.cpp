@@ -225,6 +225,10 @@ void CtBotCli::init_commands() {
             uint8_t v;
             CmdParser::split_args(args, v);
             p_ctbot_->p_comm_->set_echo(v);
+        } else if (args.find(PSTR("viewer")) == 0) {
+            uint8_t v;
+            CmdParser::split_args(args, v);
+            p_ctbot_->p_comm_->enable_remoteviewer(v);
         } else if (args.find(PSTR("task")) == 0) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
@@ -352,7 +356,8 @@ void CtBotCli::init_commands() {
         } else if (args.find(PSTR("led")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{#x}", static_cast<uint8_t>(p_ctbot_->p_leds_->get())));
         } else if (args.find(PSTR("volt")) == 0) {
-            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{.2} V", p_ctbot_->p_sensors_->get_bat_voltage()));
+            p_ctbot_->p_comm_->debug_printf<true>(
+                PP_ARGS("{.2} V (probably {.2} V per cell)", p_ctbot_->p_sensors_->get_bat_voltage(), p_ctbot_->p_sensors_->get_bat_voltage() / 4.f));
         } else if (args.find(PSTR("tasks")) == 0) {
             p_ctbot_->get_scheduler()->print_task_list(*p_ctbot_->p_comm_);
         } else if (args.find(PSTR("free")) == 0) {
