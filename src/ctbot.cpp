@@ -431,39 +431,35 @@ bool CtBot::publish_sensordata() {
         return false;
     }
 
-    // FIXME: make output atomic?
-    p_comm_->debug_print(PSTR("<sensors>\r\n"), true);
-    p_comm_->debug_printf<true>(PP_ARGS("dist: {} {}\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
-    p_comm_->debug_printf<true>(PP_ARGS("enc: {} {}\r\n", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
-    p_comm_->debug_printf<true>(PP_ARGS("border: {} {}\r\n", p_sensors_->get_border_l(), p_sensors_->get_border_r()));
-    p_comm_->debug_printf<true>(PP_ARGS("line: {} {}\r\n", p_sensors_->get_line_l(), p_sensors_->get_line_r()));
-    p_comm_->debug_printf<true>(PP_ARGS("trans: {} {}\r\n", p_sensors_->get_transport(), p_sensors_->get_transport_mm()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>dist: {} {}</sens>\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>enc: {} {}</sens>\r\n", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>border: {} {}</sens>\r\n", p_sensors_->get_border_l(), p_sensors_->get_border_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>line: {} {}</sens>\r\n", p_sensors_->get_line_l(), p_sensors_->get_line_r()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>trans: {} {}</sens>\r\n", p_sensors_->get_transport(), p_sensors_->get_transport_mm()));
     p_comm_->debug_printf<true>(
-        PP_ARGS("rc5: {} {} {}\r\n", p_sensors_->get_rc5().get_addr(), p_sensors_->get_rc5().get_cmd(), p_sensors_->get_rc5().get_toggle()));
-    p_comm_->debug_printf<true>(PP_ARGS("bat: {.2} {.2}\r\n", p_sensors_->get_bat_voltage(), p_sensors_->get_bat_voltage() / 4.f));
-    p_comm_->debug_printf<true>(
-        PP_ARGS("speed: {} {}\r\n", static_cast<int16_t>(p_speedcontrols_[0]->get_enc_speed()), static_cast<int16_t>(p_speedcontrols_[1]->get_enc_speed())));
+        PP_ARGS("<sens>rc5: {} {} {}</sens>\r\n", p_sensors_->get_rc5().get_addr(), p_sensors_->get_rc5().get_cmd(), p_sensors_->get_rc5().get_toggle()));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>bat: {.2} {.2}</sens>\r\n", p_sensors_->get_bat_voltage(), p_sensors_->get_bat_voltage() / 4.f));
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>speed: {} {}</sens>\r\n", static_cast<int16_t>(p_speedcontrols_[0]->get_enc_speed()),
+        static_cast<int16_t>(p_speedcontrols_[1]->get_enc_speed())));
     if (p_sensors_->get_mpu6050()) {
         auto [e1, e2, e3] = p_sensors_->get_mpu6050()->get_euler();
         auto [y, p, r] = p_sensors_->get_mpu6050()->get_ypr();
-        p_comm_->debug_printf<true>(PP_ARGS("mpu_e: {9.4} {9.4} {9.4}\r\n", e1, e2, e3));
-        p_comm_->debug_printf<true>(PP_ARGS("mpu_ypr: {9.4} {9.4} {9.4}\r\n", y, p, r));
+        p_comm_->debug_printf<true>(PP_ARGS("<sens>mpu_e: {9.4} {9.4} {9.4}</sens>\r\n", e1, e2, e3));
+        p_comm_->debug_printf<true>(PP_ARGS("<sens>mpu_ypr: {9.4} {9.4} {9.4}</sens>\r\n", y, p, r));
     }
-    p_comm_->debug_print(PSTR("</sensors>\r\n"), true);
 
-    // FIXME: make output atomic?
-    p_comm_->debug_print(PSTR("<actuators>\r\n"), true);
     if (p_motors_[0] && p_motors_[1]) {
-        p_comm_->debug_printf<true>(PP_ARGS("motor: {} {}\r\n", p_motors_[0]->get(), p_motors_[1]->get()));
+        p_comm_->debug_printf<true>(PP_ARGS("<act>motor: {} {}</act>\r\n", p_motors_[0]->get(), p_motors_[1]->get()));
     }
-    p_comm_->debug_printf<true>(PP_ARGS("servo1: {} [{s}]\r\n", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on") : PSTR("off")));
+    p_comm_->debug_printf<true>(
+        PP_ARGS("<act>servo1: {} [{s}]</act>\r\n", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on") : PSTR("off")));
     if (p_servos_[1]) {
-        p_comm_->debug_printf<true>(PP_ARGS("servo2: {} [{s}]\r\n", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? PSTR("on") : PSTR("off")));
+        p_comm_->debug_printf<true>(
+            PP_ARGS("<act>servo2: {} [{s}]</act>\r\n", p_servos_[1]->get_position(), p_servos_[1]->get_active() ? PSTR("on") : PSTR("off")));
     }
     if (p_leds_) {
-        p_comm_->debug_printf<true>(PP_ARGS("leds: {}\r\n", static_cast<uint8_t>(p_leds_->get())));
+        p_comm_->debug_printf<true>(PP_ARGS("<act>leds: {}</act>\r\n", static_cast<uint8_t>(p_leds_->get())));
     }
-    p_comm_->debug_print(PSTR("</actuators>\r\n"), true);
 
     return true;
 }
@@ -502,9 +498,10 @@ void CtBot::run() {
         }
     }
 
-    static uint32_t last_viewer {};
+    // FIXME: register as post-hook?
+    static uint32_t last_viewer {}; // FIXME: refactor
     const auto now { Timer::get_ms() };
-    if (now - last_viewer > 100U) {
+    if (now - last_viewer > 200U) {
         last_viewer = now;
 
         if (p_comm_->get_viewer_enabled()) {

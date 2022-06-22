@@ -64,71 +64,71 @@
 
 
 namespace ctbot {
-const char CtBotCli::general_[] { "command\tsubcommand [param]\texplanation\r\n"
+const char CtBotCli::general_[] { "command subcommand [param]     explanation\r\n"
                                   "----------------------------------------------------------------------------------\r\n"
-                                  "help (h)\t\t\tprint this help message\r\n"
-                                  "halt\t\t\t\tshutdown and put Teensy in sleep mode\r\n"
-                                  "sleep\tMS\t\t\tsleep for MS milliseconds\r\n" };
+                                  "help (h)                       print this help message\r\n"
+                                  "halt                           shutdown and put Teensy in sleep mode\r\n"
+                                  "sleep MS                       sleep for MS milliseconds\r\n" };
 
 const char CtBotCli::config_[] { "config (c)\r\n"
-                                 "\techo [0|1]\t\tset console echo on/off\r\n"
-                                 "\ttask ledtest [0|1]\tstart/stop LED test\r\n"
-                                 "\ttask sctrl [0|1]\tstart/stop speed controller task\r\n"
-                                 "\ttask [taskname] [0|1]\tstart/stop a task\r\n"
-                                 "\tk{p,i,d} [0;65535]\tset Kp/Ki/Kd parameter for speed controller\r\n" };
+                                 "\techo [0|1]                   set console echo on/off\r\n"
+                                 "\ttask ledtest [0|1]           start/stop LED test\r\n"
+                                 "\ttask sctrl [0|1]             start/stop speed controller task\r\n"
+                                 "\ttask [taskname] [0|1]        start/stop a task\r\n"
+                                 "\tk{p,i,d} [0;65535]           set Kp/Ki/Kd parameter for speed controller\r\n" };
 
 const char CtBotCli::get_[] { "get (g)\r\n"
-                              "\tdist\t\t\tprint current distance sensor's values\r\n"
-                              "\tenc\t\t\tprint current encoder's values\r\n"
-                              "\tborder\t\t\tprint current border sensor's values\r\n"
-                              "\tline\t\t\tprint current line sensor's values\r\n"
-                              "\tldr\t\t\tprint current LDR sensor's values\r\n"
+                              "\tdist                         print current distance sensor's values\r\n"
+                              "\tenc                          print current encoder's values\r\n"
+                              "\tborder                       print current border sensor's values\r\n"
+                              "\tline                         print current line sensor's values\r\n"
+                              "\tldr                          print current LDR sensor's values\r\n"
 
-                              "\tspeed\t\t\tprint current speed for left and right wheel\r\n"
-                              "\tmotor\t\t\tprint pwm for left and right motor\r\n"
-                              "\tservo\t\t\tprint setpoints for servos\r\n"
-                              "\trc5\t\t\tprint last received RC5 data\r\n"
+                              "\tspeed                        print current speed for left and right wheel\r\n"
+                              "\tmotor                        print pwm for left and right motor\r\n"
+                              "\tservo                        print setpoints for servos\r\n"
+                              "\trc5                          print last received RC5 data\r\n"
 
-                              "\ttrans\t\t\tprint current transport pocket status\r\n"
-                              "\tdoor\t\t\tprint current door status\r\n"
-                              "\tled\t\t\tprint current LED setting\r\n"
+                              "\ttrans                        print current transport pocket status\r\n"
+                              "\tdoor                         print current door status\r\n"
+                              "\tled                          print current LED setting\r\n"
 
-                              "\ttasks\t\t\tprint task list\r\n"
-                              "\tfree\t\t\tprint free RAM, etc.\r\n" };
+                              "\ttasks                        print task list\r\n"
+                              "\tfree                         print free RAM, etc.\r\n" };
 
 const char CtBotCli::set_[] { "set (s)\r\n"
-                              "\tspeed [-100;100] [=]\tset new speed in % for left and right motor\r\n"
-                              "\tmotor [-16k;16k] [=]\tset new pwm for left and right motor\r\n"
-                              "\tservo [0;180|255] [=]\tset new position for servo 1 and 2, 255 to disable\r\n"
-                              "\tled [0;255]\t\tset LED mask\r\n"
-                              "\tlcd [1;4] [1;20] TEXT\tprint TEXT on LCD at line and column\r\n"
-                              "\tlcdbl [0;1]\t\tswitch LCD backlight ON (1) or OFF (0)\r\n" };
+                              "\tspeed [-100;100] [=]         set new speed in % for left and right motor\r\n"
+                              "\tmotor [-16k;16k] [=]         set new pwm for left and right motor\r\n"
+                              "\tservo [0;180|255] [=]        set new position for servo 1 and 2, 255 to disable\r\n"
+                              "\tled [0;255]                  set LED mask\r\n"
+                              "\tlcd [1;4] [1;20] TEXT        print TEXT on LCD at line and column\r\n"
+                              "\tlcdbl [0;1]                  switch LCD backlight ON (1) or OFF (0)\r\n" };
 
 const char CtBotCli::audio_[] { "audio (a)\r\n"
-                                "\ton \t\t\tenable audio amplifier\r\n"
-                                "\toff\t\t\tshutdown amp, stop currently playing wavefile\r\n"
-                                "\tvol VOLUME\t\tset volume to VOLUME (0.0;1.0]\r\n"
-                                "\tpitch PITCH\t\tset pitch for speak to PITCH [1;16]\r\n"
-                                "\tplay FILENAME\t\tplay wavefile FILENAME from SD card\r\n"
-                                "\tspeak TEXT\t\tspeak TEXT\r\n" };
+                                "\ton                           enable audio amplifier\r\n"
+                                "\toff                          shutdown amp, stop currently playing wavefile\r\n"
+                                "\tvol VOLUME                   set volume to VOLUME (0.0;1.0]\r\n"
+                                "\tpitch PITCH                  set pitch for speak to PITCH [1;16]\r\n"
+                                "\tplay FILENAME                play wavefile FILENAME from SD card\r\n"
+                                "\tspeak TEXT                   speak TEXT\r\n" };
 
 const char CtBotCli::filesystem_[] { "fs (f)\r\n"
-                                     "\tls DIR\t\t\tlist files of directory DIR on SD card\r\n" };
+                                     "\tls DIR                       list files of directory DIR on SD card\r\n" };
 
 const char CtBotCli::prog_[] { "prog (p)\r\n"
-                               "\trun FILENAME\t\trun script FILENAME from SD card\r\n"
-                               "\tview FILENAME\t\tprint script FILENAME to terminal\r\n"
-                               "\tcreate NUM FILENAME\tcreate script FILENAME from last NUM commands in history\r\n" };
+                               "\trun FILENAME                 run script FILENAME from SD card\r\n"
+                               "\tview FILENAME                print script FILENAME to terminal\r\n"
+                               "\tcreate NUM FILENAME          create script FILENAME from last NUM commands in history\r\n" };
 
 const char CtBotCli::i2c_[] { "i2c (i)\r\n"
-                              "\tselect [0;3] FREQ\tselect I2C bus to use (0, 1, 2 or 3) and set frequency to FREQ kHz\r\n"
-                              "\taddr ADDRESS\t\tset I2C-address of device to use\r\n"
-                              "\tread8 REG\t\tread 1 byte from register at address REG\r\n"
-                              "\tread16 REG\t\tread 2 bytes from register at address REG\r\n"
-                              "\tread32 REG\t\tread 4 bytes from register at address REG\r\n"
-                              "\twrite8 REG DATA\t\twrite 1 byte (DATA) in register at address REG\r\n"
-                              "\twrite16 REG DATA\twrite 2 bytes (DATA) in register at address REG\r\n"
-                              "\twrite32 REG DATA\twrite 4 bytes (DATA) in register at address REG\r\n" };
+                              "\tselect [0;3] FREQ            select I2C bus to use (0, 1, 2 or 3) and set frequency to FREQ kHz\r\n"
+                              "\taddr ADDRESS                 set I2C-address of device to use\r\n"
+                              "\tread8 REG                    read 1 byte from register at address REG\r\n"
+                              "\tread16 REG                   read 2 bytes from register at address REG\r\n"
+                              "\tread32 REG                   read 4 bytes from register at address REG\r\n"
+                              "\twrite8 REG DATA              write 1 byte (DATA) in register at address REG\r\n"
+                              "\twrite16 REG DATA             write 2 bytes (DATA) in register at address REG\r\n"
+                              "\twrite32 REG DATA             write 4 bytes (DATA) in register at address REG\r\n" };
 
 
 static __attribute__((noinline)) void crash() {
@@ -460,6 +460,10 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_servos_[1]->disable();
                 }
             }
+        } else if (args.find(PSTR("rc5")) == 0) {
+            uint8_t addr, cmd;
+            CmdParser::split_args(args, addr, cmd);
+            p_ctbot_->p_sensors_->get_rc5().set_rc5(addr, cmd, !p_ctbot_->p_sensors_->get_rc5().get_toggle());
         } else if (args.find(PSTR("enapwm")) == 0) {
             uint8_t pin;
             bool value;

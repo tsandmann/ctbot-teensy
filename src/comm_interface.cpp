@@ -42,7 +42,7 @@ namespace ctbot {
 decltype(CommInterface::buffer_storage_) CommInterface::buffer_storage_;
 CommInterface::static_pool_t CommInterface::mem_pool_ { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
 
-PROGMEM static const char _log_prefix_[] { "<log>\r\n" };
+PROGMEM static const char _log_prefix_[] { "<log>" };
 PROGMEM static const char _log_postfix_[] { "</log>\r\n" };
 
 const std::string_view CommInterface::log_prefix_ { _log_prefix_ };
@@ -92,24 +92,32 @@ FLASHMEM size_t CommInterface::queue_debug_msg(const char c, const std::string* 
 void CommInterface::begin(const std::string_view&) const {}
 
 size_t CommInterface::log(const char c, const bool block) {
-    if (viewer_enabled_) { // FIXME: prefix/postfix is not atomic
-        debug_print(log_prefix_, block);
-    }
-    const auto ret { debug_print(c, block) };
+    size_t ret;
+
     if (viewer_enabled_) {
-        debug_print(log_postfix_, block);
+        std::string data;
+        data.append(log_prefix_);
+        data.push_back(c);
+        data.append(log_postfix_);
+        ret = debug_print(data, block);
+    } else {
+        ret = debug_print(c, block);
     }
 
     return ret;
 }
 
 size_t CommInterface::log(const std::string_view& str, const bool block) {
-    if (viewer_enabled_) { // FIXME: prefix/postfix is not atomic
-        debug_print(log_prefix_, block);
-    }
-    const auto ret { debug_print(str, block) };
+    size_t ret;
+
     if (viewer_enabled_) {
-        debug_print(log_postfix_, block);
+        std::string data;
+        data.append(log_prefix_);
+        data.append(str);
+        data.append(log_postfix_);
+        ret = debug_print(std::move(data), block);
+    } else {
+        ret = debug_print(str, block);
     }
 
     return ret;
