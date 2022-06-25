@@ -143,7 +143,9 @@ void RemoteControl::update() {
 void RemoteControl::change_speed(bool right, float diff) const {
     CtBot& ctbot { CtBot::get_instance() };
     float speed { ctbot.get_speedcontrols()[right ? 1 : 0]->get_speed() };
-    speed += diff;
+    if (speed > -100.f && speed < 100.f) {
+        speed += diff;
+    }
     ctbot.get_speedcontrols()[right ? 1 : 0]->set_speed(speed);
 }
 

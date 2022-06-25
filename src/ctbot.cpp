@@ -432,7 +432,12 @@ bool CtBot::publish_sensordata() {
     }
 
     p_comm_->debug_printf<true>(PP_ARGS("<sens>dist: {} {}</sens>\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
-    p_comm_->debug_printf<true>(PP_ARGS("<sens>enc: {} {}</sens>\r\n", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
+    if (CtBotConfig::EXTERNAL_SPEEDCTRL && p_speedcontrols_[0] && p_speedcontrols_[1]) {
+        p_comm_->debug_printf<true>(PP_ARGS("<sens>enc: {} {}</sens>\r\n", static_cast<int32_t>(p_speedcontrols_[0]->get_enc_speed()),
+            static_cast<int32_t>(p_speedcontrols_[1]->get_enc_speed())));
+    } else {
+        p_comm_->debug_printf<true>(PP_ARGS("<sens>enc: {} {}</sens>\r\n", p_sensors_->get_enc_l().get(), p_sensors_->get_enc_r().get()));
+    }
     p_comm_->debug_printf<true>(PP_ARGS("<sens>border: {} {}</sens>\r\n", p_sensors_->get_border_l(), p_sensors_->get_border_r()));
     p_comm_->debug_printf<true>(PP_ARGS("<sens>line: {} {}</sens>\r\n", p_sensors_->get_line_l(), p_sensors_->get_line_r()));
     p_comm_->debug_printf<true>(PP_ARGS("<sens>trans: {} {}</sens>\r\n", p_sensors_->get_transport(), p_sensors_->get_transport_mm()));
@@ -450,6 +455,9 @@ bool CtBot::publish_sensordata() {
 
     if (p_motors_[0] && p_motors_[1]) {
         p_comm_->debug_printf<true>(PP_ARGS("<act>motor: {} {}</act>\r\n", p_motors_[0]->get(), p_motors_[1]->get()));
+    } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && p_speedcontrols_[0] && p_speedcontrols_[1]) {
+        p_comm_->debug_printf<true>(PP_ARGS(
+            "<act>motor: {} {}</act>\r\n", static_cast<int32_t>(p_speedcontrols_[0]->get_speed()), static_cast<int32_t>(p_speedcontrols_[1]->get_speed())));
     }
     p_comm_->debug_printf<true>(
         PP_ARGS("<act>servo1: {} [{s}]</act>\r\n", p_servos_[0]->get_position(), p_servos_[0]->get_active() ? PSTR("on") : PSTR("off")));
