@@ -132,9 +132,8 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
     std::cout << "SimConnection::handle_connect(): connected to ct-Sim.\n";
 
 
-    register_cmd(CommandCodes::CMD_WELCOME, [this](const CommandBase& cmd) {
+    register_cmd(CommandCodes::CMD_WELCOME, [this]([[maybe_unused]] const CommandBase& cmd) {
         // std::cout << "CMD_WELCOME received: " << cmd << "\n";
-        (void) cmd;
         CommandNoCRC cmd1 { CommandCodes::CMD_ID, CommandCodes::CMD_SUB_ID_REQUEST, 0, 0, CommandBase::ADDR_BROADCAST };
         send_cmd(cmd1);
         return true;

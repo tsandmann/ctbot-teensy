@@ -66,7 +66,7 @@ static FLASHMEM void init_task(void*) {
     /* wait for USB device enumeration, terminal program connection, etc. */
     ::vTaskDelay(pdMS_TO_TICKS(CtBotConfig::BOOT_DELAY_MS));
 
-    EXC_PRINTF(PSTR("\r\nRunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ".\r\n"));
+    EXC_PRINTF(PSTR("\r\nRunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ".\r\n"));
 
     if (DEBUG) {
         EXC_PRINTF(PSTR("init_task():\r\n"));

@@ -170,7 +170,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
     if (CtBotConfig::UART_FOR_CMD != 0) {
-        p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_FOR_CMD);
+        p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_WIFI);
         configASSERT(p_serial_wifi_);
         p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
         p_serial_wifi_->setTX(CtBotConfig::UART_WIFI_PIN_TX);
@@ -377,16 +377,18 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         ::serialport_puts(PSTR("CtBot::setup(): p_cli_->init_commands() done.\r\n"));
     }
 
-    update_clock();
-    p_clock_timer_ = ::xTimerCreate(PSTR("clock1_t"), pdMS_TO_TICKS(5'000UL), true, this, [](TimerHandle_t handle) {
-        auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
-        configASSERT(p_ctbot);
+    if (CtBotConfig::DATE_TIME_AVAILABLE) {
+        update_clock();
+        p_clock_timer_ = ::xTimerCreate(PSTR("clock_t"), pdMS_TO_TICKS(5'000UL), true, this, [](TimerHandle_t handle) {
+            auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
+            configASSERT(p_ctbot);
 
-        ::xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
+            ::xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
 
-        p_ctbot->update_clock();
-    });
-    ::xTimerStart(p_clock_timer_, 0);
+            p_ctbot->update_clock();
+        });
+        ::xTimerStart(p_clock_timer_, 0);
+    }
 
     add_post_hook(
         PSTR("task"),
@@ -414,7 +416,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     p_logger_->log(PSTR("\r\n"), true);
     p_logger_->begin();
-    p_logger_->log(PSTR("*** ct-Bot init done. Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". ***\r\n"), true);
+    p_logger_->log(PSTR("*** ct-Bot init done. Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ". ***\r\n"), true);
     p_logger_->flush();
     p_comm_->debug_print(PSTR("\r\nType \"help\" (or \"h\") to print help message.\r\n\n"), true);
     p_comm_->flush();
@@ -446,6 +448,10 @@ bool CtBot::publish_sensordata() {
     p_comm_->debug_printf<true>(PP_ARGS("<sens>bat: {.2} {.2}</sens>\r\n", p_sensors_->get_bat_voltage(), p_sensors_->get_bat_voltage() / 4.f));
     p_comm_->debug_printf<true>(PP_ARGS("<sens>speed: {} {}</sens>\r\n", static_cast<int16_t>(p_speedcontrols_[0]->get_enc_speed()),
         static_cast<int16_t>(p_speedcontrols_[1]->get_enc_speed())));
+    if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
+        const auto mcurrent { SpeedControlPico::get_motor_current() };
+        p_comm_->debug_printf<true>(PP_ARGS("<sens>mcurrent: {}</sens>\r\n", mcurrent > 5 ? mcurrent : 0));
+    }
     if (p_sensors_->get_mpu6050()) {
         auto [e1, e2, e3] = p_sensors_->get_mpu6050()->get_euler();
         auto [y, p, r] = p_sensors_->get_mpu6050()->get_ypr();
@@ -722,15 +728,10 @@ FLASHMEM void CtBot::add_post_hook(const std::string& name, std::function<void()
 }
 
 FLASHMEM void CtBot::update_clock() {
-    struct Data {
-        const CtBot* p_ctbot;
-        bool old_echo;
-    };
-
     std::time_t now;
     std::time(&now);
     if (DEBUG_LEVEL_ >= 4) {
-        p_comm_->debug_printf<true>(PSTR("CtBot::update_clock(): now=%d%03d\r\n"), static_cast<uint32_t>(now / 1'000L), static_cast<uint32_t>(now % 1'000L));
+        p_comm_->debug_printf<false>(PSTR("CtBot::update_clock(): now=%d%03d\r\n"), static_cast<uint32_t>(now / 1'000L), static_cast<uint32_t>(now % 1'000L));
     }
     if (now > 1'600'000'000LL) { // 2020-09
         if (p_clock_timer_) {
@@ -739,35 +740,14 @@ FLASHMEM void CtBot::update_clock() {
             p_clock_timer_ = nullptr;
 
             if (DEBUG_LEVEL_ >= 4) {
-                p_comm_->debug_print(PSTR("CtBot::update_clock(): timer disabled\r\n"), true);
+                p_comm_->debug_print(PSTR("CtBot::update_clock(): timer disabled\r\n"), false);
             }
         }
         return;
     }
 
-    Data* p_data { new Data { this, p_comm_->get_echo() } };
-    configASSERT(p_data);
-
     p_comm_->flush();
-    p_comm_->set_echo(false);
-    p_comm_->debug_print(PSTR("\eC"), true); // send clock command to esp
-    p_comm_->flush();
-
-    auto timer2 = ::xTimerCreate(PSTR("clock2_t"), pdMS_TO_TICKS(50), false, p_data, [](TimerHandle_t handle) {
-        auto p_data { static_cast<Data*>(::pvTimerGetTimerID(handle)) };
-        configASSERT(p_data);
-
-        p_data->p_ctbot->p_comm_->set_echo(p_data->old_echo);
-
-        delete p_data;
-        xTimerStop(handle, 0);
-        xTimerDelete(handle, 0);
-
-        if (DEBUG_LEVEL_ >= 3) {
-            p_data->p_ctbot->p_comm_->debug_print(PSTR("CtBot::update_clock() done.\r\n"), true);
-        }
-    });
-    ::xTimerStart(timer2, 0);
+    p_comm_->debug_print(PSTR("\eC"), false); // send clock command to esp
 }
 
 } // namespace ctbot

@@ -36,11 +36,11 @@ I2CT4 Wire2 { 2 };
 } // namespace teensy4
 
 FLASHMEM I2CT4::I2CT4(const uint8_t bus) : TwoWire { get_port(bus), *get_hardware(bus) }, p_caller_ { &caller_[bus] } {
-    NVIC_DISABLE_IRQ(hardware.irq);
-    NVIC_CLEAR_PENDING(hardware.irq);
-    ::attachInterruptVector(hardware.irq, bus == 0 ? isr1 : (bus == 1 ? isr2 : isr3));
-    NVIC_SET_PRIORITY(hardware.irq, 128);
-    NVIC_ENABLE_IRQ(hardware.irq);
+    NVIC_DISABLE_IRQ(hardware.irq_number);
+    NVIC_CLEAR_PENDING(hardware.irq_number);
+    ::attachInterruptVector(hardware.irq_number, bus == 0 ? isr1 : (bus == 1 ? isr2 : isr3));
+    NVIC_SET_PRIORITY(hardware.irq_number, 128);
+    NVIC_ENABLE_IRQ(hardware.irq_number);
     port->MDER = 0;
 }
 

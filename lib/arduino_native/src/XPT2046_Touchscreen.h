@@ -25,9 +25,7 @@ public:
 
 class XPT2046_Touchscreen {
 public:
-    XPT2046_Touchscreen(uint8_t, SPIClass*, uint8_t tirq = 255) {
-        (void) tirq;
-    }
+    XPT2046_Touchscreen(uint8_t, SPIClass*, [[maybe_unused]] uint8_t tirq = 255) {}
 
     bool begin() {
         return false;

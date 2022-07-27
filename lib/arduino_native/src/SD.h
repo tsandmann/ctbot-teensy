@@ -84,8 +84,7 @@ protected:
         return name_.c_str();
     }
     virtual bool isDirectory() override;
-    virtual File openNextFile(uint8_t mode = 0) override {
-        (void) mode;
+    virtual File openNextFile([[maybe_unused]] uint8_t mode = 0) override {
         assert(false);
         return File {};
     }

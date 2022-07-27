@@ -89,16 +89,11 @@ public:
         ALGO_PHASECAL_CONFIG_TIMEOUT = 0x30,
     };
 
-    bool init(bool io_2v8 = true) {
-        (void) io_2v8;
+    bool init([[maybe_unused]] bool io_2v8 = true) {
         return false;
     }
 
-    void setAddress(uint8_t new_addr) {
-        (void) new_addr;
-    }
+    void setAddress([[maybe_unused]] uint8_t new_addr) {}
 
-    void startContinuous(uint32_t period_ms = 0) {
-        (void) period_ms;
-    }
+    void startContinuous([[maybe_unused]] uint32_t period_ms = 0) {}
 };

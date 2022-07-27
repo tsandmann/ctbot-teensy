@@ -106,6 +106,8 @@ void SpeedControl::controller() {
 
 std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
 arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(6) };
+uint16_t SpeedControlPico::motor_current_;
+uint32_t SpeedControlPico::crc_errors_;
 
 SpeedControlPico::SpeedControlPico() : enc_speed_ {}, enc_counts_ {}, last_counts_ {}, reset_ { true } {
     controller_list_.push_back(this);
@@ -113,7 +115,7 @@ SpeedControlPico::SpeedControlPico() : enc_speed_ {}, enc_counts_ {}, last_count
     if (controller_list_.size() == 1) {
         serial_.setRX(25); // GPIO_2
         serial_.setTX(24); // GPIO_1
-        serial_.begin(2'000'000UL, 0, 8192, 64);
+        serial_.begin(1'000'000UL, 0, 8192, 64); // FIXME: config file
         CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 2048UL, &controller);
     }
 }
@@ -154,7 +156,7 @@ void SpeedControlPico::controller() {
         EncData enc_data;
         serial_.read(&enc_data, sizeof(EncData));
         auto ptr { reinterpret_cast<const uint8_t*>(&enc_data) };
-        const auto checksum { CRC32::calculate(ptr, sizeof(enc_data) - sizeof(enc_data.crc)) };
+        const auto checksum { CRC32::calculate(ptr, sizeof(EncData) - sizeof(enc_data.crc)) };
         if (checksum == enc_data.crc) {
             size_t i {};
             for (auto p_ctrl : controller_list_) {
@@ -167,13 +169,15 @@ void SpeedControlPico::controller() {
                     break;
                 }
             }
+            motor_current_ = enc_data.motor_current;
             if (DEBUG_) {
                 CtBot::get_instance().get_comm()->debug_printf<false>(PSTR("SpeedControlPico::controller(): EncData=%f\t%f mm/s\t%d\t%d counts\r\n"),
                     Encoder::rpm_to_speed(enc_data.rpm[0]), Encoder::rpm_to_speed(enc_data.rpm[1]), enc_data.counts[0], enc_data.counts[1]);
             }
         } else {
-            CtBot::get_instance().get_comm()->debug_printf<true>(
-                PSTR("SpeedControlPico::controller()(): invalid CRC received: %u\t%u\r\n"), checksum, enc_data.crc);
+            ++crc_errors_;
+            CtBot::get_instance().get_logger()->begin(PSTR("SpeedControlPico"));
+            CtBot::get_instance().get_logger()->log<true>(PSTR("SpeedControlPico::controller(): invalid CRC received: %u\t%u\r\n"), checksum, enc_data.crc);
         }
 
         ::vTaskDelay(1);

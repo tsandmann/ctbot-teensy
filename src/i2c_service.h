@@ -88,9 +88,8 @@ protected:
     static std::array<uint32_t, NUM_BUSSES> freq_;
 
     static void finish_transfer(const bool success, I2C_Transfer* transfer);
-    static void finish_transfer(const bool success, I2C_Transfer* transfer, const uint32_t id) {
+    static void finish_transfer(const bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id) {
         if (DEBUG_ && transfer->callback) {
-            (void) id;
             printf_debug(PSTR("I2C_Service::finish_transfer(): callback for transfer %u addr=0x%x, err=%u\r\n"), id, transfer->addr, transfer->error);
         }
         finish_transfer(success, transfer);

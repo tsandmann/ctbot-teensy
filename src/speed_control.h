@@ -176,6 +176,8 @@ class SpeedControlPico : public SpeedControlBase {
 
     static std::list<SpeedControlPico*> controller_list_;
     static arduino::SerialIO& serial_;
+    static uint16_t motor_current_;
+    static uint32_t crc_errors_;
 
     float enc_speed_; // mm/s
     int32_t enc_counts_;
@@ -187,9 +189,10 @@ protected:
         const uint8_t start;
         int16_t rpm[2];
         int32_t counts[2];
+        uint16_t motor_current;
         uint32_t crc;
 
-        constexpr EncData() : start { 0xaa }, rpm {}, counts {}, crc {} {}
+        constexpr EncData() : start { 0xaa }, rpm {}, counts {}, motor_current {}, crc {} {}
     } __attribute__((__packed__));
 
     struct SpeedData {
@@ -206,6 +209,14 @@ protected:
 
 public:
     static void controller();
+
+    static auto get_motor_current() {
+        return motor_current_;
+    }
+
+    static auto get_crc_errors() {
+        return crc_errors_;
+    }
 
     FLASHMEM SpeedControlPico();
 

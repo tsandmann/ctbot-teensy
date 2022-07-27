@@ -39,14 +39,6 @@ namespace legacy {
 #include <stdlib.h>
 #endif // __cplusplus
 
-
-#if defined(__GNUC__) && __GNUC__ >= 7
-#define CASE_NO_BREAK __attribute__((fallthrough))
-#else
-#define CASE_NO_BREAK ((void) 0)
-#endif /* __GNUC__ >= 7 */
-
-
 /** 2D-Position. Ist effizienter, als Zeiger auf X- und Y-Anteil */
 typedef struct {
     int16_t x; /**< X-Anteil der Position */

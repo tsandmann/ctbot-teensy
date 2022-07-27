@@ -971,7 +971,7 @@ void BehaviorLegacy::return_from_behavior(legacy::Behaviour_t* data) const noexc
     return exit_behavior(data, BEHAVIOUR_SUBSUCCESS);
 }
 
-void BehaviorLegacy::motor_set(int16_t left, int16_t right, uint8_t prio) const noexcept {
+void BehaviorLegacy::motor_set(int16_t left, int16_t right, [[maybe_unused]] uint8_t prio) const noexcept {
     /* Geschwindigkeiten pruefen */
     if (left == legacy::BOT_SPEED_IGNORE) {
         left = legacy::BOT_SPEED_STOP;
@@ -981,7 +981,6 @@ void BehaviorLegacy::motor_set(int16_t left, int16_t right, uint8_t prio) const 
     }
 
     // set_priority(prio); // FIXME: set_priority() not implemented yet
-    (void) prio;
     set_actuator(get_motor_l(), left * (100.f / legacy::BOT_SPEED_MAX));
     set_actuator(get_motor_r(), right * (100.f / legacy::BOT_SPEED_MAX));
 }
@@ -1049,9 +1048,7 @@ uint8_t BehaviorLegacy::display_puts(const char* text) const noexcept {
     return static_cast<uint8_t>(get_ctbot()->get_lcd()->print(text));
 }
 
-int8_t BehaviorLegacy::register_screen(void (*function)(), void (*keyhandler)(int16_t* const)) const noexcept {
-    (void) function;
-    (void) keyhandler;
+int8_t BehaviorLegacy::register_screen([[maybe_unused]] void (*function)(), [[maybe_unused]] void (*keyhandler)(int16_t* const)) const noexcept {
     return 0; // FIXME: not implemented yet
 }
 

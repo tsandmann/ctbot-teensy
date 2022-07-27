@@ -173,8 +173,7 @@ void bot_follow_line_behaviour(Behaviour_t* data) {
     }
 }
 
-void bot_follow_line(Behaviour_t* caller, uint8_t dummy) {
-    (void) dummy;
+void bot_follow_line(Behaviour_t* caller, uint8_t dummy __attribute__((unused))) {
     switch_to_behaviour(caller, bot_follow_line_behaviour, BEHAVIOUR_NOOVERRIDE);
     lineState = CHECK_LINE;
     cornerDetected = False;
@@ -422,8 +421,7 @@ void bot_follow_line_behaviour(Behaviour_t* data) {
     lastRight = speedWishRight;
 }
 
-void bot_follow_line(Behaviour_t* caller, uint8_t dummy) {
-    (void) dummy;
+void bot_follow_line(Behaviour_t* caller, uint8_t dummy __attribute__((unused))) {
     switch_to_behaviour(caller, bot_follow_line_behaviour, BEHAVIOUR_NOOVERRIDE);
 
     // Kennungen init.

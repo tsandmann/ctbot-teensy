@@ -405,6 +405,10 @@ void CtBotCli::init_commands() {
                 p_ctbot_->get_comm()->debug_print(tmp, true);
                 p_ctbot_->get_comm()->debug_print(PSTR("\r\n"), true);
             }
+        } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("mcurrent")) == 0) {
+            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{}", SpeedControlPico::get_motor_current()));
+        } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("sctrl-crc")) == 0) {
+            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("SpeedControl CRC errors: {}", SpeedControlPico::get_crc_errors()));
         } else {
             return false;
         }

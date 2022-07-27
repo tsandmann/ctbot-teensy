@@ -79,8 +79,7 @@ public:
         }
     }
 
-    uint8_t endTransmission(uint8_t sendStop = 1) {
-        (void) sendStop;
+    uint8_t endTransmission([[maybe_unused]] uint8_t sendStop = 1) {
         mode_ = 3; // data follows
         return 0;
     }
@@ -126,9 +125,7 @@ public:
         return 1;
     }
 
-    uint8_t requestFrom(int address, int quantity, uint8_t sendStop = 1) {
-        (void) sendStop;
-
+    uint8_t requestFrom(int address, int quantity, [[maybe_unused]] uint8_t sendStop = 1) {
         if (address >= 8 && address < 120) {
             addr_ = address;
             mode_ = 3;

@@ -89,13 +89,11 @@ extern BehaviourFunc_t bot_turn_behaviour;
 #include "behaviour_drive_distance.h"
 #elif defined BEHAVIOUR_GOTO_POS_AVAILABLE
 static inline Behaviour_t* bot_goto_dist(Behaviour_t* caller, int16_t distance, int8_t dir);
-static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm) {
-    (void) curve;
+static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve __attribute__((unused)), int16_t speed, int16_t cm) {
     return bot_goto_dist(caller, (int16_t) (cm * 10), speed > 0 ? 1 : -1);
 }
 #else
-static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve, int16_t speed, int16_t cm) {
-    (void) curve;
+static inline Behaviour_t* bot_drive_distance(Behaviour_t* caller, int8_t curve __attribute__((unused)), int16_t speed, int16_t cm) {
     return bot_drive_wrapper(caller, speed >= 0 ? abs(cm) * 10 : abs(cm) * -10);
 }
 extern BehaviourFunc_t bot_drive_distance_behaviour;

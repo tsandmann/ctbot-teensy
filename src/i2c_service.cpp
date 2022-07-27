@@ -396,10 +396,9 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&ret](const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&ret]([[maybe_unused]] const bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
-                (void) done;
                 printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, ret);
             }
             ::xTaskNotifyGive((*p_transfer)->caller);
@@ -529,10 +528,9 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&ret](const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&ret]([[maybe_unused]] const bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
-                (void) done;
                 printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(reg_addr), done, ret);
             }
             ::xTaskNotifyGive((*p_transfer)->caller);
@@ -578,9 +576,8 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
         if (done) {
             data = static_cast<DATA>((*p_transfer)->data2.data);
             value ? data |= 1 << bit : data &= ~(1 << bit);
-            ret = write_reg(addr, reg, data, [&transfer_done](const bool, I2C_Transfer** p_transfer) {
+            ret = write_reg(addr, reg, data, [&transfer_done](const bool, [[maybe_unused]] I2C_Transfer** p_transfer) {
                 if constexpr (DEBUG_) {
-                    (void) p_transfer;
                     printf_debug(
                         PSTR("I2C_Service::set_bit_internal<%u, %u>() write_callback done, err=%u\r\n"), sizeof(reg), sizeof(DATA), (*p_transfer)->error);
                 }

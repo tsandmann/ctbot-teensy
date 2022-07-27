@@ -66,6 +66,7 @@ public:
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
+    static constexpr bool DATE_TIME_AVAILABLE { true };
 
     static constexpr bool ESP32_CONTROL_AVAILABLE { true }; /**< Statically activate or deactivate control of ESP32 (reset and prog signals) */
 
@@ -75,6 +76,7 @@ public:
     /* uart */
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
 
+    static constexpr uint8_t UART_WIFI { 7 }; /**< ID of UART to use for WiFi interface */
     static constexpr uint8_t UART_WIFI_PIN_RX { 28 }; /**< Number of pin to use for RX line for Uart to WiFi */
     static constexpr uint8_t UART_WIFI_PIN_TX { 29 }; /**< Number of pin to use for TX line for Uart to WiFi */
     static constexpr uint32_t UART_WIFI_BAUDRATE { 1'000'000 }; /**< Baud rate used for Uart to WiFi */
@@ -83,7 +85,7 @@ public:
     static constexpr uint8_t UART_2_PIN_TX { 35 }; /**< Number of pin to use for TX line for Uart 2 */
     static constexpr uint32_t UART_2_BAUDRATE { 115'200 }; /**< Baud rate used for Uart 2 */
 
-    static constexpr uint8_t UART_FOR_CMD { 7 }; /**< ID of UART to use for command line interface */
+    static constexpr uint8_t UART_FOR_CMD { UART_WIFI }; /**< ID of UART to use for command line interface */
 
     /* i2c */
     static constexpr uint8_t I2C0_PIN_SCL { 19 }; /**< Pin number of SCL for I2C 0 */

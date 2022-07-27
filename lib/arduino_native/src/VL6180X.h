@@ -82,13 +82,9 @@ public:
         return false;
     }
 
-    void setAddress(uint8_t new_addr) {
-        (void) new_addr;
-    }
+    void setAddress([[maybe_unused]] uint8_t new_addr) {}
 
     void configureDefault() {}
 
-    void startRangeContinuous(uint16_t period = 100) {
-        (void) period;
-    }
+    void startRangeContinuous([[maybe_unused]] uint16_t period = 100) {}
 };
