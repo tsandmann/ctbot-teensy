@@ -250,7 +250,7 @@ public:
      */
     template <bool BLOCK = false>
     FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto const... args) {
-        return debug_print(Logger::string_format(format, args...), BLOCK);
+        return debug_print(LoggerTarget::string_format(format, args...), BLOCK);
     }
 
     // FLASHMEM size_t debug_print(const arduino::String& str, const bool block);

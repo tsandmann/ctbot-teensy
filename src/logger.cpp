@@ -45,6 +45,25 @@ FLASHMEM LoggerTarget::LoggerTarget() {}
 
 FLASHMEM LoggerTarget::~LoggerTarget() {}
 
+size_t LoggerTarget::get_format_size(const char* format, ...) {
+    va_list vl;
+    va_start(vl, format);
+    const auto size { std::vsnprintf(nullptr, 0, format, vl) };
+    va_end(vl);
+    return size;
+}
+
+std::string LoggerTarget::create_formatted_string(const size_t size, const char* format, ...) {
+    va_list vl;
+    va_start(vl, format);
+    auto str { std::string(size + 1, '\0') };
+    const auto n { std::vsnprintf(str.data(), size + 1, format, vl) };
+    str.resize(n);
+    va_end(vl);
+
+    return str;
+}
+
 
 FLASHMEM LoggerTargetFile::LoggerTargetFile(FS& fs, const std::string_view& filename, CtBot* p_ctbot) : p_file_ {}, p_ctbot_ { p_ctbot } {
     p_file_ = new File { fs.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) };
@@ -94,25 +113,6 @@ void LoggerTargetFile::flush() {
 
 
 FLASHMEM Logger::Logger() {}
-
-size_t Logger::get_format_size(const char* format, ...) {
-    va_list vl;
-    va_start(vl, format);
-    const auto size { std::vsnprintf(nullptr, 0, format, vl) };
-    va_end(vl);
-    return size;
-}
-
-std::string Logger::create_formatted_string(const size_t size, const char* format, ...) {
-    va_list vl;
-    va_start(vl, format);
-    auto str { std::string(size + 1, '\0') };
-    const auto n { std::vsnprintf(str.data(), size + 1, format, vl) };
-    str.resize(n);
-    va_end(vl);
-
-    return str;
-}
 
 FLASHMEM size_t Logger::add_target(LoggerTarget* p_target) {
     targets_.push_back(p_target);

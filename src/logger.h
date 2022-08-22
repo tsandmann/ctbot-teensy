@@ -54,10 +54,31 @@ public:
     FLASHMEM LoggerTarget();
     FLASHMEM virtual ~LoggerTarget();
 
+    FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
+
+    FLASHMEM static std::string create_formatted_string(const size_t size, const char* format, ...);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+    FLASHMEM static std::string string_format(const char* format, logger::PrintfArg auto const... args) {
+        const auto size { get_format_size(format, args...) + 1 };
+        if (size > 0) {
+            return create_formatted_string(size, format, args...);
+        } else {
+            return nullptr;
+        }
+    }
+#pragma GCC diagnostic pop
+
     virtual void begin(const std::string_view& prefix) const = 0;
     virtual size_t log(const char c, const bool block) = 0;
     virtual size_t log(const std::string_view& str, const bool block) = 0;
     virtual void flush() = 0;
+
+    template <bool BLOCK = false>
+    FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto const... args) {
+        return log(string_format(format, args...), BLOCK);
+    }
 };
 
 
@@ -82,22 +103,6 @@ protected:
     std::vector<LoggerTarget*> targets_;
 
 public:
-    FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
-
-    FLASHMEM static std::string create_formatted_string(const size_t size, const char* format, ...);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-    FLASHMEM static std::string string_format(const char* format, logger::PrintfArg auto const... args) {
-        const auto size { get_format_size(format, args...) + 1 };
-        if (size > 0) {
-            return create_formatted_string(size, format, args...);
-        } else {
-            return nullptr;
-        }
-    }
-#pragma GCC diagnostic pop
-
     FLASHMEM Logger();
 
     FLASHMEM size_t add_target(LoggerTarget* p_target);
@@ -117,7 +122,7 @@ public:
 
     template <bool BLOCK = false>
     FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto const... args) {
-        return log(string_format(format, args...), BLOCK);
+        return log(LoggerTarget::string_format(format, args...), BLOCK);
     }
 
     void flush();

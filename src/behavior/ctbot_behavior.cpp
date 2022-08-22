@@ -55,7 +55,8 @@ PROGMEM const char CtBotBehavior::usage_text_beh[] { "\r\n"
                                                      "beh (b)\r\n"
                                                      "\tstart BEHAVIOR [PARAMS]      start a behavior\r\n"
                                                      "\tstop                         stop a currently running behavior\r\n"
-                                                     "\tlist                         show a list of all registered behaviors\r\r"
+                                                     "\tlist                         show a list of all registered behaviors\r\n"
+                                                     "\tpose                         print current pose of bot\r\n"
                                                      "\r\n" };
 
 CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
@@ -158,6 +159,9 @@ void CtBotBehavior::setup(const bool set_ready) {
         } else if (args.find(PSTR("disable")) == 0) {
             beh_enabled_ = false;
             return true;
+        } else if (args.find(PSTR("pose")) == 0) {
+            get_data()->get_res_ptr<Pose>(PSTR("model.pose_enc"))->print(*get_comm());
+            get_comm()->debug_print(PSTR("\r\n"), false);
         } else {
             return false;
         }

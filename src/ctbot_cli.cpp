@@ -317,7 +317,12 @@ void CtBotCli::init_commands() {
         if (args.find(PSTR("dist")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_distance_l(), p_ctbot_->p_sensors_->get_distance_r()));
         } else if (args.find(PSTR("enc")) == 0) {
-            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_enc_l().get(), p_ctbot_->p_sensors_->get_enc_r().get()));
+            if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
+                p_ctbot_->p_comm_->debug_printf<true>(
+                    PP_ARGS("{} {}", p_ctbot_->p_speedcontrols_[0]->get_enc_counts(), p_ctbot_->p_speedcontrols_[1]->get_enc_counts()));
+            } else {
+                p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_enc_l().get(), p_ctbot_->p_sensors_->get_enc_r().get()));
+            }
         } else if (args.find(PSTR("border")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_border_l(), p_ctbot_->p_sensors_->get_border_r()));
         } else if (args.find(PSTR("line")) == 0) {
@@ -406,9 +411,9 @@ void CtBotCli::init_commands() {
                 p_ctbot_->get_comm()->debug_print(PSTR("\r\n"), true);
             }
         } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("mcurrent")) == 0) {
-            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{}", SpeedControlPico::get_motor_current()));
+            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{}", SpeedControlExternal::get_motor_current()));
         } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("sctrl-crc")) == 0) {
-            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("SpeedControl CRC errors: {}", SpeedControlPico::get_crc_errors()));
+            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("SpeedControl CRC errors: {}", SpeedControlExternal::get_crc_errors()));
         } else {
             return false;
         }

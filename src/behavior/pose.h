@@ -33,6 +33,7 @@
 
 namespace ctbot {
 class Logger;
+class CommInterface;
 
 /**
  * @brief Pose representation
@@ -240,6 +241,12 @@ public:
      * @param[in] logger Reference to logger to use
      */
     FLASHMEM void print(Logger& logger) const;
+
+    /**
+     * @brief Print pose out to a CommInterface
+     * @param[in] target Reference to comm interface to use
+     */
+    FLASHMEM void print(CommInterface& comm) const;
 };
 
 } // namespace ctbot

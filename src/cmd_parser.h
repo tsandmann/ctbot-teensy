@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "avr/pgmspace.h"
+
 #include <charconv>
 #include <concepts>
 #include <cstdint>

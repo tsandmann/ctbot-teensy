@@ -26,6 +26,8 @@
 
 #include "ctbot_config.h"
 
+#include "avr/pgmspace.h"
+
 #include <cstdint>
 #include <string>
 #include <string_view>
