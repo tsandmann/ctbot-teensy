@@ -53,7 +53,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     {
         ena_.on(EnaI2cTypes::DISTANCE_L);
         std::this_thread::sleep_for(10ms);
-        p_dist_l = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS, CtBotConfig::I2C0_FREQ };
+        p_dist_l = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
         configASSERT(p_dist_l);
         if (p_dist_l->init()) {
             if (!p_dist_l->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR)) {
@@ -76,7 +76,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     {
         ena_.on(EnaI2cTypes::DISTANCE_R);
         std::this_thread::sleep_for(10ms);
-        p_dist_r = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS, CtBotConfig::I2C0_FREQ };
+        p_dist_r = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
         configASSERT(p_dist_r);
         if (p_dist_r->init()) {
             if (!p_dist_r->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR)) {
@@ -100,7 +100,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     {
         ena_.on(EnaI2cTypes::TRANSPORT);
         std::this_thread::sleep_for(10ms);
-        p_trans_ = new VL6180X { CtBotConfig::VL6180X_I2C_BUS, CtBotConfig::I2C0_FREQ };
+        p_trans_ = new VL6180X { CtBotConfig::VL6180X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
         configASSERT(p_trans_);
         if (p_trans_->init()) {
             if (!p_trans_->set_address(CtBotConfig::VL6180X_I2C_ADDR)) {
@@ -126,11 +126,8 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     }
 
     if (CtBotConfig::MPU6050_AVAILABLE) {
-        p_mpu_6050_ = new MPU6050_Wrapper { CtBotConfig::MPU6050_I2C_BUS,
-            CtBotConfig::MPU6050_I2C_BUS == 0 ?
-                CtBotConfig::I2C0_FREQ :
-                (CtBotConfig::MPU6050_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ :
-                                                     (CtBotConfig::MPU6050_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
+        p_mpu_6050_ = new MPU6050_Wrapper { CtBotConfig::IMU_I2C_BUS - 1,
+            CtBotConfig::IMU_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::IMU_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
         configASSERT(p_mpu_6050_);
         if (p_mpu_6050_->init()) {
             p_mpu_6050_->enable_ypr(true);

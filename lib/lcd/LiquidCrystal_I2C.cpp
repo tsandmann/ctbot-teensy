@@ -141,6 +141,8 @@ LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t i2c_port, uint8_t lcd_Addr, uint8_t
     setBacklightPin(backlighPin, pol);
 }
 
+LiquidCrystal_I2C::~LiquidCrystal_I2C() = default;
+
 // PUBLIC METHODS
 // ---------------------------------------------------------------------------
 

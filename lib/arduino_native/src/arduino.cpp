@@ -271,3 +271,4 @@ TwoWire Wire3;
 CrashReportClass CrashReport;
 
 void (*_VectorsRam[255 + 16])(void);
+volatile uint32_t systick_millis_count;

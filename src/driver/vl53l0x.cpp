@@ -35,8 +35,8 @@
 
 
 namespace ctbot {
-VL53L0X::VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr)
-    : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, timing_budget_us_ {}, stop_variable_ {} {}
+VL53L0X::VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr) // FIXME: config of i2c bus
+    : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL }, i2c_addr_ { i2c_addr }, timing_budget_us_ {}, stop_variable_ {} {}
 
 FLASHMEM bool VL53L0X::init() {
     /* check model ID */

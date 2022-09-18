@@ -34,7 +34,7 @@
 
 namespace ctbot {
 
-LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C { CtBotConfig::LCD_I2C_BUS, 0x3f, 2, 1, 0, 4, 5, 6, 7 } } {
+LCDisplay::LCDisplay() : p_impl_ { new LiquidCrystal_I2C { CtBotConfig::LCD_I2C_BUS - 1, 0x3f, 2, 1, 0, 4, 5, 6, 7 } } {
     // FIXME: use I2C_Service
     Scheduler::enter_critical_section();
     p_impl_->begin(LINE_LENGTH, 4);

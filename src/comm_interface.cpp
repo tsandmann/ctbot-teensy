@@ -197,6 +197,8 @@ CommInterfaceCmdParser::CommInterfaceCmdParser(arduino::SerialIO& io_connection,
     cmd_parser_.set_echo(enable_echo);
 }
 
+CommInterfaceCmdParser::~CommInterfaceCmdParser() = default;
+
 void CommInterfaceCmdParser::set_echo(bool value) {
     echo_ = value;
     cmd_parser_.set_echo(value);

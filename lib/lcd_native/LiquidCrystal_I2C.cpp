@@ -33,6 +33,8 @@ LiquidCrystal_I2C::LiquidCrystal_I2C(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t
     }
 }
 
+LiquidCrystal_I2C::~LiquidCrystal_I2C() = default;
+
 bool LiquidCrystal_I2C::begin(uint8_t, uint8_t) {
     return true;
 }

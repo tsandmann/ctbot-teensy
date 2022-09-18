@@ -280,7 +280,7 @@ public:
      * @return Pointer to SerialIO instance
      */
     auto get_serial_cmd() const {
-        return CtBotConfig::UART_FOR_CMD ? p_serial_wifi_ : p_serial_usb_;
+        return CtBotConfig::UART_WIFI_FOR_CMD ? p_serial_wifi_ : p_serial_usb_;
     }
 
     void add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active = true);

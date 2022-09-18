@@ -157,8 +157,8 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
                 auto p_speedctrl_r { CtBot::get_instance().get_speedcontrols()[1] };
 
                 CommandNoCRC cmd { CommandCodes::CMD_AKT_MOT, CommandCodes::CMD_SUB_NORM,
-                    static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControlBase::MAX_SPEED / 200.f),
-                    static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControlBase::MAX_SPEED / 200.f), bot_addr_ };
+                    static_cast<int16_t>(p_speedctrl_l->get_speed() * SpeedControlBase::MAX_SPEED_ / 200.f),
+                    static_cast<int16_t>(p_speedctrl_r->get_speed() * SpeedControlBase::MAX_SPEED_ / 200.f), bot_addr_ };
 
                 send_cmd(cmd);
             }
@@ -265,11 +265,7 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
         arduino::analogWrite(CtBotConfig::LINE_R_PIN, cmd.get_cmd_data_r());
         return true;
     });
-    register_cmd(CommandCodes::CMD_SENS_LDR, [](const CommandBase& cmd) {
-        arduino::analogWrite(CtBotConfig::LDR_L_PIN, cmd.get_cmd_data_l());
-        arduino::analogWrite(CtBotConfig::LDR_R_PIN, cmd.get_cmd_data_r());
-        return true;
-    });
+    register_cmd(CommandCodes::CMD_SENS_LDR, [](const CommandBase&) { return true; });
     register_cmd(CommandCodes::CMD_SENS_TRANS, [this](const CommandBase& cmd) {
         i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_RANGE_VAL_REG, cmd.get_cmd_data_l() > 0 ? 10 : 50);
         i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_INTERRUPT_STATUS_REG, 4);

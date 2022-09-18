@@ -46,6 +46,8 @@
 // Constructor
 LCD::LCD() {}
 
+LCD::~LCD() = default;
+
 // PUBLIC METHODS
 // ---------------------------------------------------------------------------
 // When the display powers up, it is configured as follows:

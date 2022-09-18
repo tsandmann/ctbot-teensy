@@ -169,7 +169,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
-    if (CtBotConfig::UART_FOR_CMD != 0) {
+    if (CtBotConfig::UART_WIFI_FOR_CMD) {
         p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_WIFI);
         configASSERT(p_serial_wifi_);
         p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
@@ -198,19 +198,14 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         ::serialport_puts(PSTR("CtBot::setup(): comm services inited.\r\n"));
     }
 
-    p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS, CtBotConfig::ENA_I2C_ADDR,
-        CtBotConfig::ENA_I2C_BUS == 0 ?
-            CtBotConfig::I2C0_FREQ :
-            (CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
+    p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS - 1, CtBotConfig::ENA_I2C_ADDR,
+        CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_);
     if (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): ENA created.\r\n"));
     }
-    p_ena_pwm_ = new LedsI2cEna { CtBotConfig::ENA_PWM_I2C_BUS, CtBotConfig::ENA_PWM_I2C_ADDR,
-        CtBotConfig::ENA_PWM_I2C_BUS == 0 ?
-            CtBotConfig::I2C0_FREQ :
-            (CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ :
-                                                 (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
+    p_ena_pwm_ = new LedsI2cEna { CtBotConfig::ENA_PWM_I2C_BUS - 1, CtBotConfig::ENA_PWM_I2C_ADDR,
+        CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_pwm_);
     if (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): ENA PWM created.\r\n"));
@@ -233,7 +228,6 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         ::serialport_puts(PSTR("CtBot::setup(): sensors enabled.\r\n"));
     }
 
-
     if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
         p_speedcontrols_[0] = new SpeedControlExternal {};
         p_speedcontrols_[1] = new SpeedControlExternal {};
@@ -250,10 +244,8 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_servos_[1] = new Servo { CtBotConfig::SERVO_2_PIN };
     }
 
-    p_leds_ = new LedsI2c { CtBotConfig::LED_I2C_BUS, CtBotConfig::LED_I2C_ADDR,
-        CtBotConfig::LED_I2C_BUS == 0 ?
-            CtBotConfig::I2C0_FREQ :
-            (CtBotConfig::LED_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::LED_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ)) };
+    p_leds_ = new LedsI2c { CtBotConfig::LED_I2C_BUS - 1, CtBotConfig::LED_I2C_ADDR,
+        CtBotConfig::LED_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::LED_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
 
     if (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_ = new LCDisplay;

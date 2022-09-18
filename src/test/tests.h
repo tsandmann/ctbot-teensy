@@ -93,7 +93,7 @@ public:
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    FLASHMEM ~BlinkTest() = default;
+    FLASHMEM ~BlinkTest();
 };
 
 
@@ -153,7 +153,7 @@ public:
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    FLASHMEM ~LedTest() = default;
+    FLASHMEM ~LedTest();
 };
 
 
@@ -244,7 +244,7 @@ public:
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    FLASHMEM ~LcdTest() = default;
+    FLASHMEM ~LcdTest();
 };
 
 
@@ -300,7 +300,7 @@ public:
      * @brief Destructor to destroy task
      * @note Never called in current setup
      */
-    FLASHMEM ~EnaTest() = default;
+    FLASHMEM ~EnaTest();
 };
 
 

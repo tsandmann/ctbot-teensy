@@ -35,7 +35,7 @@ namespace arduino {
 
 class SerialIO {
 public:
-    SerialIO() {}
+    SerialIO() = default;
     virtual ~SerialIO() = default;
 
     bool begin(const uint32_t baud) {

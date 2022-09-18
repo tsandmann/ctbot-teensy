@@ -58,7 +58,6 @@ protected:
     uint8_t last_adc_res_;
     std::mutex adc_mutex_;
     uint16_t line_[2];
-    uint16_t ldr_[2];
     uint16_t border_[2];
     float bat_voltage_;
 
@@ -113,20 +112,6 @@ public:
      */
     auto get_border_r() const {
         return border_[1];
-    }
-
-    /**
-     * @return The last value of left LDR sensor
-     */
-    auto get_ldr_l() const {
-        return ldr_[0];
-    }
-
-    /**
-     * @return The last value of right LDR sensor
-     */
-    auto get_ldr_r() const {
-        return ldr_[1];
     }
 
     /**

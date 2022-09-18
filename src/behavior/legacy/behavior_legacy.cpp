@@ -515,8 +515,8 @@ void BehaviorLegacy::update_global_data() noexcept {
     legacy::sensLineL = p_sensors_->get_line_l();
     legacy::sensLineR = p_sensors_->get_line_r();
 
-    legacy::sensLDRL = p_sensors_->get_ldr_l();
-    legacy::sensLDRR = p_sensors_->get_ldr_r();
+    legacy::sensLDRL = 0;
+    legacy::sensLDRR = 0;
 
     legacy::sensTrans = p_sensors_->get_transport();
     legacy::sensError = 1;

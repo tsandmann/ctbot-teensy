@@ -40,6 +40,10 @@ namespace ctbot {
 
 std::list<SpeedControl*> SpeedControl::controller_list_;
 
+FLASHMEM SpeedControlBase::SpeedControlBase() : kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f }, setpoint_ {} {}
+
+FLASHMEM SpeedControlBase::~SpeedControlBase() = default;
+
 FLASHMEM SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     : direction_ { true }, input_ {}, output_ {}, p_pid_controller_ { new Pid { input_, output_, setpoint_, kp_, ki_, kd_, true } },
       wheel_encoder_ { wheel_enc }, motor_ { motor } {
@@ -54,7 +58,7 @@ FLASHMEM SpeedControl::SpeedControl(Encoder& wheel_enc, Motor& motor)
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 768UL, &controller);
+        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS_, TASK_PRIORITY_, TASK_STACK_SIZE_, &controller);
     }
 }
 
@@ -105,7 +109,7 @@ void SpeedControl::controller() {
 
 
 std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
-arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(6) };
+arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(CtBotConfig::UART_MOTOR_CTL) };
 uint16_t SpeedControlPico::motor_current_;
 uint32_t SpeedControlPico::crc_errors_;
 
@@ -113,12 +117,14 @@ SpeedControlPico::SpeedControlPico() : enc_speed_ {}, enc_counts_ {}, last_count
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        serial_.setRX(25); // GPIO_2
-        serial_.setTX(24); // GPIO_1
-        serial_.begin(1'000'000UL, 0, 8192, 64); // FIXME: config file
-        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS, 8, 2048UL, &controller);
+        serial_.setRX(CtBotConfig::UART_MOTOR_CTL_PIN_RX);
+        serial_.setTX(CtBotConfig::UART_MOTOR_CTL_PIN_TX);
+        serial_.begin(CtBotConfig::UART_MOTOR_CTL_BAUDRATE, 0, RX_BUF_SIZE_, TX_BUF_SIZE_);
+        CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS_, TASK_PRIORITY_, TASK_STACK_SIZE_, &controller);
     }
 }
+
+FLASHMEM SpeedControlPico::~SpeedControlPico() = default;
 
 void SpeedControlPico::controller() {
     if (!CtBot::get_instance().get_ready()) {

@@ -82,7 +82,6 @@ const char CtBotCli::get_[] { "get (g)\r\n"
                               "\tenc                          print current encoder's values\r\n"
                               "\tborder                       print current border sensor's values\r\n"
                               "\tline                         print current line sensor's values\r\n"
-                              "\tldr                          print current LDR sensor's values\r\n"
 
                               "\tspeed                        print current speed for left and right wheel\r\n"
                               "\tmotor                        print pwm for left and right motor\r\n"
@@ -327,8 +326,6 @@ void CtBotCli::init_commands() {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_border_l(), p_ctbot_->p_sensors_->get_border_r()));
         } else if (args.find(PSTR("line")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_line_l(), p_ctbot_->p_sensors_->get_line_r()));
-        } else if (args.find(PSTR("ldr")) == 0) {
-            p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_ldr_l(), p_ctbot_->p_sensors_->get_ldr_r()));
         } else if (args.find(PSTR("speed")) == 0) {
             const auto l { static_cast<int16_t>(p_ctbot_->p_speedcontrols_[0]->get_enc_speed()) };
             const auto r { static_cast<int16_t>(p_ctbot_->p_speedcontrols_[1]->get_enc_speed()) };
@@ -787,8 +784,8 @@ void CtBotCli::init_commands() {
                 CmdParser::split_args(args, bus, freq);
 
                 delete p_i2c;
-                p_i2c = new I2C_Service { bus, static_cast<uint32_t>(freq * 1000UL), CtBotConfig::I2C0_PIN_SDA,
-                    CtBotConfig::I2C0_PIN_SCL }; // FIXME: other bus pins
+                p_i2c = new I2C_Service { bus, static_cast<uint32_t>(freq * 1000UL), CtBotConfig::I2C1_PIN_SDA,
+                    CtBotConfig::I2C1_PIN_SCL }; // FIXME: other bus pins
                 return p_i2c != nullptr;
             } else if (args.find(PSTR("addr")) == 0) {
                 CmdParser::split_args(args, dev_addr);

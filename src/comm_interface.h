@@ -298,7 +298,7 @@ public:
     /**
      * @brief Destroy the CommInterfaceCmdParser object
      */
-    virtual ~CommInterfaceCmdParser() override = default;
+    FLASHMEM virtual ~CommInterfaceCmdParser() override;
 
     /**
      * @brief Set the character echo mode for console

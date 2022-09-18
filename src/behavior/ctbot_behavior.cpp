@@ -61,6 +61,8 @@ PROGMEM const char CtBotBehavior::usage_text_beh[] { "\r\n"
 
 CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
 
+CtBotBehavior::~CtBotBehavior() = default;
+
 void CtBotBehavior::setup(const bool set_ready) {
     if (DEBUG_LEVEL_ >= 4) {
         ::serialport_puts(PSTR("CtBotBehavior::setup()...\r\n"));

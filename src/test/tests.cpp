@@ -53,6 +53,8 @@ BlinkTest::BlinkTest(CtBot& ctbot) : ctbot_ { ctbot }, state_ {} {
     ctbot_.get_scheduler()->task_add(PSTR("blinktest"), TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
 
+BlinkTest::~BlinkTest() = default;
+
 void BlinkTest::run() {
     arduino::digitalWriteFast(arduino::LED_BUILTIN, state_);
     state_ = !state_;
@@ -62,6 +64,8 @@ void BlinkTest::run() {
 LedTest::LedTest(CtBot& ctbot) : ctbot_(ctbot) {
     ctbot_.get_scheduler()->task_add(PSTR("ledtest"), TASK_PERIOD_MS, 512UL, [this]() { return run(); });
 }
+
+LedTest::~LedTest() = default;
 
 void LedTest::run() {
     static uint8_t led_idx { 7 };
@@ -82,6 +86,8 @@ LcdTest::LcdTest(CtBot& ctbot) : ctbot_(ctbot), x_ {} {
     ctbot_.get_scheduler()->task_add(PSTR("lcdtest"), TASK_PERIOD_MS, [this]() { return run(); });
 }
 
+LcdTest::~LcdTest() = default;
+
 void LcdTest::run() {
     ctbot_.get_lcd()->set_cursor((x_ % 80) / 20 + 1, x_ % 20 + 1);
     ctbot_.get_lcd()->print(' ');
@@ -98,6 +104,8 @@ void LcdTest::run() {
 EnaTest::EnaTest(CtBot& ctbot) : ctbot_ { ctbot }, ena_idx_ {} {
     ctbot_.get_scheduler()->task_add(PSTR("enatest"), TASK_PERIOD_MS, [this]() { return run(); });
 }
+
+EnaTest::~EnaTest() = default;
 
 void EnaTest::run() {
     ctbot_.get_ena()->set(static_cast<EnaI2cTypes>(~(1 << ena_idx_++)));
@@ -123,7 +131,7 @@ void SensorLcdTest::run() {
     auto const p_sens { ctbot_.get_sensors() };
 
     ctbot_.get_lcd()->set_cursor(1, 1);
-    ctbot_.get_lcd()->printf(PSTR("P%03X %03X D=%4d %4d"), p_sens->get_ldr_l(), p_sens->get_ldr_r(), p_sens->get_distance_l(), p_sens->get_distance_r());
+    ctbot_.get_lcd()->printf(PSTR("D=%4d %4d"), p_sens->get_distance_l(), p_sens->get_distance_r());
 
     ctbot_.get_lcd()->set_cursor(2, 1);
     ctbot_.get_lcd()->printf(PSTR("B=%03X %03X L=%03X %03X "), p_sens->get_border_l(), p_sens->get_border_r(), p_sens->get_line_l(), p_sens->get_line_r());

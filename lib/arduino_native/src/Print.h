@@ -40,7 +40,7 @@ public:
 
 class Print {
 public:
-    Print() = default;
+    constexpr Print() = default;
     virtual size_t write(const uint8_t) = 0;
     virtual size_t write(const uint8_t*, size_t);
     virtual int availableForWrite() {

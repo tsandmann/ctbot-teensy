@@ -28,7 +28,6 @@
 #include "driver/serial_io.h"
 
 
-#ifdef CTBOT_SIMULATION
 namespace arduino {
 namespace posix {
 extern SerialIOStreamAdapter Serial;
@@ -43,7 +42,7 @@ extern SerialIOStreamAdapter Serial8;
 } // namespace posix
 
 static inline constexpr SerialIO& get_serial(const uint8_t port) {
-    if (port == ctbot::CtBotConfig::UART_FOR_CMD) {
+    if (port == 0 || port == ctbot::CtBotConfig::UART_WIFI) {
         return arduino::posix::Serial;
     }
 
@@ -68,4 +67,3 @@ static inline constexpr SerialIO& get_serial(const uint8_t port) {
     return arduino::posix::Serial;
 }
 } // namespace arduino
-#endif // CTBOT_SIMULATION

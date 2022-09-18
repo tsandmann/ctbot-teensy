@@ -56,21 +56,16 @@ TFTDisplay::TFTDisplay()
     arduino::analogWriteFrequency(CtBotConfig::TFT_BACKLIGHT_PIN, 915.527f);
     set_backlight(CtBotConfig::TFT_BACKLIGHT_LEVEL);
 
-    if (CtBotConfig::TFT_SPI == 0) {
-        arduino::SPI.setMOSI(CtBotConfig::SPI0_PIN_MOSI);
-        arduino::SPI.setMISO(CtBotConfig::SPI0_PIN_MISO);
-        arduino::SPI.setSCK(CtBotConfig::SPI0_PIN_SCK);
+    if (CtBotConfig::TFT_SPI == 1) {
+        arduino::SPI.setMOSI(CtBotConfig::SPI1_PIN_MOSI);
+        arduino::SPI.setMISO(CtBotConfig::SPI1_PIN_MISO);
+        arduino::SPI.setSCK(CtBotConfig::SPI1_PIN_SCK);
         arduino::SPI.setCS(CtBotConfig::TFT_CS_PIN);
-    } else if (CtBotConfig::TFT_SPI == 1) {
-        arduino::SPI1.setMOSI(CtBotConfig::SPI1_PIN_MOSI);
-        arduino::SPI1.setMISO(CtBotConfig::SPI1_PIN_MISO);
-        arduino::SPI1.setSCK(CtBotConfig::SPI1_PIN_SCK);
-        arduino::SPI1.setCS(CtBotConfig::TFT_CS_PIN);
     } else if (CtBotConfig::TFT_SPI == 2) {
-        arduino::SPI2.setMOSI(CtBotConfig::SPI2_PIN_MOSI);
-        arduino::SPI2.setMISO(CtBotConfig::SPI2_PIN_MISO);
-        arduino::SPI2.setSCK(CtBotConfig::SPI2_PIN_SCK);
-        arduino::SPI2.setCS(CtBotConfig::TFT_CS_PIN);
+        arduino::SPI1.setMOSI(CtBotConfig::SPI2_PIN_MOSI);
+        arduino::SPI1.setMISO(CtBotConfig::SPI2_PIN_MISO);
+        arduino::SPI1.setSCK(CtBotConfig::SPI2_PIN_SCK);
+        arduino::SPI1.setCS(CtBotConfig::TFT_CS_PIN);
     }
 
     p_display_->begin(CtBotConfig::TFT_SPI_FREQUENCY);

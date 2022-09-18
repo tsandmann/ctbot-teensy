@@ -72,7 +72,7 @@ public:
     using Ptr = std::unique_ptr<ResourceContainer>;
 
     FLASHMEM ResourceContainer() noexcept;
-    ~ResourceContainer() = default;
+    FLASHMEM ~ResourceContainer();
 
     template <class T>
     FLASHMEM typename std::enable_if<!std::is_base_of<ResourceContainer, T>::value, Resource<T>*>::type create_resource(

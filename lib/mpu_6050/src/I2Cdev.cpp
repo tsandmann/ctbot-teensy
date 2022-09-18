@@ -29,6 +29,8 @@
 
 I2C_Service* I2Cdev::i2c_ {};
 
+I2Cdev::I2Cdev() = default;
+
 bool I2Cdev::init(const uint8_t bus_id, const uint32_t freq) {
     if (i2c_ && i2c_->get_bus() == bus_id && i2c_->get_freq() == freq) {
         return true;

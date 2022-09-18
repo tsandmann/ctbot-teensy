@@ -121,7 +121,8 @@ protected:
 
 public:
     EnaI2c(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C0_PIN_SDA, CtBotConfig::I2C0_PIN_SCL }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
+              // FIXME: config of i2c bus
               CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG : EnaI2cTypes::NONE
           } {
         write_reg8(

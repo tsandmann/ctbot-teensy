@@ -185,7 +185,7 @@ public:
     */
     FLASHMEM LCD();
 
-    virtual ~LCD() = default;
+    FLASHMEM virtual ~LCD();
 
     /*!
     @function

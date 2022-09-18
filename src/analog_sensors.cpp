@@ -30,16 +30,10 @@
 
 namespace ctbot {
 
-AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, ldr_ { 0, 0 }, border_ { 0, 0 }, bat_voltage_ {} {
+AnalogSensors::AnalogSensors() : last_adc_res_ {}, line_ { 0, 0 }, border_ { 0, 0 }, bat_voltage_ {} {
     Scheduler::enter_critical_section();
     arduino::pinMode(CtBotConfig::LINE_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::LINE_R_PIN, arduino::INPUT);
-    if (CtBotConfig::LDR_L_PIN != 255) {
-        arduino::pinMode(CtBotConfig::LDR_L_PIN, arduino::INPUT);
-    }
-    if (CtBotConfig::LDR_R_PIN != 255) {
-        arduino::pinMode(CtBotConfig::LDR_R_PIN, arduino::INPUT);
-    }
     arduino::pinMode(CtBotConfig::BORDER_L_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BORDER_R_PIN, arduino::INPUT);
     arduino::pinMode(CtBotConfig::BAT_VOLTAGE_PIN, arduino::INPUT);
@@ -54,8 +48,6 @@ void AnalogSensors::update() {
 
         line_[0] = analog_read(CtBotConfig::LINE_L_PIN, 10);
         line_[1] = analog_read(CtBotConfig::LINE_R_PIN, 10);
-        ldr_[0] = analog_read(CtBotConfig::LDR_L_PIN, 10, 4);
-        ldr_[1] = analog_read(CtBotConfig::LDR_R_PIN, 10, 4);
         border_[0] = analog_read(CtBotConfig::BORDER_L_PIN, 10);
         border_[1] = analog_read(CtBotConfig::BORDER_R_PIN, 10);
         volt_raw = analog_read(CtBotConfig::BAT_VOLTAGE_PIN, BAT_ADC_RES, 16);

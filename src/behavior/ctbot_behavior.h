@@ -110,7 +110,7 @@ public:
     /**
      * @brief Destroy the CtBotBehavior instance
      */
-    virtual ~CtBotBehavior() override = default;
+    FLASHMEM virtual ~CtBotBehavior() override;
 
     /**
      * @see CtBot::setup()

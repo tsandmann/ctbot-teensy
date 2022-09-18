@@ -62,7 +62,7 @@ class FileImplStdio : public FileImpl {
     friend class SDClass;
 
 protected:
-    FileImplStdio() = default;
+    FileImplStdio();
     FileImplStdio(const std::string_view& file, const uint8_t mode);
 
     virtual ~FileImplStdio();

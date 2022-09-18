@@ -52,6 +52,44 @@ tests::ButtonTest* g_button_test {};
 tests::TaskWaitTest* g_wait_test {};
 } // namespace ctbot
 
+#ifdef PRINT_DEBUG_STUFF
+extern "C" {
+FLASHMEM void printf_debug_init() {
+    if (ctbot::CtBotConfig::MAINBOARD_REVISION >= 900'200) {
+        CCM_CCGR5 |= CCM_CCGR5_LPUART1(CCM_CCGR_ON); // turn on Serial6
+        CORE_PIN24_CONFIG = 2; // pin 24
+#if PRINT_DEBUG_STUFF == 2
+        LPUART1_BAUD = LPUART_BAUD_OSR(11) | LPUART_BAUD_SBR(1); // 2 MBaud
+#else
+        LPUART1_BAUD = LPUART_BAUD_OSR(25) | LPUART_BAUD_SBR(8); // ~115200 baud
+#endif
+        LPUART1_CTRL = LPUART_CTRL_TE;
+    } else {
+        CCM_CCGR0 |= CCM_CCGR0_LPUART3(CCM_CCGR_ON); // turn on Serial4
+        CORE_PIN17_CONFIG = 2; // pin 17
+#if PRINT_DEBUG_STUFF == 2
+        LPUART3_BAUD = LPUART_BAUD_OSR(11) | LPUART_BAUD_SBR(1); // 2 MBaud
+#else
+        LPUART3_BAUD = LPUART_BAUD_OSR(25) | LPUART_BAUD_SBR(8); // ~115200 baud
+#endif
+        LPUART3_CTRL = LPUART_CTRL_TE;
+    }
+}
+
+FLASHMEM void putchar_debug(char c) {
+    if (ctbot::CtBotConfig::MAINBOARD_REVISION >= 900'200) {
+        while (!(LPUART1_STAT & LPUART_STAT_TDRE)) {
+        }
+        LPUART1_DATA = c;
+    } else {
+        while (!(LPUART3_STAT & LPUART_STAT_TDRE)) {
+        }
+        LPUART3_DATA = c;
+    }
+}
+} // extern C
+#endif // PRINT_DEBUG_STUFF
+
 #ifndef EXC_PRINTF
 #define EXC_PRINTF(...) ::serialport_puts(__VA_ARGS__)
 #endif
@@ -246,6 +284,12 @@ FLASHMEM void serialport_flush() {
         arduino::Serial.flush();
     }
     freertos::delay_ms(100);
+}
+
+extern volatile uint32_t systick_millis_count;
+FLASHMEM void startup_middle_hook() {
+    /* force millis() to be 300 to skip startup delays */
+    systick_millis_count = 300;
 }
 } // extern C
 

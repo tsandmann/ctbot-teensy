@@ -101,7 +101,7 @@ Scheduler::~Scheduler() {
 }
 
 void Scheduler::stop() {
-    auto& serial { arduino::get_serial(CtBotConfig::UART_FOR_CMD) };
+    auto& serial { arduino::get_serial(CtBotConfig::UART_WIFI_FOR_CMD ? CtBotConfig::UART_WIFI : 0) };
     if (DEBUG_LEVEL_ > 2) {
         serial.write_direct(PSTR("Scheduler::stop()\r\n"));
     }
@@ -129,24 +129,24 @@ void Scheduler::stop() {
         serial.write_direct(PSTR("\r\n"));
     }
 
-#ifdef CTBOT_SIMULATION
-    if (DEBUG_LEVEL_ > 2) {
-        size_t num_tasks { ::uxTaskGetNumberOfTasks() };
-        std::vector<TaskStatus_t> task_data { num_tasks };
-        uint32_t total_runtime;
-        num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
-        for (size_t i {}; i < num_tasks; ++i) {
-            serial.write_direct(PSTR("Task \""));
-            serial.write_direct(task_data.at(i).pcTaskName);
-            serial.write_direct(PSTR("\" ("));
-            serial.write_direct(std::to_string(task_data.at(i).uxCurrentPriority).c_str());
-            serial.write_direct(PSTR(") in state "));
-            serial.write_direct(std::to_string(task_data.at(i).eCurrentState).c_str());
-            serial.write_direct(PSTR("\r\n"));
+    if (CtBotConfig::IS_SIMULATED) {
+        if (DEBUG_LEVEL_ > 2) {
+            size_t num_tasks { ::uxTaskGetNumberOfTasks() };
+            std::vector<TaskStatus_t> task_data { num_tasks };
+            uint32_t total_runtime;
+            num_tasks = ::uxTaskGetSystemState(task_data.data(), num_tasks, &total_runtime);
+            for (size_t i {}; i < num_tasks; ++i) {
+                serial.write_direct(PSTR("Task \""));
+                serial.write_direct(task_data.at(i).pcTaskName);
+                serial.write_direct(PSTR("\" ("));
+                serial.write_direct(std::to_string(task_data.at(i).uxCurrentPriority).c_str());
+                serial.write_direct(PSTR(") in state "));
+                serial.write_direct(std::to_string(task_data.at(i).eCurrentState).c_str());
+                serial.write_direct(PSTR("\r\n"));
+            }
         }
+        arduino::Serial.end();
     }
-    arduino::Serial.end();
-#endif // CTBOT_SIMULATION
 
     if (DEBUG_LEVEL_ > 1) {
         serial.write_direct(PSTR("Scheduler::stop(): calling vTaskEndScheduler()...\r\n"));

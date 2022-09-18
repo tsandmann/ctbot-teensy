@@ -31,6 +31,8 @@ namespace ctbot {
 
 ResourceContainer::ResourceContainer() noexcept : next_id_ { 1 } {}
 
+ResourceContainer::~ResourceContainer() = default;
+
 bool ResourceContainer::add_resource(const std::string_view& name, ResourceBase::Ptr&& p_res, bool active) {
     std::lock_guard<std::mutex> lock(mutex_);
 

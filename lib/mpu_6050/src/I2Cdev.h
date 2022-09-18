@@ -32,7 +32,7 @@ class I2Cdev {
     static I2C_Service* i2c_;
 
 public:
-    I2Cdev() = default;
+    I2Cdev();
 
     static bool init(const uint8_t bus_id, const uint32_t freq);
 

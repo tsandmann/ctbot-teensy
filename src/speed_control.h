@@ -43,15 +43,16 @@ namespace ctbot {
 
 class SpeedControlBase {
 protected:
+    friend class SimConnection;
+    static constexpr uint16_t MAX_SPEED_ { 450 }; /**< Maximum possible speed in mm/s */
+
     float kp_, ki_, kd_;
     float setpoint_; // value in %
 
 public:
-    static constexpr uint16_t MAX_SPEED { 450 }; /**< Maximum possible speed in mm/s */
+    FLASHMEM SpeedControlBase();
 
-    SpeedControlBase() : kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f }, setpoint_ {} {}
-
-    virtual ~SpeedControlBase() = default;
+    FLASHMEM virtual ~SpeedControlBase();
 
     /**
      * @brief Set a new desired speed
@@ -109,7 +110,9 @@ public:
  */
 class SpeedControl : public SpeedControlBase {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
+    static constexpr uint16_t TASK_PERIOD_MS_ { 10 }; /**< Scheduling period of task in ms */
+    static constexpr uint8_t TASK_PRIORITY_ { 8 };
+    static constexpr uint32_t TASK_STACK_SIZE_ { 768 };
 
     static std::list<SpeedControl*> controller_list_; /**< List of all SpeedControl instances created */
 
@@ -137,24 +140,24 @@ public:
      * @param[in] wheel_enc: Reference to wheel encoder to use for controller input (speed)
      * @param[in] motor: Reference to motor driver to use for controller output (PWM duty cycle)
      */
-    SpeedControl(Encoder& wheel_enc, Motor& motor);
+    FLASHMEM SpeedControl(Encoder& wheel_enc, Motor& motor);
 
     /**
      * @brief Destroy the Speed Control object
      */
-    virtual ~SpeedControl();
+    FLASHMEM virtual ~SpeedControl();
 
     virtual void set_speed(const float speed) override { // FIXME: move to base class?
         auto abs_speed(std::fabs(speed));
         if (abs_speed > 100.f) {
             abs_speed = 100.f;
         }
-        setpoint_ = abs_speed * (MAX_SPEED / 100.f); // speed is in %
+        setpoint_ = abs_speed * (MAX_SPEED_ / 100.f); // speed is in %
         direction_ = speed >= 0.f;
     }
 
     virtual float get_speed() const override { // FIXME: move to base class
-        return setpoint_ / (direction_ ? MAX_SPEED / 100.f : MAX_SPEED / -100.f); // convert speed to %
+        return setpoint_ / (direction_ ? MAX_SPEED_ / 100.f : MAX_SPEED_ / -100.f); // convert speed to %
     }
 
     /**
@@ -205,7 +208,11 @@ protected:
     } __attribute__((__packed__));
 
 
-    static constexpr uint16_t TASK_PERIOD_MS { 10 };
+    static constexpr uint16_t TASK_PERIOD_MS_ { 10 };
+    static constexpr uint8_t TASK_PRIORITY_ { 8 };
+    static constexpr uint32_t TASK_STACK_SIZE_ { 2048 };
+    static constexpr size_t RX_BUF_SIZE_ { 8192 };
+    static constexpr size_t TX_BUF_SIZE_ { 64 };
 
 public:
     static void controller();
@@ -220,7 +227,7 @@ public:
 
     FLASHMEM SpeedControlPico();
 
-    virtual ~SpeedControlPico() = default;
+    FLASHMEM virtual ~SpeedControlPico();
 
     virtual void set_speed(const float speed) override { // FIXME: move to base class?
         setpoint_ = speed * 0.75f;
