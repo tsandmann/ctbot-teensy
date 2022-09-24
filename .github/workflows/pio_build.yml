@@ -5,7 +5,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
@@ -23,11 +23,6 @@ jobs:
         key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
     - name: Set up Python
       uses: actions/setup-python@v2
-    - name: Set up GCC 11
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: 11
-        platform: x64
     - name: Install Boost Library
       run: |
         sudo apt-get update && sudo apt-get install -y libboost-all-dev
@@ -35,5 +30,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
+    - name: Update PlatformIO
+      run: pio pkg update
     - name: Run PlatformIO
       run: pio run -e teensy35 -e teensy36 -e teensy40 -e teensy41 -e linux
