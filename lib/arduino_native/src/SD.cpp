@@ -101,8 +101,10 @@ uint64_t FileImplStdio::size() {
 }
 
 void FileImplStdio::close() {
-    std::fclose(p_file_);
-    p_file_ = nullptr;
+    if (p_file_) {
+        std::fclose(p_file_);
+        p_file_ = nullptr;
+    }
 }
 
 
