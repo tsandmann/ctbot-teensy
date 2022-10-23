@@ -58,8 +58,9 @@ protected:
 
     static constexpr auto ENA_MASK_INIT = EnaI2cTypes::NONE; /*EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT; */
     static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
-    static constexpr auto ENA_MASK_PWM = LedTypesEna::NONE;
-    static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna::ENC_L | LedTypesEna::ENC_R;
+    static constexpr auto ENA_MASK_PWM = LedTypesEna<>::NONE;
+    static constexpr auto ENA_MASK_PWM_INIT =
+        CtBotConfig::MAINBOARD_REVISION >= 9'002 ? LedTypesEna<>::NONE : static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L | LedTypesEna_9000::ENC_R);
 
     CtBot& ctbot_;
     EnaI2c& ena_;

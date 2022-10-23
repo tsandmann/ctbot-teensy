@@ -49,11 +49,11 @@ class AnalogSensors {
 protected:
     static constexpr auto ENA_MASK_INIT = EnaI2cTypes::NONE;
     static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
-    static constexpr auto ENA_MASK_PWM = LedTypesEna::BORDER_L | LedTypesEna::BORDER_R | LedTypesEna::LINE_L | LedTypesEna::LINE_R;
-    static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna::NONE;
+    static constexpr auto ENA_MASK_PWM = LedTypesEna<>::BORDER_L | LedTypesEna<>::BORDER_R | LedTypesEna<>::LINE_L | LedTypesEna<>::LINE_R;
+    static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna<>::NONE;
     static constexpr uint8_t BAT_ADC_RES { 12 };
-    static constexpr uint32_t BAT_VOLTAGE_R1 { 100'392 };
-    static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 }; // FIXME: calibrated value
+    static constexpr uint32_t BAT_VOLTAGE_R1 { 100'000 + CtBotConfig::VOLTAGE_MEASURE_OFFSETS[0] };
+    static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 + +CtBotConfig::VOLTAGE_MEASURE_OFFSETS[1] }; // FIXME: calibrated value
 
     uint8_t last_adc_res_;
     std::mutex adc_mutex_;

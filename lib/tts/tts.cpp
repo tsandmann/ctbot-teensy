@@ -29,6 +29,12 @@ TTS::TTS() : AudioStream(0, nullptr), default_pitch_ { 4 }, task_running_ { true
 
     free_rtos_std::gthr_freertos::set_priority(task_handle_, TTS_TASK_PRIORITY);
     free_rtos_std::gthr_freertos::set_name(task_handle_, "speak");
+
+    prepare_buffer();
+    for (size_t i {}; i < AUDIO_BLOCK_SAMPLES; ++i) {
+        buffer_->data[buffer_idx_++] = 0;
+    }
+    commit_buffer();
 }
 
 TTS::~TTS() {

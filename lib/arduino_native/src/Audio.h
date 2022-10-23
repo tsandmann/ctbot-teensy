@@ -58,6 +58,8 @@ public:
 
     void stop() {}
 
+    void togglePlayPause() {}
+
     bool isPlaying() {
         return false;
     }
@@ -80,6 +82,11 @@ public:
 class AudioOutputI2S : public AudioStream {
 public:
     AudioOutputI2S() : AudioStream(0, nullptr) {}
+};
+
+class AudioOutputI2S2 : public AudioStream {
+public:
+    AudioOutputI2S2() : AudioStream(0, nullptr) {}
 };
 
 class AudioMixer4 : public AudioStream {

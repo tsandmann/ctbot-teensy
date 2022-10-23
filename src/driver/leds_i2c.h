@@ -29,12 +29,13 @@
 
 #include <array>
 #include <cstdint>
+#include <type_traits>
 
 
 namespace ctbot {
 
 /**
- * @brief Enum class for all LEDs
+ * @brief Enum class for LEDs
  *
  * @startuml{LedTypes.png}
  *  !include leds.puml
@@ -83,8 +84,9 @@ inline constexpr LedTypes operator~(LedTypes rhs) {
     return static_cast<LedTypes>(~static_cast<uint8_t>(rhs));
 }
 
+
 /**
- * @brief Enum class for all LEDs
+ * @brief Enum class for LEDs ENA on HW 0.9.0
  *
  * @startuml{LedTypesEna.png}
  *  !include leds.puml
@@ -92,7 +94,7 @@ inline constexpr LedTypes operator~(LedTypes rhs) {
  *  skinparam classAttributeIconSize 0
  * @enduml
  */
-enum class LedTypesEna : uint8_t {
+enum class LedTypesEna_9000 : uint8_t {
     NONE = 0,
     ENC_L = 1 << 0,
     ENC_R = 1 << 1,
@@ -105,33 +107,87 @@ enum class LedTypesEna : uint8_t {
 };
 
 /**
- * @brief OR operator for LedTypes
+ * @brief OR operator for LedTypesEna_9000
  * @param[in] lhs: Left hand side operand
  * @param[in] rhs: Right hand side operand
  * @return lhs OR rhs
  */
-inline constexpr LedTypesEna operator|(LedTypesEna lhs, LedTypesEna rhs) {
-    return static_cast<LedTypesEna>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+inline constexpr LedTypesEna_9000 operator|(LedTypesEna_9000 lhs, LedTypesEna_9000 rhs) {
+    return static_cast<LedTypesEna_9000>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 
 /**
- * @brief AND operator for LedTypes
+ * @brief AND operator for LedTypesEna_9000
  * @param[in] lhs: Left hand side operand
  * @param[in] rhs: Right hand side operand
  * @return lhs AND rhs
  */
-inline constexpr LedTypesEna operator&(LedTypesEna lhs, LedTypesEna rhs) {
-    return static_cast<LedTypesEna>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+inline constexpr LedTypesEna_9000 operator&(LedTypesEna_9000 lhs, LedTypesEna_9000 rhs) {
+    return static_cast<LedTypesEna_9000>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 
 /**
- * @brief NOT operator for LedTypes
+ * @brief NOT operator for LedTypesEna_9000
  * @param[in] rhs: Right hand side operand
  * @return NOT rhs
  */
-inline constexpr LedTypesEna operator~(LedTypesEna rhs) {
-    return static_cast<LedTypesEna>(~static_cast<uint8_t>(rhs));
+inline constexpr LedTypesEna_9000 operator~(LedTypesEna_9000 rhs) {
+    return static_cast<LedTypesEna_9000>(~static_cast<uint8_t>(rhs));
 }
+
+
+/**
+ * @brief Enum class for LEDs ENA on HW 0.9.2
+ *
+ * @startuml{LedTypesEna.png}
+ *  !include leds.puml
+ *  set namespaceSeparator ::
+ *  skinparam classAttributeIconSize 0
+ * @enduml
+ */
+enum class LedTypesEna_9002 : uint8_t {
+    NONE = 0,
+    BORDER_L = 1 << 0,
+    BORDER_R = 1 << 1,
+    EXTENSION_2 = 1 << 2,
+    EXTENSION_1 = 1 << 3,
+    LINE_L = 1 << 4,
+    LINE_R = 1 << 5,
+    TFT_BACKL = 1 << 6,
+    EXTENSION_3 = 1 << 7,
+};
+
+/**
+ * @brief OR operator for LedTypesEna_9002
+ * @param[in] lhs: Left hand side operand
+ * @param[in] rhs: Right hand side operand
+ * @return lhs OR rhs
+ */
+inline constexpr LedTypesEna_9002 operator|(LedTypesEna_9002 lhs, LedTypesEna_9002 rhs) {
+    return static_cast<LedTypesEna_9002>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+/**
+ * @brief AND operator for LedTypesEna_9002
+ * @param[in] lhs: Left hand side operand
+ * @param[in] rhs: Right hand side operand
+ * @return lhs AND rhs
+ */
+inline constexpr LedTypesEna_9002 operator&(LedTypesEna_9002 lhs, LedTypesEna_9002 rhs) {
+    return static_cast<LedTypesEna_9002>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
+
+/**
+ * @brief NOT operator for LedTypesEna_9002
+ * @param[in] rhs: Right hand side operand
+ * @return NOT rhs
+ */
+inline constexpr LedTypesEna_9002 operator~(LedTypesEna_9002 rhs) {
+    return static_cast<LedTypesEna_9002>(~static_cast<uint8_t>(rhs));
+}
+
+template <uint32_t HW_REV = CtBotConfig::MAINBOARD_REVISION>
+using LedTypesEna = std::conditional_t<(HW_REV > 9'000), LedTypesEna_9002, LedTypesEna_9000>;
 
 
 template <class T>
@@ -153,9 +209,9 @@ class LedsI2cBase {
 protected:
     std::array<uint8_t, 8> pwm_dt_;
 
-    FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq) // FIXME: config for i2c bus
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL }, i2c_addr_ { i2c_addr },
-          status_ { static_cast<T>(LedTypesEna::NONE) }, init_ {} { // FIXME: read initial status from device
+    FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL } /* FIXME: config for i2c bus */, i2c_addr_ { i2c_addr },
+          status_ { static_cast<T>(LedTypesEna<>::NONE) }, init_ {} { // FIXME: read initial status from device
         if (write_reg8(MODE1_REG, 0)) {
             return;
         }
@@ -275,12 +331,13 @@ public:
  *  skinparam classAttributeIconSize 0
  * @enduml
  */
-class LedsI2cEna : public LedsI2cBase<LedTypesEna> {
+template <uint32_t HW_REV = CtBotConfig::MAINBOARD_REVISION>
+class LedsI2cEna : public LedsI2cBase<LedTypesEna<HW_REV>> {
 public:
     /**
      * @brief Construct a new Leds object
      */
-    LedsI2cEna(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq) : LedsI2cBase { i2c_bus, i2c_addr, i2c_freq } {}
+    LedsI2cEna(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq) : LedsI2cBase<LedTypesEna<HW_REV>> { i2c_bus, i2c_addr, i2c_freq } {}
 };
 
 } // namespace ctbot

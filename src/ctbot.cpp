@@ -103,6 +103,7 @@ FLASHMEM static int lua_wrapper_print(lua_State* L) {
 } // extern C
 
 namespace ctbot {
+static DMAMEM audio_block_t g_audio_mem[CtBotConfig::AUDIO_MEMORY_BLOCKS];
 TaskHandle_t CtBot::audio_task_ {};
 
 CtBot& CtBot::get_instance() {
@@ -118,7 +119,7 @@ FLASHMEM CtBot::CtBot()
       p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, p_lua_ {} {}
 
 CtBot::~CtBot() {
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("CtBot::~CtBot(): destroying CtBot instance.\r\n"));
     }
 }
@@ -131,27 +132,36 @@ __attribute__((noinline, used)) void terminate_handler() {
     configASSERT(0);
 }
 
+extern "C" uint8_t external_psram_size;
 FLASHMEM void CtBot::setup(const bool set_ready) {
     if (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup()...\r\n"));
     }
     std::set_terminate(terminate_handler);
     std::atexit([]() FLASHMEM {
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("exit() called.\r\n"));
         }
 
         CtBot* ptr = &get_instance();
         delete ptr;
 
-        if (DEBUG_LEVEL_ > 0) {
+        if constexpr (DEBUG_LEVEL_ > 0) {
             ::serialport_puts(PSTR("exit(): stopping scheduler, bye.\r\n"));
         }
 
         Scheduler::stop();
     });
 
-    if (DEBUG_LEVEL_ > 2) {
+#if defined ARDUINO_TEENSY41 && !defined TEENSY_NO_EXTRAM // FIXME: abstraction
+    if (external_psram_size) {
+        constexpr auto divider { calc_flexspi2_divider(CtBotConfig::PSRAM_FREQUENCY_MHZ) };
+        CCM_CBCMR =
+            (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(divider) | CCM_CBCMR_FLEXSPI2_CLK_SEL(3);
+    }
+#endif // ARDUINO_TEENSY41
+
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): creating scheduler...\r\n"));
     }
     p_scheduler_ = new Scheduler;
@@ -160,7 +170,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_scheduler_->task_register(PSTR("YIELD"));
     p_scheduler_->task_register(PSTR("EVENT"));
 
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): tasks registered.\r\n"));
     }
 
@@ -169,7 +179,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
-    if (CtBotConfig::UART_WIFI_FOR_CMD) {
+    if constexpr (CtBotConfig::UART_WIFI_FOR_CMD) {
         p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_WIFI);
         configASSERT(p_serial_wifi_);
         p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
@@ -194,41 +204,43 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     configASSERT(p_logger_);
     p_logger_->add_target(p_comm_);
 
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): comm services inited.\r\n"));
     }
 
     p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS - 1, CtBotConfig::ENA_I2C_ADDR,
         CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_);
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): ENA created.\r\n"));
     }
-    p_ena_pwm_ = new LedsI2cEna { CtBotConfig::ENA_PWM_I2C_BUS - 1, CtBotConfig::ENA_PWM_I2C_ADDR,
+    p_ena_pwm_ = new LedsI2cEna<> { CtBotConfig::ENA_PWM_I2C_BUS - 1, CtBotConfig::ENA_PWM_I2C_ADDR,
         CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_pwm_);
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): ENA PWM created.\r\n"));
     }
-    p_ena_pwm_->set_pwm(LedTypesEna::ENC_L | LedTypesEna::ENC_R, 128);
-    p_ena_pwm_->off(LedTypesEna::ENC_L | LedTypesEna::ENC_R);
-    p_ena_pwm_->on(LedTypesEna::ENC_L | LedTypesEna::ENC_R);
-    if (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): ENA inited.\r\n"));
+    if constexpr (CtBotConfig::MAINBOARD_REVISION == 9'000) {
+        p_ena_pwm_->set_pwm(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R), 128);
+        p_ena_pwm_->off(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R));
+        p_ena_pwm_->on(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R));
+        if constexpr (DEBUG_LEVEL_ > 2) {
+            ::serialport_puts(PSTR("CtBot::setup(): ENA inited.\r\n"));
+        }
     }
 
     p_sensors_ = new Sensors { *this };
     configASSERT(p_sensors_);
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): sensors created.\r\n"));
     }
 
     p_sensors_->enable_sensors();
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): sensors enabled.\r\n"));
     }
 
-    if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
+    if constexpr (CtBotConfig::EXTERNAL_SPEEDCTRL) {
         p_speedcontrols_[0] = new SpeedControlExternal {};
         p_speedcontrols_[1] = new SpeedControlExternal {};
     } else {
@@ -240,90 +252,111 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 
     p_servos_[0] = new Servo { CtBotConfig::SERVO_1_PIN };
-    if (CtBotConfig::SERVO_2_PIN != 255) {
+    if constexpr (CtBotConfig::SERVO_2_PIN != 255) {
         p_servos_[1] = new Servo { CtBotConfig::SERVO_2_PIN };
     }
 
     p_leds_ = new LedsI2c { CtBotConfig::LED_I2C_BUS - 1, CtBotConfig::LED_I2C_ADDR,
         CtBotConfig::LED_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::LED_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
 
-    if (CtBotConfig::LCD_AVAILABLE) {
+    if constexpr (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_ = new LCDisplay;
+        configASSERT(p_lcd_);
     }
-    if (CtBotConfig::TFT_AVAILABLE) {
-        p_tft_ = new TFTDisplay;
-    } else if (CtBotConfig::TFT_BACKLIGHT_PIN != 255) {
-        arduino::pinMode(CtBotConfig::TFT_BACKLIGHT_PIN, arduino::OUTPUT);
-        arduino::digitalWriteFast(CtBotConfig::TFT_BACKLIGHT_PIN, true);
+    if constexpr (CtBotConfig::TFT_AVAILABLE) {
+        p_tft_ = new TFTDisplay { *p_ena_pwm_ };
+        configASSERT(p_tft_);
+        p_tft_->set_backlight(CtBotConfig::TFT_BACKLIGHT_LEVEL);
+        p_scheduler_->task_register(PSTR("TFT Svc"), true);
     }
 
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): SD-card init...\r\n"));
     }
-    if (CtBotConfig::SDCARD_AVAILABLE) {
+    if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
         if (SD.sdfs.begin(SdioConfig(CtBotConfig::SDCARD_USE_DMA ? DMA_SDIO : FIFO_SDIO))) {
             p_parameter_ = new ParameterStorage { SD, PSTR("ctbot.jsn") };
             configASSERT(p_parameter_);
-            p_logger_file_ = new LoggerTargetFile { SD, PSTR("logs.txt"), this };
-            configASSERT(p_logger_file_);
-            p_logger_->add_target(p_logger_file_);
+            if constexpr (CtBotConfig::LOG_TO_SDCARD_AVAILABLE) {
+                p_logger_file_ = new LoggerTargetFile { SD, PSTR("logs.txt"), this };
+                configASSERT(p_logger_file_);
+                p_logger_->add_target(p_logger_file_);
+            }
         } else {
             p_logger_->log(PSTR("SD.sdfs.begin() failed.\r\n"), true);
         }
     }
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): SD Card init done.\r\n"));
     }
 
-
-    if (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         portENTER_CRITICAL();
+        AudioStream::initialize_memory(g_audio_mem, CtBotConfig::AUDIO_MEMORY_BLOCKS);
+
         p_play_wav_ = new AudioPlaySdWav;
         configASSERT(p_play_wav_);
         p_tts_ = new TTS;
         configASSERT(p_tts_);
-        if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
-            p_audio_output_i2s_ = new AudioOutputI2S;
+        if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+            if constexpr (CtBotConfig::MAINBOARD_REVISION > 9'000) {
+#if defined ARDUINO_TEENSY35 || defined ARDUINO_TEENSY36
+                using AudioOutputI2S2 = AudioOutputI2S;
+#endif
+                p_audio_output_i2s_ = new AudioOutputI2S2;
+            } else {
+                p_audio_output_i2s_ = new AudioOutputI2S;
+            }
             configASSERT(p_audio_output_i2s_);
         }
-        if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+        if constexpr (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
             p_audio_output_dac_ = new AudioOutputAnalog;
             configASSERT(p_audio_output_dac_);
         }
-        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+        p_audio_mixer_.push_back(new AudioMixer4);
+        configASSERT(*p_audio_mixer_.rbegin());
+        if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+            p_audio_mixer_.push_back(new AudioMixer4);
+            configASSERT(*p_audio_mixer_.rbegin());
+        }
+        if constexpr (CtBotConfig::AUDIO_TEST_AVAILABLE) {
             p_audio_sine_ = new AudioSynthWaveformSine;
             configASSERT(p_audio_sine_);
             p_audio_sine_->frequency(0.f);
             p_audio_sine_->amplitude(.5f);
+
+            p_audio_conn_.push_back(new AudioConnection { *p_audio_sine_, 0, *p_audio_mixer_[0], 3 });
+            if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+                p_audio_conn_.push_back(new AudioConnection { *p_audio_sine_, 0, *p_audio_mixer_[1], 3 });
+            }
+        }
+        p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[0], 2 });
+        if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+            p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[1], 2 });
+        }
+        p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 0, *p_audio_mixer_[0], 0 });
+        if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+            p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 1, *p_audio_mixer_[1], 0 });
+        }
+        if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+            p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[0], 0, *p_audio_output_i2s_, 0 });
+            if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+                p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[1], 0, *p_audio_output_i2s_, 1 });
+            }
+        } else if constexpr (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+            p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[0], 0, *p_audio_output_dac_, 0 });
         }
 
-        for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
-            p_audio_mixer_.push_back(new AudioMixer4);
-            configASSERT(*p_audio_mixer_.rbegin());
+        for (auto& e : p_audio_conn_) {
+            configASSERT(e);
         }
+
         for (auto& e : p_audio_mixer_) {
             e->gain(0, 0.1f);
             e->gain(1, 0.1f);
             e->gain(2, 0.1f);
+            e->gain(3, 0.1f);
         }
-
-        for (uint8_t i {}; i < CtBotConfig::AUDIO_CHANNELS; ++i) {
-            p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, i, *p_audio_mixer_[i], 0 });
-            configASSERT(*p_audio_conn_.rbegin());
-            if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
-                p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_i2s_, i });
-            } else if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
-                p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[i], 0, *p_audio_output_dac_, i });
-            }
-            configASSERT(*p_audio_conn_.rbegin());
-        }
-        p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[0], 1 });
-        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
-            p_audio_conn_.push_back(new AudioConnection { *p_audio_sine_, 0, *p_audio_mixer_[0], 2 });
-            configASSERT(*p_audio_conn_.rbegin());
-        }
-
-        AudioMemory(CtBotConfig::AUDIO_CHANNELS * 2 + CtBotConfig::AUDIO_TEST_AVAILABLE ? 4 : 2);
 
         get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 4096, [this]() {
             while (get_ready()) {
@@ -358,18 +391,18 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     p_scheduler_->task_register(PSTR("I2C Svc"));
 
-    if (CtBotConfig::LUA_AVAILABLE) {
+    if constexpr (CtBotConfig::LUA_AVAILABLE) {
         p_lua_ = new LuaWrapper;
         configASSERT(p_lua_);
         lua_register(p_lua_->get_state(), PSTR("print"), lua_wrapper_print);
     }
 
     p_cli_->init_commands();
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): p_cli_->init_commands() done.\r\n"));
     }
 
-    if (CtBotConfig::DATE_TIME_AVAILABLE) {
+    if constexpr (CtBotConfig::DATE_TIME_AVAILABLE) {
         update_clock();
         p_clock_timer_ = ::xTimerCreate(PSTR("clock_t"), pdMS_TO_TICKS(5'000UL), true, this, [](TimerHandle_t handle) {
             auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
@@ -406,7 +439,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         },
         false);
 
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         p_logger_->begin();
         p_logger_->log(PSTR("ct-Bot init done.\r\n"), true);
     }
@@ -418,7 +451,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     ready_ = set_ready;
 
-    if (DEBUG_LEVEL_ > 2) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup() done.\r\n"));
     }
 }
@@ -526,7 +559,7 @@ void CtBot::run() {
 }
 
 FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
-    if (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         if (p_play_wav_->isPlaying()) {
             p_logger_->log(PSTR("CtBot::play_wav(): Still playing, abort.\r\n"), false);
             return false;
@@ -556,11 +589,11 @@ FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
 FLASHMEM void CtBot::shutdown() {
     ready_ = false;
 
-    if (CtBotConfig::LUA_AVAILABLE) {
+    if constexpr (CtBotConfig::LUA_AVAILABLE) {
         delete p_lua_;
     }
 
-    if (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         p_play_wav_->stop();
     }
 
@@ -581,14 +614,14 @@ FLASHMEM void CtBot::shutdown() {
     if (p_servos_[1]) {
         p_servos_[1]->disable();
     }
-    if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::BUTTON_TEST_AVAILABLE || CtBotConfig::TFT_TEST_AVAILABLE) {
         p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("TFT-Test")));
     }
-    if (CtBotConfig::LCD_AVAILABLE) {
+    if constexpr (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_->clear();
         p_lcd_->set_backlight(false);
     }
-    if (CtBotConfig::TFT_AVAILABLE) {
+    if constexpr (CtBotConfig::TFT_AVAILABLE) {
         p_tft_->clear();
         p_tft_->set_backlight(0);
     }
@@ -597,38 +630,38 @@ FLASHMEM void CtBot::shutdown() {
 
     ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
 
-    if (CtBotConfig::AUDIO_AVAILABLE) {
-        if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
+        if constexpr (CtBotConfig::AUDIO_TEST_AVAILABLE) {
             delete p_audio_sine_;
-            if (DEBUG_LEVEL_ > 1) {
+            if constexpr (DEBUG_LEVEL_ > 1) {
                 ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_sine_ deleted.\r\n"));
             }
         }
         p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("audio")));
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("CtBot::shutdown(): audio task removed.\r\n"));
         }
         for (auto& e : p_audio_conn_) {
             delete e;
         }
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_conn_ deleted.\r\n"));
         }
 
         for (auto& e : p_audio_mixer_) {
             delete e;
         }
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_mixer_ deleted.\r\n"));
         }
 
-        if (CtBotConfig::AUDIO_I2S_AVAILABLE) {
+        if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
             delete p_audio_output_i2s_;
-            if (DEBUG_LEVEL_ > 1) {
+            if constexpr (DEBUG_LEVEL_ > 1) {
                 ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_i2s_ deleted.\r\n"));
             }
         }
-        if (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
+        if constexpr (CtBotConfig::AUDIO_ANALOG_AVAILABLE) {
             delete p_audio_output_dac_;
             if (DEBUG_LEVEL_ > 1) {
                 ::serialport_puts(PSTR("CtBot::shutdown(): p_audio_output_dac_ deleted.\r\n"));
@@ -636,75 +669,77 @@ FLASHMEM void CtBot::shutdown() {
         }
 
         delete p_tts_;
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("CtBot::shutdown(): p_tts_ deleted.\r\n"));
         }
 
         delete p_play_wav_;
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("CtBot::shutdown(): p_play_wav_ deleted.\r\n"));
         }
     }
 
-    if (CtBotConfig::SDCARD_AVAILABLE) {
-        delete p_logger_file_;
-        if (DEBUG_LEVEL_ > 1) {
-            ::serialport_puts(PSTR("p_logger_file_ deleted.\r\n"));
+    if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
+        if constexpr (CtBotConfig::LOG_TO_SDCARD_AVAILABLE) {
+            delete p_logger_file_;
+            if constexpr (DEBUG_LEVEL_ > 1) {
+                ::serialport_puts(PSTR("p_logger_file_ deleted.\r\n"));
+            }
         }
         delete p_parameter_;
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("p_parameter_ deleted.\r\n"));
         }
     }
-    if (CtBotConfig::TFT_AVAILABLE) {
+    if constexpr (CtBotConfig::TFT_AVAILABLE) {
         delete p_tft_;
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("p_tft_ deleted.\r\n"));
         }
     }
-    if (CtBotConfig::LCD_AVAILABLE) {
+    if constexpr (CtBotConfig::LCD_AVAILABLE) {
         delete p_lcd_;
-        if (DEBUG_LEVEL_ > 1) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
             ::serialport_puts(PSTR("p_lcd_ deleted.\r\n"));
         }
     };
     delete p_leds_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_leds_ deleted.\r\n"));
     }
     delete p_servos_[0];
     delete p_servos_[1];
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_servos_ deleted.\r\n"));
     }
     delete p_speedcontrols_[0];
     delete p_speedcontrols_[1];
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_speedcontrols_ deleted.\r\n"));
     }
     delete p_motors_[0];
     delete p_motors_[1];
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_motors_ deleted.\r\n"));
     }
     delete p_sensors_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_sensors_ deleted.\r\n"));
     }
     delete p_logger_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_logger_ deleted.\r\n"));
     }
     delete p_comm_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_comm_ deleted.\r\n"));
     }
     delete p_parser_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_parser_ deleted.\r\n"));
     }
     delete p_scheduler_;
-    if (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_scheduler_ deleted.\r\n"));
     }
 
@@ -725,7 +760,7 @@ FLASHMEM void CtBot::add_post_hook(const std::string& name, std::function<void()
 FLASHMEM void CtBot::update_clock() {
     std::time_t now;
     std::time(&now);
-    if (DEBUG_LEVEL_ >= 4) {
+    if constexpr (DEBUG_LEVEL_ >= 4) {
         p_comm_->debug_printf<false>(PSTR("CtBot::update_clock(): now=%d%03d\r\n"), static_cast<uint32_t>(now / 1'000L), static_cast<uint32_t>(now % 1'000L));
     }
     if (now > 1'600'000'000LL) { // 2020-09
@@ -734,7 +769,7 @@ FLASHMEM void CtBot::update_clock() {
             xTimerDelete(p_clock_timer_, 0);
             p_clock_timer_ = nullptr;
 
-            if (DEBUG_LEVEL_ >= 4) {
+            if constexpr (DEBUG_LEVEL_ >= 4) {
                 p_comm_->debug_print(PSTR("CtBot::update_clock(): timer disabled\r\n"), false);
             }
         }

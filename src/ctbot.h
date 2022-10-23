@@ -26,6 +26,7 @@
 
 #include "comm_interface.h"
 #include "ctbot_config.h"
+#include "driver/leds_i2c.h"
 
 #include "arduino_freertos.h"
 
@@ -39,7 +40,7 @@
 
 
 class AudioOutputAnalog;
-class AudioOutputI2S;
+class AudioStream;
 class AudioPlaySdWav;
 class AudioSynthWaveformSine;
 class CtBotCli;
@@ -61,8 +62,6 @@ class Motor;
 class SpeedControlBase;
 class Servo;
 class EnaI2c;
-class LedsI2c;
-class LedsI2cEna;
 class LCDisplay;
 class TFTDisplay;
 class CmdParser;
@@ -77,6 +76,10 @@ class LoggerTargetFile;
  */
 class CtBot {
     static constexpr uint8_t DEBUG_LEVEL_ { 1 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose
+
+    static consteval auto calc_flexspi2_divider(uint32_t freq_mhz) {
+        return (freq_mhz <= 132 && freq_mhz >= 66) ? (528 + (freq_mhz - 1)) / freq_mhz - 1 : (freq_mhz < 66 ? 7 : 3);
+    }
 
 protected:
     friend class CtBotCli;
@@ -95,7 +98,7 @@ protected:
     SpeedControlBase* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     EnaI2c* p_ena_;
-    LedsI2cEna* p_ena_pwm_;
+    LedsI2cEna<>* p_ena_pwm_;
     LedsI2c* p_leds_; /**< Pointer to led instance */
     LCDisplay* p_lcd_; /**< Pointer to LC display instance */
     TFTDisplay* p_tft_; /**< Pointer to TFT display instance */
@@ -108,7 +111,7 @@ protected:
     LoggerTargetFile* p_logger_file_;
     ParameterStorage* p_parameter_;
     AudioOutputAnalog* p_audio_output_dac_;
-    AudioOutputI2S* p_audio_output_i2s_;
+    AudioStream* p_audio_output_i2s_;
     AudioSynthWaveformSine* p_audio_sine_;
     AudioPlaySdWav* p_play_wav_;
     TTS* p_tts_;

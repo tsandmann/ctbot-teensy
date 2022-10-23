@@ -67,14 +67,11 @@ void ButtonTest::initialize_buttons() {
     buttons_.emplace_back(new Adafruit_GFX_Button);
     buttons_[3]->initButtonUL(
         p_tft->get_context(), 0, 3 * BUTTON_H, BUTTON_W, BUTTON_H, TFTColors::BLACK, TFTColors::NAVY, TFTColors::WHITE, const_cast<char*>(PSTR("Tasks")), 2);
-
-    draw_buttons();
 }
 
 void ButtonTest::draw_buttons() {
-    ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
     for (auto& b : buttons_) {
-        b->drawButton();
+        ctbot_.get_tft()->draw_button(b);
     }
 }
 
@@ -96,9 +93,7 @@ ButtonTest::Buttons ButtonTest::button_release() {
     int16_t y { -1 };
     int16_t z { -1 };
 
-    if (ctbot_.get_tft()->touched()) {
-        ctbot_.get_tft()->get_touch_point(x, y, z);
-    }
+    ctbot_.get_tft()->get_touch_point(x, y, z);
 
     // Scale from ~0->4000 to tft.width using the calibration #'s
     if (z != -1) {
@@ -123,12 +118,12 @@ ButtonTest::Buttons ButtonTest::button_release() {
     uint8_t btn {};
     for (uint8_t i {}; i < buttons_.size(); ++i) {
         if (buttons_[i]->justReleased()) {
-            buttons_[i]->drawButton(); // draw normal
+            ctbot_.get_tft()->draw_button(buttons_[i]); // draw normal
             btn = i + 1;
         }
 
         if (buttons_[i]->justPressed()) {
-            buttons_[i]->drawButton(true); // draw invert!
+            ctbot_.get_tft()->draw_button(buttons_[i], true); // draw invert
         }
     }
 
@@ -208,10 +203,13 @@ void ButtonTest::run() {
         default: return;
     }
 
+    ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
     draw_buttons();
 }
 
 void ButtonTest::test_lines(uint16_t color) {
+    using namespace std::chrono_literals;
+
     ctbot_.get_tft()->clear();
 
     const auto w { ctbot_.get_tft()->get_width() };
@@ -277,7 +275,12 @@ void ButtonTest::test_triangles() {
 ButtonTest::ButtonTest(CtBot& ctbot) : ctbot_(ctbot) {
     initialize_buttons();
 
-    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 8192, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 8192, [this]() {
+        ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
+        draw_buttons();
+
+        run();
+    });
 }
 
 ButtonTest::~ButtonTest() {
@@ -291,7 +294,8 @@ void ButtonTest::display_tasks() {
 
     ctbot_.get_tft()->clear();
 
-    while (!ctbot_.get_tft()->touched()) {
+    uint32_t last_touch_cnt { ctbot_.get_tft()->get_touch_counter() };
+    do { // FIXME: don't loop here in method
         auto p_runtime_stats { ctbot_.get_scheduler()->get_runtime_stats() };
 
         ctbot_.get_tft()->set_text_size(2);
@@ -345,13 +349,14 @@ void ButtonTest::display_tasks() {
             }
         }
 
-        for (size_t i { 0 }; i < 20; ++i) {
-            if (ctbot_.get_tft()->touched()) {
-                return;
-            }
-            std::this_thread::sleep_for(25ms);
-        }
-    }
+        // for (size_t i { 0 }; i < 20; ++i) {
+        //     std::this_thread::sleep_for(50ms);
+        //     if (ctbot_.get_tft()->touched()) {
+        //         return;
+        //     }
+        // }
+        std::this_thread::sleep_for(200ms);
+    } while (last_touch_cnt == ctbot_.get_tft()->get_touch_counter());
 }
 
 } // namespace tests

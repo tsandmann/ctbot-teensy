@@ -39,7 +39,10 @@ typedef struct audio_block_struct {
 // FIXME: just a dummy, to be implemented
 class AudioStream {
 public:
+    static void initialize_memory(audio_block_t*, unsigned int) {}
+
     AudioStream(unsigned char, audio_block_t**) {}
+    virtual ~AudioStream() = default;
 
     virtual void update() {}
 

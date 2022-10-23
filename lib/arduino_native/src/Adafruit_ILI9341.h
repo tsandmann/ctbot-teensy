@@ -13,6 +13,8 @@ public:
     Adafruit_SPITFT(uint16_t w, uint16_t h, int8_t cs, int8_t dc, int8_t rst) : Adafruit_SPITFT(w, h, &SPI, cs, dc, rst) {}
 
     Adafruit_SPITFT(uint16_t, uint16_t, SPIClass*, int8_t, int8_t, int8_t) {}
+
+    void drawFramebuffer(const uint16_t*) {}
 };
 
 

@@ -176,7 +176,7 @@ public:
         ++l;
 
 #if __GNUC__ >= 12
-        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
+        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) }; // TODO: merge with above
         if (res.ec == std::errc()) {
             return args.substr(res.ptr - args.cbegin());
         }
@@ -198,7 +198,7 @@ public:
      * @param[out] xn: Parameter pack of references to next arguments
      * @return string_view to the last character interpreted
      */
-    static std::string_view split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) {
+    static std::string_view split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) { // FIXME: return error code
         auto next_args { split_args(args, x1) };
         return split_args(next_args, xn...);
     }

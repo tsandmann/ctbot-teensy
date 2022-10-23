@@ -44,13 +44,13 @@ namespace ctbot {
 enum class EnaI2cTypes : uint8_t {
     NONE = 0,
     DISTANCE_L = 1 << 0,
-    DISTANCE_R = 1 << 1,
-    TRANSPORT = 1 << 2,
-    EXTENSION_1 = 1 << 3,
-    AUDIO = 1 << 4,
-    ESP32_RESET = 1 << 5,
-    ESP32_PROG = 1 << 6,
-    EXTENSION_2 = 1 << 7,
+    TRANSPORT = 1 << 1,
+    DISTANCE_R = 1 << 2,
+    AUDIO = 1 << 3,
+    EXTENSION_1 = 1 << 4,
+    EXTENSION_2 = 1 << 5,
+    MOTOR_RESET = 1 << 6,
+    IMU_RESET = 1 << 7,
 };
 
 /**
@@ -121,12 +121,10 @@ protected:
 
 public:
     EnaI2c(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
-              // FIXME: config of i2c bus
-              CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG : EnaI2cTypes::NONE
-          } {
-        write_reg8(
-            CONFIG_REG, static_cast<uint8_t>(CtBotConfig::ESP32_CONTROL_AVAILABLE ? EnaI2cTypes::NONE : EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG));
+        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL } /* FIXME: config of i2c bus */, i2c_addr_ { i2c_addr }, init_ {},
+          status_ { CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET : EnaI2cTypes::NONE } {
+        write_reg8(CONFIG_REG,
+            static_cast<uint8_t>(CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::NONE : EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET));
         init_ = true;
     }
 

@@ -109,6 +109,8 @@ const char CtBotCli::audio_[] { "audio (a)\r\n"
                                 "\tvol VOLUME                   set volume to VOLUME (0.0;1.0]\r\n"
                                 "\tpitch PITCH                  set pitch for speak to PITCH [1;16]\r\n"
                                 "\tplay FILENAME                play wavefile FILENAME from SD card\r\n"
+                                "\tpause                        toggle play/pause of currently playing wavefile\r\n"
+                                "\tstop                         stop currently playing wavefile\r\n"
                                 "\tspeak TEXT                   speak TEXT\r\n" };
 
 const char CtBotCli::filesystem_[] { "fs (f)\r\n"
@@ -161,14 +163,14 @@ CtBotCli::CtBotCli(CtBot* p_ctbot) : p_ctbot_ { p_ctbot } {
     add_helptext(config_);
     add_helptext(get_);
     add_helptext(set_);
-    if (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         add_helptext(audio_);
     }
     add_helptext(filesystem_);
-    if (CtBotConfig::PROG_AVAILABLE) {
+    if constexpr (CtBotConfig::PROG_AVAILABLE) {
         add_helptext(prog_);
     }
-    if (CtBotConfig::I2C_TOOLS_AVAILABLE) {
+    if constexpr (CtBotConfig::I2C_TOOLS_AVAILABLE) {
         add_helptext(i2c_);
     }
 }
@@ -305,7 +307,7 @@ void CtBotCli::init_commands() {
         } else if (args.find(PSTR("enapwm")) == 0) {
             uint8_t mask, pwm;
             CmdParser::split_args(args, mask, pwm);
-            p_ctbot_->p_ena_pwm_->set_pwm(static_cast<LedTypesEna>(mask), pwm);
+            p_ctbot_->p_ena_pwm_->set_pwm(static_cast<LedTypesEna<>>(mask), pwm);
         } else {
             return false;
         }
@@ -476,9 +478,9 @@ void CtBotCli::init_commands() {
             CmdParser::split_args(args, pin, value);
 
             if (value) {
-                p_ctbot_->p_ena_pwm_->on(static_cast<LedTypesEna>(1 << pin));
+                p_ctbot_->p_ena_pwm_->on(static_cast<LedTypesEna<>>(1 << pin));
             } else {
-                p_ctbot_->p_ena_pwm_->off(static_cast<LedTypesEna>(1 << pin));
+                p_ctbot_->p_ena_pwm_->off(static_cast<LedTypesEna<>>(1 << pin));
             }
         } else if (args.find(PSTR("ena")) == 0) {
             uint8_t pin;
@@ -491,7 +493,7 @@ void CtBotCli::init_commands() {
                 p_ctbot_->p_ena_->off(static_cast<EnaI2cTypes>(1 << pin));
             }
         } else if (args.find(PSTR("led")) == 0) {
-            uint8_t led;
+            uint8_t led {};
             CmdParser::split_args(args, led);
 
             p_ctbot_->p_leds_->set(static_cast<LedTypes>(led));
@@ -592,36 +594,39 @@ void CtBotCli::init_commands() {
         return true;
     });
 
-    if (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         p_ctbot_->p_parser_->register_cmd(PSTR("audio"), 'a', [this](const std::string_view& args) {
             if (args.find(PSTR("play")) == 0) {
                 const size_t s { args.find(' ') + 1 };
                 const size_t e { args.find(' ', s) };
                 return p_ctbot_->play_wav(args.substr(s, e - s));
+            } else if (args.find(PSTR("stop")) == 0) {
+                p_ctbot_->p_play_wav_->stop();
+            } else if (args.find(PSTR("pause")) == 0) {
+                p_ctbot_->p_play_wav_->togglePlayPause();
             } else if (args.find(PSTR("on")) == 0) {
                 p_ctbot_->get_ena()->on(EnaI2cTypes::AUDIO);
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(1'500ms);
             } else if (args.find(PSTR("off")) == 0) {
                 p_ctbot_->get_ena()->off(EnaI2cTypes::AUDIO);
                 p_ctbot_->p_play_wav_->stop();
-                if (CtBotConfig::AUDIO_TEST_AVAILABLE) {
+                if constexpr (CtBotConfig::AUDIO_TEST_AVAILABLE) {
                     p_ctbot_->p_audio_sine_->frequency(0.f);
                 }
             } else if (args.find(PSTR("vol")) == 0) {
                 float volume {};
                 auto res { CmdParser::split_args(args, volume) };
                 if (!res.size()) {
-                    return false;
+                    // return false;
                 }
 
                 for (auto& e : p_ctbot_->p_audio_mixer_) {
                     e->gain(0, volume);
                     e->gain(1, volume);
                     e->gain(2, volume);
+                    e->gain(3, volume);
                 }
             } else if (args.find(PSTR("pitch")) == 0) {
-                uint8_t pitch;
+                uint8_t pitch {};
                 CmdParser::split_args(args, pitch);
 
                 p_ctbot_->p_tts_->set_pitch(pitch);
@@ -638,7 +643,7 @@ void CtBotCli::init_commands() {
                 float freq {};
                 auto res { CmdParser::split_args(args, freq) };
                 if (!res.size()) {
-                    return false;
+                    // return false;
                 }
 
                 p_ctbot_->p_audio_sine_->frequency(freq);
@@ -672,7 +677,7 @@ void CtBotCli::init_commands() {
 
                 const auto len { p_ctbot_->p_comm_->debug_print(entry.name(), true) };
                 if (!entry.isDirectory()) {
-                    if (len < 14) {
+                    if (len <= 15) {
                         p_ctbot_->p_comm_->debug_print('\t', true);
                     }
                     p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("\t{} KB\r\n", static_cast<uint32_t>(entry.size() / 1'024ULL)));
@@ -743,7 +748,7 @@ void CtBotCli::init_commands() {
         return true;
     });
 
-    if (CtBotConfig::PROG_AVAILABLE) {
+    if constexpr (CtBotConfig::PROG_AVAILABLE) {
         p_parser->register_cmd(PSTR("prog"), 'p', [this](const std::string_view& args) {
             if (args.find(PSTR("run")) == 0) {
                 const size_t s { args.find(' ') + 1 };
@@ -774,7 +779,7 @@ void CtBotCli::init_commands() {
         });
     }
 
-    if (CtBotConfig::I2C_TOOLS_AVAILABLE) {
+    if constexpr (CtBotConfig::I2C_TOOLS_AVAILABLE) {
         p_parser->register_cmd(PSTR("i2c"), 'i', [this](const std::string_view& args) {
             static I2C_Service* p_i2c {};
             static uint8_t dev_addr {};

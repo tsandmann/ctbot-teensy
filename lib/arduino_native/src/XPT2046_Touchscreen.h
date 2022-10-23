@@ -25,7 +25,11 @@ public:
 
 class XPT2046_Touchscreen {
 public:
-    XPT2046_Touchscreen(uint8_t, SPIClass*, [[maybe_unused]] uint8_t tirq = 255) {}
+    XPT2046_Touchscreen(uint8_t cspin) : XPT2046_Touchscreen { cspin, &SPI } {}
+    XPT2046_Touchscreen(uint8_t cspin, SPIClass* p_spi) : XPT2046_Touchscreen { 500, cspin, p_spi } {}
+    XPT2046_Touchscreen(uint16_t z_threshold, uint8_t cspin) : XPT2046_Touchscreen { z_threshold, cspin, &SPI } {}
+    XPT2046_Touchscreen(uint16_t z_threshold, uint8_t cspin, SPIClass* p_spi) : XPT2046_Touchscreen { z_threshold, cspin, p_spi, 255 } {}
+    XPT2046_Touchscreen(uint16_t, uint8_t, SPIClass*, uint8_t) {}
 
     bool begin() {
         return false;

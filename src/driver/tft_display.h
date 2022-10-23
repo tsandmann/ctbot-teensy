@@ -26,15 +26,34 @@
 
 #include "ctbot_config.h"
 #include "logger.h"
+#include "leds_i2c.h"
+
+#include "arduino_freertos.h"
+
+#include "memory_pool.hpp"
+#include "namespace_alias.hpp"
+#include "static_allocator.hpp"
+
+#include "avr/pgmspace.h"
 
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <atomic>
+#include <mutex>
+#include <array>
+
+#ifndef EXTMEM
+#define EXTMEM
+#endif
 
 
 class Adafruit_ILI9341;
 class XPT2046_Touchscreen;
+class TS_Point;
 class Adafruit_GFX;
+class Adafruit_GFX_Button;
+class GFXcanvas16;
 
 namespace ctbot {
 
@@ -77,11 +96,35 @@ public:
 };
 
 class TFTDisplay {
+    static constexpr bool DEBUG_ { false };
+
 protected:
+    static constexpr uint32_t FRAMES_PER_SEC_ { 25 };
+    static constexpr int16_t WIDTH_ { 320 };
+    static constexpr int16_t HEIGHT_ { 240 };
+    static constexpr uint16_t TOUCH_THRESHOLD_ { 800 };
+    static constexpr size_t FB_CHUNK_SIZE_ { WIDTH_ };
+
+    using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
+    EXTMEM static memory::static_allocator_storage<WIDTH_ * HEIGHT_ * sizeof(uint16_t) + 16> framebuffer_pool_;
+
+    static_pool_t mem_pool_ { FB_CHUNK_SIZE_, sizeof(framebuffer_pool_), framebuffer_pool_ };
+    std::array<uint16_t, WIDTH_ * HEIGHT_>* framebuffer_mem_;
     Adafruit_ILI9341* p_display_;
+    GFXcanvas16* p_framebuffer_;
     XPT2046_Touchscreen* p_touch_;
-    uint16_t width_;
-    uint16_t height_;
+    TaskHandle_t task_;
+    std::atomic<bool> service_running_;
+    mutable std::atomic<bool> updated_;
+    mutable std::mutex fb_mutex_;
+    LedsI2cEna<>* p_backl_pwm_;
+    uint32_t touch_counter_;
+    TS_Point* p_touch_point_;
+    mutable std::mutex touch_mutex_;
+
+    decltype(framebuffer_mem_) init_memory();
+
+    void run();
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -91,16 +134,16 @@ protected:
     FLASHMEM uint8_t print(const std::string* p_str, bool clear = false) const;
 
 public:
-    FLASHMEM TFTDisplay();
+    FLASHMEM TFTDisplay(LedsI2cEna<>& backl_pwm);
 
     FLASHMEM ~TFTDisplay();
 
     auto get_width() const {
-        return width_;
+        return WIDTH_;
     }
 
     auto get_height() const {
-        return height_;
+        return HEIGHT_;
     }
 
     /**
@@ -122,6 +165,8 @@ public:
     void set_text_size(const uint8_t size) const;
 
     void set_text_color(const uint16_t color) const;
+
+    void set_text_wrap(bool wrap) const;
 
     /**
      * @brief Set the display backlight
@@ -158,26 +203,35 @@ public:
 
     int16_t get_cursor_y() const;
 
-    FLASHMEM void get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
+    void get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
 
-    FLASHMEM void fill_screen(const uint16_t color) const;
+    void fill_screen(const uint16_t color) const;
 
-    FLASHMEM void fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    void fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
 
-    FLASHMEM void draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const;
+    void draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const;
 
-    FLASHMEM void draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    void draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
 
-    FLASHMEM void draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
+    void draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
 
-    FLASHMEM void draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
+    void fill_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
 
-    bool touched() const;
+    void draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
 
-    FLASHMEM bool get_touch_point(int16_t& x, int16_t& y, int16_t& z) const;
+    void fill_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
+
+    void draw_button(Adafruit_GFX_Button* button, bool invert = false) const;
+
+    auto get_touch_counter() const {
+        std::lock_guard<std::mutex> lock { touch_mutex_ };
+        return touch_counter_;
+    }
+
+    bool get_touch_point(int16_t& x, int16_t& y, int16_t& z) const;
 
     Adafruit_GFX* get_context() const {
-        return reinterpret_cast<Adafruit_GFX*>(p_display_);
+        return reinterpret_cast<Adafruit_GFX*>(p_framebuffer_);
     }
 };
 

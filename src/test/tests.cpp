@@ -257,83 +257,102 @@ TaskWaitTest::~TaskWaitTest() {
 
 TftTest::TftTest(CtBot& ctbot) : ctbot_(ctbot) {
     ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
-    ctbot_.get_scheduler()->task_add(PSTR("tfttest"), TASK_PERIOD_MS, 2, 2'048, [this]() { return run(); });
+    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 2'048, [this]() { return run(); });
 }
 
 void TftTest::run() {
     using namespace std::chrono_literals;
-    auto& comm { *ctbot_.get_comm() };
+    // auto& comm { *ctbot_.get_comm() };
 
-    comm.debug_print(PSTR("\r\nBenchmark                Time\r\n"), true);
+    // comm.debug_print(PSTR("\r\nBenchmark                Time\r\n"), true);
 
-    {
-        const auto start { arduino::micros() };
-        ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
-        const auto t { arduino::micros() - start };
-        comm.debug_printf<true>(PP_ARGS("Screen fill              {.2} ms\r\n", t / 1'000.f));
+    // {
+    // const auto start { arduino::micros() };
+    // ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
+    // const auto t { arduino::micros() - start };
+    // comm.debug_printf<true>(PP_ARGS("Screen fill              {.2} ms\r\n", t / 1'000.f));
+    // }
+    // std::this_thread::sleep_for(250ms);
+
+    // comm.debug_printf<true>(PP_ARGS("Text                     {.2} ms\r\n", testText() / 1'000.f));
+    for (int16_t i {}; i < 320; i += 20) {
+        testText(i, 0);
+        std::this_thread::sleep_for(40ms);
     }
-    std::this_thread::sleep_for(2s);
 
-    comm.debug_printf<true>(PP_ARGS("Text                     {.2} ms\r\n", testText() / 1'000.f));
-    std::this_thread::sleep_for(2s);
+    // comm.debug_printf<true>(PP_ARGS("Lines                    {.2} ms\r\n", testLines(TFTColors::CYAN) / 1'000.f));
+    testLines(TFTColors::CYAN);
+    std::this_thread::sleep_for(500ms);
 
-    comm.debug_printf<true>(PP_ARGS("Lines                    {.2} ms\r\n", testLines(TFTColors::CYAN) / 1'000.f));
-    std::this_thread::sleep_for(2s);
-
-    comm.debug_printf<true>(PP_ARGS("Rectangles (outline)     {.2} ms\r\n", testRects(TFTColors::GREEN) / 1'000.f));
-    std::this_thread::sleep_for(2s);
+    // comm.debug_printf<true>(PP_ARGS("Rectangles (outline)     {.2} ms\r\n", testRects(TFTColors::GREEN) / 1'000.f));
+    testRects(TFTColors::GREEN);
+    std::this_thread::sleep_for(500ms);
 
     ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
-    comm.debug_printf<true>(PP_ARGS("Circles (outline)        {.2} ms\r\n", testCircles(10, TFTColors::RED) / 1'000.f));
-    std::this_thread::sleep_for(2s);
+    // comm.debug_printf<true>(PP_ARGS("Circles (outline)        {.2} ms\r\n", testCircles(10, TFTColors::RED) / 1'000.f));
+    testCircles(10, TFTColors::RED);
+    std::this_thread::sleep_for(500ms);
 
-    comm.debug_printf<true>(PP_ARGS("Triangles (outline)      {.2} ms\r\n", testTriangles() / 1'000.f));
-    std::this_thread::sleep_for(2s);
+    testFilledCircles(10, TFTColors::MAGENTA);
+    std::this_thread::sleep_for(500ms);
+
+    // comm.debug_printf<true>(PP_ARGS("Triangles (outline)      {.2} ms\r\n", testTriangles() / 1'000.f));
+    testTriangles();
+    std::this_thread::sleep_for(500ms);
 
     // comm.debug_printf<true>(PP_ARGS("Triangles (filled)       {.2} ms\r\n", testFilledTriangles() / 1'000.f));
-    // std::this_thread::sleep_for(1s);
-
-    // comm.debug_printf<true>(PP_ARGS("Rounded rects (outline)  {.2} ms\r\n", testRoundRects() / 1'000.f));
-    // std::this_thread::sleep_for(1s);
-
-    // comm.debug_printf<true>(PP_ARGS("Rounded rects (filled)   {.2} ms\r\n", testFilledRoundRects() / 1'000.f));
-    // std::this_thread::sleep_for(1s);
+    testFilledTriangles();
+    std::this_thread::sleep_for(500ms);
 }
 
-unsigned long TftTest::testText() {
+unsigned long TftTest::testText(int16_t col, int16_t row) {
     auto p_tft { ctbot_.get_tft() };
 
     const unsigned long start { arduino::micros() };
+    p_tft->set_text_wrap(false);
     p_tft->fill_screen(TFTColors::BLACK);
-    p_tft->set_cursor(0, 0);
+    p_tft->set_cursor(col, row);
     p_tft->set_text_color(TFTColors::WHITE);
     p_tft->set_text_size(1);
     p_tft->print(PSTR("Hello World!\r\n"));
     p_tft->set_text_color(TFTColors::YELLOW);
     p_tft->set_text_size(2);
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->printf(PSTR("%f\r\n"), 1234.56f);
     p_tft->set_text_color(TFTColors::RED);
     p_tft->set_text_size(3);
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->printf(PSTR("0x%x\r\n"), 0xDEADBEEF);
     p_tft->set_text_color(TFTColors::GREEN);
     p_tft->set_text_size(5);
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("Groop\r\n"));
     p_tft->set_text_size(2);
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("I implore thee,\r\n"));
     p_tft->set_text_size(1);
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("my foonting turlingdromes.\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("And hooptiously drangle me\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("with crinkly bindlewurdles,\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("Or I will rend thee\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("in the gobberwarts\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("with my blurglecruncheon,\r\n"));
+    p_tft->set_cursor(col, p_tft->get_cursor_y());
     p_tft->print(PSTR("see if I don't!\r\n"));
 
-    p_tft->set_text_color(TFTColors::WHITE);
-    p_tft->print(
-        PSTR("Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into "
-             "the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice 'without "
-             "pictures or conversations?'\r\n"));
+    // p_tft->set_text_color(TFTColors::WHITE);
+    // p_tft->set_cursor(col, p_tft->get_cursor_y());
+    // p_tft->set_text_wrap(true);
+    // p_tft->print(
+    //     PSTR("Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into "
+    //          "the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice 'without "
+    //          "pictures or conversations?'\r\n"));
 
     return arduino::micros() - start;
 }
@@ -356,6 +375,7 @@ unsigned long TftTest::testLines(uint16_t color) {
     for (y2 = 0; y2 < h; y2 += 6) {
         p_tft->draw_line(x1, y1, x2, y2, color);
     }
+
     t = arduino::micros() - start; // fill_screen doesn't count against timing
 
     return t;
@@ -414,21 +434,21 @@ unsigned long TftTest::testFilledRects(uint16_t color1, uint16_t color2) {
     return t;
 }
 
-// unsigned long TftTest::testFilledCircles(uint8_t radius, uint16_t color) {
-//     auto p_tft { ctbot_.get_tft() };
+unsigned long TftTest::testFilledCircles(uint8_t radius, uint16_t color) {
+    auto p_tft { ctbot_.get_tft() };
 
-//     int x, y, w = p_tft->get_width(), h = p_tft->get_height(), r2 = radius * 2;
+    int x, y, w = p_tft->get_width(), h = p_tft->get_height(), r2 = radius * 2;
 
-//     p_tft->fill_screen(TFTColors::BLACK);
-//     const unsigned long start { arduino::micros() };
-//     for (x = radius; x < w; x += r2) {
-//         for (y = radius; y < h; y += r2) {
-//             p_tft->fill_circle(x, y, radius, color);
-//         }
-//     }
+    p_tft->fill_screen(TFTColors::BLACK);
+    const unsigned long start { arduino::micros() };
+    for (x = radius; x < w; x += r2) {
+        for (y = radius; y < h; y += r2) {
+            p_tft->fill_circle(x, y, radius, color);
+        }
+    }
 
-//     return arduino::micros() - start;
-// }
+    return arduino::micros() - start;
+}
 
 unsigned long TftTest::testCircles(uint8_t radius, uint16_t color) {
     auto p_tft { ctbot_.get_tft() };
@@ -465,53 +485,22 @@ unsigned long TftTest::testTriangles() {
     return arduino::micros() - start;
 }
 
-// unsigned long TftTest::testFilledTriangles() {
-//     auto p_tft { ctbot_.get_tft() };
+unsigned long TftTest::testFilledTriangles() {
+    auto p_tft { ctbot_.get_tft() };
 
-//     unsigned long t {};
-//     int i, cx = p_tft->get_width() / 2 - 1, cy = p_tft->get_height() / 2 - 1;
+    unsigned long t {};
+    int i, cx = p_tft->get_width() / 2 - 1, cy = p_tft->get_height() / 2 - 1;
 
-//     p_tft->fill_screen(TFTColors::BLACK);
-//     for (i = std::min(cx, cy); i > 10; i -= 5) {
-//         const unsigned long start { arduino::micros() };
-//         p_tft->fill_triangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i, p_tft->color565(0, i, i));
-//         t += arduino::micros() - start;
-//         p_tft->draw_triangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i, p_tft->color565(i, i, 0));
-//     }
+    p_tft->fill_screen(TFTColors::BLACK);
+    for (i = std::min(cx, cy); i > 10; i -= 5) {
+        const unsigned long start { arduino::micros() };
+        p_tft->fill_triangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i, TFTColorHelper::color565(0, i, i));
+        t += arduino::micros() - start;
+        p_tft->draw_triangle(cx, cy - i, cx - i, cy + i, cx + i, cy + i, TFTColorHelper::color565(i, i, 0));
+    }
 
-//     return t;
-// }
-
-// unsigned long TftTest::testRoundRects() {
-//     auto p_tft { ctbot_.get_tft() };
-
-//     int w, i, i2, cx = p_tft->get_width() / 2, cy = p_tft->get_height() / 2;
-
-//     p_tft->fill_screen(TFTColors::BLACK);
-//     w = std::min(p_tft->get_width(), p_tft->get_height());
-//     const unsigned long start { arduino::micros() };
-//     for (i = 0; i < w; i += 8) {
-//         i2 = i / 2 - 2;
-//         p_tft->drawRoundRect(cx - i2, cy - i2, i, i, i / 8, TFTColorHelper::color565(i, 100, 100));
-//     }
-
-//     return arduino::micros() - start;
-// }
-
-// unsigned long TftTest::testFilledRoundRects() {
-//     auto p_tft { ctbot_.get_tft() };
-
-//     int i, i2, cx = p_tft->get_width() / 2 + 10, cy = p_tft->get_height() / 2 + 10;
-
-//     p_tft->fill_screen(TFTColors::BLACK);
-//     const unsigned long start { arduino::micros() };
-//     for (i = std::min(p_tft->get_width(), p_tft->get_height()) - 20; i > 25; i -= 6) {
-//         i2 = i / 2;
-//         p_tft->fillRoundRect(cx - i2, cy - i2, i - 20, i - 20, i / 8, TFTColorHelper::color565(100, i / 2, 100));
-//     }
-
-//     return arduino::micros() - start;
-// }
+    return t;
+}
 
 TftTest::~TftTest() {}
 

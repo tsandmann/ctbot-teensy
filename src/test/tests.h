@@ -449,7 +449,7 @@ protected:
 
     FLASHMEM void run();
 
-    FLASHMEM unsigned long testText();
+    FLASHMEM unsigned long testText(int16_t col, int16_t row);
 
     FLASHMEM unsigned long testLines(uint16_t color);
 
@@ -466,10 +466,6 @@ protected:
     FLASHMEM unsigned long testTriangles();
 
     FLASHMEM unsigned long testFilledTriangles();
-
-    FLASHMEM unsigned long testRoundRects();
-
-    FLASHMEM unsigned long testFilledRoundRects();
 
 public:
     /**
@@ -515,7 +511,7 @@ public:
 
 class ButtonTest {
 protected:
-    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of tasks in ms */
+    static constexpr uint16_t TASK_PERIOD_MS { 100 }; /**< Scheduling period of tasks in ms */
 
     static constexpr uint16_t BUTTON_W { 120 };
     static constexpr uint16_t BUTTON_H { 60 };

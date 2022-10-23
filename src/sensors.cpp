@@ -82,13 +82,14 @@ bool Sensors::disable_sensors() {
 bool Sensors::disable_all() {
     bool ret { true };
 
-    ret &= ctbot_.get_ena()->off(CtBotConfig::ESP32_CONTROL_AVAILABLE ? static_cast<EnaI2cTypes>(0xff) & ~(EnaI2cTypes::ESP32_RESET | EnaI2cTypes::ESP32_PROG) :
-                                                                        static_cast<EnaI2cTypes>(0xff));
+    ret &= ctbot_.get_ena()->off(CtBotConfig::MAINBOARD_REVISION == 9'000 ?
+            static_cast<EnaI2cTypes>(0xff) & ~(EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET) :
+            static_cast<EnaI2cTypes>(0xff));
     if (DEBUG_ && !ret) {
         CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::disable_all(): get_ena()->off() failed.\r\n"), true);
     }
 
-    ret &= ctbot_.get_ena_pwm()->off(static_cast<LedTypesEna>(0xff));
+    ret &= ctbot_.get_ena_pwm()->off(static_cast<LedTypesEna<>>(0xff));
     if (DEBUG_ && !ret) {
         CtBot::get_instance().get_comm()->debug_print(PSTR("Sensors::disable_all(): get_ena_pwm()->off() failed.\r\n"), true);
     }

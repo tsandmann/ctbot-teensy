@@ -75,14 +75,17 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
     static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
     static constexpr bool SDCARD_AVAILABLE { true };
+    static constexpr bool LOG_TO_SDCARD_AVAILABLE { false };
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
     static constexpr bool DATE_TIME_AVAILABLE { true };
 
-    static constexpr uint32_t MAINBOARD_REVISION { 9'000 }; // v0.9.0 or v0.9.2
-
     static constexpr uint32_t BOOT_DELAY_MS { 2'000 };
+
+    /* HW setup */
+    static constexpr uint32_t MAINBOARD_REVISION { 9'002 }; // v0.9.0 or v0.9.2
+    static constexpr uint32_t VOLTAGE_MEASURE_OFFSETS[2] { 0, 300 }; /**< Offsets for battery measurement voltage devider in mOhm */
 
     /* uart */
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
@@ -113,6 +116,9 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr uint8_t TFT_ROTATION { 1 };
     static constexpr uint8_t TFT_TOUCH_ROTATION { 4 };
     static constexpr float TFT_BACKLIGHT_LEVEL { 20 };
+
+    /* External RAM */
+    static constexpr uint32_t PSRAM_FREQUENCY_MHZ { 132 }; // default: 88 MHz; valid: 66, 76, 88, 106, 132 MHz
 };
 
 template <uint32_t VERSION>
@@ -125,8 +131,6 @@ struct CtBotConfigHardware {
  */
 template <>
 struct CtBotConfigHardware<9'000> {
-    static constexpr bool ESP32_CONTROL_AVAILABLE { true }; /**< Statically activate or deactivate control of ESP32 (reset and prog signals) */
-
     static constexpr uint8_t DEBUG_LED_PIN { 8 }; /**< Pin number of debug LED */
 
     /* uart */
@@ -239,8 +243,6 @@ struct CtBotConfigHardware<9'000> {
  */
 template <>
 struct CtBotConfigHardware<9'002> {
-    static constexpr bool ESP32_CONTROL_AVAILABLE { false }; /**< Statically activate or deactivate control of ESP32 (reset and prog signals) */
-
     static constexpr uint8_t DEBUG_LED_PIN { 9 }; /**< Pin number of debug LED */
 
     /* uart */
@@ -355,10 +357,13 @@ template <class T>
 struct CtBotConfigHelper : public T, public CtBotConfigUser {
     static constexpr bool AUDIO_AVAILABLE { CtBotConfigUser::AUDIO_ANALOG_AVAILABLE
         ^ CtBotConfigUser::AUDIO_I2S_AVAILABLE }; /**< Statically activate or deactivate audio features */
+    static constexpr uint8_t AUDIO_MEMORY_BLOCKS { AUDIO_AVAILABLE ? 12 : 0 };
     static constexpr uint16_t ENCODER_MARKS { CtBotConfigBase::IS_SIMULATED ? 160 : T::ENCODER_MARKS }; /**< Number of encoder marks on a wheel */
     static constexpr bool EXTERNAL_SPEEDCTRL { T::EXTERNAL_SPEEDCTRL && (!CtBotConfigBase::IS_SIMULATED) };
 };
 
 using CtBotConfig = CtBotConfigHelper<CtBotConfigHardware<CtBotConfigUser::MAINBOARD_REVISION>>;
+
+static_assert(CtBotConfig::AUDIO_CHANNELS > 0 && CtBotConfig::AUDIO_CHANNELS <= 2, "number of AUDIO_CHANNELS out of range [1; 2]");
 
 } // namespace ctbot
