@@ -46,6 +46,8 @@ namespace ctbot {
  * @enduml
  */
 class AnalogSensors {
+    static constexpr bool DEBUG_ { false };
+
 protected:
     static constexpr auto ENA_MASK_INIT = EnaI2cTypes::NONE;
     static constexpr auto ENA_MASK = EnaI2cTypes::NONE;
@@ -53,13 +55,26 @@ protected:
     static constexpr auto ENA_MASK_PWM_INIT = LedTypesEna<>::NONE;
     static constexpr uint8_t BAT_ADC_RES { 12 };
     static constexpr uint32_t BAT_VOLTAGE_R1 { 100'000 + CtBotConfig::VOLTAGE_MEASURE_OFFSETS[0] };
-    static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 + +CtBotConfig::VOLTAGE_MEASURE_OFFSETS[1] }; // FIXME: calibrated value
+    static constexpr uint32_t BAT_VOLTAGE_R2 { 22'000 + CtBotConfig::VOLTAGE_MEASURE_OFFSETS[1] };
+    static constexpr uint8_t CURRENT_ADC_RES_ { 12 };
+    static constexpr float OPAMP_AMPLIFICATION_ { 50.f }; // V/V
+    static constexpr float SHUNT_5V_MOHM_ { 30.f }; // mOhm
+    static constexpr float SHUNT_SERVO_MOHM_ { 100.f }; // mOhm
+    static constexpr float ADC_VREF_MV_ { 3'300.f }; // mV
+    static constexpr float CURRENT_MEASUREMENT_ALPHA_ { 0.05f };
+    static constexpr float CURRENT_5V_CONVERSION_FACTOR_ =
+        ADC_VREF_MV_ / ((1 << CURRENT_ADC_RES_) - 1.f) / (OPAMP_AMPLIFICATION_ * (SHUNT_5V_MOHM_ / 1'000.f)); // mA
+    static constexpr float CURRENT_SERVO_CONVERSION_FACTOR_ =
+        ADC_VREF_MV_ / ((1 << CURRENT_ADC_RES_) - 1.f) / (OPAMP_AMPLIFICATION_ * (SHUNT_SERVO_MOHM_ / 1'000.f)); // mA
+    static constexpr uint16_t CURRENT_SERVO_ADC_OFFSET_ { 60 };
 
     uint8_t last_adc_res_;
     std::mutex adc_mutex_;
     uint16_t line_[2];
     uint16_t border_[2];
-    float bat_voltage_;
+    float bat_voltage_; // V
+    float current_5v_; // mA
+    float current_servo_; // mA
 
     /**
      * @brief Read all the current ADC values
@@ -130,6 +145,14 @@ public:
 
     auto get_bat_voltage() const {
         return bat_voltage_;
+    }
+
+    auto get_5v_current() const {
+        return current_5v_;
+    }
+
+    auto get_servo_current() const {
+        return current_servo_;
     }
 };
 
