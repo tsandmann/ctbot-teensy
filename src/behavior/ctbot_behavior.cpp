@@ -202,7 +202,7 @@ void CtBotBehavior::setup(const bool set_ready) {
     auto p_governor_l = p_governors->create_actuator(PSTR("left"), true);
     auto p_governor_r = p_governors->create_actuator(PSTR("right"), true);
     configASSERT(p_governor_l && p_governor_r);
-    p_governor_l->register_listener([p_governors](const AMotor::basetype&) { p_governors->set_update_state((PSTR("left"))); });
+    p_governor_l->register_listener([p_governors](const AMotor::basetype&) { p_governors->set_update_state(PSTR("left")); });
     p_governor_r->register_listener([p_governors](const AMotor::basetype&) { p_governors->set_update_state(PSTR("right")); });
 
     p_governors->register_listener([p_governors, this](const ResourceContainer& governors) {
@@ -408,9 +408,9 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
         enc_last_l_ = enc_l;
         enc_last_r_ = enc_r;
 
-        const float d_sl { static_cast<float>(diff_l * (178.1283f / static_cast<float>(CtBotConfig::ENCODER_MARKS))) }; // FIXME: constant for wheel perimeter
-        const float d_sr { static_cast<float>(diff_r * (178.1283f / static_cast<float>(CtBotConfig::ENCODER_MARKS))) };
-        float d_head { (d_sr - d_sl) / 97.2f }; // angle in radians
+        const float d_sl { static_cast<float>(diff_l * (CtBotConfig::WHEEL_PERIMETER / static_cast<float>(CtBotConfig::ENCODER_MARKS))) };
+        const float d_sr { static_cast<float>(diff_r * (CtBotConfig::WHEEL_PERIMETER / static_cast<float>(CtBotConfig::ENCODER_MARKS))) };
+        float d_head { (d_sr - d_sl) / CtBotConfig::WHEEL_TO_WHEEL_DISTANCE }; // angle in radians
 
         /* calculate heading */
         float delta_y;

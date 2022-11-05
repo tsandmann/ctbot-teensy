@@ -119,6 +119,9 @@ struct CtBotConfigUser : public CtBotConfigBase {
 
     /* External RAM */
     static constexpr uint32_t PSRAM_FREQUENCY_MHZ { 132 }; // default: 88 MHz; valid: 66, 76, 88, 106, 132 MHz
+
+    static constexpr float WHEEL_PERIMETER { 178.1283 }; // mm
+    static constexpr float WHEEL_TO_WHEEL_DISTANCE { 97.2 }; // mm
 };
 
 template <uint32_t VERSION>
@@ -179,6 +182,8 @@ struct CtBotConfigHardware<9'000> {
     static constexpr uint8_t BAT_VOLTAGE_PIN { 15 }; /**< Pin number of battery voltage signal */
     static constexpr uint8_t SERVO_1_FB_PIN { 22 }; /**< Pin number of servo 1 feedback signal */
     static constexpr uint8_t SERVO_2_FB_PIN { 255 }; /**< Pin number of servo 2 feedback signal */
+    static constexpr uint8_t CURRENT_5V_PIN { 255 }; /**< Pin number of 5V current measurement signal */
+    static constexpr uint8_t CURRENT_SERVO_PIN { 255 }; /**< Pin number of servo current measurement signal */
 
     /* motors */
     static constexpr bool EXTERNAL_SPEEDCTRL { false };
@@ -217,13 +222,13 @@ struct CtBotConfigHardware<9'000> {
 
     /* ena i2c */
     static constexpr uint8_t ENA_I2C_BUS { 1 }; /**< ID of I2C port to use for ena controller */
-    static constexpr uint8_t ENA_I2C_ADDR { 0b10'0000 /* 0x20 */ }; /**< I2C address of ena controller */
+    static constexpr uint8_t ENA_I2C_ADDR { 0b010'0000 /* 0x20 */ }; /**< I2C address of ena controller */
     static constexpr uint8_t ENA_PWM_I2C_BUS { 1 }; /**< Number of I2C port to use for ena-pwm controller */
-    static constexpr uint8_t ENA_PWM_I2C_ADDR { 0b1'1101 /* 0x1d */ }; /**< I2C address of ena-pwm controller */
+    static constexpr uint8_t ENA_PWM_I2C_ADDR { 0b001'1101 /* 0x1d */ }; /**< I2C address of ena-pwm controller */
 
     /* leds i2c */
     static constexpr uint8_t LED_I2C_BUS { 1 }; /**< ID of I2C port to use for led controller */
-    static constexpr uint8_t LED_I2C_ADDR { 0b1'0101 /* 0x15 */ }; /**< I2C address of led controller */
+    static constexpr uint8_t LED_I2C_ADDR { 0b001'0101 /* 0x15 */ }; /**< I2C address of led controller */
 
     /* VL53L0X */
     static constexpr uint8_t VL53L0X_I2C_BUS { 1 }; /**< ID of I2C port to use for VL53L0X sensors */
@@ -323,13 +328,13 @@ struct CtBotConfigHardware<9'002> {
 
     /* ena i2c */
     static constexpr uint8_t ENA_I2C_BUS { 1 }; /**< ID of I2C port to use for ena controller */
-    static constexpr uint8_t ENA_I2C_ADDR { 0b10'0000 /* 0x20 */ }; /**< I2C address of ena controller */
+    static constexpr uint8_t ENA_I2C_ADDR { 0b010'0000 /* 0x20 */ }; /**< I2C address of ena controller */
     static constexpr uint8_t ENA_PWM_I2C_BUS { 1 }; /**< Number of I2C port to use for ena-pwm controller */
-    static constexpr uint8_t ENA_PWM_I2C_ADDR { 0b1'1101 /* 0x1d */ }; /**< I2C address of ena-pwm controller */
+    static constexpr uint8_t ENA_PWM_I2C_ADDR { 0b001'1101 /* 0x1d */ }; /**< I2C address of ena-pwm controller */
 
     /* leds i2c */
     static constexpr uint8_t LED_I2C_BUS { 1 }; /**< ID of I2C port to use for led controller */
-    static constexpr uint8_t LED_I2C_ADDR { 0b1'0101 /* 0x15 */ }; /**< I2C address of led controller */
+    static constexpr uint8_t LED_I2C_ADDR { 0b001'0101 /* 0x15 */ }; /**< I2C address of led controller */
 
     /* VL53L0X */
     static constexpr uint8_t VL53L0X_I2C_BUS { 1 }; /**< ID of I2C port to use for VL53L0X sensors */
