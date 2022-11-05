@@ -38,7 +38,7 @@ CmdScript::CmdScript(const std::string_view& filename, CommInterface& comm_inter
     : comm_interface_ { comm_interface }, cmd_parser_ { parser }, filename_ { filename } {}
 
 bool CmdScript::exec_script() {
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
         comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::exec_script(): executing script \"{s}\"...\r\n", filename_.c_str()));
         comm_interface_.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
@@ -53,7 +53,7 @@ bool CmdScript::exec_script() {
 
         const auto res { cmd_parser_.execute_cmd(str, comm_interface_) };
 
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
             comm_interface_.debug_print(PSTR("command \""), true);
             comm_interface_.debug_print(str, true);
@@ -69,7 +69,7 @@ bool CmdScript::exec_script() {
         return true;
     }) };
 
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         comm_interface_.set_color(CommInterface::Color::YELLOW, CommInterface::Color::BLACK);
         comm_interface_.debug_print(PSTR("CmdScript::exec_script(): done.\r\n"), true);
         comm_interface_.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
@@ -95,12 +95,12 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
     }
 
     File file { SD.open(filename_.c_str()) };
-    if (DEBUG_VERBOSE_) {
+    if constexpr (DEBUG_VERBOSE_) {
         comm_interface_.debug_print(PSTR("CmdScript::process_script(): SD.open() done.\r\n"), true);
     }
 
     auto p_buffer { std::make_unique<uint32_t[]>(MAX_LINE_LENGTH_ / 4U + 1U) };
-    if (DEBUG_VERBOSE_) {
+    if constexpr (DEBUG_VERBOSE_) {
         comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): p_buffer={#x} ", p_buffer.get()));
     }
     auto p_str { reinterpret_cast<char*>(p_buffer.get()) };
@@ -110,15 +110,15 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
 
     while (file.available()) {
         const auto n { file.readBytesUntil('\n', p_str, (MAX_LINE_LENGTH_ / 4U + 1U) * 4U) };
-        if (DEBUG_VERBOSE_) {
+        if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): n={}\r\n", n));
         }
         std::string_view str { p_str, n };
-        if (DEBUG_VERBOSE_) {
+        if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_print(PSTR("CmdScript::process_script(): string_view created.\r\n"), true);
         }
 
-        if (DEBUG_VERBOSE_) {
+        if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): str.size={}\r\n", str.size()));
             for (size_t i { 0 }; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
@@ -128,13 +128,13 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
 
         const auto pos { str.find_first_of('\r') };
         if (pos != str.npos) {
-            if (DEBUG_VERBOSE_) {
+            if constexpr (DEBUG_VERBOSE_) {
                 comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): pos={}\r\n", pos));
             }
             str.remove_suffix(str.size() - pos);
         }
 
-        if (DEBUG_VERBOSE_) {
+        if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): str.size={}\r\n", str.size()));
             for (size_t i { 0 }; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
@@ -165,14 +165,17 @@ bool CmdScript::create_script(const size_t history_depth) {
         return false;
     }
 
-    File file { SD.open(filename_.c_str(), static_cast<uint8_t>(FILE_WRITE | FILE_WRITE_BEGIN)) };
+    File file { SD.open(filename_.c_str(), static_cast<uint8_t>(FILE_WRITE_BEGIN)) };
+    if (!file) {
+        return false;
+    }
 
     for (size_t i { history_depth + 1U }; i > 1; --i) {
         auto str { cmd_parser_.get_history(i) };
         if (str.size()) {
-            if (DEBUG_VERBOSE_) {
+            if constexpr (DEBUG_VERBOSE_) {
                 comm_interface_.debug_printf<true>(PP_ARGS("str.size={}\r\n", str.size()));
-                for (size_t i { 0 }; i < str.size(); ++i) {
+                for (size_t i {}; i < str.size(); ++i) {
                     comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str.at(i))));
                 }
                 comm_interface_.debug_print(PSTR("\r\n"), true);
@@ -183,7 +186,7 @@ bool CmdScript::create_script(const size_t history_depth) {
                 pos = str.size();
             }
 
-            if (DEBUG_VERBOSE_) {
+            if constexpr (DEBUG_VERBOSE_) {
                 comm_interface_.debug_printf<true>(PP_ARGS("pos={}\r\n", pos));
             }
 
