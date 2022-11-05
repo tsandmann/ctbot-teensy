@@ -159,10 +159,6 @@ void I2C_Service::run(void* param) {
                 }
             }
 
-            if (!transfer->size1) {
-                finish_transfer(true, transfer, id);
-            }
-
             p_i2c_[bus]->beginTransmission(transfer->addr);
             if (transfer->type1 == 0) {
                 /* 1st transfer write */
@@ -199,8 +195,15 @@ void I2C_Service::run(void* param) {
                         continue;
                     }
                 }
+            } else if (!transfer->size1) {
+                /* just scan for address */
+                if (p_i2c_[bus]->endTransmission(1)) {
+                    transfer->error = 2;
+                    finish_transfer(false, transfer, id);
+                    continue;
+                }
             } else {
-                /* 1st transfer read */
+                /* 1st transfer read with size > 0 */
                 transfer->error = 255;
                 configASSERT(false); // FIXME: not implemented
             }
@@ -638,34 +641,34 @@ uint8_t I2C_Service::set_bit(const uint16_t addr, std::unsigned_integral auto co
 template uint8_t I2C_Service::set_bit<uint8_t>(const uint16_t, const uint8_t, const uint8_t, const bool) const;
 template uint8_t I2C_Service::set_bit<uint16_t>(const uint16_t, const uint16_t, const uint8_t, const bool) const;
 
+bool I2C_Service::test(const uint16_t addr, std::function<void(const bool, I2C_Transfer**)> callback) const {
+    I2C_Transfer* transfer { new I2C_Transfer { addr } };
+    transfer->callback = callback;
 
-#if 0
-void I2C_Service::test(const uint16_t addr, const uint32_t rx, const uint32_t tx, std::function<void(const bool, I2C_Transfer**)> callback) const {
-    I2C_Transfer* data { new I2C_Transfer { addr } };
-    data->callback = callback;
-    if (rx) {
-        data->rx_size = 1;
-        data->rx_data.data = rx;
-    }
-    if (tx) {
-        data->tx_size = 2;
-        data->tx_data.data = tx;
-    }
+    bool success {};
+    if (callback) {
+        transfer->callback = callback;
+    } else {
+        transfer->caller = ::xTaskGetCurrentTaskHandle();
+        transfer->callback = [&success](const bool done, I2C_Transfer** p_transfer) {
+            success = done;
 
-    if (::xQueueSend(i2c_queue_[bus_], &data, 0) != pdTRUE) {
-        if (callback) {
-            callback(false, &data);
-            if (data) {
-                if constexpr (DEBUG_) {
-                    printf_debug(PSTR("I2C_Service::test(): deleting data with addr=0x%x\r\n"), data->addr);
-                }
-                delete data;
+            if constexpr (DEBUG_) {
+                printf_debug(PSTR("I2C_Service::test(): callback, done=%u\r\n"), done);
             }
-        }
+            ::xTaskNotifyGive((*p_transfer)->caller);
+        };
     }
 
-    if constexpr (DEBUG_) {
-        printf_debug("I2C_Service::test(): data for 0x%x sent.r\n", data->addr);
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) { // FIXME: timeout?
+        return 100;
     }
+
+    if (callback) {
+        return 0;
+    }
+
+    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
+
+    return success;
 }
-#endif

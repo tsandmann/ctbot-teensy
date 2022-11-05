@@ -74,8 +74,7 @@ public:
         TaskHandle_t caller;
         std::function<void(const bool, I2C_Transfer**)> callback;
 
-        I2C_Transfer(const uint16_t slave_addr = 0)
-            : addr { slave_addr }, size1 { 0 }, type1 { 0 }, size2 { 0 }, type2 { 0 }, error {}, caller {}, callback {} {}
+        I2C_Transfer(const uint16_t slave_addr = 0) : addr { slave_addr }, size1 {}, type1 {}, size2 {}, type2 {}, error {}, caller {}, callback {} {}
         I2C_Transfer(const uint16_t slave_addr, const uint8_t _size1, const bool _type1, const uint8_t _size2, const bool _type2)
             : addr { slave_addr }, size1 { _size1 }, type1 { _type1 }, size2 { _size2 }, type2 { _type2 }, error {}, caller {}, callback {} {}
     };
@@ -127,5 +126,5 @@ public:
 
     uint8_t set_bit(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const;
 
-    void test(const uint16_t addr, const uint32_t rx, const uint32_t tx, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    bool test(const uint16_t addr, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
 };
