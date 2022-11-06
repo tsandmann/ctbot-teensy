@@ -24,16 +24,21 @@
 
 #pragma once
 
+#include "cmd_parser.h"
+
 #include "avr/pgmspace.h"
 
 #include <string_view>
 #include <vector>
+#include <functional>
+#include <tuple>
 
 
 namespace ctbot {
 
 class CtBot;
 class CommInterface;
+
 
 class CtBotCli {
 protected:
@@ -46,11 +51,24 @@ protected:
     PROGMEM static const char prog_[];
     PROGMEM static const char i2c_[];
 
-    FLASHMEM static std::string_view create_sv(const char* str);
+    template <typename... Ts>
+    struct ArgsHelper {
+        using func = std::function<bool(Ts...)>;
+        using types = std::tuple<Ts...>;
+    };
 
     CtBot* p_ctbot_;
     std::vector<std::string_view> texts_;
 
+    template <typename... Ts>
+    bool eval_args(ArgsHelper<Ts...>::func&& func, const std::string_view& args) {
+        typename ArgsHelper<Ts...>::types values;
+        if (auto [_, ec] = CmdParser::split_args(args, values); ec == std::errc {}) {
+            return std::apply(func, values);
+        }
+
+        return false;
+    }
 
 public:
     FLASHMEM CtBotCli(CtBot* p_ctbot);

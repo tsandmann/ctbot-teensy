@@ -24,6 +24,7 @@
 
 #include "cmd_parser.h"
 #include "comm_interface.h"
+#include "ctbot.h"
 
 #include "pprintpp.hpp"
 
@@ -35,11 +36,21 @@ namespace ctbot {
 CmdParser::CmdParser() : echo_ {} {}
 
 void CmdParser::register_cmd(const std::string_view& cmd, func_t&& func) {
-    commands_[std::string(cmd)] = func;
+    commands_.emplace(std::make_pair(cmd, func));
+
+    if constexpr (DEBUG_) {
+        CtBot::get_instance().get_comm()->debug_printf<true>("CmdParser::register_cmd(\"%s\"): cmd=0x%x addr=0x%x size=%u\r\n", cmd.cbegin(), cmd.data(),
+            commands_.find(cmd)->first.data(), commands_.find(cmd)->first.size());
+    }
 }
 
-void CmdParser::register_cmd(const std::string_view& cmd, const char cmd_short, func_t&& func) {
-    commands_[std::string(&cmd_short, 1)] = func;
+void CmdParser::register_cmd(const std::string_view& cmd, const char* cmd_short, func_t&& func) {
+    commands_.emplace(std::make_pair(std::string_view { cmd_short, 1 }, func));
+
+    if constexpr (DEBUG_) {
+        CtBot::get_instance().get_comm()->debug_printf<true>(
+            "CmdParser::register_cmd('%s'): addr=0x%x\r\n", cmd_short, commands_.find(std::string_view { cmd_short, 1 })->first.data());
+    }
 
     register_cmd(cmd, std::move(func));
 }
@@ -57,6 +68,10 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
     const auto arg_pos { cmd.find(" ") };
     const auto cmd_str { cmd.substr(0, arg_pos) };
 
+    if constexpr (DEBUG_) {
+        comm.debug_printf<true>("arg_pos=%u cmd_str=\"%s\"\r\n", arg_pos, std::string { cmd_str }.c_str());
+    }
+
     const auto it { commands_.find(cmd_str) };
     if (it == commands_.end()) {
         if (echo_) {
@@ -68,7 +83,7 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
             comm.debug_print(cmd, true);
             comm.debug_print("\" not found.\r\n", true);
             comm.set_attribute(CommInterface::Attribute::NORMAL);
-            if (DEBUG_) {
+            if constexpr (DEBUG_) {
                 comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
                 comm.debug_printf<true>(PP_ARGS("cmd.size={}\r\n", cmd.size()));
                 for (size_t i {}; i < cmd.size(); ++i) {
@@ -81,7 +96,7 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
     }
 
     std::string_view args;
-    if (arg_pos != std::string::npos && cmd.size() > arg_pos + 1) {
+    if (arg_pos != cmd.npos && cmd.size() > arg_pos + 1) {
         args = cmd.substr(arg_pos + 1);
     }
 
@@ -113,6 +128,21 @@ bool CmdParser::parse(const std::string_view& in, CommInterface& comm) {
     }
 
     return false;
+}
+
+std::string_view CmdParser::trim_to_first_arg(const std::string_view& str) {
+    if (!str.size()) {
+        return str;
+    }
+    const auto start { str.find_first_of(' ') };
+    if (start == str.npos) {
+        return str;
+    }
+
+    auto tmp { str };
+    tmp.remove_prefix(std::min(tmp.find_first_not_of(' ', start), tmp.size()));
+
+    return tmp;
 }
 
 } // namespace ctbot

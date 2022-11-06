@@ -71,7 +71,7 @@ public:
     void frequency(float) {}
     void phase(float) {}
     void amplitude(float) {}
-    virtual void update();
+    virtual void update() {}
 };
 
 class AudioOutputAnalog : public AudioStream {

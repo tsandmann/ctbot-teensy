@@ -48,6 +48,8 @@ namespace ctbot {
  * @enduml
  */
 class Servo {
+    static constexpr bool DEBUG_ { false };
+
 public:
     /**
      * @brief Create a servo instance for given servo number

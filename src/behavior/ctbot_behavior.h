@@ -62,7 +62,7 @@ class CtBotBehavior : public CtBot {
 protected:
     friend class CtBot; // allows protected constructor to enforce singleton pattern
 
-    PROGMEM static const char usage_text_beh[]; /**< C-String containing the usage / help message */
+    PROGMEM static const char usage_text_beh_[]; /**< C-String containing the usage / help message */
 
     ResourceContainer::Ptr p_data_; /**< Top level resource container for sensor models */
     ResourceContainer::Ptr p_actuators_; /**< Top level resource container for for actuators */
@@ -105,6 +105,8 @@ protected:
     bool update_enc(Pose& pose, Speed& speed);
 
     FLASHMEM void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
+
+    FLASHMEM void log_begin() const;
 
 public:
     /**

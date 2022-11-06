@@ -35,6 +35,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 
 namespace ctbot {
@@ -44,6 +45,14 @@ class CommInterface;
 namespace detail {
 template <typename T>
 concept Number = std::integral<T> || std::floating_point<T>;
+
+template <typename T>
+concept NumberArg =
+#if __GNUC__ >= 12
+    Number<T>;
+#else //__GNUC__ < 12
+    std::integral<T>;
+#endif //__GNUC__
 }
 
 /**
@@ -62,7 +71,7 @@ protected:
     static constexpr size_t HISTORY_SIZE_ { 16 };
 
     bool echo_;
-    std::map<std::string /*cmd*/, func_t /*function*/, std::less<>> commands_;
+    std::map<const std::string_view /*cmd*/, func_t /*function*/, std::less<>> commands_;
     std::deque<std::string> history_;
 
 public:
@@ -84,7 +93,7 @@ public:
      * @param[in] cmd_short: Shortcut for command as a single character
      * @param[in] func: Functor representing the action to execute for the command (may be a lambda)
      */
-    FLASHMEM void register_cmd(const std::string_view& cmd, const char cmd_short, func_t&& func);
+    FLASHMEM void register_cmd(const std::string_view& cmd, const char* cmd_short, func_t&& func);
 
     /**
      * @brief Parse the input data and execute the corresponding command, if registered
@@ -115,92 +124,80 @@ public:
         return std::string_view {};
     }
 
+    static std::string_view trim_to_first_arg(const std::string_view& str);
+
     /**
-     * @brief Split a string into space seperated tokens and return the first as integer argument
+     * @brief Split a string into space seperated tokens and return the first as bool argument
      * @param[in] args: Reference to input string
      * @param[out] b: Reference to first output argument of type bool
-     * @return Pointer to the character past the last character interpreted
+     * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static std::string_view split_args(const std::string_view& args, bool& b) {
-        uint_fast8_t x1 {};
-        b = false;
-        auto l { args.find(' ') };
-        if (l == args.npos) {
-            return std::string_view {};
-        }
-        ++l;
-        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
-        b = x1;
-
-        if (res.ec == std::errc()) {
-            return args.substr(res.ptr - args.cbegin());
+    static auto split_args(const std::string_view& args, bool& b) {
+        auto str { trim_to_first_arg(args) };
+        uint8_t x1;
+        auto res { std::from_chars(str.cbegin(), str.cend(), x1) };
+        if (res.ec == std::errc {}) {
+            b = static_cast<bool>(x1);
         }
 
-        return std::string_view {};
+        return res;
     }
 
     /**
-     * @brief Split a string into space seperated tokens and return the first as integer argument
+     * @brief Split a string into space seperated tokens and return the first as number (integral or float)  argument
      * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
-     * @return string_view to the last character interpreted
+     * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static std::string_view split_args(const std::string_view& args, std::integral auto& x1) {
-        x1 = {};
-        auto l { args.find(' ') };
-        if (l == args.npos) {
-            return std::string_view {};
-        }
-        ++l;
-
-        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) };
-        if (res.ec == std::errc()) {
-            return args.substr(res.ptr - args.cbegin());
-        }
-
-        return std::string_view {};
+    static auto split_args(const std::string_view& args, detail::NumberArg auto& x1) {
+        auto str { trim_to_first_arg(args) };
+        return std::from_chars(str.cbegin(), str.cend(), x1);
     }
 
+#if __GNUC__ < 12
     /**
      * @brief Split a string into space seperated tokens and return the first as float argument
      * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
-     * @return string_view to the last character interpreted
+     * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static std::string_view split_args(const std::string_view& args, std::floating_point auto& x1) {
-        x1 = {};
-        auto l { args.find(' ') };
-        if (l == args.npos) {
-            return std::string_view {};
-        }
-        ++l;
+    static auto split_args(const std::string_view& args, std::floating_point auto& x1) {
+        auto str { trim_to_first_arg(args) };
 
-#if __GNUC__ >= 12
-        auto res { std::from_chars(args.cbegin() + l, args.cend(), x1) }; // TODO: merge with above
-        if (res.ec == std::errc()) {
-            return args.substr(res.ptr - args.cbegin());
-        }
-#else // __GNUC__ < 12
         char* p_end;
-        x1 = std::strtof(args.cbegin() + l, &p_end);
-        if (p_end != args.cbegin() + l) {
-            return args.substr(p_end - args.cbegin());
+        const auto tmp { std::strtof(str.cbegin(), &p_end) };
+        std::from_chars_result res { nullptr, std::errc {} };
+        if (p_end != str.cbegin()) {
+            x1 = tmp;
+            res.ptr = p_end;
+        } else {
+            res.ec = std::errc::invalid_argument;
         }
+
+        return res;
+    }
 #endif // __GNUC__
 
-        return std::string_view {};
-    }
-
     /**
-     * @brief Split a string into space seperated tokens and return them as integer arguments
+     * @brief Split a string into space seperated tokens and return them as number (integral or float) arguments
      * @param[in] args: Reference to input string as string_view
      * @param[out] x1: Reference to first output argument
      * @param[out] xn: Parameter pack of references to next arguments
-     * @return string_view to the last character interpreted
+     * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static std::string_view split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) { // FIXME: return error code
-        auto next_args { split_args(args, x1) };
-        return split_args(next_args, xn...);
+    static auto split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) {
+        auto res { split_args(args, x1) };
+
+        if (res.ec != std::errc {}) {
+            return res;
+        }
+
+        return split_args(std::string_view(res.ptr, args.cend()), xn...);
+    }
+
+    template <typename... Ts>
+    static auto split_args(const std::string_view& args, std::tuple<Ts...>& x) {
+        return std::apply([&args](Ts&... values) { return split_args(args, values...); }, x);
     }
 };
 

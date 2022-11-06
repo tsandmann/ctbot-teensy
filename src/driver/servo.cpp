@@ -27,6 +27,7 @@
 
 #include "servo.h"
 
+#include "ctbot.h"
 #include "scheduler.h"
 
 #include "arduino_freertos.h"
@@ -34,7 +35,7 @@
 
 namespace ctbot {
 
-Servo::Servo(const uint8_t pin, const uint8_t initial_pos) : Servo { pin, 690U, 2400U, initial_pos } {}
+Servo::Servo(const uint8_t pin, const uint8_t initial_pos) : Servo { pin, 690U, 2'400U, initial_pos } {}
 
 Servo::Servo(const uint8_t pin, const uint16_t min, const uint16_t max, const uint8_t initial_pos)
     : pin_ { pin }, min_ { static_cast<uint16_t>(min >> 4U) }, max_ { static_cast<uint16_t>(max >> 4U) }, position_ { initial_pos }, active_ { true } {
@@ -65,8 +66,8 @@ void Servo::set(const uint8_t pos) {
 
     // float usec = (float)((max16 - min16) << 4) * ((float)angle / 180.f) + (float)(min16 << 4);
     // uint32_t duty = (int)(usec / 20000.f * 4096.f);
-    const uint32_t us { (((max_ - min_) * 46603U * position_) >> 11U) + (min_ << 12U) }; // us * 256
-    const uint32_t duty { (us * 3355U) >> 22U };
+    const uint32_t us { (((max_ - min_) * 46'603U * position_) >> 11U) + (min_ << 12U) }; // us * 256
+    const uint32_t duty { (us * 3'355U) >> 22U };
 
     Scheduler::enter_critical_section();
     const uint32_t oldres = arduino::analogWriteResolution(12);
@@ -75,6 +76,10 @@ void Servo::set(const uint8_t pos) {
     Scheduler::exit_critical_section();
 
     active_ = true;
+
+    if constexpr (DEBUG_) {
+        CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("Servo::set(): position_=%u pin_=%u duty=%u\r\n"), position_, pin_, duty);
+    }
 }
 
 void Servo::disable() {
