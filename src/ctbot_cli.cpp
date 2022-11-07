@@ -415,12 +415,11 @@ void CtBotCli::init_commands() {
                 PP_ARGS("{.2} V (probably {.2} V per cell)", p_ctbot_->p_sensors_->get_bat_voltage(), p_ctbot_->p_sensors_->get_bat_voltage() / 4.f));
         } else if (args.find(PSTR("currents")) == 0) {
             if constexpr (CtBotConfig::EXTERNAL_SPEEDCTRL) {
-                p_ctbot_->p_comm_->debug_printf<true>(
-                    PP_ARGS("@5V: {} mA @Motor: {} mA @Servo: {} mA", static_cast<uint16_t>(p_ctbot_->p_sensors_->get_5v_current()),
-                        SpeedControlExternal::get_motor_current(), static_cast<uint16_t>(p_ctbot_->p_sensors_->get_servo_current())));
+                p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("@5V: {} mA @Motor: {} mA @Servo: {} mA", p_ctbot_->p_sensors_->get_5v_current(),
+                    SpeedControlExternal::get_motor_current(), p_ctbot_->p_sensors_->get_servo_current()));
             } else {
-                p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("@5V: {} mA @Servo: {} mA", static_cast<uint16_t>(p_ctbot_->p_sensors_->get_5v_current()),
-                    static_cast<uint16_t>(p_ctbot_->p_sensors_->get_servo_current())));
+                p_ctbot_->p_comm_->debug_printf<true>(
+                    PP_ARGS("@5V: {} mA @Servo: {} mA", p_ctbot_->p_sensors_->get_5v_current(), p_ctbot_->p_sensors_->get_servo_current()));
             }
         } else if (args.find(PSTR("tasks")) == 0) {
             p_ctbot_->get_scheduler()->print_task_list(*p_ctbot_->p_comm_);

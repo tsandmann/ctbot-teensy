@@ -148,11 +148,11 @@ public:
     }
 
     auto get_5v_current() const {
-        return current_5v_;
+        return static_cast<uint16_t>(current_5v_);
     }
 
     auto get_servo_current() const {
-        return current_servo_;
+        return static_cast<uint16_t>(current_servo_);
     }
 };
 

@@ -476,18 +476,18 @@ bool CtBot::publish_sensordata() {
     p_comm_->debug_printf<true>(PP_ARGS("<sens>bat: {.2} {.2}</sens>\r\n", p_sensors_->get_bat_voltage(), p_sensors_->get_bat_voltage() / 4.f));
     p_comm_->debug_printf<true>(PP_ARGS("<sens>speed: {} {}</sens>\r\n", static_cast<int16_t>(p_speedcontrols_[0]->get_enc_speed()),
         static_cast<int16_t>(p_speedcontrols_[1]->get_enc_speed())));
-    if (CtBotConfig::EXTERNAL_SPEEDCTRL) {
+    if constexpr (CtBotConfig::EXTERNAL_SPEEDCTRL) {
         const auto mcurrent { SpeedControlExternal::get_motor_current() };
         p_comm_->debug_printf<true>(PP_ARGS("<sens>mcurrent: {}</sens>\r\n", mcurrent > 5 ? mcurrent : 0));
     }
-    if (p_sensors_->get_mpu6050()) {
+    if (CtBotConfig::MPU6050_AVAILABLE && p_sensors_->get_mpu6050()) {
         auto [e1, e2, e3] = p_sensors_->get_mpu6050()->get_euler();
         auto [y, p, r] = p_sensors_->get_mpu6050()->get_ypr();
         p_comm_->debug_printf<true>(PP_ARGS("<sens>mpu_e: {9.4} {9.4} {9.4}</sens>\r\n", e1, e2, e3));
         p_comm_->debug_printf<true>(PP_ARGS("<sens>mpu_ypr: {9.4} {9.4} {9.4}</sens>\r\n", y, p, r));
     }
-
-    if (p_motors_[0] && p_motors_[1]) {
+    p_comm_->debug_printf<true>(PP_ARGS("<sens>currents: {} {}</sens>\r\n", p_sensors_->get_5v_current(), p_sensors_->get_servo_current()));
+    if (!CtBotConfig::EXTERNAL_SPEEDCTRL && p_motors_[0] && p_motors_[1]) {
         p_comm_->debug_printf<true>(PP_ARGS("<act>motor: {} {}</act>\r\n", p_motors_[0]->get(), p_motors_[1]->get()));
     } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && p_speedcontrols_[0] && p_speedcontrols_[1]) {
         p_comm_->debug_printf<true>(PP_ARGS(
