@@ -34,7 +34,7 @@
 #include <vector>
 
 
-class FS;
+class FS_Service;
 class File;
 
 namespace ctbot {
@@ -88,7 +88,7 @@ protected:
     CtBot* p_ctbot_;
 
 public:
-    FLASHMEM LoggerTargetFile(FS& fs, const std::string_view& filename, CtBot* p_ctbot);
+    FLASHMEM LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot);
     FLASHMEM virtual ~LoggerTargetFile() override;
 
     virtual void begin(const std::string_view& prefix) const override;

@@ -48,6 +48,7 @@ class TTS;
 class AudioConnection;
 class AudioMixer4;
 class LuaWrapper;
+class FS_Service;
 
 namespace arduino {
 class SerialIO;
@@ -108,6 +109,7 @@ protected:
     CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     Logger* p_logger_;
+    FS_Service* p_fs_;
     LoggerTargetFile* p_logger_file_;
     ParameterStorage* p_parameter_;
     AudioOutputAnalog* p_audio_output_dac_;
@@ -284,6 +286,10 @@ public:
      */
     auto get_serial_cmd() const {
         return CtBotConfig::UART_WIFI_FOR_CMD ? p_serial_wifi_ : p_serial_usb_;
+    }
+
+    auto get_fs() const {
+        return p_fs_;
     }
 
     void add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active = true);

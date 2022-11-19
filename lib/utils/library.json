@@ -1,6 +1,11 @@
 {
   "name": "utils",
   "description": "ct-Bot framework utility library",
+  "authors": [
+    {
+      "name": "various"
+    }
+  ],
   "version": "1.0.0",
   "frameworks": "*",
   "platforms": "*"

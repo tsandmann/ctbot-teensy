@@ -23,11 +23,12 @@
  */
 
 #include "cmd_script.h"
+#include "ctbot.h"
 #include "cmd_parser.h"
 #include "comm_interface.h"
+#include "fs_service.h"
 
 #include "pprintpp.hpp"
-#include "SD.h"
 #include "SPI.h"
 #include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 
@@ -89,14 +90,14 @@ bool CmdScript::print_script() {
 }
 
 bool CmdScript::process_script(std::function<bool(const std::string_view&)> func) {
-    if (!SD.exists(filename_.c_str())) {
+    if (!CtBot::get_instance().get_fs()->exists(filename_.c_str())) {
         comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): file \"{s}\" not found.\r\n", filename_.c_str()));
         return false;
     }
 
-    File file { SD.open(filename_.c_str()) };
+    File file { CtBot::get_instance().get_fs()->open(filename_.c_str()) };
     if constexpr (DEBUG_VERBOSE_) {
-        comm_interface_.debug_print(PSTR("CmdScript::process_script(): SD.open() done.\r\n"), true);
+        comm_interface_.debug_print(PSTR("CmdScript::process_script(): get_fs()->open() done.\r\n"), true);
     }
 
     auto p_buffer { std::make_unique<uint32_t[]>(MAX_LINE_LENGTH_ / 4U + 1U) };
@@ -116,11 +117,8 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
         std::string_view str { p_str, n };
         if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_print(PSTR("CmdScript::process_script(): string_view created.\r\n"), true);
-        }
-
-        if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): str.size={}\r\n", str.size()));
-            for (size_t i { 0 }; i < str.size(); ++i) {
+            for (size_t i {}; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
             }
             comm_interface_.debug_print(PSTR("\r\n"), true);
@@ -136,7 +134,7 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
 
         if constexpr (DEBUG_VERBOSE_) {
             comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): str.size={}\r\n", str.size()));
-            for (size_t i { 0 }; i < str.size(); ++i) {
+            for (size_t i {}; i < str.size(); ++i) {
                 comm_interface_.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(str[i])));
             }
             comm_interface_.debug_print(PSTR("\r\n"), true);
@@ -165,7 +163,7 @@ bool CmdScript::create_script(const size_t history_depth) {
         return false;
     }
 
-    File file { SD.open(filename_.c_str(), static_cast<uint8_t>(FILE_WRITE_BEGIN)) };
+    File file { CtBot::get_instance().get_fs()->open(filename_.c_str(), static_cast<uint8_t>(FILE_WRITE_BEGIN)) };
     if (!file) {
         return false;
     }

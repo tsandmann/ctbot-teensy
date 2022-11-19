@@ -26,14 +26,7 @@
 
 #include "ctbot.h"
 #include "ctbot_cli.h"
-
-#ifdef ArduinoFiles_h
-#undef FILE_READ
-#endif
-#ifdef ArduinoFiles_h
-#undef FILE_WRITE
-#endif
-#include "FS.h"
+#include "fs_service.h"
 
 #include <cstdio>
 #include <cstdarg>
@@ -65,8 +58,8 @@ std::string LoggerTarget::create_formatted_string(const size_t size, const char*
 }
 
 
-FLASHMEM LoggerTargetFile::LoggerTargetFile(FS& fs, const std::string_view& filename, CtBot* p_ctbot) : p_file_ {}, p_ctbot_ { p_ctbot } {
-    p_file_ = new File { fs.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) };
+FLASHMEM LoggerTargetFile::LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot) : p_file_ {}, p_ctbot_ { p_ctbot } {
+    p_file_ = new File { fs_svc.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) }; // FIXME: check if new File is necessary
     configASSERT(p_file_);
 }
 

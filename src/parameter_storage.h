@@ -40,7 +40,7 @@
 #include <type_traits>
 
 
-class FS;
+class FS_Service;
 
 namespace ctbot {
 
@@ -57,7 +57,7 @@ class ParameterStorage { // FIXME: add documentation
     static constexpr bool DEBUG_ { false };
 
 protected:
-    FS& fs_;
+    FS_Service& fs_svc_;
     const std::string config_file_;
     DynamicJsonDocument* p_parameter_doc_;
 
@@ -76,7 +76,7 @@ protected:
     void set_parameter(const std::string_view& key, const size_t index, const float value) noexcept;
 
 public:
-    FLASHMEM ParameterStorage(FS& fs, const std::string_view& config_file, const size_t buffer_size = 512);
+    FLASHMEM ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, const size_t buffer_size = 512);
     FLASHMEM ~ParameterStorage();
 
     std::unique_ptr<std::string> dump() const;

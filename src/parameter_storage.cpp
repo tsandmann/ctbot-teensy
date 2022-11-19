@@ -25,21 +25,14 @@
 #include "parameter_storage.h"
 
 #include "ctbot.h"
-
-#ifdef ArduinoFiles_h
-#undef FILE_READ
-#endif
-#ifdef ArduinoFiles_h
-#undef FILE_WRITE
-#endif
-#include "FS.h"
+#include "fs_service.h"
 
 
 namespace ctbot {
-ParameterStorage::ParameterStorage(FS& fs, const std::string_view& config_file, const size_t buffer_size)
-    : fs_ { fs }, config_file_ { config_file }, p_parameter_doc_ {} {
-    if (!fs_.exists(config_file_.c_str())) {
-        File f { fs_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE)) };
+ParameterStorage::ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, const size_t buffer_size)
+    : fs_svc_ { fs_svc }, config_file_ { config_file }, p_parameter_doc_ {} {
+    if (!fs_svc_.exists(config_file_.c_str())) {
+        auto f { fs_svc_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE)) };
         if (f) {
             f.close();
         } else {
@@ -47,7 +40,7 @@ ParameterStorage::ParameterStorage(FS& fs, const std::string_view& config_file, 
             return;
         }
     }
-    File f { fs_.open(config_file_.c_str(), FILE_READ) };
+    auto f { fs_svc_.open(config_file_.c_str(), FILE_READ) };
     if (f) {
         const size_t n { static_cast<size_t>(f.size()) };
         p_parameter_doc_ = new DynamicJsonDocument { n + buffer_size };
@@ -55,7 +48,7 @@ ParameterStorage::ParameterStorage(FS& fs, const std::string_view& config_file, 
             auto error { deserializeJson(*p_parameter_doc_, f) };
             if (error) {
                 CtBot::get_instance().get_comm()->debug_print(PSTR("PS::ParameterStorage(): deserializeJson() failed.\r\n"), true);
-            } else if (DEBUG_) {
+            } else if constexpr (DEBUG_) {
                 CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::ParameterStorage(): parameter_=\"%s\"\r\n"), dump()->c_str());
             }
         }
@@ -116,7 +109,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
         }
         return false;
@@ -125,12 +118,12 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto data { array.getElement(index) };
     if (data.is<uint32_t>()) {
         value = data.as<uint32_t>();
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%u\r\n"), key.data(), value);
         }
         return true;
     }
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
     }
     return false;
@@ -140,7 +133,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
         }
         return false;
@@ -149,12 +142,12 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto data { array.getElement(index) };
     if (data.is<int32_t>()) {
         value = data.as<int32_t>();
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%d\r\n"), value);
         }
         return true;
     }
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
     }
     return false;
@@ -164,7 +157,7 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto array { p_parameter_doc_->getMember(key) };
 
     if (array.isNull()) {
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
         }
         return false;
@@ -173,12 +166,12 @@ bool ParameterStorage::get_parameter(const std::string_view& key, const size_t i
     const auto data { array.getElement(index) };
     if (data.is<float>()) {
         value = data.as<float>();
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%f\r\n"), value);
         }
         return true;
     }
-    if (DEBUG_) {
+    if constexpr (DEBUG_) {
         CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
     }
     return false;
@@ -201,11 +194,11 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
 
     if (array.isNull()) {
         p_parameter_doc_->createNestedArray(key);
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
         }
     }
-    // FIXME: add zero-padding?
+    // TODO: add zero-padding?
     array[index] = value;
 }
 
@@ -214,11 +207,11 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
 
     if (array.isNull()) {
         p_parameter_doc_->createNestedArray(key);
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
         }
     }
-    // FIXME: add zero-padding?
+    // TODO: add zero-padding?
     array[index] = value;
 }
 
@@ -227,11 +220,11 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
 
     if (array.isNull()) {
         p_parameter_doc_->createNestedArray(key);
-        if (DEBUG_) {
+        if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
         }
     }
-    // FIXME: add zero-padding?
+    // TODO: add zero-padding?
     array[index] = value;
 }
 
@@ -242,8 +235,8 @@ std::unique_ptr<std::string> ParameterStorage::dump() const {
 }
 
 bool ParameterStorage::flush() const {
-    fs_.remove(config_file_.c_str());
-    File f { fs_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE)) };
+    fs_svc_.remove(config_file_.c_str());
+    auto f { fs_svc_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE)) };
     if (f) {
         serializeJson(*p_parameter_doc_, f);
         f.close();

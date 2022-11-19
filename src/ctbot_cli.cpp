@@ -30,6 +30,7 @@
 #include "cmd_script.h"
 #include "comm_interface.h"
 #include "i2c_service.h"
+#include "fs_service.h"
 #include "logger.h"
 #include "parameter_storage.h"
 #include "scheduler.h"
@@ -640,11 +641,14 @@ void CtBotCli::init_commands() {
                     return true;
                 },
                 val);
-        } else if (args.find(PSTR("time")) == 0) {
+        } else if (CtBotConfig::DATE_TIME_AVAILABLE && args.find(PSTR("time")) == 0) {
             if (eval_args<int32_t>(
                     [this](int32_t time) {
-                        const auto now { std::chrono::system_clock::from_time_t(time) };
-                        free_rtos_std::set_system_clock(now);
+                        const auto received_time { std::chrono::system_clock::from_time_t(time) };
+                        const auto current_time { std::chrono::high_resolution_clock::now() };
+                        if (received_time > current_time) {
+                            free_rtos_std::set_system_clock(received_time);
+                        }
                         return true;
                     },
                     args)) {
@@ -727,7 +731,7 @@ void CtBotCli::init_commands() {
                 dir = args.substr(s + 1);
             }
 
-            auto root { SD.open(dir.c_str()) };
+            auto root { p_ctbot_->get_fs()->open(dir.c_str(), FILE_READ) };
             if (!root.isDirectory()) {
                 return false;
             }
@@ -741,6 +745,9 @@ void CtBotCli::init_commands() {
                 const auto len { p_ctbot_->p_comm_->debug_print(entry.name(), true) };
                 if (!entry.isDirectory()) {
                     if (len <= 15) {
+                        p_ctbot_->p_comm_->debug_print('\t', true);
+                    }
+                    if (len <= 7) {
                         p_ctbot_->p_comm_->debug_print('\t', true);
                     }
                     p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("\t{} KB\r\n", static_cast<uint32_t>(entry.size() / 1'024ULL)));
@@ -758,18 +765,16 @@ void CtBotCli::init_commands() {
                 return false;
             }
             const std::string path { args.substr(s + 1) };
-            if (!SD.exists(path.c_str())) {
+            if (!p_ctbot_->get_fs()->exists(path.c_str())) {
                 p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
                 return false;
             }
-            File file { SD.open(path.c_str()) };
+            File file { p_ctbot_->get_fs()->open(path.c_str(), FILE_READ) };
+            char buf[32];
             while (file.available()) {
-                const auto c { file.read() };
-                if (c > 0) {
-                    p_ctbot_->p_comm_->debug_print(static_cast<char>(c), true);
-                    if (c == '\n') {
-                        p_ctbot_->p_comm_->debug_print('\r', true);
-                    }
+                const auto n { file.read(buf, sizeof(buf)) };
+                if (n) {
+                    p_ctbot_->p_comm_->debug_print(std::string_view { buf, n }, true);
                 }
             }
             p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);

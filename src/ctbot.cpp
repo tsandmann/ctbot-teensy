@@ -30,6 +30,7 @@
 #include "cmd_script.h"
 #include "ctbot_cli.h"
 #include "i2c_service.h"
+#include "fs_service.h"
 #include "logger.h"
 #include "parameter_storage.h"
 #include "scheduler.h"
@@ -49,9 +50,11 @@
 
 #include "test/tests.h"
 
+#include "timestamp.h"
 #include "lua_wrapper.h"
 #include "pprintpp.hpp"
 #include "timers.h"
+#include "freertos_time.h"
 
 #include <array>
 #include <charconv>
@@ -115,7 +118,7 @@ FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
       p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {},
-      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_logger_file_ {}, p_parameter_ {},
+      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {},
       p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, p_lua_ {} {}
 
 CtBot::~CtBot() {
@@ -185,7 +188,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
         p_serial_wifi_->setTX(CtBotConfig::UART_WIFI_PIN_TX);
         if (!p_serial_wifi_->begin(CtBotConfig::UART_WIFI_BAUDRATE, 0, 64, 256)) {
-            p_comm_->debug_print(PSTR("p_serial_wifi_->begin() failed.\r\n"), true);
+            ::serialport_puts(PSTR("p_serial_wifi_->begin() failed.\r\n"));
         }
 
         p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
@@ -205,39 +208,45 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_logger_->add_target(p_comm_);
 
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): comm services inited.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): comm services inited.\r\n"));
     }
 
     p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS - 1, CtBotConfig::ENA_I2C_ADDR,
         CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_);
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): ENA created.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): ENA created.\r\n"));
     }
     p_ena_pwm_ = new LedsI2cEna<> { CtBotConfig::ENA_PWM_I2C_BUS - 1, CtBotConfig::ENA_PWM_I2C_ADDR,
         CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
     configASSERT(p_ena_pwm_);
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): ENA PWM created.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): ENA PWM created.\r\n"));
     }
     if constexpr (CtBotConfig::MAINBOARD_REVISION == 9'000) {
         p_ena_pwm_->set_pwm(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R), 128);
         p_ena_pwm_->off(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R));
         p_ena_pwm_->on(static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_L) | static_cast<LedTypesEna<>>(LedTypesEna_9000::ENC_R));
         if constexpr (DEBUG_LEVEL_ > 2) {
-            ::serialport_puts(PSTR("CtBot::setup(): ENA inited.\r\n"));
+            p_logger_->begin();
+            p_logger_->log(PSTR("CtBot::setup(): ENA inited.\r\n"));
         }
     }
 
     p_sensors_ = new Sensors { *this };
     configASSERT(p_sensors_);
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): sensors created.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): sensors created.\r\n"));
     }
 
     p_sensors_->enable_sensors();
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): sensors enabled.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): sensors enabled.\r\n"));
     }
 
     if constexpr (CtBotConfig::EXTERNAL_SPEEDCTRL) {
@@ -270,24 +279,50 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_scheduler_->task_register(PSTR("TFT Svc"), true);
     }
 
+    if constexpr (CtBotConfig::DATE_TIME_AVAILABLE) {
+        const auto now { std::chrono::system_clock::from_time_t(UNIX_TIMESTAMP) };
+        free_rtos_std::set_system_clock(now);
+
+        update_clock();
+        p_clock_timer_ = ::xTimerCreate(PSTR("clock_t"), pdMS_TO_TICKS(6'000UL), true, this, [](TimerHandle_t handle) {
+            auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
+            configASSERT(p_ctbot);
+
+            ::xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
+
+            p_ctbot->update_clock();
+        });
+        ::xTimerStart(p_clock_timer_, 0);
+    }
+
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): SD-card init...\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): SD-card init...\r\n"));
     }
     if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
-        if (SD.sdfs.begin(SdioConfig(CtBotConfig::SDCARD_USE_DMA ? DMA_SDIO : FIFO_SDIO))) {
-            p_parameter_ = new ParameterStorage { SD, PSTR("ctbot.jsn") };
+        p_fs_ = new FS_Service { SD };
+        configASSERT(p_fs_);
+        if (p_fs_->begin(SdioConfig(CtBotConfig::SDCARD_USE_DMA ? DMA_SDIO : FIFO_SDIO))) {
+            p_scheduler_->task_register(PSTR("FS Svc"));
+            p_parameter_ = new ParameterStorage { *p_fs_, PSTR("ctbot.jsn") };
             configASSERT(p_parameter_);
+            if constexpr (DEBUG_LEVEL_ > 2) {
+                p_logger_->begin(PSTR("CtBot::setup()"));
+                p_logger_->log(PSTR("ParameterStorage created.\r\n"), true);
+            }
             if constexpr (CtBotConfig::LOG_TO_SDCARD_AVAILABLE) {
-                p_logger_file_ = new LoggerTargetFile { SD, PSTR("logs.txt"), this };
+                p_logger_file_ = new LoggerTargetFile { *p_fs_, PSTR("logs.txt"), this };
                 configASSERT(p_logger_file_);
                 p_logger_->add_target(p_logger_file_);
             }
         } else {
-            p_logger_->log(PSTR("SD.sdfs.begin() failed.\r\n"), true);
+            p_logger_->begin();
+            p_logger_->log(PSTR("p_fs_->begin() failed.\r\n"), true);
         }
     }
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): SD Card init done.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): SD Card init done.\r\n"));
     }
 
     if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
@@ -360,7 +395,8 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
         get_scheduler()->task_add(PSTR("audio"), 1, Scheduler::MAX_PRIORITY, 4096, [this]() {
             while (get_ready()) {
-                if (::ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500)) == 1) {
+                static_assert(configTASK_NOTIFICATION_ARRAY_ENTRIES > 2, "configTASK_NOTIFICATION_ARRAY_ENTRIES needs to be at least 3");
+                if (::ulTaskNotifyTakeIndexed(configTASK_NOTIFICATION_ARRAY_ENTRIES - 2, pdTRUE, pdMS_TO_TICKS(500)) == 1) {
                     ::software_isr(); // AudioStream::update_all()
                 }
             }
@@ -376,7 +412,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             ::attachInterruptVector(IRQ_SOFTWARE, []() FASTRUN {
                 if (audio_task_) {
                     BaseType_t higher_woken { pdFALSE };
-                    ::vTaskNotifyGiveFromISR(audio_task_, &higher_woken);
+                    ::vTaskNotifyGiveIndexedFromISR(audio_task_, configTASK_NOTIFICATION_ARRAY_ENTRIES - 2, &higher_woken);
                     portYIELD_FROM_ISR(higher_woken);
                     portDATA_SYNC_BARRIER(); // mitigate arm errata #838869
                 }
@@ -399,20 +435,8 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
 
     p_cli_->init_commands();
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup(): p_cli_->init_commands() done.\r\n"));
-    }
-
-    if constexpr (CtBotConfig::DATE_TIME_AVAILABLE) {
-        update_clock();
-        p_clock_timer_ = ::xTimerCreate(PSTR("clock_t"), pdMS_TO_TICKS(5'000UL), true, this, [](TimerHandle_t handle) {
-            auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
-            configASSERT(p_ctbot);
-
-            ::xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
-
-            p_ctbot->update_clock();
-        });
-        ::xTimerStart(p_clock_timer_, 0);
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup(): p_cli_->init_commands() done.\r\n"));
     }
 
     add_post_hook(
@@ -443,8 +467,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_logger_->begin();
         p_logger_->log(PSTR("ct-Bot init done.\r\n"), true);
     }
+    p_logger_->log(PSTR("\r\n"));
     p_logger_->begin();
-    p_logger_->log(PSTR("\r\n*** Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ". ***\r\n"), true);
+    p_logger_->log(PSTR("*** Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ " on " __DATE__ ". ***\r\n"), true);
     p_logger_->flush();
     p_comm_->debug_print(PSTR("\r\nType \"help\" (or \"h\") to print help message.\r\n\n"), true);
     p_comm_->flush();
@@ -452,7 +477,8 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     ready_ = set_ready;
 
     if constexpr (DEBUG_LEVEL_ > 2) {
-        ::serialport_puts(PSTR("CtBot::setup() done.\r\n"));
+        p_logger_->begin();
+        p_logger_->log(PSTR("CtBot::setup() done.\r\n"));
     }
 }
 
@@ -572,7 +598,11 @@ FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
         }
 
         const std::string file { filename.substr(str_begin) };
-        const bool res { p_play_wav_->play(file.c_str()) };
+        File wavefile { p_fs_->open(file.c_str()) };
+        if (!wavefile) {
+            return false;
+        }
+        const bool res { p_play_wav_->play(wavefile) };
 
         if (res) {
             p_logger_->log<false>(PP_ARGS("CtBot::play_wav(): Playing file \"{s}\"\r\n", file.c_str()));
@@ -763,7 +793,7 @@ FLASHMEM void CtBot::update_clock() {
     if constexpr (DEBUG_LEVEL_ >= 4) {
         p_comm_->debug_printf<false>(PSTR("CtBot::update_clock(): now=%d%03d\r\n"), static_cast<uint32_t>(now / 1'000L), static_cast<uint32_t>(now % 1'000L));
     }
-    if (now > 1'600'000'000LL) { // 2020-09
+    if (now > UNIX_TIMESTAMP) {
         if (p_clock_timer_) {
             xTimerStop(p_clock_timer_, 0);
             xTimerDelete(p_clock_timer_, 0);
@@ -777,7 +807,7 @@ FLASHMEM void CtBot::update_clock() {
     }
 
     p_comm_->flush();
-    p_comm_->debug_print(PSTR("\eC"), false); // send clock command to esp
+    p_comm_->debug_print(PSTR("\eC"), false); // send clock command to wifi controller
 }
 
 } // namespace ctbot
