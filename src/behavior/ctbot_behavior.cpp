@@ -106,7 +106,7 @@ void CtBotBehavior::setup(const bool set_ready) {
                         p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>()>>(std::get<1>(beh))();
                         if (DEBUG_LEVEL_ >= 4) {
                             log_begin();
-                            get_logger()->log(PSTR(" done.\r\n"), true); // TODO: timestamp for log?
+                            get_logger()->log(PSTR(" done.\r\n"), true);
                         }
                         break;
 

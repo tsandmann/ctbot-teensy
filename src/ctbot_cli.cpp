@@ -69,7 +69,7 @@ const char CtBotCli::general_[] { "command subcommand [param]           explanat
                                   "----------------------------------------------------------------------------------\r\n"
                                   "help (h)                             print this help message\r\n"
                                   "halt                                 shutdown and put Teensy in sleep mode\r\n"
-                                  "watch (w) COMMAND                    execute COMMAND every second\r\n"
+                                  "watch (w) INTERVAL COMMAND           execute COMMAND every INTERVAL ms\r\n"
                                   "sleep MS                             sleep for MS milliseconds\r\n"
                                   "stack TASK_ID                        print stack of task with id TASK_ID\r\n"
                                   "crash                                cause a crash intentionally\r\n" };
@@ -210,36 +210,39 @@ void CtBotCli::init_commands() {
     });
 
     p_parser->register_cmd(PSTR("watch"), "w", [this](const std::string_view& args) {
-        // TODO: parameter for time?
         if (args.size()) {
-            auto p_cmd { new std::string { args } };
-            if (p_ctbot_->p_watch_timer_) {
-                auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(p_ctbot_->p_watch_timer_)) };
-                xTimerStop(p_ctbot_->p_watch_timer_, 0);
-                delete ptr;
-                xTimerDelete(p_ctbot_->p_watch_timer_, 0);
+            uint16_t interval;
+            if (auto [res, ec] = std::from_chars(args.cbegin(), args.cend(), interval); ec == std::errc {}) {
+                const std::string_view str { res, args.cend() };
+                const auto args2 { CmdParser::trim_to_first_arg(str) };
+                auto p_cmd { new std::string { args2 } };
+                if (p_ctbot_->p_watch_timer_) {
+                    auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(p_ctbot_->p_watch_timer_)) };
+                    xTimerStop(p_ctbot_->p_watch_timer_, 0);
+                    delete ptr;
+                    xTimerDelete(p_ctbot_->p_watch_timer_, 0);
+                }
+                p_ctbot_->p_watch_timer_ = ::xTimerCreate(PSTR("watch_t"), pdMS_TO_TICKS(interval), true, p_cmd, [](TimerHandle_t handle) {
+                    auto& ctbot { CtBot::get_instance() };
+                    auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(handle)) };
+                    ctbot.get_cmd_parser()->execute_cmd(*ptr, *ctbot.get_comm());
+                });
+                if (!p_ctbot_->p_watch_timer_) {
+                    delete p_cmd;
+                    return false;
+                }
+                ::xTimerStart(p_ctbot_->p_watch_timer_, 0);
+                return true;
             }
-            p_ctbot_->p_watch_timer_ = ::xTimerCreate(PSTR("watch_t"), pdMS_TO_TICKS(1'000UL), true, p_cmd, [](TimerHandle_t handle) {
-                auto& ctbot { CtBot::get_instance() };
-                auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(handle)) };
-                ctbot.get_cmd_parser()->execute_cmd(*ptr, *ctbot.get_comm());
-            });
-            if (!p_ctbot_->p_watch_timer_) {
-                delete p_cmd;
-                return false;
-            }
-            ::xTimerStart(p_ctbot_->p_watch_timer_, 0);
-        } else {
-            if (!p_ctbot_->p_watch_timer_) {
-                return false;
-            }
+        } else if (p_ctbot_->p_watch_timer_) {
             auto ptr { static_cast<std::string*>(::pvTimerGetTimerID(p_ctbot_->p_watch_timer_)) };
             xTimerStop(p_ctbot_->p_watch_timer_, 0);
             delete ptr;
             xTimerDelete(p_ctbot_->p_watch_timer_, 0);
             p_ctbot_->p_watch_timer_ = nullptr;
+            return true;
         }
-        return true;
+        return false;
     });
 
     p_parser->register_cmd(PSTR("config"), "c", [this](const std::string_view& args) {
