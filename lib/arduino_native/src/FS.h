@@ -44,17 +44,37 @@
 #define FILE_WRITE 1
 #define FILE_WRITE_BEGIN 2
 
+#ifndef O_RDONLY
 #define O_RDONLY 0 /* +1 == FREAD */
+#endif
+#ifndef O_WRONLY
 #define O_WRONLY 1 /* +1 == FWRITE */
+#endif
+#ifndef O_RDWR
 #define O_RDWR 2 /* +1 == FREAD|FWRITE */
+#endif
+#ifndef O_CREAT
 #define O_CREAT 0x0200 // _FCREAT
+#endif
+#ifndef O_TRUNC
 #define O_TRUNC _FTRUNC
+#endif
+#ifndef O_EXCL
 #define O_EXCL _FEXCL
+#endif
+#ifndef O_SYNC
 #define O_SYNC _FSYNC
+#endif
+#ifndef O_AT_END
 #define O_AT_END 0x4000 // _FNONBLOCK
+#endif
 
+#ifndef O_READ
 #define O_READ O_RDONLY
+#endif
+#ifndef O_WRITE
 #define O_WRITE O_WRONLY
+#endif
 
 enum SeekMode { SeekSet = 0, SeekCur = 1, SeekEnd = 2 };
 
