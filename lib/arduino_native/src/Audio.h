@@ -56,6 +56,10 @@ public:
         return false;
     }
 
+    bool play(File) {
+        return false;
+    }
+
     void stop() {}
 
     void togglePlayPause() {}

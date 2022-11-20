@@ -27,14 +27,18 @@
 #include <limits>
 
 
-FileImplStdio::FileImplStdio(const std::string_view& file, const uint8_t mode) : p_file_ {}, mode_ { mode }, name_ { file } {
+FileImplStdio::FileImplStdio() : p_file_ {}, mode_ {} {}
+
+FileImplStdio::FileImplStdio(const std::string_view& file, const int mode) : p_file_ {}, mode_ { mode }, name_ { file } {
     std::string filemode { "rb" };
-    if (mode & FILE_WRITE) {
+    if (mode & O_RDWR) {
         filemode = "a+b";
     }
     p_file_ = std::fopen(name_.data(), filemode.c_str());
-    if (mode & FILE_WRITE_BEGIN) {
-        std::rewind(p_file_);
+    if (p_file_) {
+        if (!(mode & O_AT_END)) {
+            std::rewind(p_file_);
+        }
     }
 }
 
@@ -45,14 +49,25 @@ FileImplStdio::~FileImplStdio() {
 }
 
 size_t FileImplStdio::write(const void* buf, size_t nbyte) {
-    return std::fwrite(buf, 1, nbyte, p_file_);
+    if (!p_file_) {
+        return 0;
+    }
+    const auto res { std::fwrite(buf, 1, nbyte, p_file_) };
+    flush();
+    return res;
 }
 
 size_t FileImplStdio::read(void* buf, size_t nbyte) {
+    if (!p_file_) {
+        return 0;
+    }
     return std::fread(buf, 1, nbyte, p_file_);
 }
 
 int FileImplStdio::peek() {
+    if (!p_file_) {
+        return -1;
+    }
     const auto value { std::fgetc(p_file_) };
     std::ungetc(value, p_file_);
 
@@ -64,15 +79,24 @@ int FileImplStdio::available() {
 }
 
 uint64_t FileImplStdio::position() {
+    if (!p_file_) {
+        return 0;
+    }
     return std::ftell(p_file_);
 }
 
 void FileImplStdio::flush() {
+    if (!p_file_) {
+        return;
+    }
     std::fflush(p_file_);
 }
 
 bool FileImplStdio::truncate(uint64_t size) {
-    if (mode_ == FILE_READ) {
+    if (!p_file_) {
+        return false;
+    }
+    if (!(mode_ & O_RDWR)) {
         return false;
     }
 
@@ -92,6 +116,9 @@ bool FileImplStdio::truncate(uint64_t size) {
 }
 
 bool FileImplStdio::seek(uint64_t pos, int mode) {
+    if (!p_file_) {
+        return false;
+    }
     return std::fseek(p_file_, pos, mode == SeekSet ? SEEK_SET : (mode == SeekEnd ? SEEK_END : SEEK_CUR)) == 0;
 }
 
@@ -114,8 +141,10 @@ bool FileImplStdio::isDirectory() {
 }
 
 
-File SDClass::open(const char* filepath, uint8_t mode) {
-    return File { new FileImplStdio { filepath, mode } };
+FsFile SDClass::open(const char* path, oflag_t oflag) {
+    FsFile tmpFile;
+    tmpFile.open(this, path, oflag);
+    return tmpFile;
 }
 
 bool SDClass::exists(const char* name) {
@@ -157,3 +186,34 @@ uint64_t SDClass::totalSize() {
 }
 
 SDClass SD;
+
+
+FsBaseFile::FsBaseFile(const FsBaseFile& from) : p_file_ {} {
+    if (from.p_file_) {
+        char buf[33];
+        buf[sizeof(buf) - 1] = 0;
+        from.getName(buf, sizeof(buf) - 1);
+        open(buf, from.mode_);
+    }
+}
+
+FsBaseFile& FsBaseFile::operator=(const FsBaseFile& from) {
+    if (this == &from) {
+        return *this;
+    }
+    close();
+
+    if (from.p_file_) {
+        char buf[33];
+        buf[sizeof(buf) - 1] = 0;
+        from.getName(buf, sizeof(buf) - 1);
+        open(buf, from.mode_);
+    }
+    return *this;
+}
+
+bool FsBaseFile::open(const char* path, oflag_t oflag) {
+    p_file_ = new FileImplStdio { path, oflag };
+    mode_ = oflag;
+    return p_file_ != nullptr;
+}

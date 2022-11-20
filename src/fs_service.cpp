@@ -714,7 +714,7 @@ bool FS_Service::mediaPresent(uint32_t op_timeout_us, fs_callback_t callback) co
     return result;
 }
 
-bool FS_Service::schedule_operation(queue_t operation, bool custom_callback, uint32_t timeout_ticks) const {
+bool FS_Service::schedule_operation(queue_t operation, bool custom_callback, TickType_t timeout_ticks) const {
     auto p_operation { new queue_t { operation } };
 
     if (::xQueueSend(job_queue_, &p_operation, QUEUE_SEND_TIMEOUT_) != pdTRUE) {

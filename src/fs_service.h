@@ -43,7 +43,7 @@ class FS_Service {
     static constexpr uint32_t WORKER_QUEUE_SIZE_ { 8 };
     static constexpr uint8_t TASK_NOTIFY_INDEX_ { 0 };
     static constexpr uint32_t WORKER_TASK_STACK_SIZE_ { 2048 }; // byte
-    static constexpr uint32_t QUEUE_SEND_TIMEOUT_ { portMAX_DELAY };
+    static constexpr TickType_t QUEUE_SEND_TIMEOUT_ { portMAX_DELAY };
 
 public:
     class FileWrapper;
@@ -92,11 +92,11 @@ protected:
 
     static void run(void* param);
 
-    static constexpr uint32_t timeout_to_ticks(uint32_t timeout_us) {
+    static constexpr TickType_t timeout_to_ticks(uint32_t timeout_us) {
         return timeout_us ? pdUS_TO_TICKS(timeout_us) : portMAX_DELAY;
     }
 
-    bool schedule_operation(queue_t operation, bool custom_callback, uint32_t timeout_ticks) const;
+    bool schedule_operation(queue_t operation, bool custom_callback, TickType_t timeout_ticks) const;
 
     File open(SDClass* p_fs, const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper = nullptr) const;
 
@@ -137,7 +137,7 @@ public:
 
         const FS_Service& fs_svc_;
         FsFile fs_file_;
-        uint32_t timeout_ticks_;
+        TickType_t timeout_ticks_;
         std::string filename_;
 
         FileWrapper(const FS_Service& fs_svc, FsFile& file) : FileWrapper { fs_svc, file, 0 } {}

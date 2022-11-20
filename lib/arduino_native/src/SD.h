@@ -56,14 +56,15 @@ static constexpr uint8_t DMA_SDIO { 1 };
 // FIXME: untested!
 class FileImplStdio : public FileImpl {
     FILE* p_file_;
-    const uint8_t mode_;
+    const int mode_;
     const std::string name_;
 
     friend class SDClass;
+    friend class FsBaseFile;
 
-protected:
+public:
     FileImplStdio();
-    FileImplStdio(const std::string_view& file, const uint8_t mode);
+    FileImplStdio(const std::string_view& file, const int mode);
 
     virtual ~FileImplStdio();
 
@@ -120,7 +121,7 @@ public:
 };
 
 
-class SDClass : public FS {
+class SDClass : public FsVolume {
 public:
     SDClass() : sdfs { *this } {}
 
@@ -132,7 +133,7 @@ public:
         return true;
     }
 
-    virtual File open(const char* name, uint8_t mode = FILE_READ);
+    virtual FsFile open(const char* path, oflag_t oflag = O_RDONLY);
     virtual bool exists(const char* filepath);
     virtual bool mkdir(const char* filepath);
     virtual bool rename(const char* oldfilepath, const char* newfilepath);
@@ -140,6 +141,14 @@ public:
     virtual bool rmdir(const char* filepath);
     virtual uint64_t usedSize();
     virtual uint64_t totalSize();
+
+    virtual bool mediaPresent() {
+        return true;
+    }
+
+    virtual bool format(int = 0, char = 0, Print& = Serial) {
+        return false;
+    }
 
     SDClass& sdfs;
 };
