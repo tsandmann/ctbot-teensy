@@ -30,6 +30,7 @@
 #include <functional>
 #include <atomic>
 #include <variant>
+#include <type_traits>
 
 
 class SDClass;
@@ -52,8 +53,10 @@ protected:
     struct FileOperation;
     struct FSOperation;
 
+    struct dummy_t {};
+
     using file_result_t = std::variant<bool, int, size_t>;
-    using fs_result_t = std::variant<bool, int, size_t, uint64_t, File>;
+    using fs_result_t = std::variant<bool, int, size_t, std::conditional_t<std::is_same<uint64_t, size_t>::value, dummy_t, uint64_t>, File>;
     using file_operation_t = std::function<file_result_t(FileWrapper*)>;
     using fs_operation_t = std::function<fs_result_t(SDClass*)>;
     using file_callback_t = std::function<void(FileOperation*)>;

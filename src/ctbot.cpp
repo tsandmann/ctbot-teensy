@@ -793,7 +793,7 @@ FLASHMEM void CtBot::update_clock() {
     if constexpr (DEBUG_LEVEL_ >= 4) {
         p_comm_->debug_printf<false>(PSTR("CtBot::update_clock(): now=%d%03d\r\n"), static_cast<uint32_t>(now / 1'000L), static_cast<uint32_t>(now % 1'000L));
     }
-    if (now > UNIX_TIMESTAMP) {
+    if (now > static_cast<std::time_t>(UNIX_TIMESTAMP)) {
         if (p_clock_timer_) {
             xTimerStop(p_clock_timer_, 0);
             xTimerDelete(p_clock_timer_, 0);
