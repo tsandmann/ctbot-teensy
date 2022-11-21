@@ -36,6 +36,8 @@
 #include <cstdint>
 
 
+class I2CService;
+
 namespace ctbot {
 class CtBot;
 class EnaI2c;
@@ -75,6 +77,7 @@ protected:
     uint32_t dist_last_update_;
     uint32_t trans_last_update_;
     uint32_t mpu_last_update_;
+    I2C_Service* p_i2c_svc_;
     VL53L0X* p_dist_l;
     VL53L0X* p_dist_r;
     VL6180X* p_trans_;
@@ -83,7 +86,7 @@ protected:
     /**
      * @brief Construct a new DigitalSensors object
      */
-    FLASHMEM DigitalSensors(CtBot& ctbot);
+    FLASHMEM DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_svc);
 
     /**
      * @brief Read all the current pin values

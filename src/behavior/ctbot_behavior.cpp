@@ -313,7 +313,7 @@ void CtBotBehavior::run() {
         const auto now { Timer::get_ms() };
         const auto diff { now - last_time };
         last_time = now;
-        if (diff > TASK_PERIOD_MS + 1) {
+        if (diff > TASK_PERIOD_MS_ + 1) {
             log_begin();
             get_logger()->log<true>(PSTR("\nrun(): time diff=%u ms at %u ms.\r\n"), diff, now);
         }
@@ -350,13 +350,13 @@ void CtBotBehavior::run() {
         get_logger()->log<true>(PSTR("run(): waiting for motor barrier(%u)...\r\n"), motor_requests);
     }
     const auto start { Timer::get_ms() };
-    while (!p_motor_sync_->try_wait() & (Timer::get_ms() - start < TASK_PERIOD_MS * 2)) {
+    while (!p_motor_sync_->try_wait() & (Timer::get_ms() - start < TASK_PERIOD_MS_ * 2)) {
         std::this_thread::sleep_for(100us);
     }
     if (motor_requests) {
         const auto barrier_done { Timer::get_ms() };
         const auto diff { barrier_done - start };
-        if (diff < TASK_PERIOD_MS * 2) {
+        if (diff < TASK_PERIOD_MS_ * 2) {
             if (DEBUG_LEVEL_ >= 4) {
                 log_begin();
                 get_logger()->log<true>(PSTR("run(): motor barrier done at %u ms.\r\n"), barrier_done);

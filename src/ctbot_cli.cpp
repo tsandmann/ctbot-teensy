@@ -256,8 +256,13 @@ void CtBotCli::init_commands() {
         } else if (args.find(PSTR("viewer")) == 0) {
             return eval_args<bool>(
                 [this](bool value) {
-                    p_ctbot_->p_comm_->enable_remoteviewer(value);
-                    return true;
+                    auto it { p_ctbot_->post_hooks_.find(PSTR("viewer")) };
+                    if (it != p_ctbot_->post_hooks_.end()) {
+                        std::get<1>(it->second) = value;
+                        p_ctbot_->p_comm_->enable_remoteviewer(value);
+                        return true;
+                    }
+                    return false;
                 },
                 args);
         } else if (args.find(PSTR("task")) == 0) {

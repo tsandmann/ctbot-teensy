@@ -97,11 +97,11 @@ class EnaI2c {
     static constexpr uint8_t POL_INVERSION_REG { 2 };
     static constexpr uint8_t CONFIG_REG { 3 };
 
-    I2C_Service i2c_;
+    I2C_Service* p_i2c_svc_;
     const uint8_t i2c_addr_;
 
     uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return p_i2c_svc_->write_reg(i2c_addr_, reg, value);
     }
 
 protected:
@@ -120,9 +120,10 @@ protected:
     }
 
 public:
-    EnaI2c(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL } /* FIXME: config of i2c bus */, i2c_addr_ { i2c_addr }, init_ {},
-          status_ { CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET : EnaI2cTypes::NONE } {
+    EnaI2c(I2C_Service* p_i2c_svc, const uint8_t i2c_addr)
+        : p_i2c_svc_ { p_i2c_svc }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
+              CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET : EnaI2cTypes::NONE
+          } {
         write_reg8(CONFIG_REG,
             static_cast<uint8_t>(CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::NONE : EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET));
         init_ = true;

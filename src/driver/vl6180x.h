@@ -87,7 +87,7 @@ class VL6180X {
 
     static constexpr uint16_t SCALER_VALUES[] = { 0, 253, 127, 84 };
 
-    I2C_Service i2c_;
+    I2C_Service& i2c_;
     uint8_t i2c_addr_;
     uint8_t ptp_offset_;
     uint8_t scaling_;
@@ -111,7 +111,7 @@ class VL6180X {
     }
 
 public:
-    FLASHMEM VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR); // FIXME: pass I2C_Service?
+    FLASHMEM VL6180X(I2C_Service& i2c_svc, uint8_t i2c_addr = DEFAULT_I2C_ADDR);
 
     FLASHMEM bool init();
 

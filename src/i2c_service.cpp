@@ -205,7 +205,7 @@ void I2C_Service::run(void* param) {
             } else {
                 /* 1st transfer read with size > 0 */
                 transfer->error = 255;
-                configASSERT(false); // FIXME: not implemented
+                configASSERT(false); // TODO: not implemented
             }
 
             if (transfer->size2 && transfer->type2 == 0) {
@@ -377,7 +377,7 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
             return ret;
         }
         case 3: {
-            return 2; // FIXME: not implemented
+            return 2; // TODO: not implemented
         }
         case 4: {
             uint32_t tmp;
@@ -511,7 +511,7 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
             return write_reg(addr, reg_addr, tmp);
         }
         case 3: {
-            return 2; // FIXME: not implemented
+            return 2; // TODO: not implemented
         }
         case 4: {
             uint32_t tmp { p_data[3] };

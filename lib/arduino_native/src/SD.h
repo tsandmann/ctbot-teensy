@@ -33,18 +33,6 @@
 #include <cassert>
 
 
-// static constexpr uint8_t O_READ { 0X01 };
-// static constexpr uint8_t O_RDONLY { O_READ };
-// static constexpr uint8_t O_WRITE { 0X02 };
-// static constexpr uint8_t O_WRONLY { O_WRITE };
-// static constexpr uint8_t O_RDWR { O_READ | O_WRITE };
-// static constexpr uint8_t O_ACCMODE { O_READ | O_WRITE };
-// static constexpr uint8_t O_APPEND { 0X04 };
-// static constexpr uint8_t O_SYNC { 0X08 };
-// static constexpr uint8_t O_CREAT { 0X10 };
-// static constexpr uint8_t O_EXCL { 0X20 };
-// static constexpr uint8_t O_TRUNC { 0X40 };
-
 #ifndef FIFO_SDIO
 static constexpr uint8_t FIFO_SDIO { 0 };
 #endif
@@ -53,7 +41,7 @@ static constexpr uint8_t FIFO_SDIO { 0 };
 static constexpr uint8_t DMA_SDIO { 1 };
 #endif
 
-// FIXME: untested!
+
 class FileImplStdio : public FileImpl {
     FILE* p_file_;
     const int mode_;

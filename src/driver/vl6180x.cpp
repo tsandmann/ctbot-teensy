@@ -31,8 +31,7 @@
 
 
 namespace ctbot {
-VL6180X::VL6180X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr) // FIXME: config for i2c bus
-    : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL }, i2c_addr_ { i2c_addr }, ptp_offset_ {}, scaling_ {} {}
+VL6180X::VL6180X(I2C_Service& i2c_svc, uint8_t i2c_addr) : i2c_ { i2c_svc }, i2c_addr_ { i2c_addr }, ptp_offset_ {}, scaling_ {} {}
 
 FLASHMEM bool VL6180X::init() {
     /* store part-to-part range offset so it can be adjusted if scaling is changed */

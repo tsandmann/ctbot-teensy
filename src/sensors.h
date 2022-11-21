@@ -26,6 +26,7 @@
 
 #include "analog_sensors.h"
 #include "digital_sensors.h"
+#include "i2c_service.h"
 
 
 namespace ctbot {
@@ -52,7 +53,7 @@ public:
      * @brief Construct a new Sensors object
      * @param[in] ctbot: Reference to CtBot instance
      */
-    FLASHMEM Sensors(CtBot& ctbot);
+    FLASHMEM Sensors(CtBot& ctbot, I2C_Service* p_i2c_svc);
 
     /**
      * @brief Update all sensors by calling the underlying update()-methods

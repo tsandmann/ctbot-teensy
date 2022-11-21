@@ -48,6 +48,7 @@ class TTS;
 class AudioConnection;
 class AudioMixer4;
 class LuaWrapper;
+class I2C_Service;
 class FS_Service;
 
 namespace arduino {
@@ -84,9 +85,10 @@ class CtBot {
 
 protected:
     friend class CtBotCli;
-    static constexpr uint16_t TASK_PERIOD_MS { 10 }; /**< Scheduling period of task in ms */
-    static constexpr uint8_t TASK_PRIORITY { 7 };
-    static constexpr uint32_t STACK_SIZE { 2048 };
+    static constexpr uint16_t TASK_PERIOD_MS_ { 10 }; /**< Scheduling period of task in ms */
+    static constexpr uint8_t TASK_PRIORITY_ { 7 };
+    static constexpr uint32_t STACK_SIZE_ { 2048 };
+    static constexpr uint32_t VIEWER_SEND_INTERVAL_MS_ { 200 };
 
     static TaskHandle_t audio_task_;
 
@@ -98,6 +100,7 @@ protected:
     Motor* p_motors_[2]; /**< Pointer to motor instances */
     SpeedControlBase* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
+    I2C_Service* p_i2c_1_svc_;
     EnaI2c* p_ena_;
     LedsI2cEna<>* p_ena_pwm_;
     LedsI2c* p_leds_; /**< Pointer to led instance */
@@ -124,6 +127,7 @@ protected:
     TimerHandle_t p_watch_timer_;
     TimerHandle_t p_clock_timer_;
     LuaWrapper* p_lua_;
+    uint32_t last_viewer_timestamp_;
 
 
     /**

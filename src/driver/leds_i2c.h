@@ -197,21 +197,21 @@ class LedsI2cBase {
     static constexpr uint8_t LEDOUT0_REG { 0xc }; // LED output state register 0
     static constexpr uint8_t LEDOUT1_REG { 0xd }; // LED output state register 1
 
-    I2C_Service i2c_;
+    I2C_Service* p_i2c_svc_;
     const uint8_t i2c_addr_;
     T status_;
     bool init_;
 
     uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return p_i2c_svc_->write_reg(i2c_addr_, reg, value);
     }
 
 protected:
     std::array<uint8_t, 8> pwm_dt_;
 
-    FLASHMEM LedsI2cBase(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq)
-        : i2c_ { i2c_bus, i2c_freq, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL } /* FIXME: config for i2c bus */, i2c_addr_ { i2c_addr },
-          status_ { static_cast<T>(LedTypesEna<>::NONE) }, init_ {} { // FIXME: read initial status from device
+    FLASHMEM LedsI2cBase(I2C_Service* p_i2c_svc, const uint8_t i2c_addr)
+        : p_i2c_svc_ { p_i2c_svc }, i2c_addr_ { i2c_addr }, status_ { static_cast<T>(LedTypesEna<>::NONE) }, init_ {} {
+        // FIXME: read initial status from device
         if (write_reg8(MODE1_REG, 0)) {
             return;
         }
@@ -319,7 +319,7 @@ public:
     /**
      * @brief Construct a new Leds object
      */
-    LedsI2c(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq) : LedsI2cBase { i2c_bus, i2c_addr, i2c_freq } {}
+    LedsI2c(I2C_Service* p_i2c_svc, const uint8_t i2c_addr) : LedsI2cBase { p_i2c_svc, i2c_addr } {}
 };
 
 /**
@@ -337,7 +337,7 @@ public:
     /**
      * @brief Construct a new Leds object
      */
-    LedsI2cEna(const uint8_t i2c_bus, const uint8_t i2c_addr, const uint32_t i2c_freq) : LedsI2cBase<LedTypesEna<HW_REV>> { i2c_bus, i2c_addr, i2c_freq } {}
+    LedsI2cEna(I2C_Service* p_i2c_svc, const uint8_t i2c_addr) : LedsI2cBase<LedTypesEna<HW_REV>> { p_i2c_svc, i2c_addr } {}
 };
 
 } // namespace ctbot

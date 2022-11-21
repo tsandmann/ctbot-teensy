@@ -139,7 +139,7 @@ class VL53L0X {
         return 0;
     }
 
-    I2C_Service i2c_;
+    I2C_Service& i2c_;
     uint8_t i2c_addr_;
     uint32_t timing_budget_us_;
     uint8_t stop_variable_;
@@ -186,7 +186,7 @@ class VL53L0X {
     }
 
 public:
-    FLASHMEM VL53L0X(const uint8_t i2c_bus, const uint32_t i2c_freq, const uint8_t i2c_addr = DEFAULT_I2C_ADDR); // FIXME: pass I2C_Service?
+    FLASHMEM VL53L0X(I2C_Service& i2c_svc, uint8_t i2c_addr = DEFAULT_I2C_ADDR);
 
     bool init();
 

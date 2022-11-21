@@ -26,6 +26,7 @@
 
 #include "ctbot.h"
 #include "scheduler.h"
+#include "i2c_service.h"
 
 #include "driver/mpu_6050.h"
 #include "driver/vl53l0x.h"
@@ -40,20 +41,26 @@ std::remove_all_extents<decltype(DigitalSensors::enc_data_l_)>::type DigitalSens
     DigitalSensors::enc_data_r_[Encoder::DATA_ARRAY_SIZE];
 decltype(DigitalSensors::enc_l_idx_) DigitalSensors::enc_l_idx_, DigitalSensors::enc_r_idx_;
 
-DigitalSensors::DigitalSensors(CtBot& ctbot)
+DigitalSensors::DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_svc)
     : ctbot_ { ctbot }, ena_ { *ctbot_.get_ena() }, transport_ {}, enc_l_ { enc_data_l_, &enc_l_idx_,
           CtBotConfig::EXTERNAL_SPEEDCTRL ? 255 : CtBotConfig::ENC_L_PIN },
       enc_r_ { enc_data_r_, &enc_r_idx_, CtBotConfig::EXTERNAL_SPEEDCTRL ? 255 : CtBotConfig::ENC_R_PIN }, rc5_ { CtBotConfig::RC5_PIN },
-      remote_control_ { rc5_, CtBotConfig::RC5_ADDR }, distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {},
-      mpu_last_update_ {}, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
+      remote_control_ { rc5_, CtBotConfig::RC5_ADDR }, distance_ { 0, 0 }, dist_last_update_ {}, trans_last_update_ {}, mpu_last_update_ {},
+      p_i2c_svc_ { p_i2c_svc }, p_dist_l {}, p_dist_r {}, p_trans_ {}, p_mpu_6050_ {} {
     ena_.off(EnaI2cTypes::DISTANCE_L | EnaI2cTypes::DISTANCE_R | EnaI2cTypes::TRANSPORT); // shutdown i2c sensors
+
+    if (!p_i2c_svc_) {
+        ctbot_.get_comm()->debug_print(PSTR("DigitalSensors::DigitalSensors(): no I2C service given, skipping I2C sensor initialization.\r\n"), true);
+        return;
+    }
+
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(10ms);
 
     {
         ena_.on(EnaI2cTypes::DISTANCE_L);
         std::this_thread::sleep_for(10ms);
-        p_dist_l = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
+        p_dist_l = new VL53L0X { *p_i2c_svc_ };
         configASSERT(p_dist_l);
         if (p_dist_l->init()) {
             if (!p_dist_l->set_address(CtBotConfig::VL53L0X_L_I2C_ADDR)) {
@@ -69,14 +76,14 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
             ena_.off(EnaI2cTypes::DISTANCE_L);
             delete p_dist_l;
             p_dist_l = nullptr;
-            // FIXME: error handling?
+            // TODO: error handling?
         }
     }
 
     {
         ena_.on(EnaI2cTypes::DISTANCE_R);
         std::this_thread::sleep_for(10ms);
-        p_dist_r = new VL53L0X { CtBotConfig::VL53L0X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
+        p_dist_r = new VL53L0X { *p_i2c_svc_ };
         configASSERT(p_dist_r);
         if (p_dist_r->init()) {
             if (!p_dist_r->set_address(CtBotConfig::VL53L0X_R_I2C_ADDR)) {
@@ -92,7 +99,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
             ena_.off(EnaI2cTypes::DISTANCE_R);
             delete p_dist_r;
             p_dist_r = nullptr;
-            // FIXME: error handling?
+            // TODO: error handling?
         }
     }
 
@@ -100,7 +107,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
     {
         ena_.on(EnaI2cTypes::TRANSPORT);
         std::this_thread::sleep_for(10ms);
-        p_trans_ = new VL6180X { CtBotConfig::VL6180X_I2C_BUS - 1, CtBotConfig::I2C1_FREQ }; // FIXME: frequency from config
+        p_trans_ = new VL6180X { *p_i2c_svc_ };
         configASSERT(p_trans_);
         if (p_trans_->init()) {
             if (!p_trans_->set_address(CtBotConfig::VL6180X_I2C_ADDR)) {
@@ -121,7 +128,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot)
             ena_.off(EnaI2cTypes::TRANSPORT);
             delete p_trans_;
             p_trans_ = nullptr;
-            // FIXME: error handling?
+            // TODO: error handling?
         }
     }
 

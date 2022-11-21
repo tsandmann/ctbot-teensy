@@ -117,9 +117,10 @@ CtBot& CtBot::get_instance() {
 FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
-      p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {},
-      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {},
-      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, p_lua_ {} {}
+      p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_i2c_1_svc_ {}, p_ena_ {},
+      p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {}, p_serial_usb_ { &arduino::get_serial(0) },
+      p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {}, p_audio_output_dac_ {}, p_audio_output_i2s_ {},
+      p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, p_lua_ {}, last_viewer_timestamp_ {} {}
 
 CtBot::~CtBot() {
     if constexpr (DEBUG_LEVEL_ > 1) {
@@ -168,7 +169,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         ::serialport_puts(PSTR("CtBot::setup(): creating scheduler...\r\n"));
     }
     p_scheduler_ = new Scheduler;
-    task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS, TASK_PRIORITY, STACK_SIZE, [this]() { return run(); });
+    task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS_, TASK_PRIORITY_, STACK_SIZE_, [this]() { return run(); });
     p_scheduler_->task_register(PSTR("Tmr Svc"), true);
     p_scheduler_->task_register(PSTR("YIELD"));
     p_scheduler_->task_register(PSTR("EVENT"));
@@ -195,6 +196,21 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         if (CrashReport) {
             p_serial_wifi_->get_stream().print(CrashReport);
         }
+
+        add_post_hook(
+            PSTR("viewer"),
+            [this]() {
+                const auto now { Timer::get_ms() };
+                if (now - last_viewer_timestamp_ > VIEWER_SEND_INTERVAL_MS_) {
+                    last_viewer_timestamp_ = now;
+
+                    if (!publish_sensordata()) {
+                        p_logger_->begin(PSTR("CtBot::run()"));
+                        p_logger_->log(PSTR("CtBot::publish_sensordata() failed.\r\n"), true);
+                    }
+                }
+            },
+            false);
     } else {
         p_comm_ = new CommInterfaceCmdParser { *p_serial_usb_, *p_parser_, true };
         if (CrashReport) {
@@ -212,15 +228,21 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_logger_->log(PSTR("CtBot::setup(): comm services inited.\r\n"));
     }
 
-    p_ena_ = new EnaI2c { CtBotConfig::ENA_I2C_BUS - 1, CtBotConfig::ENA_I2C_ADDR,
-        CtBotConfig::ENA_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
+    p_i2c_1_svc_ = new I2C_Service { 0, CtBotConfig::I2C1_FREQ };
+    configASSERT(p_i2c_1_svc_);
+
+    switch (CtBotConfig::ENA_I2C_BUS) {
+        case 1: p_ena_ = new EnaI2c { p_i2c_1_svc_, CtBotConfig::ENA_I2C_ADDR }; break;
+    }
     configASSERT(p_ena_);
     if constexpr (DEBUG_LEVEL_ > 2) {
         p_logger_->begin();
         p_logger_->log(PSTR("CtBot::setup(): ENA created.\r\n"));
     }
-    p_ena_pwm_ = new LedsI2cEna<> { CtBotConfig::ENA_PWM_I2C_BUS - 1, CtBotConfig::ENA_PWM_I2C_ADDR,
-        CtBotConfig::ENA_PWM_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::ENA_PWM_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
+
+    switch (CtBotConfig::ENA_PWM_I2C_BUS) {
+        case 1: p_ena_pwm_ = new LedsI2cEna<> { p_i2c_1_svc_, CtBotConfig::ENA_PWM_I2C_ADDR }; break;
+    }
     configASSERT(p_ena_pwm_);
     if constexpr (DEBUG_LEVEL_ > 2) {
         p_logger_->begin();
@@ -236,7 +258,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         }
     }
 
-    p_sensors_ = new Sensors { *this };
+    p_sensors_ = new Sensors { *this, CtBotConfig::VL53L0X_I2C_BUS == 1 && CtBotConfig::VL6180X_I2C_BUS == 1 ? p_i2c_1_svc_ : nullptr };
     configASSERT(p_sensors_);
     if constexpr (DEBUG_LEVEL_ > 2) {
         p_logger_->begin();
@@ -261,12 +283,16 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 
     p_servos_[0] = new Servo { CtBotConfig::SERVO_1_PIN };
+    configASSERT(p_servos_[0]);
     if constexpr (CtBotConfig::SERVO_2_PIN != 255) {
         p_servos_[1] = new Servo { CtBotConfig::SERVO_2_PIN };
+        configASSERT(p_servos_[1]);
     }
 
-    p_leds_ = new LedsI2c { CtBotConfig::LED_I2C_BUS - 1, CtBotConfig::LED_I2C_ADDR,
-        CtBotConfig::LED_I2C_BUS == 1 ? CtBotConfig::I2C1_FREQ : (CtBotConfig::LED_I2C_BUS == 2 ? CtBotConfig::I2C2_FREQ : CtBotConfig::I2C3_FREQ) };
+    switch (CtBotConfig::LED_I2C_BUS) {
+        case 1: p_leds_ = new LedsI2c { p_i2c_1_svc_, CtBotConfig::LED_I2C_ADDR }; break;
+    }
+    configASSERT(p_leds_);
 
     if constexpr (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_ = new LCDisplay;
@@ -563,19 +589,6 @@ void CtBot::run() {
     for (const auto& e : post_hooks_) {
         if (std::get<1>(e.second)) {
             std::get<0>(e.second)();
-        }
-    }
-
-    // FIXME: register as post-hook?
-    static uint32_t last_viewer {}; // FIXME: refactor
-    const auto now { Timer::get_ms() };
-    if (now - last_viewer > 200U) {
-        last_viewer = now;
-
-        if (p_comm_->get_viewer_enabled()) {
-            if (!publish_sensordata()) {
-                p_logger_->log(PSTR("CtBot::publish_sensordata() failed.\r\n"), true);
-            }
         }
     }
 
