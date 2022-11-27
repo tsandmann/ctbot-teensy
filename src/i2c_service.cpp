@@ -29,6 +29,9 @@
 #include <atomic>
 
 
+// #undef printf_debug
+// #define printf_debug arduino::Serial.printf
+
 #if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
 #include "driver/i2c_t4.h"
 namespace I2C_NS = arduino::teensy4;
@@ -42,7 +45,7 @@ decltype(I2C_Service::p_i2c_) I2C_Service::p_i2c_;
 decltype(I2C_Service::init_) I2C_Service::init_;
 decltype(I2C_Service::freq_) I2C_Service::freq_;
 
-bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda, const uint8_t pin_scl) {
+bool I2C_Service::init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_scl) {
     if (bus >= i2c_task_.size()) {
         if constexpr (DEBUG_) {
             printf_debug(PSTR("I2C_Service::init(%u, %u, %u, %u): invalid bus.\r\n"), bus, freq, pin_sda, pin_scl);
@@ -104,7 +107,11 @@ bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin
 
         uintptr_t x { bus };
         void* param { reinterpret_cast<void*>(x) };
-        if (::xTaskCreate(run, PSTR("I2C Svc"), 512, param, 8, &i2c_task_[bus]) != pdTRUE) {
+        char tmp[10] { "I2C Svc" };
+        tmp[7] = ' ';
+        tmp[8] = bus + 0x31;
+        tmp[9] = 0;
+        if (::xTaskCreate(run, tmp, 512, param, 8, &i2c_task_[bus]) != pdTRUE) {
             if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::init(): xTaskCreate() failed\r\n"));
             }
@@ -124,7 +131,7 @@ bool I2C_Service::init(const uint8_t bus, const uint32_t freq, const uint8_t pin
     return true;
 }
 
-void I2C_Service::finish_transfer(const bool success, I2C_Transfer* transfer) {
+void I2C_Service::finish_transfer(bool success, I2C_Transfer* transfer) {
     auto p_data { transfer };
     if (p_data->callback) {
         p_data->callback(success, &p_data);
@@ -293,12 +300,12 @@ void I2C_Service::run(void* param) {
     }
 }
 
-I2C_Service::I2C_Service(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda, const uint8_t pin_scl) : bus_ { bus } {
+I2C_Service::I2C_Service(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_scl) : bus_ { bus } {
     init(bus, freq, pin_sda, pin_scl);
 }
 
 uint8_t I2C_Service::read_reg(
-    const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto& data, std::function<void(const bool, I2C_Transfer**)> callback) const {
+    uint16_t addr, std::unsigned_integral auto reg, std::integral auto& data, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::read_reg<>(): invalid reg size");
     static_assert(sizeof(data) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::read_reg<>(): invalid data size");
 
@@ -312,7 +319,7 @@ uint8_t I2C_Service::read_reg(
         ret = 0;
     } else {
         transfer_done = false;
-        transfer->callback = [&data, &transfer_done, &ret](const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&data, &transfer_done, &ret](bool done, I2C_Transfer** p_transfer) {
             if (done) {
                 data = static_cast<std::remove_reference<decltype(data)>::type>((*p_transfer)->data2.data);
             }
@@ -344,15 +351,15 @@ uint8_t I2C_Service::read_reg(
     return ret;
 }
 
-template uint8_t I2C_Service::read_reg<uint8_t, uint8_t>(const uint16_t, const uint8_t, uint8_t&, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint8_t>(const uint16_t, const uint16_t, uint8_t&, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint8_t, uint16_t>(const uint16_t, const uint8_t, uint16_t&, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint16_t>(const uint16_t, const uint16_t, uint16_t&, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint8_t, uint32_t>(const uint16_t, const uint8_t, uint32_t&, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint32_t>(const uint16_t, const uint16_t, uint32_t&, std::function<void(const bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
 
-uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, uint8_t* p_data, const uint8_t length,
-    std::function<void(const bool, I2C_Transfer**)> callback) const {
+uint8_t I2C_Service::read_bytes(
+    uint16_t addr, std::unsigned_integral auto reg_addr, uint8_t* p_data, uint8_t length, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg_addr) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::read_bytes<>(): invalid reg_addr size");
 
     if (length > 32) {
@@ -399,7 +406,7 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&ret]([[maybe_unused]] const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&ret]([[maybe_unused]] bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, ret);
@@ -424,13 +431,11 @@ uint8_t I2C_Service::read_bytes(const uint16_t addr, std::unsigned_integral auto
     return ret;
 }
 
-template uint8_t I2C_Service::read_bytes<uint8_t>(
-    const uint16_t, const uint8_t, uint8_t*, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_bytes<uint16_t>(
-    const uint16_t, const uint16_t, uint8_t*, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_bytes<uint8_t>(uint16_t, uint8_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::read_bytes<uint16_t>(uint16_t, uint16_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
 
 uint8_t I2C_Service::write_reg(
-    const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto const data, std::function<void(const bool, I2C_Transfer**)> callback) const {
+    uint16_t addr, std::unsigned_integral auto reg, std::integral auto data, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::write_reg<>(): invalid reg size");
     static_assert(sizeof(data) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::write_reg<>(): invalid data size");
 
@@ -444,7 +449,7 @@ uint8_t I2C_Service::write_reg(
         transfer->callback = callback;
     } else {
         transfer_done = false;
-        transfer->callback = [&transfer_done, &ret](const bool, I2C_Transfer** p_transfer) {
+        transfer->callback = [&transfer_done, &ret](bool, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::write_reg<%u, %u>() callback done, err=%u\r\n"), sizeof(reg), sizeof(data), ret);
@@ -477,20 +482,15 @@ uint8_t I2C_Service::write_reg(
     return ret;
 }
 
-template uint8_t I2C_Service::write_reg<uint8_t, uint8_t>(const uint16_t, const uint8_t, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint8_t>(
-    const uint16_t, const uint16_t, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint8_t, uint16_t>(
-    const uint16_t, const uint8_t, const uint16_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint16_t>(
-    const uint16_t, const uint16_t, const uint16_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint8_t, uint32_t>(
-    const uint16_t, const uint8_t, const uint32_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint32_t>(
-    const uint16_t, const uint16_t, const uint32_t, std::function<void(const bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
 
-uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, const uint8_t* p_data, const uint8_t length,
-    std::function<void(const bool, I2C_Transfer**)> callback) const {
+uint8_t I2C_Service::write_bytes(
+    uint16_t addr, std::unsigned_integral auto reg_addr, const uint8_t* p_data, uint8_t length, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg_addr) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::write_bytes<>(): invalid reg_addr size");
 
     if (length > 32) {
@@ -531,7 +531,7 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&ret]([[maybe_unused]] const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&ret]([[maybe_unused]] bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::write_bytes<%u>(): callback, done=%u, err=%u\r\n"), sizeof(reg_addr), done, ret);
@@ -557,50 +557,50 @@ uint8_t I2C_Service::write_bytes(const uint16_t addr, std::unsigned_integral aut
     return ret;
 }
 
-template uint8_t I2C_Service::write_bytes<uint8_t>(
-    const uint16_t, const uint8_t, const uint8_t*, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_bytes<uint16_t>(
-    const uint16_t, const uint16_t, const uint8_t*, const uint8_t, std::function<void(const bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_bytes<uint8_t>(uint16_t, uint8_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template uint8_t I2C_Service::write_bytes<uint16_t>(uint16_t, uint16_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
 
 
 template <typename DATA>
-uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const {
-    static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bit_internal<>(): invalid reg size");
-    static_assert(sizeof(DATA) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::set_bit_internal<>(): invalid DATA size");
+uint8_t I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
+    static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bits_internal<>(): invalid reg size");
+    static_assert(sizeof(DATA) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::set_bits_internal<>(): invalid DATA size");
 
     if constexpr (DEBUG_) {
-        printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(0x%x, 0x%x, %u, %u)\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit, value);
+        printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(0x%x, 0x%x, 0x%x, 0x%x)\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit_mask, values);
     }
 
     DATA data;
     uint8_t ret;
     std::atomic<bool> transfer_done {};
-    auto read_callback { [&data, &ret, &transfer_done, this, addr, reg, bit, value](const bool done, I2C_Transfer** p_transfer) {
+    auto read_callback { [&data, &ret, &transfer_done, this, addr, reg, bit_mask, values](bool done, I2C_Transfer** p_transfer) {
         if (done) {
             data = static_cast<DATA>((*p_transfer)->data2.data);
-            value ? data |= 1 << bit : data &= ~(1 << bit);
-            ret = write_reg(addr, reg, data, [&transfer_done](const bool, [[maybe_unused]] I2C_Transfer** p_transfer) {
+
+            if constexpr (DEBUG_) {
+                printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>() read_callback: data=0x%x\r\n"), sizeof(reg), sizeof(DATA), data);
+            }
+
+            data = (data & (~bit_mask)) | (values & bit_mask);
+
+            ret = write_reg(addr, reg, data, [&transfer_done, data](bool, [[maybe_unused]] I2C_Transfer** p_transfer) {
                 if constexpr (DEBUG_) {
-                    printf_debug(
-                        PSTR("I2C_Service::set_bit_internal<%u, %u>() write_callback done, err=%u\r\n"), sizeof(reg), sizeof(DATA), (*p_transfer)->error);
+                    printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>() write_callback done, data=0x%x, err=%u\r\n"), sizeof(reg), sizeof(DATA), data,
+                        (*p_transfer)->error);
                 }
                 transfer_done = true;
             });
-
-            if constexpr (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_callback done, data=0x%x\r\n"), sizeof(reg), sizeof(DATA), data);
-            }
         } else {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), ret);
+                printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), ret);
             }
         }
     } };
 
     if (read_reg(addr, reg, data, read_callback)) {
         if constexpr (DEBUG_) {
-            printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(reg), sizeof(DATA));
+            printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(reg), sizeof(DATA));
         }
         return 10;
     }
@@ -614,23 +614,23 @@ uint8_t I2C_Service::set_bit_internal(const uint16_t addr, std::unsigned_integra
     }
     if constexpr (DEBUG_) {
         if (ret) {
-            // printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
+            // printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
         }
-        printf_debug(PSTR("I2C_Service::set_bit_internal<%u, %u>(0x%x, 0x%x, %u, %u) done\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit, value);
+        printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(0x%x, 0x%x, %u, %u) done\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit_mask, values);
     }
 
     return ret;
 }
 
-uint8_t I2C_Service::set_bit(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const {
+uint8_t I2C_Service::set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bit<>(): invalid reg size");
 
     if (bit < 8) {
-        return set_bit_internal<uint8_t>(addr, reg, bit, value);
+        return set_bits_internal<uint8_t>(addr, reg, 1 << bit, static_cast<uint8_t>(value) << bit);
     } else if (bit < 16) {
-        return set_bit_internal<uint16_t>(addr, reg, bit, value);
+        return set_bits_internal<uint16_t>(addr, reg, 1 << bit, static_cast<uint16_t>(value) << bit);
     } else if (bit < 32) {
-        return set_bit_internal<uint32_t>(addr, reg, bit, value);
+        return set_bits_internal<uint32_t>(addr, reg, 1 << bit, static_cast<uint32_t>(value) << bit);
     } else {
         return 4;
     }
@@ -638,10 +638,29 @@ uint8_t I2C_Service::set_bit(const uint16_t addr, std::unsigned_integral auto co
     return 0;
 }
 
-template uint8_t I2C_Service::set_bit<uint8_t>(const uint16_t, const uint8_t, const uint8_t, const bool) const;
-template uint8_t I2C_Service::set_bit<uint16_t>(const uint16_t, const uint16_t, const uint8_t, const bool) const;
+template uint8_t I2C_Service::set_bit<uint8_t>(uint16_t, uint8_t, uint8_t, bool) const;
+template uint8_t I2C_Service::set_bit<uint16_t>(uint16_t, uint16_t, uint8_t, bool) const;
 
-bool I2C_Service::test(const uint16_t addr, std::function<void(const bool, I2C_Transfer**)> callback) const {
+
+uint8_t I2C_Service::set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
+    static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bits<>(): invalid reg size");
+
+    if (bit_mask < (1 << 8)) {
+        return set_bits_internal<uint8_t>(addr, reg, bit_mask, values);
+    } else if (bit_mask < (1 << 16)) {
+        return set_bits_internal<uint16_t>(addr, reg, bit_mask, values);
+    } else {
+        return set_bits_internal<uint32_t>(addr, reg, bit_mask, values);
+    }
+
+    return 0;
+}
+
+template uint8_t I2C_Service::set_bits<uint8_t>(uint16_t, uint8_t, uint32_t, uint32_t) const;
+template uint8_t I2C_Service::set_bits<uint16_t>(uint16_t, uint16_t, uint32_t, uint32_t) const;
+
+
+bool I2C_Service::test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback) const {
     I2C_Transfer* transfer { new I2C_Transfer { addr } };
     transfer->callback = callback;
 
@@ -650,7 +669,7 @@ bool I2C_Service::test(const uint16_t addr, std::function<void(const bool, I2C_T
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&success](const bool done, I2C_Transfer** p_transfer) {
+        transfer->callback = [&success](bool done, I2C_Transfer** p_transfer) {
             success = done;
 
             if constexpr (DEBUG_) {

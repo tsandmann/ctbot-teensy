@@ -53,7 +53,7 @@ public:
      * @brief Construct a new Sensors object
      * @param[in] ctbot: Reference to CtBot instance
      */
-    FLASHMEM Sensors(CtBot& ctbot, I2C_Service* p_i2c_svc);
+    FLASHMEM Sensors(CtBot& ctbot, I2C_Service* p_i2c_1_svc, I2C_Service* p_i2c_2_svc = nullptr);
 
     /**
      * @brief Update all sensors by calling the underlying update()-methods

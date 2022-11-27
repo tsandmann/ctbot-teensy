@@ -46,7 +46,7 @@ size_t LoggerTarget::get_format_size(const char* format, ...) {
     return size;
 }
 
-std::string LoggerTarget::create_formatted_string(const size_t size, const char* format, ...) {
+std::string LoggerTarget::create_formatted_string(size_t size, const char* format, ...) {
     va_list vl;
     va_start(vl, format);
     auto str { std::string(size + 1, '\0') };
@@ -68,7 +68,7 @@ FLASHMEM LoggerTargetFile::~LoggerTargetFile() {
     delete p_file_;
 }
 
-void LoggerTargetFile::begin(const std::string_view& prefix) const {
+void LoggerTargetFile::begin(const std::string_view& prefix) {
     if (!*p_file_) {
         return;
     }
@@ -84,7 +84,7 @@ void LoggerTargetFile::begin(const std::string_view& prefix) const {
     }
 }
 
-size_t LoggerTargetFile::log(const char c, const bool) {
+size_t LoggerTargetFile::log(char c, bool) {
     if (!*p_file_) {
         return 0;
     }
@@ -92,7 +92,7 @@ size_t LoggerTargetFile::log(const char c, const bool) {
     return p_file_->write(c);
 }
 
-size_t LoggerTargetFile::log(const std::string_view& str, const bool) {
+size_t LoggerTargetFile::log(const std::string_view& str, bool) {
     if (!*p_file_) {
         return 0;
     }
@@ -118,7 +118,7 @@ void Logger::begin(const std::string_view& prefix) const {
     }
 }
 
-size_t Logger::log(const char c, const bool block) {
+size_t Logger::log(char c, bool block) {
     size_t ret {};
     for (auto t : targets_) {
         const auto tmp { t->log(c, block) };
@@ -130,23 +130,23 @@ size_t Logger::log(const char c, const bool block) {
     return ret;
 }
 
-size_t Logger::log(const char* str, const bool block) {
+size_t Logger::log(const char* str, bool block) {
     return log(std::string_view { str }, block);
 }
 
-size_t Logger::log(const std::string* p_str, const bool block) {
+size_t Logger::log(const std::string* p_str, bool block) {
     return log(*p_str, block);
 }
 
-size_t Logger::log(const std::string& str, const bool block) {
+size_t Logger::log(const std::string& str, bool block) {
     return log(std::string_view { str }, block);
 }
 
-size_t Logger::log(std::string&& str, const bool block) {
+size_t Logger::log(std::string&& str, bool block) {
     return log(std::string_view { str }, block);
 }
 
-size_t Logger::log(const std::string_view& str, const bool block) {
+size_t Logger::log(const std::string_view& str, bool block) {
     size_t ret {};
     for (auto t : targets_) {
         const auto tmp { t->log(str, block) };

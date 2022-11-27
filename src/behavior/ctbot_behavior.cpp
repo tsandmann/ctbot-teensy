@@ -44,7 +44,11 @@
 #include "behavior_turn.h"
 #include "behavior/legacy/behavior_legacy.h"
 
+#include "driver/fxas21002c.h"
+#include "driver/fxos8700.h"
+
 #include "pprintpp.hpp"
+#include "Kalman.h"
 #include "arduino_freertos.h"
 
 #include <cmath>
@@ -62,9 +66,12 @@ PROGMEM const char CtBotBehavior::usage_text_beh_[] { "\r\n"
                                                       "\r\n" };
 
 
-CtBotBehavior::CtBotBehavior() : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, beh_enabled_ {} {}
+CtBotBehavior::CtBotBehavior()
+    : p_data_ {}, p_actuators_ {}, enc_last_l_ {}, enc_last_r_ {}, p_heading_filter_ {}, last_heading_update_ {}, last_heading_ {}, beh_enabled_ {} {}
 
-CtBotBehavior::~CtBotBehavior() = default;
+CtBotBehavior::~CtBotBehavior() {
+    delete p_heading_filter_;
+}
 
 void CtBotBehavior::setup(const bool set_ready) {
     if (DEBUG_LEVEL_ >= 4) {
@@ -190,11 +197,29 @@ void CtBotBehavior::setup(const bool set_ready) {
             return true;
         } else if (args.find(PSTR("pose")) == 0) {
             get_data()->get_res_ptr<Pose>(PSTR("model.pose_enc"))->print(*get_comm());
-            get_comm()->debug_print(PSTR("\r\n"), false);
+            auto acc_x { get_sensors()->get_accel()->get_acc_x() };
+            auto acc_y { get_sensors()->get_accel()->get_acc_y() };
+            auto acc_z { get_sensors()->get_accel()->get_acc_z() };
+
+            if (CtBotConfig::FXA_FXO_AVAILABLE && CtBotConfig::ACCEL_AVAILABLE
+                && (std::fabs(acc_x) > 0.1f || std::fabs(acc_y) > 0.1f || std::fabs(acc_z) > 0.1f)) {
+                get_comm()->debug_printf<true>(PSTR(" head_gyro=%+.2f\tacc={%+.2f %+.2f %+.2f}\r\n"), last_heading_, acc_x, acc_y, acc_z);
+            } else {
+                get_comm()->debug_printf<true>(PSTR(" head_gyro=%+.2f\r\n"), last_heading_);
+            }
+
             return true;
         }
         return false;
     });
+
+    if constexpr (CtBotConfig::FXA_FXO_AVAILABLE) {
+        p_heading_filter_ = new Kalman {};
+        configASSERT(p_heading_filter_);
+        p_heading_filter_->setQbias(0.003f); // default: 0.003
+        p_heading_filter_->setAngle(0.f);
+        last_heading_update_ = Timer::get_us();
+    }
 
     p_data_ = std::make_unique<ResourceContainer>();
     configASSERT(p_data_);
@@ -303,20 +328,9 @@ void CtBotBehavior::register_behavior(
 
 void CtBotBehavior::run() {
     using namespace std::chrono_literals;
-    static uint32_t last_time {};
 
     if (!ready_ || !beh_enabled_) {
         return;
-    }
-
-    if (DEBUG_LEVEL_ >= 4) {
-        const auto now { Timer::get_ms() };
-        const auto diff { now - last_time };
-        last_time = now;
-        if (diff > TASK_PERIOD_MS_ + 1) {
-            log_begin();
-            get_logger()->log<true>(PSTR("\nrun(): time diff=%u ms at %u ms.\r\n"), diff, now);
-        }
     }
 
     CtBot::run();
@@ -324,7 +338,12 @@ void CtBotBehavior::run() {
     configASSERT(p_data_);
     auto& pose { *p_data_->get_resource<Pose>(PSTR("model.pose_enc")) };
     auto& speed { *p_data_->get_resource<Speed>(PSTR("model.speed_enc")) };
-    update_enc(pose.get_ref(), speed.get_ref());
+    auto& pose_ref { pose.get_ref() };
+    update_enc(pose_ref, speed.get_ref());
+
+    if constexpr (CtBotConfig::FXA_FXO_AVAILABLE) {
+        update_gyro(pose_ref);
+    }
 
     const auto motor_requests { Behavior::get_motor_requests() };
     p_motor_sync_ = std::make_unique<std::latch>(static_cast<ptrdiff_t>(motor_requests));
@@ -343,7 +362,6 @@ void CtBotBehavior::run() {
 
     pose.notify();
     speed.notify();
-
 
     if (DEBUG_LEVEL_ >= 4 && motor_requests) {
         log_begin();
@@ -409,7 +427,7 @@ void CtBotBehavior::log_begin() const {
     get_logger()->begin(PSTR("CtBotBehavior"));
 }
 
-bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
+void CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
     using namespace std::chrono_literals;
     /* position calculation based on https://github.com/tsandmann/ct-bot/blob/master/sensor.c#L232 by Torsten Evers */
 
@@ -478,6 +496,51 @@ bool CtBotBehavior::update_enc(Pose& pose, Speed& speed) {
     speed.set_left(speed_l);
     speed.set_right(speed_r);
     speed.set_center((speed_l + speed_r) / 2.f);
+}
+
+bool CtBotBehavior::update_gyro(const Pose& pose) {
+    auto p_gyro { p_sensors_->get_gyro() };
+    if (!p_gyro || !p_heading_filter_) {
+        return false;
+    }
+
+    const auto gyro_rate { p_gyro->get_rate_z() };
+    const auto update_time { p_gyro->get_update_time() };
+    auto heading_enc { pose.get_heading() };
+    const auto dt_us { update_time - last_heading_update_ };
+    last_heading_update_ = update_time;
+
+    if (heading_enc - last_heading_ < -180.f) {
+        if constexpr (DEBUG_LEVEL_ > 4) {
+            log_begin();
+            get_logger()->log<true>(PSTR("update_gyro(): overflow: heading_enc=%+.2f last_heading_=%+.2f\r\n"), heading_enc, last_heading_);
+        }
+
+        heading_enc += 360.f;
+    } else if (heading_enc - last_heading_ > 180.f) {
+        if constexpr (DEBUG_LEVEL_ > 4) {
+            log_begin();
+            get_logger()->log<true>(PSTR("update_gyro(): overflow: heading_enc=%+.2f last_heading_=%+.2f\r\n"), heading_enc, last_heading_);
+        }
+
+        heading_enc -= 360.f;
+    }
+    const auto head { p_heading_filter_->getAngle(heading_enc, gyro_rate, static_cast<float>(dt_us) / 1'000'000.f) };
+    auto fixed_head { head };
+    if (fixed_head < 0.f) {
+        fixed_head += 360.f;
+    }
+    fixed_head = std::fmod(head, 360.f);
+    if (head != fixed_head) {
+        p_heading_filter_->setAngle(fixed_head);
+    }
+    last_heading_ = fixed_head;
+
+    if constexpr (DEBUG_LEVEL_ > 4) {
+        log_begin();
+        get_logger()->log<true>(
+            PSTR("update_gyro(): head_g=%+.4f\thead_e=%+.2f\tgyro=%+.4f\tdt=%u us\r\n"), last_heading_, pose.get_heading(), gyro_rate, dt_us);
+    }
 
     return true;
 }

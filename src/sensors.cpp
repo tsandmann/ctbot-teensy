@@ -31,7 +31,7 @@
 
 namespace ctbot {
 
-Sensors::Sensors(CtBot& ctbot, I2C_Service* p_i2c_svc) : DigitalSensors { ctbot, p_i2c_svc }, ctbot_ { ctbot } {
+Sensors::Sensors(CtBot& ctbot, I2C_Service* p_i2c_1_svc, I2C_Service* p_i2c_2_svc) : DigitalSensors { ctbot, p_i2c_1_svc, p_i2c_2_svc }, ctbot_ { ctbot } {
     ctbot_.get_ena()->on(AnalogSensors::ENA_MASK_INIT | DigitalSensors::ENA_MASK_INIT); // enable always-on ENA ports
     ctbot_.get_ena()->off(AnalogSensors::ENA_MASK | DigitalSensors::ENA_MASK); // disable ENA sensors, that aren't always-on
     ctbot_.get_ena_pwm()->on(AnalogSensors::ENA_MASK_PWM_INIT | DigitalSensors::ENA_MASK_PWM_INIT); // enable always-on PWM sensors (wheel encoder)

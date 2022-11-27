@@ -650,18 +650,24 @@ void CtBotCli::init_commands() {
                 },
                 val);
         } else if (CtBotConfig::DATE_TIME_AVAILABLE && args.find(PSTR("time")) == 0) {
-            if (eval_args<int32_t>(
-                    [this](int32_t time) {
+            if (eval_args<int64_t>(
+                    [this](int64_t time) {
                         const auto received_time { std::chrono::system_clock::from_time_t(time) };
                         const auto current_time { std::chrono::high_resolution_clock::now() };
                         if (received_time > current_time) {
                             free_rtos_std::set_system_clock(received_time);
+                            p_ctbot_->set_clock_update_done(true);
+                        } else {
+                            p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
+                            p_ctbot_->get_logger()->log<true>(PSTR("time received (%u) <= current time (%u), time=%d\r\n"),
+                                received_time.time_since_epoch().count(), current_time.time_since_epoch().count(), time);
                         }
                         return true;
                     },
                     args)) {
                 return true;
             } else {
+                p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
                 p_ctbot_->get_logger()->log(PSTR("invalid time received\r\n"), true);
             }
         }

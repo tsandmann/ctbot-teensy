@@ -71,6 +71,9 @@ struct CtBotConfigUser : public CtBotConfigBase {
     /* features/modules available */
     static constexpr bool LCD_AVAILABLE { false }; /**< Statically activate or deactivate LC display */
     static constexpr bool TFT_AVAILABLE { false }; /**< Statically activate or deactivate TFT display */
+    static constexpr bool FXA_FXO_AVAILABLE { false };
+    static constexpr bool GYRO_AVAILABLE { false };
+    static constexpr bool ACCEL_AVAILABLE { false };
     static constexpr bool MPU6050_AVAILABLE { false };
     static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
     static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
@@ -95,7 +98,7 @@ struct CtBotConfigUser : public CtBotConfigBase {
 
     /* i2c */
     static constexpr uint32_t I2C1_FREQ { 400'000 };
-    static constexpr uint32_t I2C2_FREQ { 100'000 };
+    static constexpr uint32_t I2C2_FREQ { 400'000 };
     static constexpr uint32_t I2C3_FREQ { 100'000 };
 
     /* SD card */

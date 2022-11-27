@@ -106,7 +106,7 @@ protected:
 
     void run_output();
 
-    FLASHMEM size_t queue_debug_msg(const char c, const std::string* p_str, const bool block);
+    FLASHMEM size_t queue_debug_msg(char c, const std::string* p_str, bool block);
 
 public:
     enum class Color : uint8_t {
@@ -140,9 +140,9 @@ public:
      */
     FLASHMEM virtual ~CommInterface();
 
-    virtual void begin(const std::string_view& prefix) const override;
-    virtual size_t log(const char c, const bool block) override;
-    virtual size_t log(const std::string_view& str, const bool block) override;
+    virtual void begin(const std::string_view& prefix) override;
+    virtual size_t log(char c, bool block) override;
+    virtual size_t log(const std::string_view& str, bool block) override;
 
     /**
      * @return Current character echo mode setting
@@ -180,9 +180,9 @@ public:
         viewer_enabled_ = value;
     }
 
-    void set_color(const Color fg, const Color bg);
+    void set_color(Color fg, Color bg);
 
-    void set_attribute(const Attribute a);
+    void set_attribute(Attribute a);
 
     /**
      * @brief Write a character out to a SerialConnection
@@ -190,7 +190,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const char c, const bool block);
+    FLASHMEM size_t debug_print(char c, bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -198,7 +198,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const char* str, const bool block);
+    FLASHMEM size_t debug_print(const char* str, bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -206,7 +206,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const std::string* p_str, const bool block);
+    FLASHMEM size_t debug_print(const std::string* p_str, bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -214,7 +214,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const std::string& str, const bool block);
+    FLASHMEM size_t debug_print(const std::string& str, bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -222,7 +222,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(std::string&& str, const bool block);
+    FLASHMEM size_t debug_print(std::string&& str, bool block);
 
     /**
      * @brief Write a message out to a SerialConnection
@@ -230,7 +230,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(const std::string_view& str, const bool block);
+    FLASHMEM size_t debug_print(const std::string_view& str, bool block);
 
     /**
      * @brief Write a number out to SerialConnection
@@ -238,7 +238,7 @@ public:
      * @param[in] block: Switch blocking mode
      * @return Number of characters written
      */
-    FLASHMEM size_t debug_print(logger::Number auto const v, const bool block) {
+    FLASHMEM size_t debug_print(logger::Number auto v, bool block) {
         return debug_print(std::to_string(v), block);
     }
 
@@ -249,11 +249,11 @@ public:
      * @return Number of characters written
      */
     template <bool BLOCK = false>
-    FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto const... args) {
+    FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto... args) {
         return debug_print(LoggerTarget::string_format(format, args...), BLOCK);
     }
 
-    // FLASHMEM size_t debug_print(const arduino::String& str, const bool block);
+    // FLASHMEM size_t debug_print(const arduino::String& str, bool block);
 
     /**
      * @brief Wait for any outstanding transmission on the serial connection to complete

@@ -101,6 +101,7 @@ protected:
     SpeedControlBase* p_speedcontrols_[2]; /**< Pointer to speed controller instances */
     Servo* p_servos_[2]; /**< Pointer to servo instances */
     I2C_Service* p_i2c_1_svc_;
+    I2C_Service* p_i2c_2_svc_;
     EnaI2c* p_ena_;
     LedsI2cEna<>* p_ena_pwm_;
     LedsI2c* p_leds_; /**< Pointer to led instance */
@@ -126,6 +127,7 @@ protected:
     std::map<std::string, std::tuple<std::function<void()>, bool>, std::less<>> post_hooks_;
     TimerHandle_t p_watch_timer_;
     TimerHandle_t p_clock_timer_;
+    bool clock_update_done_;
     LuaWrapper* p_lua_;
     uint32_t last_viewer_timestamp_;
 
@@ -185,6 +187,10 @@ public:
      * @brief Stop the scheduler
      */
     FLASHMEM void stop();
+
+    void set_clock_update_done(bool value) {
+        clock_update_done_ = value;
+    }
 
     bool play_wav(const std::string_view& filename);
 

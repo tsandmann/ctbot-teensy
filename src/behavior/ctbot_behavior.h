@@ -42,6 +42,8 @@
 #include <tuple>
 
 
+class Kalman;
+
 namespace ctbot {
 class Behavior;
 class Pose;
@@ -71,6 +73,9 @@ protected:
     std::condition_variable model_cond_; /**< Pointer to condition for sensor model updates */
     int32_t enc_last_l_; /**< Last value of left wheel encoder */
     int32_t enc_last_r_; /**< Last value of right wheel encoder */
+    Kalman* p_heading_filter_;
+    uint32_t last_heading_update_;
+    float last_heading_;
     std::map<const std::string /* name */, std::tuple<uint8_t /* # parameter */, std::any /* factory functor */>, std::less<>>
         behavior_list_; /**< List of all registered behaviors */
     std::unique_ptr<Behavior> p_beh_; /**< Pointer to currently running behavior started from command line */
@@ -100,9 +105,10 @@ protected:
      *
      * @param[out] pose Reference to a Pose instance to be updated
      * @param[out] speed Reference to a Speed instance to be updated
-     * @return true, if pose and speed were updated successfully
      */
-    bool update_enc(Pose& pose, Speed& speed);
+    void update_enc(Pose& pose, Speed& speed);
+
+    bool update_gyro(const Pose& pose);
 
     FLASHMEM void add_behavior_helper(const std::string_view& name, std::tuple<uint8_t, std::any>&& beh);
 

@@ -74,8 +74,8 @@ public:
         TaskHandle_t caller;
         std::function<void(const bool, I2C_Transfer**)> callback;
 
-        I2C_Transfer(const uint16_t slave_addr = 0) : addr { slave_addr }, size1 {}, type1 {}, size2 {}, type2 {}, error {}, caller {}, callback {} {}
-        I2C_Transfer(const uint16_t slave_addr, const uint8_t _size1, const bool _type1, const uint8_t _size2, const bool _type2)
+        I2C_Transfer(uint16_t slave_addr = 0) : addr { slave_addr }, size1 {}, type1 {}, size2 {}, type2 {}, error {}, caller {}, callback {} {}
+        I2C_Transfer(uint16_t slave_addr, uint8_t _size1, bool _type1, uint8_t _size2, bool _type2)
             : addr { slave_addr }, size1 { _size1 }, type1 { _type1 }, size2 { _size2 }, type2 { _type2 }, error {}, caller {}, callback {} {}
     };
 
@@ -86,8 +86,8 @@ protected:
     static std::array<bool, NUM_BUSSES> init_;
     static std::array<uint32_t, NUM_BUSSES> freq_;
 
-    static void finish_transfer(const bool success, I2C_Transfer* transfer);
-    static void finish_transfer(const bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id) {
+    static void finish_transfer(bool success, I2C_Transfer* transfer);
+    static void finish_transfer(bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id) {
         if (DEBUG_ && transfer->callback) {
             printf_debug(PSTR("I2C_Service::finish_transfer(): callback for transfer %u addr=0x%x, err=%u\r\n"), id, transfer->addr, transfer->error);
         }
@@ -99,12 +99,12 @@ protected:
     const uint8_t bus_;
 
     template <typename DATA>
-    uint8_t set_bit_internal(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const;
+    uint8_t set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
 
 public:
-    static bool init(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda, const uint8_t pin_scl);
+    static bool init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_scl);
 
-    I2C_Service(const uint8_t bus, const uint32_t freq, const uint8_t pin_sda = 255, const uint8_t pin_scl = 255);
+    I2C_Service(uint8_t bus, uint32_t freq, uint8_t pin_sda = 255, uint8_t pin_scl = 255);
 
     uint8_t get_bus() const {
         return bus_;
@@ -114,17 +114,19 @@ public:
         return freq_[bus_];
     }
 
-    uint8_t read_reg(const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto& data,
-        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
-    uint8_t read_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, uint8_t* p_data, const uint8_t length,
-        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t read_reg(
+        uint16_t addr, std::unsigned_integral auto reg, std::integral auto& data, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t read_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, uint8_t* p_data, uint8_t length,
+        std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 
-    uint8_t write_reg(const uint16_t addr, std::unsigned_integral auto const reg, std::integral auto const data,
-        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
-    uint8_t write_bytes(const uint16_t addr, std::unsigned_integral auto const reg_addr, const uint8_t* p_data, const uint8_t length,
-        std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t write_reg(
+        uint16_t addr, std::unsigned_integral auto reg, std::integral auto data, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t write_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, const uint8_t* p_data, uint8_t length,
+        std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 
-    uint8_t set_bit(const uint16_t addr, std::unsigned_integral auto const reg, const uint8_t bit, const bool value) const;
+    uint8_t set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const;
 
-    bool test(const uint16_t addr, std::function<void(const bool, I2C_Transfer**)> callback = nullptr) const;
+    uint8_t set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
+
+    bool test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 };

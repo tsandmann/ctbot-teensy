@@ -43,6 +43,8 @@ class CtBot;
 class EnaI2c;
 class VL53L0X;
 class VL6180X;
+class FXAS21002C;
+class FXOS8700;
 class MPU6050_Wrapper;
 
 /**
@@ -77,16 +79,19 @@ protected:
     uint32_t dist_last_update_;
     uint32_t trans_last_update_;
     uint32_t mpu_last_update_;
-    I2C_Service* p_i2c_svc_;
+    I2C_Service* p_i2c_1_svc_;
+    I2C_Service* p_i2c_2_svc_;
     VL53L0X* p_dist_l;
     VL53L0X* p_dist_r;
     VL6180X* p_trans_;
+    FXAS21002C* p_gyro_;
+    FXOS8700* p_accel_;
     MPU6050_Wrapper* p_mpu_6050_;
 
     /**
      * @brief Construct a new DigitalSensors object
      */
-    FLASHMEM DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_svc);
+    FLASHMEM DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_1_svc, I2C_Service* p_i2c_2_svc = nullptr);
 
     /**
      * @brief Read all the current pin values
@@ -139,6 +144,14 @@ public:
      */
     auto& get_enc_r() {
         return enc_r_;
+    }
+
+    auto get_gyro() const {
+        return p_gyro_;
+    }
+
+    auto get_accel() const {
+        return p_accel_;
     }
 
     auto get_mpu6050() {

@@ -75,7 +75,7 @@ FLASHMEM CommInterface::~CommInterface() {
     schdl->task_remove(output_task_);
 }
 
-FLASHMEM size_t CommInterface::queue_debug_msg(const char c, const std::string* p_str, const bool block) {
+FLASHMEM size_t CommInterface::queue_debug_msg(char c, const std::string* p_str, bool block) {
     const auto ret { p_str ? p_str->length() : 1 };
     const OutBufferElement element { p_str, c };
 
@@ -89,9 +89,11 @@ FLASHMEM size_t CommInterface::queue_debug_msg(const char c, const std::string* 
     return ret;
 }
 
-void CommInterface::begin(const std::string_view&) const {}
+void CommInterface::begin(const std::string_view& prefix) {
+    log(prefix, true);
+}
 
-size_t CommInterface::log(const char c, const bool block) {
+size_t CommInterface::log(char c, bool block) {
     size_t ret;
 
     if (viewer_enabled_) {
@@ -107,7 +109,7 @@ size_t CommInterface::log(const char c, const bool block) {
     return ret;
 }
 
-size_t CommInterface::log(const std::string_view& str, const bool block) {
+size_t CommInterface::log(const std::string_view& str, bool block) {
     size_t ret;
 
     if (viewer_enabled_) {
@@ -123,43 +125,43 @@ size_t CommInterface::log(const std::string_view& str, const bool block) {
     return ret;
 }
 
-void CommInterface::set_color(const Color fg, const Color bg) {
+void CommInterface::set_color(Color fg, Color bg) {
     debug_printf<true>(PSTR("\x1b[%u;%um"), static_cast<uint16_t>(fg) + 30, static_cast<uint16_t>(bg) + 40);
 }
 
-void CommInterface::set_attribute(const Attribute a) {
+void CommInterface::set_attribute(Attribute a) {
     debug_printf<true>(PSTR("\x1b[%um"), static_cast<uint16_t>(a));
 }
 
-FLASHMEM size_t CommInterface::debug_print(const char c, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(char c, bool block) {
     return queue_debug_msg(c, nullptr, block);
 }
 
-FLASHMEM size_t CommInterface::debug_print(const char* str, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(const char* str, bool block) {
     auto p_str { new std::string(str) };
     return queue_debug_msg('\0', p_str, block);
 }
 
-FLASHMEM size_t CommInterface::debug_print(const std::string* p_str, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(const std::string* p_str, bool block) {
     return queue_debug_msg('\0', p_str, block);
 }
 
-FLASHMEM size_t CommInterface::debug_print(const std::string& str, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(const std::string& str, bool block) {
     auto p_str { new std::string(str) };
     return queue_debug_msg('\0', p_str, block);
 }
 
-FLASHMEM size_t CommInterface::debug_print(std::string&& str, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(std::string&& str, bool block) {
     auto p_str { new std::string(str) };
     return queue_debug_msg('\0', p_str, block);
 }
 
-FLASHMEM size_t CommInterface::debug_print(const std::string_view& str, const bool block) {
+FLASHMEM size_t CommInterface::debug_print(const std::string_view& str, bool block) {
     auto p_str { new std::string(str) };
     return queue_debug_msg('\0', p_str, block);
 }
 
-// FLASHMEM size_t CommInterface::debug_print(const arduino::String& str, const bool block) {
+// FLASHMEM size_t CommInterface::debug_print(const arduino::String& str, bool block) {
 //     auto p_str { new std::string(str.c_str(), str.length()) };
 //     return queue_debug_msg('\0', p_str, block);
 // }
@@ -178,7 +180,7 @@ void CommInterface::run_output() {
     while (output_queue_.try_pop(element)) {
         if (element.p_str_) {
             size_t written {};
-            while (true) { // FIXME: timeout?
+            while (true) { // TODO: timeout?
                 written += io_.write(element.p_str_->c_str() + written, element.p_str_->length() - written, true);
                 if (written >= element.p_str_->length()) {
                     break;

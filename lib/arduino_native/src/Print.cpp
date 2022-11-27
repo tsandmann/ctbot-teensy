@@ -23,6 +23,10 @@
 
 #include "Print.h"
 
+#include <string>
+#include <cstdio>
+#include <cstdarg>
+
 
 size_t Print::write(const uint8_t* buffer, size_t size) {
     if (!buffer) {
@@ -48,6 +52,18 @@ size_t Print::print(long n) {
 size_t Print::println() {
     uint8_t buf[2] = { '\r', '\n' };
     return write(buf, 2);
+}
+
+int Print::printf(const char* format, ...) {
+    va_list vl;
+    va_start(vl, format);
+    const auto size { std::vsnprintf(nullptr, 0, format, vl) };
+    auto str { std::string(size + 1, '\0') };
+    const auto n { std::vsnprintf(str.data(), size + 1, format, vl) };
+    str.resize(n);
+    va_end(vl);
+
+    return write(str.data(), str.length());
 }
 
 size_t Print::printNumber(unsigned long n, uint8_t base, uint8_t sign) {

@@ -56,11 +56,11 @@ public:
 
     FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
-    FLASHMEM static std::string create_formatted_string(const size_t size, const char* format, ...);
+    FLASHMEM static std::string create_formatted_string(size_t size, const char* format, ...);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-    FLASHMEM static std::string string_format(const char* format, logger::PrintfArg auto const... args) {
+    FLASHMEM static std::string string_format(const char* format, logger::PrintfArg auto... args) {
         const auto size { get_format_size(format, args...) + 1 };
         if (size > 0) {
             return create_formatted_string(size, format, args...);
@@ -70,13 +70,13 @@ public:
     }
 #pragma GCC diagnostic pop
 
-    virtual void begin(const std::string_view& prefix) const = 0;
-    virtual size_t log(const char c, const bool block) = 0;
-    virtual size_t log(const std::string_view& str, const bool block) = 0;
+    virtual void begin(const std::string_view& prefix) = 0;
+    virtual size_t log(char c, bool block) = 0;
+    virtual size_t log(const std::string_view& str, bool block) = 0;
     virtual void flush() = 0;
 
     template <bool BLOCK = false>
-    FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto const... args) {
+    FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto... args) {
         return log(string_format(format, args...), BLOCK);
     }
 };
@@ -91,9 +91,9 @@ public:
     FLASHMEM LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot);
     FLASHMEM virtual ~LoggerTargetFile() override;
 
-    virtual void begin(const std::string_view& prefix) const override;
-    virtual size_t log(const char c, const bool block) override;
-    virtual size_t log(const std::string_view& str, const bool block) override;
+    virtual void begin(const std::string_view& prefix) override;
+    virtual size_t log(char c, bool block) override;
+    virtual size_t log(const std::string_view& str, bool block) override;
     virtual void flush() override;
 };
 
@@ -109,19 +109,19 @@ public:
 
     void begin(const std::string_view& prefix = "") const;
 
-    size_t log(const char c, const bool block);
-    size_t log(const char* str, const bool block);
-    size_t log(const std::string* p_str, const bool block);
-    size_t log(const std::string& str, const bool block);
-    size_t log(std::string&& str, const bool block);
-    size_t log(const std::string_view& str, const bool block);
+    size_t log(char c, bool block);
+    size_t log(const char* str, bool block);
+    size_t log(const std::string* p_str, bool block);
+    size_t log(const std::string& str, bool block);
+    size_t log(std::string&& str, bool block);
+    size_t log(const std::string_view& str, bool block);
 
-    FLASHMEM size_t log(logger::Number auto const v, const bool block) {
+    FLASHMEM size_t log(logger::Number auto v, bool block) {
         return log(std::to_string(v), block);
     }
 
     template <bool BLOCK = false>
-    FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto const... args) {
+    FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto... args) {
         return log(LoggerTarget::string_format(format, args...), BLOCK);
     }
 
