@@ -75,12 +75,13 @@ const char CtBotCli::general_[] { "command subcommand [param]           explanat
                                   "crash                                cause a crash intentionally\r\n" };
 
 const char CtBotCli::config_[] { "config (c)\r\n"
-                                 "\techo [0|1]                   set console echo on/off\r\n"
-                                 "\tviewer [0|1]                 start/stop remote viewer connection\r\n"
-                                 "\ttask TASKNAME [0|1]          start/stop a TASK\r\n"
-                                 "\tprehook HOOK [0|1]           start/stop a pre-hook\r\n"
-                                 "\tposthook HOOK [0|1]          start/stop a post-hook\r\n"
+                                 "\techo [1|0]                   set console echo on/off\r\n"
+                                 "\tviewer [1|0]                 start/stop remote viewer connection\r\n"
+                                 "\ttask TASKNAME [1|0]          start/stop a TASK\r\n"
+                                 "\tprehook HOOK [1|0]           start/stop a pre-hook\r\n"
+                                 "\tposthook HOOK [1|0]          start/stop a post-hook\r\n"
                                  "\tk{p,i,d} [0;65535]           set Kp/Ki/Kd parameter for speed controller\r\n"
+                                 "\tsctrl [1|0]                  enable/disable speed controller\r\n"
                                  "\tled BITMASK [0;255]          set LED brightness for given leds\r\n"
                                  "\tenapwm BITMASK [0;255]       set duty cycle for given ena channels\r\n" };
 
@@ -338,6 +339,14 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_speedcontrols_[0]->get_kp(), p_ctbot_->p_speedcontrols_[0]->get_ki(), static_cast<float>(left));
                     p_ctbot_->p_speedcontrols_[1]->set_parameters(
                         p_ctbot_->p_speedcontrols_[1]->get_kp(), p_ctbot_->p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
+                    return true;
+                },
+                args);
+        } else if (args.find(PSTR("sctrl")) == 0) {
+            return eval_args<bool>(
+                [this](bool enable) {
+                    p_ctbot_->p_speedcontrols_[0]->set_enable(enable);
+                    p_ctbot_->p_speedcontrols_[1]->set_enable(enable);
                     return true;
                 },
                 args);

@@ -500,7 +500,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_logger_->log(PSTR("ct-Bot init done.\r\n"), true);
     }
     p_logger_->log(PSTR("\r\n"));
-    log_begin();
+    p_logger_->begin();
     p_logger_->log(PSTR("*** Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ " on " __DATE__ ". ***\r\n"), true);
     p_logger_->flush();
     p_comm_->debug_print(PSTR("\r\nType \"help\" (or \"h\") to print help message.\r\n\n"), true);

@@ -40,7 +40,7 @@ namespace ctbot {
 
 std::list<SpeedControl*> SpeedControl::controller_list_;
 
-FLASHMEM SpeedControlBase::SpeedControlBase() : kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f }, setpoint_ {} {}
+FLASHMEM SpeedControlBase::SpeedControlBase() : kp_ { 40.f }, ki_ { 30.f }, kd_ { 0.f }, setpoint_ {}, enabled_ { 1 } {}
 
 FLASHMEM SpeedControlBase::~SpeedControlBase() = default;
 
@@ -135,11 +135,24 @@ void SpeedControlPico::controller() {
         SpeedData speed_data {};
         size_t i {};
         for (auto p_ctrl : controller_list_) {
-            if (p_ctrl->reset_) {
+            if (p_ctrl->enabled_ == 2 && speed_data.cmd != 1) {
+                /* change to disabled */
+                speed_data.cmd = 2;
+                speed_data.speed[i] = 0.f; // disable
+                p_ctrl->enabled_ = 0;
+            } else if (p_ctrl->enabled_ == 3 && speed_data.cmd != 1) {
+                /* change to enabled */
+                speed_data.cmd = 2;
+                speed_data.speed[i] = 1.f; // enable
+                p_ctrl->enabled_ = 1;
+            } else if (p_ctrl->reset_ && speed_data.cmd != 2) {
+                /* reset both speed controller */
                 speed_data.cmd = 1;
                 p_ctrl->reset_ = false;
+            } else {
+                /* normale mode, just set speed */
+                speed_data.speed[i] = p_ctrl->setpoint_;
             }
-            speed_data.speed[i] = p_ctrl->setpoint_;
             ++i;
             if (i >= 2) {
                 break;

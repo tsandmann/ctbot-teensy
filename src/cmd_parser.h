@@ -103,7 +103,7 @@ public:
      */
     FLASHMEM bool parse(const std::string_view& in, CommInterface& comm);
 
-    FLASHMEM bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // FIXME: add documentation
+    FLASHMEM bool execute_cmd(const std::string_view& cmd, CommInterface& comm); // TODO: add documentation
 
     auto get_echo() const {
         return echo_;

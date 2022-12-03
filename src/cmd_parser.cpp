@@ -39,7 +39,7 @@ void CmdParser::register_cmd(const std::string_view& cmd, func_t&& func) {
     commands_.emplace(std::make_pair(cmd, func));
 
     if constexpr (DEBUG_) {
-        CtBot::get_instance().get_comm()->debug_printf<true>("CmdParser::register_cmd(\"%s\"): cmd=0x%x addr=0x%x size=%u\r\n", cmd.cbegin(), cmd.data(),
+        CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("CmdParser::register_cmd(\"%s\"): cmd=0x%x addr=0x%x size=%u\r\n"), cmd.cbegin(), cmd.data(),
             commands_.find(cmd)->first.data(), commands_.find(cmd)->first.size());
     }
 }
@@ -49,7 +49,7 @@ void CmdParser::register_cmd(const std::string_view& cmd, const char* cmd_short,
 
     if constexpr (DEBUG_) {
         CtBot::get_instance().get_comm()->debug_printf<true>(
-            "CmdParser::register_cmd('%s'): addr=0x%x\r\n", cmd_short, commands_.find(std::string_view { cmd_short, 1 })->first.data());
+            PSTR("CmdParser::register_cmd('%s'): addr=0x%x\r\n"), cmd_short, commands_.find(std::string_view { cmd_short, 1 })->first.data());
     }
 
     register_cmd(cmd, std::move(func));
@@ -69,7 +69,7 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
     const auto cmd_str { cmd.substr(0, arg_pos) };
 
     if constexpr (DEBUG_) {
-        comm.debug_printf<true>("arg_pos=%u cmd_str=\"%s\"\r\n", arg_pos, std::string { cmd_str }.c_str());
+        comm.debug_printf<true>(PSTR("arg_pos=%u cmd_str=\"%s\"\r\n"), arg_pos, std::string { cmd_str }.c_str());
     }
 
     const auto it { commands_.find(cmd_str) };
@@ -77,11 +77,11 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
         if (echo_) {
             comm.set_color(CommInterface::Color::RED, CommInterface::Color::BLACK);
             comm.set_attribute(CommInterface::Attribute::BOLD);
-            comm.debug_print("ERROR", true);
+            comm.debug_print(PSTR("ERROR"), true);
             comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
-            comm.debug_print(": command \"", true);
+            comm.debug_print(PSTR(": command \""), true);
             comm.debug_print(cmd, true);
-            comm.debug_print("\" not found.\r\n", true);
+            comm.debug_print(PSTR("\" not found.\r\n"), true);
             comm.set_attribute(CommInterface::Attribute::NORMAL);
             if constexpr (DEBUG_) {
                 comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
@@ -90,7 +90,7 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
                     comm.debug_printf<true>(PP_ARGS("{#x} ", static_cast<uint16_t>(cmd[i])));
                 }
             }
-            comm.debug_print("\r\n", true);
+            comm.debug_print(PSTR("\r\n"), true);
         }
         return false;
     }

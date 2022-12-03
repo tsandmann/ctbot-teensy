@@ -150,7 +150,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_1_svc, I2C_Servi
 
     if (CtBotConfig::FXA_FXO_AVAILABLE && p_i2c_2_svc_) {
         ena_.on(EnaI2cTypes::IMU_RESET);
-
+        std::this_thread::sleep_for(10ms);
         if constexpr (CtBotConfig::GYRO_AVAILABLE) {
             p_gyro_ = new FXAS21002C { p_i2c_2_svc_, 0x21 };
             configASSERT(p_gyro_);
@@ -177,6 +177,7 @@ DigitalSensors::DigitalSensors(CtBot& ctbot, I2C_Service* p_i2c_1_svc, I2C_Servi
             p_accel_ = new FXOS8700 { p_i2c_2_svc_, 0x1f };
             configASSERT(p_accel_);
             if (p_accel_->begin()) {
+                std::this_thread::sleep_for(200ms);
                 p_accel_->set_sensor_mode(FXOS8700::sensor_mode_t::ACCEL_ONLY_MODE);
                 p_accel_->set_output_data_rate(FXOS8700::odr_t::ODR_100HZ);
                 p_accel_->set_accel_range(FXOS8700::accel_range_t::ACCEL_RANGE_2G);

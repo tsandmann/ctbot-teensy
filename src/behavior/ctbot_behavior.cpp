@@ -424,7 +424,7 @@ void CtBotBehavior::motor_update_done() {
 }
 
 void CtBotBehavior::log_begin() const {
-    get_logger()->begin(PSTR("CtBotBehavior"));
+    get_logger()->begin(PSTR("CtBotBehavior: "));
 }
 
 void CtBotBehavior::update_enc(Pose& pose, Speed& speed) {

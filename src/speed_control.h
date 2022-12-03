@@ -48,6 +48,7 @@ protected:
 
     float kp_, ki_, kd_;
     float setpoint_; // value in %
+    uint8_t enabled_; // 0: disabled, 1: enabled, 2: change to disabled, 3: change to enabled
 
 public:
     FLASHMEM SpeedControlBase();
@@ -88,6 +89,14 @@ public:
      */
     auto get_kd() const {
         return kd_;
+    }
+
+    void set_enable(bool enable) {
+        if (enable && enabled_ != 1) {
+            enabled_ = 3;
+        } else if (!enable && enabled_ != 0) {
+            enabled_ = 2;
+        }
     }
 
     /**
