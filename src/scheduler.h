@@ -47,6 +47,13 @@ namespace ctbot {
 
 class CommInterface;
 
+struct SchedulerStatContext {
+    std::map<TaskHandle_t, uint32_t> last_runtimes_;
+    uint64_t last_total_runtime_;
+
+    SchedulerStatContext() : last_total_runtime_ {} {}
+};
+
 /**
  * @brief Cooperative scheduler implementation for periodic tasks
  *
@@ -105,7 +112,7 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func);
+    FLASHMEM uint16_t task_add(const std::string_view& name, uint16_t period, uint8_t priority, uint32_t stack_size, Task::func_t&& func);
 
     /**
      * @brief Add a tasks to the run queue
@@ -115,7 +122,7 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, const uint32_t stack_size, Task::func_t&& func) {
+    FLASHMEM uint16_t task_add(const std::string_view& name, uint16_t period, uint32_t stack_size, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, stack_size, std::move(func));
     }
 
@@ -126,15 +133,15 @@ public:
      * @param[in] func: Function wrapper for the task's implementation
      * @return ID of created task or 0 in case of an error
      */
-    FLASHMEM uint16_t task_add(const std::string_view& name, const uint16_t period, Task::func_t&& func) {
+    FLASHMEM uint16_t task_add(const std::string_view& name, uint16_t period, Task::func_t&& func) {
         return task_add(name, period, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, std::move(func));
     }
 
-    FLASHMEM uint16_t task_register(const std::string_view& name, const bool external = false);
+    FLASHMEM uint16_t task_register(const std::string_view& name, bool external = false);
 
-    FLASHMEM uint16_t task_register(TaskHandle_t task, const bool external);
+    FLASHMEM uint16_t task_register(TaskHandle_t task, bool external);
 
-    FLASHMEM bool task_remove(const uint16_t task);
+    FLASHMEM bool task_remove(uint16_t task);
 
     /**
      * @brief Get the ID of a task given by its name
@@ -148,25 +155,25 @@ public:
      * @param[in] id: ID of task to get
      * @return Pointer to task entry
      */
-    FLASHMEM Task* task_get(const uint16_t id) const;
+    FLASHMEM Task* task_get(uint16_t id) const;
 
     /**
      * @brief Suspend a task, task will not be scheduled again until resumed
      * @param[in] id: ID of task to suspend
      * @return true on success
      */
-    bool task_suspend(const uint16_t id);
+    bool task_suspend(uint16_t id);
 
     /**
      * @brief Resume a task, task will be scheduled on next runtime
      * @param[in] id: ID of task to resume
      * @return true on success
      */
-    bool task_resume(const uint16_t id);
+    bool task_resume(uint16_t id);
 
-    bool task_join(const uint16_t id);
+    bool task_join(uint16_t id);
 
-    FLASHMEM bool task_set_finished(const uint16_t id);
+    FLASHMEM bool task_set_finished(uint16_t id);
 
     /**
      * @brief Print a list of all tasks and their current status
@@ -182,9 +189,9 @@ public:
 
     FLASHMEM size_t get_free_stack() const;
 
-    FLASHMEM size_t get_free_stack(const uint16_t id) const;
+    FLASHMEM size_t get_free_stack(uint16_t id) const;
 
-    FLASHMEM std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> get_runtime_stats() const;
+    FLASHMEM std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> get_runtime_stats(SchedulerStatContext* p_context, bool sort) const;
 };
 
 } // namespace ctbot

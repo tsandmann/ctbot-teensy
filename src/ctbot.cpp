@@ -116,11 +116,11 @@ CtBot& CtBot::get_instance() {
 
 FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
-    : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr },
-      p_speedcontrols_ { nullptr, nullptr }, p_servos_ { nullptr, nullptr }, p_i2c_1_svc_ {}, p_ena_ {},
-      p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {}, p_serial_usb_ { &arduino::get_serial(0) },
-      p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {}, p_audio_output_dac_ {}, p_audio_output_i2s_ {},
-      p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, clock_update_done_ {}, p_lua_ {}, last_viewer_timestamp_ {} {}
+    : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr }, p_speedcontrols_ { nullptr, nullptr },
+      p_servos_ { nullptr, nullptr }, p_i2c_1_svc_ {}, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {},
+      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {},
+      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {},
+      clock_update_done_ {}, p_lua_ {}, last_viewer_timestamp_ {}, last_taskstat_timestamp_ {}, p_taskstat_context_ {}, p_viewer_tasks_context_ {} {}
 
 CtBot::~CtBot() {
     if constexpr (DEBUG_LEVEL_ > 1) {
@@ -174,6 +174,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         ::serialport_puts(PSTR("CtBot::setup(): creating scheduler...\r\n"));
     }
     p_scheduler_ = new Scheduler;
+    configASSERT(p_scheduler_);
+    p_taskstat_context_ = new SchedulerStatContext;
+    p_viewer_tasks_context_ = new SchedulerStatContext;
+    configASSERT(p_taskstat_context_ && p_viewer_tasks_context_);
     task_id_ = p_scheduler_->task_add(PSTR("main"), TASK_PERIOD_MS_, TASK_PRIORITY_, STACK_SIZE_, [this]() { return run(); });
     p_scheduler_->task_register(PSTR("Tmr Svc"), true);
     p_scheduler_->task_register(PSTR("YIELD"));
@@ -209,9 +213,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
                 if (now - last_viewer_timestamp_ > VIEWER_SEND_INTERVAL_MS_) {
                     last_viewer_timestamp_ = now;
 
-                    if (!publish_sensordata()) {
+                    if (!publish_viewerdata(now)) {
                         p_logger_->begin(PSTR("CtBot::run(): "));
-                        p_logger_->log(PSTR("publish_sensordata() failed.\r\n"), true);
+                        p_logger_->log(PSTR("publish_viewerdata() failed.\r\n"), true);
                     }
                 }
             },
@@ -474,12 +478,11 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     add_post_hook(
         PSTR("task"),
         [this]() FLASHMEM {
-            static uint32_t last_ms {};
             const auto now { Timer::get_ms() };
-            if (now - last_ms > 1'000U) {
-                last_ms = now;
+            if (now - last_taskstat_timestamp_ > 1'000U) {
+                last_taskstat_timestamp_ = now;
 
-                auto p_runtime_stats { p_scheduler_->get_runtime_stats() };
+                auto p_runtime_stats { p_scheduler_->get_runtime_stats(p_taskstat_context_, true) };
                 for (auto& e : *p_runtime_stats) {
                     const auto name { ::pcTaskGetName(e.first) };
                     const char* tabs { std::strlen(name) > 6 ? "\t" : "\t\t" };
@@ -514,7 +517,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 }
 
-bool CtBot::publish_sensordata() {
+bool CtBot::publish_viewerdata(uint32_t now) {
+    static uint32_t last_task_stats_ {};
+
     if (!p_comm_ || !p_sensors_) {
         return false;
     }
@@ -559,6 +564,17 @@ bool CtBot::publish_sensordata() {
     }
     if (p_leds_) {
         p_comm_->debug_printf<true>(PP_ARGS("<act>leds: {}</act>\r\n", static_cast<uint8_t>(p_leds_->get())));
+    }
+
+    if (now - last_task_stats_ > VIEWER_SEND_TASKS_INTERVAL_MS_) {
+        last_task_stats_ = now;
+        auto p_runtime_stats { p_scheduler_->get_runtime_stats(p_viewer_tasks_context_, false) };
+        for (auto& e : *p_runtime_stats) {
+            const auto name { ::pcTaskGetName(e.first) };
+            const auto id { p_scheduler_->task_get(name) };
+            p_comm_->debug_printf<true>(PP_ARGS("<sys>task:{}:{s}:{.6}</sys>\r\n", id, name, e.second));
+        }
+        p_comm_->debug_print(PSTR("<sys>task:-1: :0.0</sys>\r\n"), true);
     }
 
     return true;
@@ -788,6 +804,8 @@ FLASHMEM void CtBot::shutdown() {
     if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_parser_ deleted.\r\n"));
     }
+    delete p_viewer_tasks_context_;
+    delete p_taskstat_context_;
     delete p_scheduler_;
     if constexpr (DEBUG_LEVEL_ > 1) {
         ::serialport_puts(PSTR("p_scheduler_ deleted.\r\n"));

@@ -158,19 +158,23 @@ size_t Scheduler::get_free_stack() const {
     return ::uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t);
 }
 
-size_t Scheduler::get_free_stack(const uint16_t id) const {
+size_t Scheduler::get_free_stack(uint16_t id) const {
     auto p_task { task_get(id) };
     return ::uxTaskGetStackHighWaterMark(
                p_task->std_thread_ ? free_rtos_std::gthr_freertos::get_freertos_handle(p_task->handle_.p_thread) : p_task->handle_.p_freertos_handle)
         * sizeof(StackType_t);
 }
 
-uint16_t Scheduler::task_add(const std::string_view& name, const uint16_t period, const uint8_t priority, const uint32_t stack_size, Task::func_t&& func) {
+uint16_t Scheduler::task_add(const std::string_view& name, uint16_t period, uint8_t priority, uint32_t stack_size, Task::func_t&& func) {
     Task* p_task;
     {
         std::unique_lock<std::mutex> lock(task_mutex_);
         p_task = new Task { *this, next_id_++, name, false, period, priority, std::move(func) };
         tasks_[p_task->id_] = p_task;
+    }
+
+    if (stack_size / sizeof(StackType_t) < configMINIMAL_STACK_SIZE) {
+        stack_size = configMINIMAL_STACK_SIZE * sizeof(StackType_t);
     }
 
     p_task->std_thread_ = true;
@@ -346,10 +350,7 @@ void Scheduler::print_ram_usage(CommInterface& comm) const {
 #endif // ARDUINO_TEENSY41
 }
 
-std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> Scheduler::get_runtime_stats() const {
-    static std::map<TaskHandle_t, uint32_t> last_runtimes;
-    static uint64_t last_total_runtime { 0 };
-
+std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> Scheduler::get_runtime_stats(SchedulerStatContext* p_context, bool sort) const {
     enter_critical_section();
     size_t num_tasks { ::uxTaskGetNumberOfTasks() };
     std::vector<TaskStatus_t> task_data;
@@ -360,16 +361,17 @@ std::unique_ptr<std::vector<std::pair<TaskHandle_t, float>>> Scheduler::get_runt
 
     auto current_runtimes { std::make_unique<std::vector<std::pair<TaskHandle_t, float>>>() };
 
-    for (size_t i { 0 }; i < num_tasks; ++i) {
-        current_runtimes->push_back(std::make_pair(
-            task_data[i].xHandle, (task_data[i].ulRunTimeCounter - last_runtimes[task_data[i].xHandle]) * 100.f / (total_runtime - last_total_runtime)));
-        last_runtimes[task_data[i].xHandle] = task_data[i].ulRunTimeCounter;
+    for (size_t i {}; i < num_tasks; ++i) {
+        current_runtimes->push_back(std::make_pair(task_data[i].xHandle,
+            (task_data[i].ulRunTimeCounter - p_context->last_runtimes_[task_data[i].xHandle]) * 100.f / (total_runtime - p_context->last_total_runtime_)));
+        p_context->last_runtimes_[task_data[i].xHandle] = task_data[i].ulRunTimeCounter;
     }
-    last_total_runtime = total_runtime;
+    p_context->last_total_runtime_ = total_runtime;
 
-
-    auto cmp = [](std::pair<TaskHandle_t, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
-    std::sort(current_runtimes->begin(), current_runtimes->end(), cmp);
+    if (sort) {
+        auto cmp = [](std::pair<TaskHandle_t, float> const& a, std::pair<void*, float> const& b) { return a.second >= b.second; };
+        std::sort(current_runtimes->begin(), current_runtimes->end(), cmp);
+    }
 
     return current_runtimes;
 }

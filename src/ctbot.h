@@ -69,6 +69,7 @@ class TFTDisplay;
 class CmdParser;
 class CtBotCli;
 class Scheduler;
+class SchedulerStatContext;
 class ParameterStorage;
 class Logger;
 class LoggerTargetFile;
@@ -89,6 +90,7 @@ protected:
     static constexpr uint8_t TASK_PRIORITY_ { 7 };
     static constexpr uint32_t STACK_SIZE_ { 2048 };
     static constexpr uint32_t VIEWER_SEND_INTERVAL_MS_ { 200 };
+    static constexpr uint32_t VIEWER_SEND_TASKS_INTERVAL_MS_ { 2'000 };
 
     static TaskHandle_t audio_task_;
 
@@ -130,6 +132,9 @@ protected:
     bool clock_update_done_;
     LuaWrapper* p_lua_;
     uint32_t last_viewer_timestamp_;
+    uint32_t last_taskstat_timestamp_;
+    SchedulerStatContext* p_taskstat_context_;
+    SchedulerStatContext* p_viewer_tasks_context_;
 
 
     /**
@@ -158,7 +163,7 @@ protected:
 
     FLASHMEM void update_clock();
 
-    bool publish_sensordata();
+    bool publish_viewerdata(uint32_t now);
 
 public:
     /**

@@ -291,12 +291,13 @@ ButtonTest::~ButtonTest() {
 
 void ButtonTest::display_tasks() {
     using namespace std::chrono_literals;
+    SchedulerStatContext context {};
 
     ctbot_.get_tft()->clear();
 
     uint32_t last_touch_cnt { ctbot_.get_tft()->get_touch_counter() };
     do { // FIXME: don't loop here in method
-        auto p_runtime_stats { ctbot_.get_scheduler()->get_runtime_stats() };
+        auto p_runtime_stats { ctbot_.get_scheduler()->get_runtime_stats(&context, true) };
 
         ctbot_.get_tft()->set_text_size(2);
         ctbot_.get_tft()->set_text_color(TFTColors::RED);

@@ -105,7 +105,7 @@ const int legacy::SENS_IR_INFINITE { 9999 };
 const int legacy::SENS_IR_SAFE_DIST { 120 };
 const int legacy::BORDER_DANGEROUS { 0x3da };
 const int legacy::LINE_SENSE { 0x350 };
-const int legacy::MAX_PILLAR_DISTANCE { 300 };
+const int legacy::MAX_PILLAR_DISTANCE { 500 };
 
 const int16_t legacy::BOT_SPEED_IGNORE { 9'999 }; /**< wird verwendet um einen Eintrag zu ignorieren */
 const int16_t legacy::BOT_SPEED_STOP { 0 }; /**< Motor aus */
