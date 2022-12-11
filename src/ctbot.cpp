@@ -524,6 +524,9 @@ bool CtBot::publish_viewerdata(uint32_t now) {
         return false;
     }
 
+    const auto ram1 { freertos::ram1_usage() };
+    const auto ram2 { freertos::ram2_usage() };
+
     p_comm_->debug_printf<true>(PP_ARGS("<sens>dist: {} {}</sens>\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
     if (CtBotConfig::EXTERNAL_SPEEDCTRL && p_speedcontrols_[0] && p_speedcontrols_[1]) {
         p_comm_->debug_printf<true>(PP_ARGS("<sens>enc: {} {}</sens>\r\n", static_cast<int32_t>(p_speedcontrols_[0]->get_enc_speed()),
@@ -568,13 +571,21 @@ bool CtBot::publish_viewerdata(uint32_t now) {
 
     if (now - last_task_stats_ > VIEWER_SEND_TASKS_INTERVAL_MS_) {
         last_task_stats_ = now;
-        auto p_runtime_stats { p_scheduler_->get_runtime_stats(p_viewer_tasks_context_, false) };
-        for (auto& e : *p_runtime_stats) {
-            const auto name { ::pcTaskGetName(e.first) };
-            const auto id { p_scheduler_->task_get(name) };
-            p_comm_->debug_printf<true>(PP_ARGS("<sys>task:{}:{s}:{.6}</sys>\r\n", id, name, e.second));
+        {
+            auto p_runtime_stats { p_scheduler_->get_runtime_stats(p_viewer_tasks_context_, false) };
+            for (auto& e : *p_runtime_stats) {
+                const auto name { ::pcTaskGetName(e.first) };
+                const auto id { p_scheduler_->task_get(name) };
+                p_comm_->debug_printf<true>(PP_ARGS("<sys>task:{}:{s}:{.6}</sys>\r\n", id, name, e.second));
+            }
+            p_comm_->debug_print(PSTR("<sys>task:-1: :0.0</sys>\r\n"), true);
         }
-        p_comm_->debug_print(PSTR("<sys>task:-1: :0.0</sys>\r\n"), true);
+
+        p_comm_->debug_printf<true>(
+            PP_ARGS("<sys>ram:1:{}:{}:{}:{}:{}</sys>\r\n", std::get<6>(ram1) / 1'024UL /* size */, std::get<1>(ram1) / 1'024UL /* data used */,
+                std::get<2>(ram1) / 1'024UL /* bss used */, std::get<3>(ram1) / 1'024UL /* heap used */, std::get<5>(ram1) / 1'024UL /* itcm */));
+        p_comm_->debug_printf<true>(
+            PP_ARGS("<sys>ram:2:{}:{}</sys>\r\n", std::get<1>(ram2) / 1'024UL /* size */, (std::get<1>(ram2) - std::get<0>(ram2)) / 1'024UL /* used */));
     }
 
     return true;

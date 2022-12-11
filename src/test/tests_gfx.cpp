@@ -41,7 +41,7 @@
 
 
 namespace freertos {
-std::tuple<size_t, size_t, size_t, size_t, size_t, size_t> ram1_usage();
+std::tuple<size_t, size_t, size_t, size_t, size_t, size_t, size_t> ram1_usage();
 }
 
 namespace ctbot {
@@ -331,22 +331,22 @@ void ButtonTest::display_tasks() {
             ctbot_.get_tft()->set_text_color(TFTColors::PINK);
 
             const auto info { freertos::ram1_usage() };
-            const float ram_size_f { static_cast<float>(std::get<3>(info)) };
-            const size_t ram_size_kb { std::get<3>(info) / 1024UL };
-            const size_t ram_used { std::get<3>(info) - std::get<0>(info) };
+            const float ram_size_f { static_cast<float>(std::get<6>(info)) };
+            const size_t ram_size_kb { std::get<6>(info) / 1024UL };
+            const size_t ram_used { std::get<6>(info) - std::get<0>(info) };
             {
                 const int16_t w { static_cast<int16_t>(static_cast<float>(ram_used) / ram_size_f * tft_w) };
                 ctbot_.get_tft()->fill_rect(10, y, w, 20, TFTColors::BLUE);
                 ctbot_.get_tft()->fill_rect(w, y, tft_w, 20, TFTColors::BLACK);
                 ctbot_.get_tft()->set_cursor_line(8, 2);
-                ctbot_.get_tft()->printf(PP_ARGS("used RAM: {} KB / {} KB", ram_used / 1024UL, ram_size_kb));
+                ctbot_.get_tft()->printf(PP_ARGS("used RAM: {} KB/{} KB", ram_used / 1024UL, ram_size_kb));
             }
             {
-                const int16_t w { static_cast<int16_t>(static_cast<float>(std::get<1>(info)) / ram_size_f * tft_w) };
+                const int16_t w { static_cast<int16_t>(static_cast<float>(std::get<3>(info)) / ram_size_f * tft_w) };
                 ctbot_.get_tft()->fill_rect(10, y + 25, w, 20, TFTColors::BLUE);
                 ctbot_.get_tft()->fill_rect(w, y + 25, tft_w, 20, TFTColors::BLACK);
                 ctbot_.get_tft()->set_cursor_line(9, 2);
-                ctbot_.get_tft()->printf(PP_ARGS("used heap: {} KB", std::get<1>(info) / 1024UL));
+                ctbot_.get_tft()->printf(PP_ARGS("used heap: {} KB", std::get<3>(info) / 1024UL));
             }
         }
 

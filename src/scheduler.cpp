@@ -333,7 +333,7 @@ void Scheduler::print_ram_usage(CommInterface& comm) const {
     const auto info2 { freertos::ram2_usage() };
 
     comm.debug_printf<true>(PP_ARGS("RAM1 size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free RAM1: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
-        std::get<5>(info1) / 1024UL, std::get<0>(info1) / 1024UL));
+        std::get<6>(info1) / 1024UL, std::get<0>(info1) / 1024UL));
     comm.debug_printf<true>(PP_ARGS("data used: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m, ", std::get<1>(info1) / 1'024UL));
     comm.debug_printf<true>(PP_ARGS(
         "bss used: \x1b[1m{} KB\x1b[0m\x1b[37;40m, heap used: \x1b[1m{} KB\x1b[0m\x1b[37;40m", std::get<2>(info1) / 1'024UL, std::get<3>(info1) / 1'024UL));
