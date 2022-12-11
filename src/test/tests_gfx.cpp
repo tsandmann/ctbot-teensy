@@ -89,17 +89,21 @@ void ButtonTest::center_print(const std::string& str, bool clear) {
 }
 
 ButtonTest::Buttons ButtonTest::button_release() {
+    static uint32_t last_touch_cnt {};
+
     int16_t x { -1 };
     int16_t y { -1 };
     int16_t z { -1 };
 
     ctbot_.get_tft()->get_touch_point(x, y, z);
 
-    // Scale from ~0->4000 to tft.width using the calibration #'s
-    if (z != -1) {
+    if (last_touch_cnt != ctbot_.get_tft()->get_touch_counter() && z != -1) {
+        last_touch_cnt = ctbot_.get_tft()->get_touch_counter();
+
         // ctbot_.get_comm()->debug_printf<true>(PP_ARGS("Touch raw: x={}\ty={}\tz={}\r\n", x, y, z));
         const int16_t px { x };
         const int16_t py { y };
+        // Scale from ~0->4000 to tft.width using the calibration
         x = arduino::map<int16_t>(py, TS_MINY, TS_MAXY, 0, ctbot_.get_tft()->get_width());
         y = arduino::map<int16_t>(px, TS_MINX, TS_MAXX, 0, ctbot_.get_tft()->get_height());
         // ctbot_.get_comm()->debug_printf<true>(PP_ARGS("Touch: x={}\ty={}\tz={}\r\n", x, y, z));
@@ -107,7 +111,7 @@ ButtonTest::Buttons ButtonTest::button_release() {
 
     // go through all the buttons, checking if they were pressed
     for (auto& b : buttons_) {
-        if (b->contains(x, y)) {
+        if (z != -1 && b->contains(x, y)) {
             b->press(true); // tell the button it is pressed
         } else {
             b->press(false); // tell the button it is NOT pressed
@@ -133,8 +137,18 @@ ButtonTest::Buttons ButtonTest::button_release() {
 void ButtonTest::run() {
     using namespace std::chrono_literals;
 
+    static bool init {};
+
     if (!ctbot_.get_ready()) {
         return;
+    }
+
+    if (!init) {
+        init = true;
+
+        ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
+        initialize_buttons();
+        draw_buttons();
     }
 
     const auto btn { button_release() };
@@ -145,7 +159,7 @@ void ButtonTest::run() {
 
             std::this_thread::sleep_for(750ms);
 
-            for (uint8_t i { 0 }; i < 10; ++i) {
+            for (uint8_t i {}; i < 10; ++i) {
                 test_lines(TFTColors::BLUE);
                 std::this_thread::sleep_for(250ms);
             }
@@ -273,14 +287,7 @@ void ButtonTest::test_triangles() {
 }
 
 ButtonTest::ButtonTest(CtBot& ctbot) : ctbot_(ctbot) {
-    initialize_buttons();
-
-    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 8192, [this]() {
-        ctbot_.get_tft()->fill_screen(TFTColors::BLACK);
-        draw_buttons();
-
-        run();
-    });
+    ctbot_.get_scheduler()->task_add(PSTR("TFT-Test"), TASK_PERIOD_MS, 2, 1536, [this]() { run(); });
 }
 
 ButtonTest::~ButtonTest() {
