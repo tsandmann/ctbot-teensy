@@ -665,6 +665,7 @@ void CtBotCli::init_commands() {
                         const auto current_time { std::chrono::high_resolution_clock::now() };
                         if (received_time > current_time) {
                             free_rtos_std::set_system_clock(received_time);
+                            rtc_set(static_cast<uint32_t>(time));
                             p_ctbot_->set_clock_update_done(true);
                         } else {
                             p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));

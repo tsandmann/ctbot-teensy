@@ -272,3 +272,5 @@ CrashReportClass CrashReport;
 
 void (*_VectorsRam[255 + 16])(void);
 volatile uint32_t systick_millis_count;
+
+extern "C" void rtc_set(uint32_t) {}

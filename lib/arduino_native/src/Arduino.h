@@ -96,6 +96,7 @@ extern HardwareSerial Serial8;
 extern "C" {
 extern void (*_VectorsRam[255 + 16])(void);
 extern volatile uint32_t systick_millis_count;
+void rtc_set(uint32_t);
 
 static inline void NVIC_ENABLE_IRQ(uint8_t) {}
 static inline void NVIC_DISABLE_IRQ(uint8_t) {}

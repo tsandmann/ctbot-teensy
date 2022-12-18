@@ -167,7 +167,7 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     }
 #endif // ARDUINO_TEENSY41
 
-    const auto now { std::chrono::system_clock::from_time_t(UNIX_TIMESTAMP_DATE) };
+    const auto now { std::chrono::system_clock::from_time_t(UNIX_TIMESTAMP - 7'200) };
     free_rtos_std::set_system_clock(now);
 
     if constexpr (DEBUG_LEVEL_ > 2) {
