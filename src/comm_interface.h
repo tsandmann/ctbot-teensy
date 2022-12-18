@@ -27,6 +27,7 @@
 #include "logger.h"
 
 #include "circular_buffer.h"
+#define FOONATHAN_HAS_EXCEPTION_SUPPORT 0
 #include "memory_pool.hpp"
 #include "namespace_alias.hpp"
 #include "static_allocator.hpp"
@@ -51,6 +52,9 @@ namespace ctbot {
 class CtBot;
 class CmdParser;
 
+static constexpr size_t calc_pool_storage_size(size_t size, size_t align = sizeof(std::max_align_t)) {
+    return (size + 16 + align - 1) / align * align;
+}
 
 /**
  * @brief Abstraction layer for communication services
@@ -62,6 +66,8 @@ class CmdParser;
  * @enduml
  */
 class CommInterface : public LoggerTarget {
+    static constexpr bool DEBUG_ { false };
+
 protected:
     friend class CtBot;
     friend class TFTDisplay;
@@ -81,9 +87,12 @@ protected:
         char character_;
     } __attribute__((packed));
 
-    DMAMEM static memory::static_allocator_storage<INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) + 16> buffer_storage_;
+    DMAMEM alignas(8) static inline memory::static_allocator_storage<calc_pool_storage_size(
+        INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement))> buffer_storage_ {};
+    DMAMEM alignas(8) static inline memory::static_allocator_storage<calc_pool_storage_size(INPUT_BUFFER_SIZE + BUFFER_CHUNK_SIZE)> buffer_storage2_ {};
     using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
-    static static_pool_t mem_pool_;
+    static inline static_pool_t* p_mem_pool_ {};
+    static inline static_pool_t* p_mem_pool2_ {};
 
     static const std::string_view log_prefix_;
     static const std::string_view log_postfix_;
@@ -93,10 +102,11 @@ protected:
     bool viewer_enabled_;
     int error_;
     char* p_input_;
-    CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> output_queue_;
+    CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE>* p_output_queue_;
     uint16_t input_task_;
     uint16_t output_task_;
     std::array<char, INPUT_BUFFER_SIZE>* p_input_buffer_;
+    std::array<char, INPUT_BUFFER_SIZE + 2>* p_clear_str_;
 
     /**
      * @brief Worker task implementation that processes incoming data

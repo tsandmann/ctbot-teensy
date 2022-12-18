@@ -39,9 +39,6 @@
 
 namespace ctbot {
 
-decltype(CommInterface::buffer_storage_) CommInterface::buffer_storage_;
-CommInterface::static_pool_t CommInterface::mem_pool_ { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
-
 PROGMEM static const char _log_prefix_[] { "<log>" };
 PROGMEM static const char _log_postfix_[] { "</log>\r\n" };
 
@@ -49,13 +46,35 @@ const std::string_view CommInterface::log_prefix_ { _log_prefix_ };
 const std::string_view CommInterface::log_postfix_ { _log_postfix_ };
 
 FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool enable_echo)
-    : io_ { io_connection }, echo_ { enable_echo }, viewer_enabled_ { false }, error_ {}, p_input_ {}, output_queue_ {
-          mem_pool_.try_allocate_array(OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE)
-      } {
-    auto ptr { mem_pool_.try_allocate_array(INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE) };
+    : io_ { io_connection }, echo_ { enable_echo }, viewer_enabled_ { false }, error_ {}, p_input_ {}, p_output_queue_ {}, p_input_buffer_ {}, p_clear_str_ {} {
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface()\r\n"));
+    }
+    p_mem_pool_ = new static_pool_t { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
+    configASSERT(p_mem_pool_);
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): p_mem_pool_ created\r\n"));
+    }
+
+    p_mem_pool2_ = new static_pool_t { BUFFER_CHUNK_SIZE, sizeof(buffer_storage2_), buffer_storage2_ };
+    configASSERT(p_mem_pool2_);
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): p_mem_pool2_ created\r\n"));
+    }
+
+    p_output_queue_ = new CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> { p_mem_pool_->try_allocate_array(
+        OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) / BUFFER_CHUNK_SIZE) };
+    configASSERT(p_output_queue_);
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): p_output_queue_ created\r\n"));
+    }
+
+    auto ptr { p_mem_pool_->try_allocate_array(INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE) };
+    configASSERT(ptr);
     if (ptr) {
         p_input_buffer_ = new (ptr) std::array<char, INPUT_BUFFER_SIZE>;
-        static_assert(sizeof(*p_input_buffer_) == INPUT_BUFFER_SIZE / BUFFER_CHUNK_SIZE * BUFFER_CHUNK_SIZE);
+        static_assert(sizeof(*p_input_buffer_) == sizeof(*p_input_buffer_) / BUFFER_CHUNK_SIZE * BUFFER_CHUNK_SIZE);
+        configASSERT(p_input_buffer_);
 
         p_input_buffer_->fill(0);
         p_input_ = p_input_buffer_->begin();
@@ -63,9 +82,36 @@ FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool ena
         input_task_ = CtBot::get_instance().get_scheduler()->task_add(
             PSTR("commIN"), INPUT_TASK_PERIOD_MS, INPUT_TASK_PRIORITY, INPUT_TASK_STACK_SIZE, [this]() { run_input(); });
     }
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): input_task_ created\r\n"));
+    }
+
+    auto ptr2 { p_mem_pool2_->try_allocate_array((sizeof(*p_clear_str_) + BUFFER_CHUNK_SIZE - 1) / BUFFER_CHUNK_SIZE) };
+    configASSERT(ptr2);
+    if (ptr2) {
+        p_clear_str_ = new (ptr2) std::array<char, INPUT_BUFFER_SIZE + 2>;
+        configASSERT(p_clear_str_);
+
+        *p_clear_str_->begin() = '\r';
+        std::memset(&(*p_clear_str_)[1], ' ', INPUT_BUFFER_SIZE);
+        *p_clear_str_->rbegin() = '\r';
+    }
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): p_clear_str_ created\r\n"));
+    }
 
     output_task_ = CtBot::get_instance().get_scheduler()->task_add(
         PSTR("commOUT"), OUTPUT_TASK_PERIOD_MS, OUTPUT_TASK_PRIORITY, OUTPUT_TASK_STACK_SIZE, [this]() { run_output(); });
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface(): output_task_ created\r\n"));
+    }
+
+    if constexpr (DEBUG_) {
+        io_.write(PSTR("CommInterface::CommInterface() done.\r\n"));
+        io_.flush();
+        io_.flush_direct();
+        io_.clear();
+    }
 }
 
 FLASHMEM CommInterface::~CommInterface() {
@@ -80,9 +126,9 @@ FLASHMEM size_t CommInterface::queue_debug_msg(char c, const std::string* p_str,
     const OutBufferElement element { p_str, c };
 
     if (block) {
-        output_queue_.push(std::move(element));
+        p_output_queue_->push(std::move(element));
     } else {
-        if (!output_queue_.try_push(std::move(element))) {
+        if (!p_output_queue_->try_push(std::move(element))) {
             return 0;
         }
     }
@@ -168,7 +214,7 @@ FLASHMEM size_t CommInterface::debug_print(const std::string_view& str, bool blo
 
 FLASHMEM void CommInterface::flush() {
     using namespace std::chrono_literals;
-    while (output_queue_.size()) {
+    while (p_output_queue_->size()) {
         std::this_thread::sleep_for(1ms);
     }
 }
@@ -177,7 +223,7 @@ void CommInterface::run_output() {
     using namespace std::chrono_literals;
 
     OutBufferElement element;
-    while (output_queue_.try_pop(element)) {
+    while (p_output_queue_->try_pop(element)) {
         if (element.p_str_) {
             size_t written {};
             while (true) { // TODO: timeout?
@@ -284,16 +330,16 @@ void CommInterfaceCmdParser::run_input() {
 }
 
 void CommInterfaceCmdParser::clear_line() {
-    queue_debug_msg('\r', nullptr, false);
-    for (size_t i { 0 }; i < INPUT_BUFFER_SIZE; ++i) {
-        queue_debug_msg(' ', nullptr, false);
+    if (!p_clear_str_) {
+        return;
     }
-    queue_debug_msg('\r', nullptr, false);
+
+    queue_debug_msg('\0', new std::string { p_clear_str_->cbegin(), p_clear_str_->size() }, true);
 }
 
 void CommInterfaceCmdParser::update_line(const std::string_view& line) {
     clear_line();
-    debug_print(line, false);
+    debug_print(line, true);
 
     const size_t n { line.size() > INPUT_BUFFER_SIZE ? INPUT_BUFFER_SIZE : line.size() };
     std::strncpy(p_input_buffer_->begin(), line.data(), n);
