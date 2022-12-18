@@ -327,16 +327,16 @@ void Scheduler::print_task_list(CommInterface& comm) const {
     }
 }
 
-extern "C" uint8_t external_psram_size;
 void Scheduler::print_ram_usage(CommInterface& comm) const {
     const auto info1 { freertos::ram1_usage() };
     const auto info2 { freertos::ram2_usage() };
+    const auto info3 { freertos::ram3_usage() };
 
     comm.debug_printf<true>(PP_ARGS("RAM1 size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free RAM1: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
         std::get<6>(info1) / 1024UL, std::get<0>(info1) / 1024UL));
     comm.debug_printf<true>(PP_ARGS("data used: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m, ", std::get<1>(info1) / 1'024UL));
-    comm.debug_printf<true>(PP_ARGS(
-        "bss used: \x1b[1m{} KB\x1b[0m\x1b[37;40m, heap used: \x1b[1m{} KB\x1b[0m\x1b[37;40m", std::get<2>(info1) / 1'024UL, std::get<3>(info1) / 1'024UL));
+    comm.debug_printf<true>(PP_ARGS("bss used: \x1b[1m{} KB\x1b[0m\x1b[37;40m,\r\n     heap used: \x1b[1m{} KB\x1b[0m\x1b[37;40m", std::get<2>(info1) / 1'024UL,
+        std::get<3>(info1) / 1'024UL));
     comm.debug_printf<true>(PP_ARGS(", system free: \x1b[1m{} KB\x1b[0m\x1b[37;40m\r\n", std::get<4>(info1) / 1'024UL));
 
     comm.debug_printf<true>(PP_ARGS("RAM2 size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free RAM2: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
@@ -344,8 +344,10 @@ void Scheduler::print_ram_usage(CommInterface& comm) const {
     comm.debug_printf<true>(PP_ARGS("used RAM2: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m\r\n", (std::get<1>(info2) - std::get<0>(info2)) / 1'024UL));
 
 #ifdef ARDUINO_TEENSY41
-    if (external_psram_size) {
-        comm.debug_printf<true>(PP_ARGS("ERAM size: \x1b[1m{} KB\x1b[0m\x1b[37;40m\r\n", external_psram_size * 1'024UL));
+    if (std::get<1>(info3)) {
+        comm.debug_printf<true>(PP_ARGS("eRAM size: \x1b[1m{} KB\x1b[0m\x1b[37;40m, free eRAM: \x1b[1m\x1b[32;40m{} KB\x1b[0m\x1b[37;40m, ",
+            std::get<1>(info3) / 1024UL, std::get<0>(info3) / 1024UL));
+        comm.debug_printf<true>(PP_ARGS("used eRAM: \x1b[1m\x1b[31;40m{} KB\x1b[0m\x1b[37;40m\r\n", (std::get<1>(info3) - std::get<0>(info3)) / 1'024UL));
     }
 #endif // ARDUINO_TEENSY41
 }

@@ -525,7 +525,6 @@ bool CtBot::publish_viewerdata(uint32_t now) {
     }
 
     const auto ram1 { freertos::ram1_usage() };
-    const auto ram2 { freertos::ram2_usage() };
 
     p_comm_->debug_printf<true>(PP_ARGS("<sens>dist: {} {}</sens>\r\n", p_sensors_->get_distance_l(), p_sensors_->get_distance_r()));
     if (CtBotConfig::EXTERNAL_SPEEDCTRL && p_speedcontrols_[0] && p_speedcontrols_[1]) {
@@ -584,8 +583,14 @@ bool CtBot::publish_viewerdata(uint32_t now) {
         p_comm_->debug_printf<true>(
             PP_ARGS("<sys>ram:1:{}:{}:{}:{}:{}</sys>\r\n", std::get<6>(ram1) / 1'024UL /* size */, std::get<1>(ram1) / 1'024UL /* data used */,
                 std::get<2>(ram1) / 1'024UL /* bss used */, std::get<3>(ram1) / 1'024UL /* heap used */, std::get<5>(ram1) / 1'024UL /* itcm */));
+        const auto ram2 { freertos::ram2_usage() };
         p_comm_->debug_printf<true>(
             PP_ARGS("<sys>ram:2:{}:{}</sys>\r\n", std::get<1>(ram2) / 1'024UL /* size */, (std::get<1>(ram2) - std::get<0>(ram2)) / 1'024UL /* used */));
+#ifdef ARDUINO_TEENSY41
+        const auto ram3 { freertos::ram3_usage() };
+        p_comm_->debug_printf<true>(
+            PP_ARGS("<sys>ram:3:{}:{}</sys>\r\n", std::get<1>(ram3) / 1'024UL /* size */, (std::get<1>(ram3) - std::get<0>(ram3)) / 1'024UL /* used */));
+#endif // ARDUINO_TEENSY41
     }
 
     return true;
