@@ -204,6 +204,12 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
         if (CrashReport) {
             p_serial_wifi_->get_stream().print(CrashReport);
+            p_serial_wifi_->write('\r');
+            p_serial_wifi_->write('\n');
+            p_serial_wifi_->write('\n');
+            p_serial_wifi_->flush();
+            p_serial_wifi_->flush_direct();
+            p_serial_wifi_->clear();
         }
 
         add_post_hook(
@@ -224,6 +230,12 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         p_comm_ = new CommInterfaceCmdParser { *p_serial_usb_, *p_parser_, true };
         if (CrashReport) {
             p_serial_usb_->get_stream().print(CrashReport);
+            p_serial_usb_->write('\r');
+            p_serial_usb_->write('\n');
+            p_serial_usb_->write('\n');
+            p_serial_usb_->flush();
+            p_serial_usb_->flush_direct();
+            p_serial_usb_->clear();
         }
     }
     configASSERT(p_comm_);

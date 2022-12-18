@@ -195,6 +195,9 @@ extern "C" {
  */
 FLASHMEM __attribute__((noinline)) void setup() {
     using namespace ctbot;
+    arduino::digitalWriteFast(arduino::LED_BUILTIN, false); // turn onboard LED off
+    arduino::pinMode(arduino::LED_BUILTIN, arduino::INPUT_DISABLE);
+
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
@@ -216,6 +219,21 @@ FLASHMEM __attribute__((noinline)) void setup() {
  * @brief Arduino loop function, not used because of scheduler (@see Scheduler)
  */
 FLASHMEM void loop() {}
+
+FLASHMEM void abort() {
+    configASSERT(false);
+}
+
+FLASHMEM void startup_early_hook() {
+#if defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+    // pin 13 - if startup crashes, use this to turn on the LED early for troubleshooting
+    IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 5;
+    IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_03 = IOMUXC_PAD_DSE(7);
+    IOMUXC_GPR_GPR27 = 0xFFFFFFFF;
+    GPIO7_GDIR |= (1 << 3);
+    GPIO7_DR_SET = (1 << 3); // digitalWriteFast(13, 1);
+#endif // defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+}
 
 /**
  * @brief libc "syscall" implementation for writing characters to a filestream
