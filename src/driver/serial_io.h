@@ -38,21 +38,21 @@ public:
     SerialIO() = default;
     virtual ~SerialIO() = default;
 
-    bool begin(const uint32_t baud) {
+    bool begin(uint32_t baud) {
         return begin(baud, 0);
     }
 
-    bool begin(const uint32_t baud, const uint16_t format) {
+    bool begin(uint32_t baud, uint16_t format) {
         return begin(baud, format, 0, 0);
     }
 
-    virtual bool begin(const uint32_t baud, const uint16_t format, const size_t rx_buf_size, const size_t tx_buf_size) = 0;
+    virtual bool begin(uint32_t baud, uint16_t format, size_t rx_buf_size, size_t tx_buf_size) = 0;
 
     virtual void end() = 0;
 
-    virtual bool setRX(const uint8_t pin) = 0;
+    virtual bool setRX(uint8_t pin) = 0;
 
-    virtual bool setTX(const uint8_t pin, const bool opendrain = false) = 0;
+    virtual bool setTX(uint8_t pin, bool opendrain = false) = 0;
 
     virtual size_t available() const = 0;
 
@@ -62,39 +62,39 @@ public:
         return read(false);
     }
 
-    virtual int read(const bool blocking) const = 0;
+    virtual int read(bool blocking) const = 0;
 
-    size_t read(void* p_data, const size_t length) const {
+    size_t read(void* p_data, size_t length) const {
         return read(p_data, length, false);
     }
 
-    virtual size_t read(void* p_data, const size_t length, const bool blocking) const = 0;
+    virtual size_t read(void* p_data, const size_t length, bool blocking) const = 0;
 
     virtual size_t availableForWrite() const = 0;
 
-    size_t write(const uint8_t c) {
-        return write(c, false);
+    size_t write(uint8_t c) {
+        return write(c, true);
     }
 
-    size_t write(const uint8_t c, const bool blocking) {
+    size_t write(uint8_t c, bool blocking) {
         return write(&c, 1, blocking);
     }
 
-    size_t write(const void* p_data, const size_t length) {
-        return write(p_data, length, false);
+    size_t write(const void* p_data, size_t length) {
+        return write(p_data, length, true);
     }
 
     size_t write(const std::string_view& str) {
-        return write(str.data(), str.length(), false);
+        return write(str.data(), str.length(), true);
     }
 
-    size_t write(const std::string_view& str, const bool blocking) {
+    size_t write(const std::string_view& str, bool blocking) {
         return write(str.data(), str.length(), blocking);
     }
 
-    virtual size_t write(const void* p_data, const size_t length, const bool blocking) = 0;
+    virtual size_t write(const void* p_data, size_t length, bool blocking) = 0;
 
-    virtual void write_direct(const uint8_t c) const = 0;
+    virtual void write_direct(uint8_t c) const = 0;
 
     void write_direct(const std::string_view& str) const {
         for (const auto& c : str) {
@@ -119,17 +119,17 @@ protected:
 public:
     SerialIOStreamAdapter(Stream& stream) : stream_ { stream } {}
 
-    virtual bool begin(const uint32_t, const uint16_t, const size_t, const size_t) override {
+    virtual bool begin(uint32_t, uint16_t, size_t, size_t) override {
         return true;
     }
 
     virtual void end() override {}
 
-    virtual bool setRX(const uint8_t) override {
+    virtual bool setRX(uint8_t) override {
         return true;
     }
 
-    virtual bool setTX(const uint8_t, const bool = false) {
+    virtual bool setTX(uint8_t, bool = false) {
         return true;
     }
 
@@ -141,11 +141,11 @@ public:
         return stream_.peek();
     }
 
-    virtual int read(const bool) const override {
+    virtual int read(bool) const override {
         return stream_.read();
     }
 
-    virtual size_t read(void* p_data, const size_t length, const bool) const override {
+    virtual size_t read(void* p_data, size_t length, bool) const override {
         return stream_.readBytes(reinterpret_cast<char*>(p_data), length);
     }
 
@@ -153,11 +153,11 @@ public:
         return stream_.availableForWrite();
     }
 
-    virtual size_t write(const void* p_data, const size_t length, const bool) override {
+    virtual size_t write(const void* p_data, size_t length, bool) override {
         return stream_.write(reinterpret_cast<const uint8_t*>(p_data), length);
     }
 
-    virtual void write_direct(const uint8_t c) const override {
+    virtual void write_direct(uint8_t c) const override {
         stream_.write(c);
         flush_direct();
     }

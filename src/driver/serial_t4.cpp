@@ -90,7 +90,7 @@ PROGMEM const SerialT4::hardware_t SerialT4::Serial8_hw = { 7, IRQ_LPUART5, isr_
     { { 35, 1, &IOMUXC_LPUART5_TX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART5_TRG_INPUT };
 #endif // ARDUINO_TEENSY41
 
-FLASHMEM SerialT4::SerialT4(const uint8_t index)
+FLASHMEM SerialT4::SerialT4(uint8_t index)
     : p_hardware_ { get_hardware(index) }, p_port_ { get_port(index) }, tx_fifo_size_ { calc_fifo_size(p_port_->FIFO) }, transmitting_ {}, rx_pin_index_ {},
       tx_pin_index_ {}, rx_buffer_ {}, tx_buffer_ {}, rx_overflow_ {}, rx_last_caller_ {}, tx_last_caller_ {}, stream_helper_ { *this } {
     configASSERT(p_hardware_);
@@ -101,7 +101,7 @@ FLASHMEM SerialT4::~SerialT4() {
     end();
 }
 
-FLASHMEM bool SerialT4::begin(const uint32_t baud, const uint16_t format, const size_t rx_buf_size, const size_t tx_buf_size) {
+FLASHMEM bool SerialT4::begin(uint32_t baud, uint16_t format, size_t rx_buf_size, size_t tx_buf_size) {
     if (DEBUG_LEVEL_ >= 3) {
         arduino::Serial.printf(PSTR("SerialT4(%u)::begin(%u, %u, %u, %u)\r\n"), p_hardware_->index, baud, format, rx_buf_size, tx_buf_size);
     }
@@ -282,7 +282,7 @@ FLASHMEM void SerialT4::end() {
     }
 }
 
-FLASHMEM bool SerialT4::setRX(const uint8_t pin) {
+FLASHMEM bool SerialT4::setRX(uint8_t pin) {
     if (pin == p_hardware_->rx_pins[rx_pin_index_].pin) {
         return true;
     }
@@ -342,7 +342,7 @@ FLASHMEM bool SerialT4::setRX(const uint8_t pin) {
     return false;
 }
 
-FLASHMEM bool SerialT4::setTX(const uint8_t pin, const bool opendrain) {
+FLASHMEM bool SerialT4::setTX(uint8_t pin, bool opendrain) {
     uint8_t tx_pin_new_index = tx_pin_index_;
 
     if (pin != p_hardware_->tx_pins[tx_pin_index_].pin) {
@@ -392,7 +392,7 @@ int SerialT4::peek() const {
     return -1;
 }
 
-size_t SerialT4::read(void* p_data, const size_t length, const bool blocking) const {
+size_t SerialT4::read(void* p_data, size_t length, bool blocking) const {
     if (DEBUG_LEVEL_) {
         if (!rx_last_caller_) {
             rx_last_caller_ = ::xTaskGetCurrentTaskHandle();
@@ -408,7 +408,7 @@ size_t SerialT4::availableForWrite() const {
     return ::xStreamBufferSpacesAvailable(tx_buffer_);
 }
 
-size_t SerialT4::write(const void* p_data, const size_t length, const bool blocking) {
+size_t SerialT4::write(const void* p_data, size_t length, bool blocking) {
     if (!length) {
         return 0;
     }
@@ -440,7 +440,7 @@ size_t SerialT4::write(const void* p_data, const size_t length, const bool block
     return n;
 }
 
-void SerialT4::write_direct(const uint8_t c) const {
+void SerialT4::write_direct(uint8_t c) const {
     while (!(p_port_->STAT & LPUART_STAT_TDRE)) {
         freertos::delay_ms(1);
     }
@@ -534,7 +534,11 @@ int SerialT4::StreamHelper::peek() {
 }
 
 size_t SerialT4::StreamHelper::write(uint8_t b) {
-    return io_.write(b);
+    const auto res { io_.write(b) };
+    if (b == '\n') {
+        io_.write('\r');
+    }
+    return res;
 }
 
 } // namespace arduino

@@ -125,7 +125,7 @@ protected:
         return nullptr;
     }
 
-    static constexpr uint16_t calc_fifo_size(const uint32_t reg) {
+    static constexpr uint16_t calc_fifo_size(uint32_t reg) {
         uint16_t tmp { static_cast<uint16_t>(1 << (((reg >> 4) & 7) + 1)) };
         if (tmp == 2) {
             tmp = 1;
@@ -185,21 +185,21 @@ protected:
     void isr();
 
 public:
-    SerialT4(const uint8_t index);
+    SerialT4(uint8_t index);
     virtual ~SerialT4();
 
-    virtual bool begin(const uint32_t baud, const uint16_t format, const size_t rx_buf_size, const size_t tx_buf_size) override;
+    virtual bool begin(uint32_t baud, uint16_t format, size_t rx_buf_size, size_t tx_buf_size) override;
 
-    bool setRX(const uint8_t pin);
+    bool setRX(uint8_t pin);
 
-    bool setTX(const uint8_t pin, const bool opendrain = false);
+    bool setTX(uint8_t pin, bool opendrain = false);
     void end();
 
     virtual size_t available() const override;
 
     virtual int peek() const override;
 
-    virtual int read(const bool blocking) const override {
+    virtual int read(bool blocking) const override {
         uint8_t x;
         if (read(&x, 1, blocking) == 1) {
             return static_cast<int>(x);
@@ -208,9 +208,9 @@ public:
         return -1;
     }
 
-    virtual size_t read(void* p_data, const size_t length, const bool blocking) const override;
+    virtual size_t read(void* p_data, size_t length, bool blocking) const override;
 
-    bool get_rx_overflow(const bool clear) {
+    bool get_rx_overflow(bool clear) {
         const auto overflow { rx_overflow_ };
         if (clear) {
             rx_overflow_ = false;
@@ -220,9 +220,9 @@ public:
 
     virtual size_t availableForWrite() const override;
 
-    virtual size_t write(const void* p_data, const size_t length, const bool blocking) override;
+    virtual size_t write(const void* p_data, size_t length, bool blocking) override;
 
-    virtual void write_direct(const uint8_t c) const override;
+    virtual void write_direct(uint8_t c) const override;
 
     virtual void flush() const override;
 
