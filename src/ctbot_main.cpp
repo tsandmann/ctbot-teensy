@@ -306,6 +306,27 @@ FLASHMEM void serialport_flush() {
 
 extern volatile uint32_t systick_millis_count;
 FLASHMEM void startup_middle_hook() {
+#if defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+    SNVS_HPCR = SNVS_HPCR_BTN_MASK | SNVS_HPCR_BTN_CONFIG(0b001);
+    SNVS_LPSR |= 1 << 18;
+    SNVS_HPSR |= 1 << 7;
+    NVIC_CLEAR_PENDING(IRQ_SNVS_ONOFF);
+    NVIC_SET_PRIORITY(IRQ_SNVS_ONOFF, 0);
+    ::attachInterruptVector(IRQ_SNVS_ONOFF, []() {
+        if (SNVS_HPSR & 1 << 7) {
+            __disable_irq();
+            SRC_SRSR = 0xff; // clear SRC Reset Status Register
+
+            /* reset with watchdog */
+            IOMUXC_GPR_GPR16 = 0x200003; // reset IOMUXC_GPR_GPR16
+            WDOG1_WCR = WDOG_WCR_WDA | WDOG_WCR_SRS | WDOG_WCR_WDE;
+            while (true) {
+            }
+        }
+    });
+    NVIC_ENABLE_IRQ(IRQ_SNVS_ONOFF);
+#endif // defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+
     /* force millis() to be 300 to skip startup delays */
     systick_millis_count = 300;
 }
