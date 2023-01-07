@@ -59,7 +59,7 @@ std::string LoggerTarget::create_formatted_string(size_t size, const char* forma
 
 
 FLASHMEM LoggerTargetFile::LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot) : p_file_ {}, p_ctbot_ { p_ctbot } {
-    p_file_ = new File { fs_svc.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) }; // FIXME: check if new File is necessary
+    p_file_ = new File { fs_svc.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) };
     configASSERT(p_file_);
 }
 

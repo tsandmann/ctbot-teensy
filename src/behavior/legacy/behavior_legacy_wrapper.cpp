@@ -81,7 +81,7 @@ void BehaviorLegacyWrapper::run() {
     auto& beh_legacy { *BehaviorLegacy::get_instance() };
     do {
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for(100ms); // FIXME: condition?
+        std::this_thread::sleep_for(100ms);
         // debug_print<DEBUG_>("BehaviorLegacyWrapper::run(): waiting for legacy behavior to finish...\r\n");
         // debug_flush<DEBUG_>();
     } while (get_ctbot()->get_ready() && beh_legacy.behavior_is_activated(beh_func_));

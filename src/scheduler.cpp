@@ -63,7 +63,7 @@ Scheduler::~Scheduler() {
                 ::serialport_puts(PSTR("Scheduler::~Scheduler(): task "));
                 ::serialport_puts(std::to_string(t.second->id_).c_str());
                 ::serialport_puts(PSTR(" @ "));
-                ::serialport_puts(std::to_string(reinterpret_cast<uintptr_t>(t.second)).c_str()); // FIXME: print as hex
+                ::serialport_puts(std::to_string(reinterpret_cast<uintptr_t>(t.second)).c_str());
                 ::serialport_puts(PSTR(" will be blocked..."));
             }
             t.second->state_ = 0;
@@ -200,12 +200,12 @@ uint16_t Scheduler::task_add(const std::string_view& name, uint16_t period, uint
     return p_task->id_;
 }
 
-uint16_t Scheduler::task_register(const std::string_view& name, const bool external) {
+uint16_t Scheduler::task_register(const std::string_view& name, bool external) {
     auto task { ::xTaskGetHandle(name.data()) };
     return task_register(task, external);
 }
 
-uint16_t Scheduler::task_register(TaskHandle_t task, const bool external) {
+uint16_t Scheduler::task_register(TaskHandle_t task, bool external) {
     if (!task) {
         return 0;
     }
@@ -229,7 +229,7 @@ uint16_t Scheduler::task_register(TaskHandle_t task, const bool external) {
     return 0;
 }
 
-bool Scheduler::task_remove(const uint16_t task_id) {
+bool Scheduler::task_remove(uint16_t task_id) {
     if (DEBUG_LEVEL_ > 3) {
         ::serialport_puts(PSTR("Scheduler::task_remove():\r\n"));
     }
@@ -266,7 +266,7 @@ uint16_t Scheduler::task_get(const std::string_view& name) const {
     return 0xffff;
 }
 
-Task* Scheduler::task_get(const uint16_t id) const {
+Task* Scheduler::task_get(uint16_t id) const {
     std::unique_lock<std::mutex> lock(task_mutex_); // FIXME: lock necessary?
     if (!tasks_.count(id)) {
         return nullptr;
@@ -275,7 +275,7 @@ Task* Scheduler::task_get(const uint16_t id) const {
     return tasks_.at(id);
 }
 
-bool Scheduler::task_suspend(const uint16_t id) {
+bool Scheduler::task_suspend(uint16_t id) {
     std::unique_lock<std::mutex> lock(task_mutex_); // FIXME: lock necessary?
     if (!tasks_.count(id)) {
         return false;
@@ -288,7 +288,7 @@ bool Scheduler::task_suspend(const uint16_t id) {
     return true;
 }
 
-bool Scheduler::task_resume(const uint16_t id) {
+bool Scheduler::task_resume(uint16_t id) {
     std::unique_lock<std::mutex> lock(task_mutex_); // FIXME: lock necessary?
     if (!tasks_.count(id)) {
         return false;
@@ -301,7 +301,7 @@ bool Scheduler::task_resume(const uint16_t id) {
     return true;
 }
 
-bool Scheduler::task_join(const uint16_t id) {
+bool Scheduler::task_join(uint16_t id) {
     std::unique_lock<std::mutex> lock(task_mutex_); // FIXME: lock necessary?
     if (!tasks_.count(id)) {
         return false;
@@ -311,7 +311,7 @@ bool Scheduler::task_join(const uint16_t id) {
     return true;
 }
 
-bool Scheduler::task_set_finished(const uint16_t id) {
+bool Scheduler::task_set_finished(uint16_t id) {
     std::unique_lock<std::mutex> lock(task_mutex_); // FIXME: lock necessary?
     if (!tasks_.count(id)) {
         return false;

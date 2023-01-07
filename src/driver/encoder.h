@@ -61,7 +61,7 @@ protected:
     int8_t count_; /**< Internal counter for number of edges since last update */
 
 public:
-    /** Size of buffer array in byte for raw encoder data */ // FIXME: calc correct size
+    /** Size of buffer array in byte for raw encoder data */
     static constexpr uint8_t DATA_ARRAY_SIZE { CtBotConfig::ENCODER_MARKS <= 60 ? 32 : 64 };
 
     static constexpr float rpm_to_speed(const float rpm) {
