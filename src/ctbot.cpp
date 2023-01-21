@@ -54,7 +54,6 @@
 #include "lua_wrapper.h"
 #include "pprintpp.hpp"
 #include "timers.h"
-#include "freertos_time.h"
 
 #include <array>
 #include <charconv>
@@ -106,7 +105,7 @@ FLASHMEM static int lua_wrapper_print(lua_State* L) {
 } // extern C
 
 namespace ctbot {
-static DMAMEM audio_block_t g_audio_mem[CtBotConfig::AUDIO_MEMORY_BLOCKS];
+DMAMEM audio_block_t g_audio_mem[CtBotConfig::AUDIO_MEMORY_BLOCKS];
 TaskHandle_t CtBot::audio_task_ {};
 
 CtBot& CtBot::get_instance() {
@@ -166,9 +165,6 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(divider) | CCM_CBCMR_FLEXSPI2_CLK_SEL(3);
     }
 #endif // ARDUINO_TEENSY41
-
-    const auto now { std::chrono::system_clock::from_time_t(UNIX_TIMESTAMP - 7'200) };
-    free_rtos_std::set_system_clock(now);
 
     if constexpr (DEBUG_LEVEL_ > 2) {
         ::serialport_puts(PSTR("CtBot::setup(): creating scheduler...\r\n"));

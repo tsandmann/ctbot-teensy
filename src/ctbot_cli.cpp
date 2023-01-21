@@ -56,7 +56,6 @@
 #include "Audio.h"
 #include "arduino_freertos.h" // cleanup of ugly macro stuff etc.
 #include "tts.h"
-#include "freertos_time.h"
 
 #include <chrono>
 #include <cinttypes>
@@ -486,6 +485,11 @@ void CtBotCli::init_commands() {
                 p_ctbot_->get_comm()->debug_print(tmp, true);
                 p_ctbot_->get_comm()->debug_print(PSTR("\r\n"), true);
             }
+            if constexpr (DEBUG_) {
+                p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
+                p_ctbot_->get_logger()->log<true>(
+                    PSTR("get time: offset s=%lld us=%ld"), freertos::clock::get_offset()->tv_sec, freertos::clock::get_offset()->tv_usec);
+            }
         } else if (CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("sctrl-crc")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("SpeedControl CRC errors: {}", SpeedControlExternal::get_crc_errors()));
         } else {
@@ -661,18 +665,17 @@ void CtBotCli::init_commands() {
         } else if (CtBotConfig::DATE_TIME_AVAILABLE && args.find(PSTR("time")) == 0) {
             if (eval_args<int64_t>(
                     [this](int64_t time) {
-                        const auto received_time { std::chrono::system_clock::from_time_t(time) };
-                        const auto current_time { std::chrono::high_resolution_clock::now() };
-                        if (received_time > current_time) {
-                            free_rtos_std::set_system_clock(received_time);
-                            rtc_set(static_cast<uint32_t>(time));
+                        if (time >= ::rtc_get()) {
+                            ::rtc_set(static_cast<uint32_t>(time));
+                            freertos::clock::sync_rtc();
                             p_ctbot_->set_clock_update_done(true);
-                        } else {
-                            p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
-                            p_ctbot_->get_logger()->log<true>(PSTR("time received (%u) <= current time (%u), time=%d\r\n"),
-                                received_time.time_since_epoch().count(), current_time.time_since_epoch().count(), time);
+
+                            return true;
                         }
-                        return true;
+                        p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
+                        p_ctbot_->get_logger()->log<true>(PSTR("invalid time received: %lld\r\n"), time);
+
+                        return false;
                     },
                     args)) {
                 return true;

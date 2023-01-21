@@ -41,6 +41,8 @@ class CommInterface;
 
 
 class CtBotCli {
+    static constexpr bool DEBUG_ { false };
+
 protected:
     PROGMEM static const char general_[];
     PROGMEM static const char config_[];
