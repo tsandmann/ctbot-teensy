@@ -58,9 +58,10 @@ std::string LoggerTarget::create_formatted_string(size_t size, const char* forma
 }
 
 
-FLASHMEM LoggerTargetFile::LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot) : p_file_ {}, p_ctbot_ { p_ctbot } {
-    p_file_ = new File { fs_svc.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE)) };
-    configASSERT(p_file_);
+FLASHMEM LoggerTargetFile::LoggerTargetFile(FS_Service& fs_svc, const std::string_view& filename, CtBot* p_ctbot)
+    : p_file_ {}, p_file_wrapper_ {}, p_ctbot_ { p_ctbot } {
+    p_file_ = new File { fs_svc.open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE), 0, &p_file_wrapper_) };
+    configASSERT(p_file_ && p_file_wrapper_);
 }
 
 FLASHMEM LoggerTargetFile::~LoggerTargetFile() {
@@ -73,15 +74,17 @@ void LoggerTargetFile::begin(const std::string_view& prefix) {
         return;
     }
 
-    std::string str;
-    p_ctbot_->get_cli()->format_time(str);
-    p_file_->write(str.c_str());
-    p_file_->write(PSTR(": "));
+    auto p_str { new std::string };
+
+    p_ctbot_->get_cli()->format_time(*p_str);
+    p_str->append(PSTR(": "), 2);
+
     if (prefix.size()) {
-        p_file_->write(PSTR("["));
-        p_file_->write(prefix.cbegin(), prefix.size());
-        p_file_->write(PSTR("] "));
+        p_str->append(PSTR("["), 1);
+        p_str->append(prefix.cbegin(), prefix.size());
+        p_str->append(PSTR("] "), 2);
     }
+    p_file_wrapper_->write(p_str->data(), p_str->size(), [p_str, this](FS_Service::FileOperation*) { delete p_str; });
 }
 
 size_t LoggerTargetFile::log(char c, bool) {
@@ -89,7 +92,13 @@ size_t LoggerTargetFile::log(char c, bool) {
         return 0;
     }
 
-    return p_file_->write(c);
+    auto ptr { new char { c } };
+    const auto res { p_file_wrapper_->write(ptr, 1, [ptr, this](FS_Service::FileOperation*) {
+        delete ptr;
+        p_file_wrapper_->flush([](FS_Service::FileOperation*) {});
+    }) };
+
+    return res;
 }
 
 size_t LoggerTargetFile::log(const std::string_view& str, bool) {
@@ -97,7 +106,13 @@ size_t LoggerTargetFile::log(const std::string_view& str, bool) {
         return 0;
     }
 
-    return p_file_->write(str.cbegin(), str.size());
+    auto p_str { new std::string { str } };
+    const auto res { p_file_wrapper_->write(p_str->data(), p_str->size(), [p_str, this](FS_Service::FileOperation*) {
+        delete p_str;
+        p_file_wrapper_->flush([](FS_Service::FileOperation*) {});
+    }) };
+
+    return res;
 }
 
 void LoggerTargetFile::flush() {

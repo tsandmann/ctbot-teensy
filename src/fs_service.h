@@ -48,11 +48,10 @@ class FS_Service {
 
 public:
     class FileWrapper;
-
-protected:
     struct FileOperation;
     struct FSOperation;
 
+protected:
     struct dummy_t {};
 
     using file_result_t = std::variant<bool, int, size_t>;
@@ -62,28 +61,6 @@ protected:
     using file_callback_t = std::function<void(FileOperation*)>;
     using fs_callback_t = std::function<void(FSOperation*)>;
     using queue_t = std::variant<FileOperation*, FSOperation*>;
-
-    struct FileOperation {
-        file_operation_t operation_;
-        file_callback_t callback_;
-        TaskHandle_t caller_;
-        FileWrapper* p_file_;
-        std::atomic<bool> canceled_;
-        file_result_t result_;
-
-        FileOperation(file_operation_t&& operation, file_callback_t&& callback, TaskHandle_t caller, FileWrapper& file);
-    };
-
-    struct FSOperation {
-        fs_operation_t operation_;
-        fs_callback_t callback_;
-        TaskHandle_t caller_;
-        SDClass* p_fs_;
-        std::atomic<bool> canceled_;
-        fs_result_t result_;
-
-        FSOperation(fs_operation_t&& operation, fs_callback_t&& callback, TaskHandle_t caller, SDClass& fs);
-    };
 
     static inline QueueHandle_t job_queue_ {};
     static inline TaskHandle_t worker_ {};
@@ -134,6 +111,28 @@ protected:
     bool set_modify_time(FileWrapper& file, const DateTimeFields& tm, file_callback_t callback = nullptr) const;
 
 public:
+    struct FileOperation {
+        file_operation_t operation_;
+        file_callback_t callback_;
+        TaskHandle_t caller_;
+        FileWrapper* p_file_;
+        std::atomic<bool> canceled_;
+        file_result_t result_;
+
+        FileOperation(file_operation_t&& operation, file_callback_t&& callback, TaskHandle_t caller, FileWrapper& file);
+    };
+
+    struct FSOperation {
+        fs_operation_t operation_;
+        fs_callback_t callback_;
+        TaskHandle_t caller_;
+        SDClass* p_fs_;
+        std::atomic<bool> canceled_;
+        fs_result_t result_;
+
+        FSOperation(fs_operation_t&& operation, fs_callback_t&& callback, TaskHandle_t caller, SDClass& fs);
+    };
+
     class FileWrapper : public FileImpl {
     protected:
         friend class FS_Service;
@@ -161,7 +160,7 @@ public:
             return fs_svc_.write(*this, buf, size);
         }
 
-        virtual size_t write(const void* buf, size_t size, file_callback_t callback = nullptr) {
+        virtual size_t write(const void* buf, size_t size, file_callback_t callback) {
             return fs_svc_.write(*this, buf, size, callback);
         }
 
@@ -178,12 +177,16 @@ public:
             fs_svc_.flush(*this);
         }
 
+        virtual void flush(file_callback_t callback) {
+            fs_svc_.flush(*this, callback);
+        }
+
         virtual size_t read(void* buf, size_t nbyte) override {
             const auto res { fs_svc_.read(*this, buf, nbyte) };
             return res > 0 ? res : 0;
         }
 
-        virtual size_t read(void* buf, size_t nbyte, file_callback_t callback = nullptr) {
+        virtual size_t read(void* buf, size_t nbyte, file_callback_t callback) {
             const auto res { fs_svc_.read(*this, buf, nbyte, callback) };
             return res > 0 ? res : 0;
         }

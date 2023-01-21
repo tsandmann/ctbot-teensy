@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "fs_service.h"
+
 #include "avr/pgmspace.h"
 
 #include <concepts>
@@ -33,9 +35,6 @@
 #include <type_traits>
 #include <vector>
 
-
-class FS_Service;
-class File;
 
 namespace ctbot {
 class CtBot;
@@ -85,6 +84,7 @@ public:
 class LoggerTargetFile : public LoggerTarget {
 protected:
     File* p_file_;
+    FS_Service::FileWrapper* p_file_wrapper_;
     CtBot* p_ctbot_;
 
 public:
