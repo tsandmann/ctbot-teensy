@@ -42,6 +42,8 @@ namespace ctbot {
 PROGMEM static const char _log_prefix_[] { "<log>" };
 PROGMEM static const char _log_postfix_[] { "</log>\r\n" };
 
+DMAMEM alignas(8) static memory::static_allocator_storage<256 * sizeof(void*)> g_buffer_storage;
+
 const std::string_view CommInterface::log_prefix_ { _log_prefix_ };
 const std::string_view CommInterface::log_postfix_ { _log_postfix_ };
 
@@ -50,16 +52,16 @@ FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool ena
     if constexpr (DEBUG_) {
         io_.write(PSTR("CommInterface::CommInterface()\r\n"));
     }
-    p_mem_pool_ = new static_pool_t { BUFFER_CHUNK_SIZE, sizeof(buffer_storage_), buffer_storage_ };
+
+    static_assert(calc_pool_storage_size(INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) + INPUT_BUFFER_SIZE + BUFFER_CHUNK_SIZE)
+            <= sizeof(g_buffer_storage),
+        "CommInterface::CommInterface(): g_buffer_storage too small");
+
+    p_mem_pool_ = new static_pool_t { BUFFER_CHUNK_SIZE,
+        calc_pool_storage_size(INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement) + INPUT_BUFFER_SIZE + BUFFER_CHUNK_SIZE), g_buffer_storage };
     configASSERT(p_mem_pool_);
     if constexpr (DEBUG_) {
         io_.write(PSTR("CommInterface::CommInterface(): p_mem_pool_ created\r\n"));
-    }
-
-    p_mem_pool2_ = new static_pool_t { BUFFER_CHUNK_SIZE, sizeof(buffer_storage2_), buffer_storage2_ };
-    configASSERT(p_mem_pool2_);
-    if constexpr (DEBUG_) {
-        io_.write(PSTR("CommInterface::CommInterface(): p_mem_pool2_ created\r\n"));
     }
 
     p_output_queue_ = new CircularBuffer<OutBufferElement, OUTPUT_QUEUE_SIZE> { p_mem_pool_->try_allocate_array(
@@ -86,7 +88,7 @@ FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool ena
         io_.write(PSTR("CommInterface::CommInterface(): input_task_ created\r\n"));
     }
 
-    auto ptr2 { p_mem_pool2_->try_allocate_array((sizeof(*p_clear_str_) + BUFFER_CHUNK_SIZE - 1) / BUFFER_CHUNK_SIZE) };
+    auto ptr2 { p_mem_pool_->try_allocate_array((sizeof(*p_clear_str_) + BUFFER_CHUNK_SIZE - 1) / BUFFER_CHUNK_SIZE) };
     configASSERT(ptr2);
     if (ptr2) {
         p_clear_str_ = new (ptr2) std::array<char, INPUT_BUFFER_SIZE + 2>;

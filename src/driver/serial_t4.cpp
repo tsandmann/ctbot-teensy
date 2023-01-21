@@ -91,8 +91,8 @@ PROGMEM const SerialT4::hardware_t SerialT4::Serial8_hw = { 7, IRQ_LPUART5, isr_
 #endif // ARDUINO_TEENSY41
 
 FLASHMEM SerialT4::SerialT4(uint8_t index)
-    : p_hardware_ { get_hardware(index) }, p_port_ { get_port(index) }, tx_fifo_size_ { calc_fifo_size(p_port_->FIFO) }, transmitting_ {}, rx_pin_index_ {},
-      tx_pin_index_ {}, rx_buffer_ {}, tx_buffer_ {}, rx_overflow_ {}, rx_last_caller_ {}, tx_last_caller_ {}, stream_helper_ { *this } {
+    : p_hardware_ { get_hardware(index) }, p_port_ { get_port(index) }, transmitting_ {}, rx_pin_index_ {}, tx_pin_index_ {}, rx_buffer_ {}, tx_buffer_ {},
+      rx_overflow_ {}, rx_last_caller_ {}, tx_last_caller_ {}, stream_helper_ { *this } {
     configASSERT(p_hardware_);
     configASSERT(p_port_);
 }
@@ -204,15 +204,14 @@ FLASHMEM bool SerialT4::begin(uint32_t baud, uint16_t format, size_t rx_buf_size
     NVIC_SET_PRIORITY(p_hardware_->irq, p_hardware_->irq_priority);
     NVIC_ENABLE_IRQ(p_hardware_->irq);
 
-    // const uint16_t tx_fifo_size { static_cast<uint16_t>(((p_port_->FIFO >> 4) & 7) << 2) };
     const uint8_t tx_water { static_cast<uint8_t>(tx_fifo_size_ < 16 ? tx_fifo_size_ >> 1 : 7) };
-    const uint16_t rx_fifo_size { static_cast<uint16_t>(((p_port_->FIFO >> 0) & 7) << 2) };
-    const uint8_t rx_water { static_cast<uint8_t>(rx_fifo_size < 16 ? rx_fifo_size >> 1 : 7) };
+    // const uint16_t rx_fifo_size { static_cast<uint16_t>(((p_port_->FIFO >> 0) & 7) << 2) };
+    const uint8_t rx_water { static_cast<uint8_t>(rx_fifo_size_ < 16 ? rx_fifo_size_ >> 1 : 7) };
 
     if (DEBUG_LEVEL_ >= 4) {
         arduino::Serial.printf(PSTR("SerialT4(%u)::begin(): stat=0x%x ctrl=0x%x fifo=0x%x water=0x%x\r\n"), p_hardware_->index, p_port_->STAT, p_port_->CTRL,
             p_port_->FIFO, p_port_->WATER);
-        arduino::Serial.printf(PSTR("  FIFO sizes: tx=%u rx=%u\r\n"), tx_fifo_size_, rx_fifo_size);
+        arduino::Serial.printf(PSTR("  FIFO sizes: tx=%u rx=%u\r\n"), tx_fifo_size_, rx_fifo_size_);
         arduino::Serial.printf(PSTR("  Watermark:  tx=%u rx=%u\r\n"), tx_water, rx_water);
     }
 

@@ -61,6 +61,7 @@ protected:
     static constexpr uint8_t IRQ_PRIORITY_ { 64 };
     static constexpr uint32_t UART_CLOCK_ { 24'000'000 };
 
+    static constexpr uint8_t RX_TX_FIFO_SIZE_ { 4 }; // according to IMXRT1060RM.pdf, page 2875, section 49.4.1.12.3 diagram
     static constexpr uint8_t CNT_RX_PINS_ { 2 };
     static constexpr uint8_t CNT_TX_PINS_ { 2 };
     static constexpr uint32_t CTRL_ENABLE_ { LPUART_CTRL_TE | LPUART_CTRL_RE | LPUART_CTRL_RIE | LPUART_CTRL_ILIE };
@@ -125,13 +126,13 @@ protected:
         return nullptr;
     }
 
-    static constexpr uint16_t calc_fifo_size(uint32_t reg) {
-        uint16_t tmp { static_cast<uint16_t>(1 << (((reg >> 4) & 7) + 1)) };
-        if (tmp == 2) {
-            tmp = 1;
-        }
-        return tmp;
-    }
+    // static constexpr uint16_t calc_fifo_size(uint32_t reg) {
+    //     uint16_t tmp { static_cast<uint16_t>(1 << (((reg >> 4) & 7) + 1)) };
+    //     if (tmp == 2) {
+    //         tmp = 1;
+    //     }
+    //     return tmp;
+    // }
 
     PROGMEM static const SerialT4::hardware_t Serial1_hw;
     static void isr_Serial1() {
@@ -170,7 +171,8 @@ protected:
 
     const hardware_t* const p_hardware_;
     IMXRT_LPUART_t* const p_port_;
-    const uint16_t tx_fifo_size_;
+    static constexpr uint16_t rx_fifo_size_ { RX_TX_FIFO_SIZE_ };
+    static constexpr uint16_t tx_fifo_size_ { RX_TX_FIFO_SIZE_ };
     volatile bool transmitting_;
     uint8_t rx_pin_index_;
     uint8_t tx_pin_index_;

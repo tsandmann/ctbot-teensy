@@ -87,12 +87,8 @@ protected:
         char character_;
     } __attribute__((packed));
 
-    DMAMEM alignas(8) static inline memory::static_allocator_storage<calc_pool_storage_size(
-        INPUT_BUFFER_SIZE + OUTPUT_QUEUE_SIZE * sizeof(OutBufferElement))> buffer_storage_ {};
-    DMAMEM alignas(8) static inline memory::static_allocator_storage<calc_pool_storage_size(INPUT_BUFFER_SIZE + BUFFER_CHUNK_SIZE)> buffer_storage2_ {};
     using static_pool_t = memory::memory_pool<memory::array_pool, memory::static_allocator>;
     static inline static_pool_t* p_mem_pool_ {};
-    static inline static_pool_t* p_mem_pool2_ {};
 
     static const std::string_view log_prefix_;
     static const std::string_view log_postfix_;
