@@ -233,6 +233,7 @@ FLASHMEM void startup_early_hook() {
     GPIO7_GDIR |= (1 << 3);
     GPIO7_DR_SET = (1 << 3); // digitalWriteFast(13, 1);
 #endif // defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+    __asm volatile("isb" ::: "memory");
 }
 
 /**

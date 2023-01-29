@@ -229,7 +229,7 @@ void FS_Service::flush(FileWrapper& file, file_callback_t callback) const {
     schedule_operation(p_operation, callback ? true : false, file.timeout_ticks_);
 }
 
-bool FS_Service::seek(FileWrapper& file, uint64_t pos, int mode, file_callback_t callback) const {
+bool FS_Service::seek(FileWrapper& file, int64_t pos, int mode, file_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FileOperation { [pos, mode](FileWrapper* p_file) {

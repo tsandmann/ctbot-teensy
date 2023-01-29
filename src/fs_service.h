@@ -92,7 +92,7 @@ protected:
 
     void flush(FileWrapper& file, file_callback_t callback = nullptr) const;
 
-    bool seek(FileWrapper& file, uint64_t pos, int mode = SeekSet, file_callback_t callback = nullptr) const;
+    bool seek(FileWrapper& file, int64_t pos, int mode = SeekSet, file_callback_t callback = nullptr) const;
 
     void close(FileWrapper& file, file_callback_t callback = nullptr) const;
 
