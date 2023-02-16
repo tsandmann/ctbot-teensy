@@ -17,20 +17,23 @@
 
 /**
  * @file    tft_display.cpp
- * @brief   TFT display driver for devices with ILI9341 controller
+ * @brief   TFT display driver
  * @author  Timo Sandmann
  * @date    10.04.2019
  */
 
 #include "tft_display.h"
 
+#include "ili9341.h"
+#include "ili9486.h"
+
 #include "ctbot.h"
 #include "scheduler.h"
 #include "timer.h"
 
-#include "Adafruit_ILI9341.h"
 #include "Adafruit_GFX.h"
 #include "XPT2046_Touchscreen.h"
+
 #include "arduino_freertos.h"
 
 
@@ -39,12 +42,18 @@ namespace ctbot {
 decltype(TFTDisplay::framebuffer_pool_) TFTDisplay::framebuffer_pool_;
 
 TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
-    : framebuffer_mem_ { init_memory() }, p_display_ { new Adafruit_ILI9341(CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr),
-                                              CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN, -1) },
+    : framebuffer_mem_ { init_memory() }, p_display_ { CtBotConfig::TFT_CONTROLLER_TYPE == 9486 ?
+              static_cast<TFT_SPI*>(new ILI9486 {
+                  CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN }) :
+              (CtBotConfig::TFT_CONTROLLER_TYPE == 9341 ? static_cast<TFT_SPI*>(new ILI9341 {
+                   CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN, -1 }) :
+                                                          nullptr) },
       p_framebuffer_ { new GFXcanvas16 { WIDTH_, HEIGHT_, framebuffer_mem_->data() } },
       p_touch_ { new XPT2046_Touchscreen {
           TOUCH_THRESHOLD_, CtBotConfig::TFT_TOUCH_CS_PIN, CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr) } },
       service_running_ {}, updated_ {}, p_backl_pwm_ { &backl_pwm }, touch_counter_ {}, p_touch_point_ { new TS_Point {} } {
+    static_assert(CtBotConfig::TFT_CONTROLLER_TYPE == 9486 || CtBotConfig::TFT_CONTROLLER_TYPE == 9341, "Unknown TFT controller selected in CtBotConfig");
+
     configASSERT(p_touch_point_);
 
     if (!framebuffer_mem_) {
@@ -70,7 +79,6 @@ TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
         return;
     }
 
-    Scheduler::enter_critical_section();
     if constexpr (CtBotConfig::MAINBOARD_REVISION == 9'000) {
         arduino::pinMode(CtBotConfig::TFT_BACKLIGHT_PIN, arduino::OUTPUT);
         arduino::analogWriteResolution(16);
@@ -90,15 +98,14 @@ TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
         arduino::SPI1.setCS(CtBotConfig::TFT_CS_PIN);
     }
 
-    p_display_->begin(CtBotConfig::TFT_SPI_FREQUENCY);
     p_touch_->begin();
-    Scheduler::exit_critical_section();
-
-    p_display_->setRotation(CtBotConfig::TFT_ROTATION);
-    p_display_->setTextWrap(false);
-    clear();
-
     p_touch_->setRotation(CtBotConfig::TFT_TOUCH_ROTATION);
+    p_display_->begin(CtBotConfig::TFT_SPI_FREQUENCY);
+    p_display_->set_rotation(CtBotConfig::TFT_ROTATION);
+    p_framebuffer_->setTextWrap(false);
+
+    clear();
+    updated_ = true;
 
     ::xTaskCreate(
         [](void* param) {
@@ -138,14 +145,20 @@ void TFTDisplay::run() {
     TickType_t xLastWakeTime {};
     while (service_running_) {
         if (updated_) {
+            uint32_t start, end;
             {
                 std::lock_guard<std::mutex> lock { fb_mutex_ };
-                p_display_->drawFramebuffer(framebuffer_mem_->data());
+                if constexpr (DEBUG_) {
+                    start = freertos::get_us();
+                }
+                p_display_->draw_framebuffer(framebuffer_mem_->data());
+                if constexpr (DEBUG_) {
+                    end = freertos::get_us();
+                }
                 updated_ = false;
             }
             if constexpr (DEBUG_) {
-                const auto now { ::xTaskGetTickCount() };
-                const auto diff { pdTICKS_TO_MS(now - xLastWakeTime) };
+                const uint32_t diff { (end - start) / 1'000 };
                 CtBot::get_instance().get_comm()->debug_printf<false>(PSTR("TFT update took %u ms, possible FPS: %.2f\r\n"), diff, 1'000.f / diff);
             }
         }
@@ -202,10 +215,18 @@ void TFTDisplay::set_text_wrap(bool wrap) const {
 }
 
 void TFTDisplay::set_backlight(const float brightness) const {
+    if (brightness < 0.f || brightness > 100.f) {
+        return;
+    }
     if constexpr (CtBotConfig::MAINBOARD_REVISION >= 9'002) {
         p_backl_pwm_->off(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL));
-        p_backl_pwm_->set_pwm(
-            static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL), static_cast<int>(255.f * brightness / 100.f));
+        if constexpr (CtBotConfig::TFT_CONTROLLER_TYPE == 9341) {
+            p_backl_pwm_->set_pwm(
+                static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL), static_cast<int>(255.f * brightness / 100.f));
+        } else {
+            p_backl_pwm_->set_pwm(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL),
+                static_cast<int>(255.f * (100.f - brightness) / 100.f));
+        }
         p_backl_pwm_->on(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL));
     } else if constexpr (CtBotConfig::MAINBOARD_REVISION == 9'000) {
         arduino::analogWrite(CtBotConfig::TFT_BACKLIGHT_PIN, static_cast<int>(65535.f - (65535.f * brightness / 100.f)));
@@ -305,7 +326,7 @@ void TFTDisplay::fill_circle(const int16_t x, const int16_t y, const int16_t r, 
     updated_ = true;
 }
 
-void TFTDisplay::draw_button(Adafruit_GFX_Button* button, bool invert) const { // FIXME: better solution
+void TFTDisplay::draw_button(Adafruit_GFX_Button* button, bool invert) const { // TODO: better solution
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     button->drawButton(invert);
     updated_ = true;

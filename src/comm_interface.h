@@ -31,6 +31,7 @@
 #include "memory_pool.hpp"
 #include "namespace_alias.hpp"
 #include "static_allocator.hpp"
+#undef FOONATHAN_HAS_EXCEPTION_SUPPORT
 
 #include "avr/pgmspace.h"
 

@@ -115,10 +115,11 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr uint8_t AUDIO_CHANNELS { 2 };
 
     /* tft */
-    static constexpr uint32_t TFT_SPI_FREQUENCY { 40'000'000 };
+    static constexpr uint16_t TFT_CONTROLLER_TYPE { 9486 }; /**< 9486 for ILI9486 or 9341 for ILI9341 */
+    static constexpr uint32_t TFT_SPI_FREQUENCY { 35'000'000 };
     static constexpr uint8_t TFT_ROTATION { 1 };
     static constexpr uint8_t TFT_TOUCH_ROTATION { 4 };
-    static constexpr float TFT_BACKLIGHT_LEVEL { 20 };
+    static constexpr float TFT_BACKLIGHT_LEVEL { 5 };
 
     /* External RAM */
     static constexpr uint32_t PSRAM_FREQUENCY_MHZ { 132 }; // default: 88 MHz; valid: 66, 76, 88, 106, 132 MHz

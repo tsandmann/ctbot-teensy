@@ -17,7 +17,7 @@
 
 /**
  * @file    tft_display.h
- * @brief   TFT display driver for devices with ILI9341 controller
+ * @brief   TFT display driver
  * @author  Timo Sandmann
  * @date    10.04.2019
  */
@@ -28,11 +28,11 @@
 #include "logger.h"
 #include "leds_i2c.h"
 
-#include "arduino_freertos.h"
-
+#define FOONATHAN_HAS_EXCEPTION_SUPPORT 0
 #include "memory_pool.hpp"
 #include "namespace_alias.hpp"
 #include "static_allocator.hpp"
+#undef FOONATHAN_HAS_EXCEPTION_SUPPORT
 
 #include "avr/pgmspace.h"
 
@@ -48,12 +48,12 @@
 #endif
 
 
-class Adafruit_ILI9341;
-class XPT2046_Touchscreen;
-class TS_Point;
+class TFT_SPI;
 class Adafruit_GFX;
 class Adafruit_GFX_Button;
 class GFXcanvas16;
+class XPT2046_Touchscreen;
+class TS_Point;
 
 namespace ctbot {
 
@@ -61,7 +61,7 @@ class TFTColorHelper {
 public:
     /**
      * @brief Given 8-bit red, green and blue values, return a 'packed' 16-bit color value
-     * in '565' RGB format (5 bits red, 6 bits green, 5 bits blue)
+     *        in '565' RGB format (5 bits red, 6 bits green, 5 bits blue)
      * @param[in] red: 8-bit red brightnesss (0 = off, 255 = max)
      * @param[in] green: 8-bit green brightnesss (0 = off, 255 = max)
      * @param[in] blue: 8-bit blue brightnesss (0 = off, 255 = max)
@@ -71,6 +71,7 @@ public:
         return ((red & 0xf8) << 8) | ((green & 0xfc) << 3) | (blue >> 3);
     }
 };
+
 
 class TFTColors : public TFTColorHelper {
 public:
@@ -95,13 +96,14 @@ public:
     static constexpr uint16_t PINK { color565(255, 130, 198) };
 };
 
+
 class TFTDisplay {
     static constexpr bool DEBUG_ { false };
 
 protected:
-    static constexpr uint32_t FRAMES_PER_SEC_ { 25 };
-    static constexpr int16_t WIDTH_ { 320 };
-    static constexpr int16_t HEIGHT_ { 240 };
+    static constexpr uint32_t FRAMES_PER_SEC_ { 10 };
+    static constexpr int16_t WIDTH_ { CtBotConfig::TFT_CONTROLLER_TYPE == 9486 ? 480 : 320 };
+    static constexpr int16_t HEIGHT_ { CtBotConfig::TFT_CONTROLLER_TYPE == 9486 ? 320 : 240 };
     static constexpr uint16_t TOUCH_THRESHOLD_ { 800 };
     static constexpr size_t FB_CHUNK_SIZE_ { WIDTH_ };
 
@@ -110,7 +112,7 @@ protected:
 
     static_pool_t mem_pool_ { FB_CHUNK_SIZE_, sizeof(framebuffer_pool_), framebuffer_pool_ };
     std::array<uint16_t, WIDTH_ * HEIGHT_>* framebuffer_mem_;
-    Adafruit_ILI9341* p_display_;
+    TFT_SPI* p_display_;
     GFXcanvas16* p_framebuffer_;
     XPT2046_Touchscreen* p_touch_;
     TaskHandle_t task_;

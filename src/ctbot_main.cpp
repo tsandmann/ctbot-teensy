@@ -224,17 +224,20 @@ FLASHMEM void abort() {
     configASSERT(false);
 }
 
-FLASHMEM void startup_early_hook() {
 #if defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
+void startup_early_hook() __attribute__((section(".startup") /*, optimize("no-tree-loop-distribute-patterns")*/));
+
+void startup_early_hook() {
     // pin 13 - if startup crashes, use this to turn on the LED early for troubleshooting
     IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 5;
     IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_03 = IOMUXC_PAD_DSE(7);
     IOMUXC_GPR_GPR27 = 0xFFFFFFFF;
     GPIO7_GDIR |= (1 << 3);
     GPIO7_DR_SET = (1 << 3); // digitalWriteFast(13, 1);
+    __asm volatile("dsb" ::: "memory");
     __asm volatile("isb" ::: "memory");
-#endif // defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
 }
+#endif // defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
 
 /**
  * @brief libc "syscall" implementation for writing characters to a filestream

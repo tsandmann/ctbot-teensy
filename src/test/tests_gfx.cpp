@@ -309,11 +309,12 @@ void ButtonTest::display_tasks() {
         ctbot_.get_tft()->set_text_size(2);
         ctbot_.get_tft()->set_text_color(TFTColors::RED);
 
+        const int16_t tft_h { static_cast<int16_t>(ctbot_.get_tft()->get_height()) };
         const int16_t tft_w { static_cast<int16_t>(ctbot_.get_tft()->get_width() - 20) };
         int16_t y { 5 };
         for (auto& e : *p_runtime_stats) {
-            if (e.second < 0.1f) {
-                ctbot_.get_tft()->fill_rect(0, y, tft_w, ctbot_.get_tft()->get_height() - (y + 50), TFTColors::BLACK);
+            if (e.second < 0.05f) {
+                ctbot_.get_tft()->fill_rect(0, y, tft_w, tft_h - (y + 50), TFTColors::BLACK);
                 break;
             }
 
@@ -323,7 +324,7 @@ void ButtonTest::display_tasks() {
             ctbot_.get_tft()->set_cursor(20, y + 2);
             ctbot_.get_tft()->printf(PP_ARGS("{s}: {.2} %%", ::pcTaskGetName(e.first), e.second));
             y += 25;
-            if (y > 175) {
+            if (y > tft_h - 65) {
                 break;
             }
         }
@@ -333,7 +334,7 @@ void ButtonTest::display_tasks() {
         if (now - last_ms > 2'000) {
             last_ms = now;
 
-            const int16_t y { static_cast<int16_t>(ctbot_.get_tft()->get_height() - 50) };
+            const int16_t y { static_cast<int16_t>(tft_h - 50) };
             ctbot_.get_tft()->set_text_size(2);
             ctbot_.get_tft()->set_text_color(TFTColors::PINK);
 
@@ -345,24 +346,18 @@ void ButtonTest::display_tasks() {
                 const int16_t w { static_cast<int16_t>(static_cast<float>(ram_used) / ram_size_f * tft_w) };
                 ctbot_.get_tft()->fill_rect(10, y, w, 20, TFTColors::BLUE);
                 ctbot_.get_tft()->fill_rect(w, y, tft_w, 20, TFTColors::BLACK);
-                ctbot_.get_tft()->set_cursor_line(8, 2);
+                ctbot_.get_tft()->set_cursor(10, y);
                 ctbot_.get_tft()->printf(PP_ARGS("used RAM: {} KB/{} KB", ram_used / 1024UL, ram_size_kb));
             }
             {
                 const int16_t w { static_cast<int16_t>(static_cast<float>(std::get<3>(info)) / ram_size_f * tft_w) };
                 ctbot_.get_tft()->fill_rect(10, y + 25, w, 20, TFTColors::BLUE);
                 ctbot_.get_tft()->fill_rect(w, y + 25, tft_w, 20, TFTColors::BLACK);
-                ctbot_.get_tft()->set_cursor_line(9, 2);
+                ctbot_.get_tft()->set_cursor(10, y + 25);
                 ctbot_.get_tft()->printf(PP_ARGS("used heap: {} KB", std::get<3>(info) / 1024UL));
             }
         }
 
-        // for (size_t i { 0 }; i < 20; ++i) {
-        //     std::this_thread::sleep_for(50ms);
-        //     if (ctbot_.get_tft()->touched()) {
-        //         return;
-        //     }
-        // }
         std::this_thread::sleep_for(200ms);
     } while (last_touch_cnt == ctbot_.get_tft()->get_touch_counter());
 }

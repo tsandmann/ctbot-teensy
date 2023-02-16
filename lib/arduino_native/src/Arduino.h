@@ -128,6 +128,8 @@ static constexpr uint8_t INPUT_PULLUP { 2 };
 static constexpr uint8_t INPUT_PULLDOWN { 3 };
 static constexpr uint8_t OUTPUT_OPENDRAIN { 4 };
 static constexpr uint8_t INPUT_DISABLE { 5 };
+static constexpr uint8_t LOW { 0 };
+static constexpr uint8_t HIGH { 1 };
 
 static constexpr uint8_t LED_BUILTIN { 13 };
 

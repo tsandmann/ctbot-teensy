@@ -33,8 +33,6 @@
 #include "driver/leds_i2c.h"
 #include "driver/tft_display.h"
 
-#include "Adafruit_GFX.h"
-#include "Adafruit_ILI9341.h"
 #include "XPT2046_Touchscreen.h"
 
 #include "arduino_freertos.h"
