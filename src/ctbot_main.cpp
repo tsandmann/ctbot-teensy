@@ -106,84 +106,86 @@ static FLASHMEM void init_task(void*) {
 
     EXC_PRINTF(PSTR("\r\nRunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ".\r\n"));
 
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("init_task():\r\n"));
         freertos::print_ram_usage();
     }
 
     /* create CtBot singleton instance... */
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("creating CtBot instance...\r\n"));
     }
     CtBot& ctbot { CtBot::get_instance() };
 
     /* initialize it... */
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("calling ctbot.setup()...\r\n"));
     }
     ctbot.setup(true);
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("ctbot.setup() done.\r\n"));
     }
 
     /* create test tasks if configured... */
-    if (CtBotConfig::BLINK_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::BLINK_TEST_AVAILABLE) {
         g_blink_test = new tests::BlinkTest { ctbot };
         std::atexit([]() { delete g_blink_test; });
     }
 
-    if (CtBotConfig::LED_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::LED_TEST_AVAILABLE) {
         g_led_test = new tests::LedTest { ctbot };
         std::atexit([]() { delete g_led_test; });
     }
 
-    if (CtBotConfig::LCD_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::LCD_TEST_AVAILABLE) {
         g_lcd_test = new tests::LcdTest { ctbot };
         std::atexit([]() { delete g_lcd_test; });
     }
 
-    if (CtBotConfig::ENA_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::ENA_TEST_AVAILABLE) {
         g_ena_test = new tests::EnaTest { ctbot };
         std::atexit([]() { delete g_ena_test; });
     }
 
-    if (CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::SENS_LCD_TEST_AVAILABLE) {
         g_sensor_lcd_test = new tests::SensorLcdTest { ctbot };
         std::atexit([]() { delete g_sensor_lcd_test; });
     }
 
-    if (CtBotConfig::TFT_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::TFT_TEST_AVAILABLE) {
         g_tft_test = new tests::TftTest { ctbot };
         std::atexit([]() { delete g_tft_test; });
     }
 
-    if (CtBotConfig::TOUCH_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::TOUCH_TEST_AVAILABLE) {
         g_touch_test = new tests::TouchTest { ctbot };
         std::atexit([]() { delete g_touch_test; });
     }
 
-    if (CtBotConfig::BUTTON_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::BUTTON_TEST_AVAILABLE) {
         g_button_test = new tests::ButtonTest { ctbot };
         std::atexit([]() {
-            EXC_PRINTF(PSTR("deleting g_button_test...\r\n"));
-            delete g_button_test;
-            EXC_PRINTF(PSTR("done.\r\n"));
+            if (g_button_test) {
+                EXC_PRINTF(PSTR("deleting g_button_test...\r\n"));
+                delete g_button_test;
+                EXC_PRINTF(PSTR("done.\r\n"));
+            }
         });
     }
 
-    if (CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
+    if constexpr (CtBotConfig::TASKWAIT_TEST_AVAILABLE) {
         g_wait_test = new tests::TaskWaitTest { ctbot };
         std::atexit([]() { delete g_wait_test; });
     }
 
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         ::vTaskDelay(pdMS_TO_TICKS(200));
         freertos::print_ram_usage();
     }
 
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, false); // turn debug LED off
 
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("deleting init task...\r\n"));
     }
     ::vTaskDelete(nullptr);
@@ -201,12 +203,12 @@ FLASHMEM __attribute__((noinline)) void setup() {
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
 
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("setup(): setting up init task...\r\n"));
     }
     ::xTaskCreate(init_task, PSTR("INIT"), 4096 / sizeof(StackType_t), nullptr, configMAX_PRIORITIES - 1, nullptr);
 
-    if (DEBUG) {
+    if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("setup(): calling ::vTaskStartScheduler()...\r\n"));
     }
     ::vTaskStartScheduler();

@@ -117,6 +117,9 @@ TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
 }
 
 TFTDisplay::~TFTDisplay() {
+    if constexpr (DEBUG_) {
+        ::serialport_puts(PSTR("TFTDisplay::~TFTDisplay()\r\n"));
+    }
     service_running_ = false;
     auto task_state { eTaskGetState(task_) };
     while (task_state != eDeleted && task_state != eInvalid) {
@@ -127,7 +130,14 @@ TFTDisplay::~TFTDisplay() {
     delete p_framebuffer_;
     delete p_display_;
 
-    mem_pool_.deallocate_array(p_framebuffer_, WIDTH_ * HEIGHT_ * sizeof(uint16_t) / FB_CHUNK_SIZE_);
+    if constexpr (DEBUG_) {
+        ::serialport_puts(PSTR("TFTDisplay::~TFTDisplay(): deallocating framebuffer...\r\n"));
+    }
+    mem_pool_.deallocate_array(framebuffer_mem_, WIDTH_ * HEIGHT_ * sizeof(uint16_t) / FB_CHUNK_SIZE_);
+
+    if constexpr (DEBUG_) {
+        ::serialport_puts(PSTR("TFTDisplay::~TFTDisplay() done.\r\n"));
+    }
 }
 
 decltype(TFTDisplay::framebuffer_mem_) TFTDisplay::init_memory() {
@@ -188,25 +198,29 @@ void TFTDisplay::clear() const {
     updated_ = true;
 }
 
-void TFTDisplay::clear(const uint8_t row) const {
+void TFTDisplay::clear(uint8_t row) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->fillRect(0, HEIGHT_ * row / 10, WIDTH_, HEIGHT_ / 10, TFTColors::BLACK);
     updated_ = true;
 }
 
-void TFTDisplay::set_cursor_line(const uint8_t row, const uint8_t column) const {
+void TFTDisplay::flush() const {
+    ::vTaskDelay(pdMS_TO_TICKS(1'000UL / FRAMES_PER_SEC_) + 1);
+}
+
+void TFTDisplay::set_cursor_line(uint8_t row, uint8_t column) const {
     p_framebuffer_->setCursor(WIDTH_ * column / 28, HEIGHT_ * row / 10);
 }
 
-void TFTDisplay::set_cursor(const int16_t x, const int16_t y) const {
+void TFTDisplay::set_cursor(int16_t x, int16_t y) const {
     p_framebuffer_->setCursor(x, y);
 }
 
-void TFTDisplay::set_text_size(const uint8_t size) const {
+void TFTDisplay::set_text_size(uint8_t size) const {
     p_framebuffer_->setTextSize(size);
 }
 
-void TFTDisplay::set_text_color(const uint16_t color) const {
+void TFTDisplay::set_text_color(uint16_t color) const {
     p_framebuffer_->setTextColor(color);
 }
 
@@ -214,7 +228,7 @@ void TFTDisplay::set_text_wrap(bool wrap) const {
     p_framebuffer_->setTextWrap(wrap);
 }
 
-void TFTDisplay::set_backlight(const float brightness) const {
+void TFTDisplay::set_backlight(float brightness) const {
     if (brightness < 0.f || brightness > 100.f) {
         return;
     }
@@ -233,7 +247,7 @@ void TFTDisplay::set_backlight(const float brightness) const {
     }
 }
 
-uint8_t TFTDisplay::print(const char c, bool clear) const {
+uint8_t TFTDisplay::print(char c, bool clear) const {
     if (clear) {
         int16_t x, y;
         uint16_t w {}, h {};
@@ -274,29 +288,29 @@ int16_t TFTDisplay::get_cursor_y() const {
     return p_framebuffer_->getCursorY();
 }
 
-void TFTDisplay::get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const {
+void TFTDisplay::get_text_bounds(const std::string& str, int16_t x, int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const {
     p_framebuffer_->getTextBounds(str.c_str(), x, y, p_x, p_y, p_w, p_h);
 }
 
-void TFTDisplay::fill_screen(const uint16_t color) const {
+void TFTDisplay::fill_screen(uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->fillScreen(color);
     updated_ = true;
 }
 
-void TFTDisplay::fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const {
+void TFTDisplay::fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->fillRect(x, y, w, h, color);
     updated_ = true;
 }
 
-void TFTDisplay::draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const {
+void TFTDisplay::draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->drawLine(x0, y0, x1, y1, color);
     updated_ = true;
 }
 
-void TFTDisplay::draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const {
+void TFTDisplay::draw_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->drawRect(x, y, w, h, color);
     updated_ = true;
@@ -314,13 +328,13 @@ void TFTDisplay::fill_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, i
     updated_ = true;
 }
 
-void TFTDisplay::draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const {
+void TFTDisplay::draw_circle(int16_t x, int16_t y, int16_t r, uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->drawCircle(x, y, r, color);
     updated_ = true;
 }
 
-void TFTDisplay::fill_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const {
+void TFTDisplay::fill_circle(int16_t x, int16_t y, int16_t r, uint16_t color) const {
     std::lock_guard<std::mutex> lock { fb_mutex_ };
     p_framebuffer_->fillCircle(x, y, r, color);
     updated_ = true;

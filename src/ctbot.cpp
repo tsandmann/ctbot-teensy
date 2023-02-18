@@ -273,6 +273,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             log_begin();
             p_logger_->log(PSTR("SD Card init done.\r\n"));
         }
+
+        if constexpr (CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE) {
+            p_parser_->enable_nv_history(*p_fs_, PSTR("history.txt"));
+        }
     }
 
     p_i2c_1_svc_ = new I2C_Service { 0, CtBotConfig::I2C1_FREQ, CtBotConfig::I2C1_PIN_SDA, CtBotConfig::I2C1_PIN_SCL };
@@ -371,8 +375,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         portENTER_CRITICAL();
         AudioStream::initialize_memory(g_audio_mem, CtBotConfig::AUDIO_MEMORY_BLOCKS);
 
-        p_play_wav_ = new AudioPlaySdWav;
-        configASSERT(p_play_wav_);
+        if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
+            p_play_wav_ = new AudioPlaySdWav;
+            configASSERT(p_play_wav_);
+        }
         p_tts_ = new TTS;
         configASSERT(p_tts_);
         if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
@@ -411,9 +417,11 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
             p_audio_conn_.push_back(new AudioConnection { *p_tts_, 0, *p_audio_mixer_[1], 2 });
         }
-        p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 0, *p_audio_mixer_[0], 0 });
-        if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
-            p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 1, *p_audio_mixer_[1], 0 });
+        if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
+            p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 0, *p_audio_mixer_[0], 0 });
+            if constexpr (CtBotConfig::AUDIO_CHANNELS > 1) {
+                p_audio_conn_.push_back(new AudioConnection { *p_play_wav_, 1, *p_audio_mixer_[1], 0 });
+            }
         }
         if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
             p_audio_conn_.push_back(new AudioConnection { *p_audio_mixer_[0], 0, *p_audio_output_i2s_, 0 });
@@ -644,7 +652,7 @@ void CtBot::run() {
 }
 
 FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
-    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE && CtBotConfig::SDCARD_AVAILABLE) {
         if (p_play_wav_->isPlaying()) {
             p_logger_->log(PSTR("CtBot::play_wav(): Still playing, abort.\r\n"), false);
             return false;
@@ -676,19 +684,29 @@ FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
 }
 
 FLASHMEM void CtBot::shutdown() {
+    extern tests::ButtonTest* g_button_test;
+
     ready_ = false;
 
     if constexpr (CtBotConfig::LUA_AVAILABLE) {
         delete p_lua_;
     }
 
-    if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
+    if constexpr (CtBotConfig::AUDIO_AVAILABLE && CtBotConfig::SDCARD_AVAILABLE) {
         p_play_wav_->stop();
+    }
+
+    if constexpr (CtBotConfig::BUTTON_TEST_AVAILABLE) {
+        if (g_button_test) {
+            delete g_button_test;
+            g_button_test = nullptr;
+        }
     }
 
     p_logger_->begin();
     p_logger_->log(PSTR("System shutting down...\r\n"), false);
     p_logger_->flush();
+    p_comm_->flush();
     if (p_serial_wifi_) {
         p_serial_wifi_->flush();
     }
@@ -707,16 +725,23 @@ FLASHMEM void CtBot::shutdown() {
     if constexpr (CtBotConfig::BUTTON_TEST_AVAILABLE || CtBotConfig::TFT_TEST_AVAILABLE) {
         p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("TFT-Test")));
     }
+    p_leds_->set(LedTypes::NONE);
+    p_sensors_->disable_all();
+
     if constexpr (CtBotConfig::LCD_AVAILABLE) {
         p_lcd_->clear();
         p_lcd_->set_backlight(false);
     }
     if constexpr (CtBotConfig::TFT_AVAILABLE) {
         p_tft_->clear();
-        p_tft_->set_backlight(0);
+        p_tft_->set_backlight(0.f);
+        p_tft_->flush();
     }
-    p_leds_->set(LedTypes::NONE);
-    p_sensors_->disable_all();
+
+    if (p_clock_timer_) {
+        xTimerStop(p_clock_timer_, portMAX_DELAY);
+        xTimerDelete(p_clock_timer_, portMAX_DELAY);
+    }
 
     ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
 

@@ -689,12 +689,12 @@ void CtBotCli::init_commands() {
 
     if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         p_ctbot_->p_parser_->register_cmd(PSTR("audio"), "a", [this](const std::string_view& args) {
-            if (args.find(PSTR("play")) == 0) {
+            if (CtBotConfig::SDCARD_AVAILABLE && args.find(PSTR("play")) == 0) {
                 return p_ctbot_->play_wav(CmdParser::trim_to_first_arg(args));
-            } else if (args.find(PSTR("stop")) == 0) {
+            } else if (CtBotConfig::SDCARD_AVAILABLE && args.find(PSTR("stop")) == 0) {
                 p_ctbot_->p_play_wav_->stop();
                 return true;
-            } else if (args.find(PSTR("pause")) == 0) {
+            } else if (CtBotConfig::SDCARD_AVAILABLE && args.find(PSTR("pause")) == 0) {
                 p_ctbot_->p_play_wav_->togglePlayPause();
                 return true;
             } else if (args.find(PSTR("on")) == 0) {
@@ -702,7 +702,9 @@ void CtBotCli::init_commands() {
                 return true;
             } else if (args.find(PSTR("off")) == 0) {
                 p_ctbot_->get_ena()->off(EnaI2cTypes::AUDIO);
-                p_ctbot_->p_play_wav_->stop();
+                if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
+                    p_ctbot_->p_play_wav_->stop();
+                }
                 if constexpr (CtBotConfig::AUDIO_TEST_AVAILABLE) {
                     p_ctbot_->p_audio_sine_->frequency(0.f);
                 }
@@ -748,69 +750,71 @@ void CtBotCli::init_commands() {
         });
     }
 
-    p_parser->register_cmd(PSTR("fs"), "f", [this](const std::string_view& args) {
-        if (args.find(PSTR("ls")) == 0) {
-            const auto s { args.find(' ') };
-            std::string dir;
-            if (s == args.npos) {
-                dir = "/";
-            } else {
-                dir = args.substr(s + 1);
-            }
-
-            auto root { p_ctbot_->get_fs()->open(dir.c_str(), FILE_READ) };
-            if (!root.isDirectory()) {
-                return false;
-            }
-
-            while (true) {
-                auto entry { root.openNextFile() };
-                if (!entry) {
-                    break;
-                }
-
-                const auto len { p_ctbot_->p_comm_->debug_print(entry.name(), true) };
-                if (!entry.isDirectory()) {
-                    if (len <= 15) {
-                        p_ctbot_->p_comm_->debug_print('\t', true);
-                    }
-                    if (len <= 7) {
-                        p_ctbot_->p_comm_->debug_print('\t', true);
-                    }
-                    p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("\t{} KB\r\n", static_cast<uint32_t>(entry.size() / 1'024ULL)));
+    if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
+        p_parser->register_cmd(PSTR("fs"), "f", [this](const std::string_view& args) {
+            if (args.find(PSTR("ls")) == 0) {
+                const auto s { args.find(' ') };
+                std::string dir;
+                if (s == args.npos) {
+                    dir = "/";
                 } else {
-                    p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
+                    dir = args.substr(s + 1);
                 }
 
-                entry.close();
-            }
-
-            return true;
-        } else if (args.find(PSTR("cat")) == 0) {
-            const auto s { args.find(' ') };
-            if (s == args.npos) {
-                return false;
-            }
-            const std::string path { args.substr(s + 1) };
-            if (!p_ctbot_->get_fs()->exists(path.c_str())) {
-                p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
-                return false;
-            }
-            File file { p_ctbot_->get_fs()->open(path.c_str(), FILE_READ) };
-            char buf[32];
-            while (file.available()) {
-                const auto n { file.read(buf, sizeof(buf)) };
-                if (n) {
-                    p_ctbot_->p_comm_->debug_print(std::string_view { buf, n }, true);
+                auto root { p_ctbot_->get_fs()->open(dir.c_str(), FILE_READ) };
+                if (!root.isDirectory()) {
+                    return false;
                 }
+
+                while (true) {
+                    auto entry { root.openNextFile() };
+                    if (!entry) {
+                        break;
+                    }
+
+                    const auto len { p_ctbot_->p_comm_->debug_print(entry.name(), true) };
+                    if (!entry.isDirectory()) {
+                        if (len <= 15) {
+                            p_ctbot_->p_comm_->debug_print('\t', true);
+                        }
+                        if (len <= 7) {
+                            p_ctbot_->p_comm_->debug_print('\t', true);
+                        }
+                        p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("\t{} KB\r\n", static_cast<uint32_t>(entry.size() / 1'024ULL)));
+                    } else {
+                        p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
+                    }
+
+                    entry.close();
+                }
+
+                return true;
+            } else if (args.find(PSTR("cat")) == 0) {
+                const auto s { args.find(' ') };
+                if (s == args.npos) {
+                    return false;
+                }
+                const std::string path { args.substr(s + 1) };
+                if (!p_ctbot_->get_fs()->exists(path.c_str())) {
+                    p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
+                    return false;
+                }
+                File file { p_ctbot_->get_fs()->open(path.c_str(), FILE_READ) };
+                char buf[32];
+                while (file.available()) {
+                    const auto n { file.read(buf, sizeof(buf)) };
+                    if (n) {
+                        p_ctbot_->p_comm_->debug_print(std::string_view { buf, n }, true);
+                    }
+                }
+                p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
+
+                return true;
             }
-            p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
 
-            return true;
-        }
-
-        return false;
-    });
+            return false;
+        });
+    }
 
     p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
         return eval_args<uint32_t>(
@@ -844,7 +848,7 @@ void CtBotCli::init_commands() {
             args);
     });
 
-    if constexpr (CtBotConfig::PROG_AVAILABLE) {
+    if constexpr (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::PROG_AVAILABLE) {
         p_parser->register_cmd(PSTR("prog"), "p", [this](const std::string_view& args) {
             if (args.find(PSTR("run")) == 0) {
                 const auto args2 { CmdParser::trim_to_first_arg(args) };

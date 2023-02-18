@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "fs_service.h"
+
 #include "avr/pgmspace.h"
 
 #include <charconv>
@@ -37,6 +39,8 @@
 #include <string_view>
 #include <tuple>
 
+
+class FS_Service;
 
 namespace ctbot {
 
@@ -73,12 +77,17 @@ protected:
     bool echo_;
     std::map<const std::string_view /*cmd*/, func_t /*function*/, std::less<>> commands_;
     std::deque<std::string> history_;
+    FS_Service* p_fs_svc_;
+    File* p_file_;
+    FS_Service::FileWrapper* p_file_wrapper_;
 
 public:
     /**
      * @brief Construct a new CmdParser object
      */
     FLASHMEM CmdParser();
+
+    FLASHMEM ~CmdParser();
 
     /**
      * @brief Register a new command given as a string_view
@@ -117,12 +126,9 @@ public:
         echo_ = value;
     }
 
-    const std::string_view get_history(const size_t num) const {
-        if (num && num <= history_.size()) {
-            return std::string_view { history_[num - 1] };
-        }
-        return std::string_view {};
-    }
+    FLASHMEM bool enable_nv_history(FS_Service& fs_svc, const std::string_view& filename);
+
+    const std::string get_history(const size_t num) const;
 
     static std::string_view trim_to_first_arg(const std::string_view& str);
 

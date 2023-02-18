@@ -77,8 +77,9 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr bool MPU6050_AVAILABLE { false };
     static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
     static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
-    static constexpr bool SDCARD_AVAILABLE { true };
+    static constexpr bool SDCARD_AVAILABLE { false };
     static constexpr bool LOG_TO_SDCARD_AVAILABLE { false };
+    static constexpr bool CLI_HISTORY_ON_SDCARD_AVAILABLE { false };
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */

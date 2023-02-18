@@ -23,7 +23,6 @@
  */
 
 #include "cmd_parser.h"
-#include "comm_interface.h"
 #include "ctbot.h"
 
 #include "pprintpp.hpp"
@@ -33,7 +32,14 @@
 
 namespace ctbot {
 
-CmdParser::CmdParser() : echo_ {} {}
+CmdParser::CmdParser() : echo_ {}, p_fs_svc_ {}, p_file_ {}, p_file_wrapper_ {} {}
+
+CmdParser::~CmdParser() {
+    if (p_file_) {
+        p_file_->close();
+        delete p_file_;
+    }
+}
 
 void CmdParser::register_cmd(const std::string_view& cmd, func_t&& func) {
     commands_.emplace(std::make_pair(cmd, func));
@@ -124,10 +130,77 @@ bool CmdParser::parse(const std::string_view& in, CommInterface& comm) {
         if (history_.size() > HISTORY_SIZE_) {
             history_.pop_back();
         }
-        return execute_cmd(history_.front(), comm);
+        const auto result { execute_cmd(history_.front(), comm) };
+
+        if constexpr (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE) {
+            if (result && p_file_wrapper_) {
+                auto p_str { new std::string { history_.front() } };
+                p_str->append(PSTR("\r\n"));
+                p_file_wrapper_->write(p_str->data(), p_str->size(), [p_str, this](FS_Service::FileOperation*) {
+                    delete p_str;
+                    p_file_wrapper_->flush([](FS_Service::FileOperation*) {});
+                });
+            }
+        }
+
+        return result;
     }
 
     return false;
+}
+
+bool CmdParser::enable_nv_history(FS_Service& fs_svc, const std::string_view& filename) {
+    if constexpr (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE) {
+        p_fs_svc_ = &fs_svc;
+        p_file_ = new File { p_fs_svc_->open(std::string(filename).c_str(), static_cast<uint8_t>(FILE_WRITE), 0, &p_file_wrapper_) };
+
+        if (!p_file_wrapper_ && p_file_) {
+            delete p_file_;
+            p_file_ = nullptr;
+        }
+
+        return p_file_wrapper_ != nullptr;
+    }
+
+    return false;
+}
+
+const std::string CmdParser::get_history(const size_t num) const {
+    if (num && num <= history_.size()) {
+        return history_[num - 1];
+    } else if (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE && num && p_file_wrapper_) {
+        configASSERT(p_fs_svc_);
+        auto file { p_fs_svc_->open(p_file_wrapper_->name(), FILE_READ, 5'000) };
+        if (file) {
+            const auto size { static_cast<int32_t>(file.size()) };
+            if (size < 0) {
+                return std::string {};
+            }
+
+            uint32_t pos_end;
+            int32_t pos { 1 };
+            for (size_t i {}; i <= num; ++i) {
+                pos_end = static_cast<uint32_t>(file.position());
+                for (; pos <= size; ++pos) {
+                    file.seek(-pos, SeekEnd);
+                    const auto tmp { file.read() };
+                    if (tmp == '\n') {
+                        ++pos;
+                        break;
+                    }
+                }
+            }
+            const auto pos_start { static_cast<uint32_t>(file.position()) + 1 };
+            if (pos <= size) {
+                const size_t len { pos_end - pos_start - 1 };
+                std::string line(static_cast<size_t>(len), '\0');
+                if (file.readBytes(line.data(), len) == len) {
+                    return line;
+                }
+            }
+        }
+    }
+    return std::string {};
 }
 
 std::string_view CmdParser::trim_to_first_arg(const std::string_view& str) {

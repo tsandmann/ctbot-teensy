@@ -359,7 +359,7 @@ void ButtonTest::display_tasks() {
         }
 
         std::this_thread::sleep_for(200ms);
-    } while (last_touch_cnt == ctbot_.get_tft()->get_touch_counter());
+    } while (last_touch_cnt == ctbot_.get_tft()->get_touch_counter() && ctbot_.get_ready());
 }
 
 } // namespace tests

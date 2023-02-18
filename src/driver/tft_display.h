@@ -153,20 +153,22 @@ public:
      */
     void clear() const;
 
-    void clear(const uint8_t row) const;
+    void clear(uint8_t row) const;
+
+    void flush() const;
 
     /**
      * @brief Set the cursor to a position
      * @param[in] row: New row of cursor [1; 20]
      * @param[in] column: New column of cursor [1; 4]
      */
-    void set_cursor_line(const uint8_t row, const uint8_t column) const;
+    void set_cursor_line(uint8_t row, uint8_t column) const;
 
-    void set_cursor(const int16_t x, const int16_t y) const;
+    void set_cursor(int16_t x, int16_t y) const;
 
-    void set_text_size(const uint8_t size) const;
+    void set_text_size(uint8_t size) const;
 
-    void set_text_color(const uint16_t color) const;
+    void set_text_color(uint16_t color) const;
 
     void set_text_wrap(bool wrap) const;
 
@@ -174,14 +176,14 @@ public:
      * @brief Set the display backlight
      * @param[in] brightness: new brightness in percentage
      */
-    void set_backlight(const float brightness) const;
+    void set_backlight(float brightness) const;
 
     /**
      * @brief Write a char to the display, starting at the current position
      * @param[in] c: Character to write
      * @return Number of written chars (1)
      */
-    FLASHMEM uint8_t print(const char c, bool clear = false) const;
+    FLASHMEM uint8_t print(char c, bool clear = false) const;
 
     /**
      * @brief Write a string to the display, starting at the current position
@@ -205,23 +207,23 @@ public:
 
     int16_t get_cursor_y() const;
 
-    void get_text_bounds(const std::string& str, const int16_t x, const int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
+    void get_text_bounds(const std::string& str, int16_t x, int16_t y, int16_t* p_x, int16_t* p_y, uint16_t* p_w, uint16_t* p_h) const;
 
-    void fill_screen(const uint16_t color) const;
+    void fill_screen(uint16_t color) const;
 
-    void fill_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    void fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) const;
 
-    void draw_line(const int16_t x0, const int16_t y0, const int16_t x1, const int16_t y1, const uint16_t color) const;
+    void draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) const;
 
-    void draw_rect(const int16_t x, const int16_t y, const int16_t w, const int16_t h, const uint16_t color) const;
+    void draw_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) const;
 
     void draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
 
     void fill_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) const;
 
-    void draw_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
+    void draw_circle(int16_t x, int16_t y, int16_t r, uint16_t color) const;
 
-    void fill_circle(const int16_t x, const int16_t y, const int16_t r, const uint16_t color) const;
+    void fill_circle(int16_t x, int16_t y, int16_t r, uint16_t color) const;
 
     void draw_button(Adafruit_GFX_Button* button, bool invert = false) const;
 

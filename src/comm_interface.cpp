@@ -118,7 +118,6 @@ FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool ena
 
 FLASHMEM CommInterface::~CommInterface() {
     auto schdl { CtBot::get_instance().get_scheduler() };
-    flush();
     schdl->task_remove(input_task_);
     schdl->task_remove(output_task_);
 }
