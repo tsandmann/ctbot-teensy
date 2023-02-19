@@ -33,7 +33,6 @@
 #include <vector>
 
 
-class Adafruit_ILI9341;
 class XPT2046_Touchscreen;
 class Adafruit_GFX_Button;
 
