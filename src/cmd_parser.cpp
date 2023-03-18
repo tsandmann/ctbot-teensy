@@ -165,7 +165,7 @@ bool CmdParser::enable_nv_history(FS_Service& fs_svc, const std::string_view& fi
     return false;
 }
 
-const std::string CmdParser::get_history(const size_t num) const {
+std::optional<std::string> CmdParser::get_history(size_t num) {
     if (num && num <= history_.size()) {
         return history_[num - 1];
     } else if (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE && num && p_file_wrapper_) {
@@ -174,7 +174,7 @@ const std::string CmdParser::get_history(const size_t num) const {
         if (file) {
             const auto size { static_cast<int32_t>(file.size()) };
             if (size < 0) {
-                return std::string {};
+                return {};
             }
 
             uint32_t pos_end;
@@ -200,7 +200,7 @@ const std::string CmdParser::get_history(const size_t num) const {
             }
         }
     }
-    return std::string {};
+    return {};
 }
 
 std::string_view CmdParser::trim_to_first_arg(const std::string_view& str) {

@@ -169,8 +169,9 @@ bool CmdScript::create_script(const size_t history_depth) {
     }
 
     for (size_t i { history_depth + 1U }; i > 1; --i) {
-        auto str { cmd_parser_.get_history(i) };
-        if (str.size()) {
+        const auto history { cmd_parser_.get_history(i) };
+        if (history) {
+            const auto str { history.value() };
             if constexpr (DEBUG_VERBOSE_) {
                 comm_interface_.debug_printf<true>(PP_ARGS("str.size={}\r\n", str.size()));
                 for (size_t i {}; i < str.size(); ++i) {

@@ -38,6 +38,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <optional>
 
 
 class FS_Service;
@@ -128,7 +129,7 @@ public:
 
     FLASHMEM bool enable_nv_history(FS_Service& fs_svc, const std::string_view& filename);
 
-    const std::string get_history(const size_t num) const;
+    std::optional<std::string> get_history(size_t num);
 
     static std::string_view trim_to_first_arg(const std::string_view& str);
 

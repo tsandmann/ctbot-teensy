@@ -297,8 +297,8 @@ void CommInterfaceCmdParser::run_input() {
                 char tmp;
                 io_.read(&tmp, 1);
                 const auto cmd { cmd_parser_.get_history(++history_view_) };
-                if (!cmd.empty()) {
-                    update_line(cmd);
+                if (cmd) {
+                    update_line(cmd.value());
                 } else {
                     --history_view_;
                 }
@@ -309,8 +309,8 @@ void CommInterfaceCmdParser::run_input() {
                 io_.read(&tmp, 1);
                 if (history_view_ > 1) {
                     const auto cmd { cmd_parser_.get_history(--history_view_) };
-                    if (!cmd.empty()) {
-                        update_line(cmd);
+                    if (cmd) {
+                        update_line(cmd.value());
                     } else {
                         ++history_view_;
                     }
