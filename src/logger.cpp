@@ -38,7 +38,7 @@ FLASHMEM LoggerTarget::LoggerTarget() {}
 
 FLASHMEM LoggerTarget::~LoggerTarget() {}
 
-size_t LoggerTarget::get_format_size(const char* format, ...) {
+int LoggerTarget::get_format_size(const char* format, ...) {
     va_list vl;
     va_start(vl, format);
     const auto size { std::vsnprintf(nullptr, 0, format, vl) };
@@ -46,11 +46,15 @@ size_t LoggerTarget::get_format_size(const char* format, ...) {
     return size;
 }
 
-std::string LoggerTarget::create_formatted_string(size_t size, const char* format, ...) {
+std::expected<std::string, int> LoggerTarget::create_formatted_string(size_t size, const char* format, ...) {
     va_list vl;
     va_start(vl, format);
     auto str { std::string(size + 1, '\0') };
     const auto n { std::vsnprintf(str.data(), size + 1, format, vl) };
+    if (n < 0) {
+        return std::unexpected { n };
+    }
+
     str.resize(n);
     va_end(vl);
 

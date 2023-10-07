@@ -24,7 +24,6 @@
 #include "arduino_freertos.h"
 #include "SPI.h"
 #include "Wire.h"
-#include "serial_posix.h"
 
 #include <chrono>
 #include <cstdlib>
@@ -44,8 +43,6 @@ namespace arduino {
 static auto g_start_time { std::chrono::high_resolution_clock::now() };
 static std::vector<bool> g_digital_pins(256);
 static std::vector<int16_t> g_analog_pins(256);
-
-KINETIS_I2C_t i2c_dummy;
 
 uint32_t micros() __attribute__((weak));
 uint32_t micros() {
@@ -246,18 +243,6 @@ HardwareSerial Serial5;
 HardwareSerial Serial6;
 HardwareSerial Serial7;
 HardwareSerial Serial8;
-
-namespace arduino::posix {
-SerialIOStreamAdapter Serial { arduino::Serial };
-SerialIOStreamAdapter Serial1 { arduino::Serial1 };
-SerialIOStreamAdapter Serial2 { arduino::Serial2 };
-SerialIOStreamAdapter Serial3 { arduino::Serial3 };
-SerialIOStreamAdapter Serial4 { arduino::Serial4 };
-SerialIOStreamAdapter Serial5 { arduino::Serial5 };
-SerialIOStreamAdapter Serial6 { arduino::Serial6 };
-SerialIOStreamAdapter Serial7 { arduino::Serial7 };
-SerialIOStreamAdapter Serial8 { arduino::Serial8 };
-} // namespace arduino::posix
 
 SPIClass SPI;
 SPIClass SPI1;

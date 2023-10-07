@@ -29,7 +29,6 @@
 #include "timer.h"
 
 #include "driver/serial_io.h"
-#include "driver/serial_t3.h"
 #include "driver/serial_t4.h"
 
 #include "pprintpp.hpp"
@@ -101,7 +100,7 @@ Scheduler::~Scheduler() {
 }
 
 void Scheduler::stop() {
-    auto& serial { arduino::get_serial(CtBotConfig::UART_WIFI_FOR_CMD ? CtBotConfig::UART_WIFI : 0) };
+    auto& serial { freertos::get_serial < CtBotConfig::UART_WIFI_FOR_CMD ? CtBotConfig::UART_WIFI : 0 > () };
     if (DEBUG_LEVEL_ > 2) {
         serial.write_direct(PSTR("Scheduler::stop()\r\n"));
     }

@@ -98,9 +98,9 @@ public:
 
     ILI9341(uint8_t cs, uint8_t dc, uint8_t rst);
 
-    ILI9341(SPIClass* p_spi, uint8_t cs, uint8_t dc) : ILI9341 { p_spi, cs, dc, -1 } {}
+    ILI9341(freertos::SpiT4* p_spi, uint8_t cs, uint8_t dc) : ILI9341 { p_spi, cs, dc, -1 } {}
 
-    ILI9341(SPIClass* p_spi, uint8_t cs, uint8_t dc, int8_t rst);
+    ILI9341(freertos::SpiT4* p_spi, uint8_t cs, uint8_t dc, int8_t rst);
 
     virtual ~ILI9341() = default;
 

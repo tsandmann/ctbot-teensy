@@ -64,14 +64,15 @@ SimConnection::SimConnection(const std::string& hostname, const std::string& por
     boost::asio::ip::tcp::resolver::query q { boost::asio::ip::tcp::v4(), hostname, port };
     endpoint_it_ = r.resolve(q);
 
-    p_i2c_range_ =
-        CtBotConfig::VL53L0X_I2C_BUS == 0 ? &Wire : (CtBotConfig::VL53L0X_I2C_BUS == 1 ? &Wire1 : (CtBotConfig::VL53L0X_I2C_BUS == 2 ? &Wire2 : &Wire3));
+    p_i2c_range_ = arduino::get_wire<CtBotConfig::VL53L0X_I2C_BUS - 1>();
 
     p_i2c_range_->set_addr_width(CtBotConfig::VL6180X_I2C_ADDR, 2);
     i2c_write_reg8(p_i2c_range_, VL53L0X::DEFAULT_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
     i2c_write_reg8(p_i2c_range_, VL53L0X::DEFAULT_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
     i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
+    i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
     i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, VL53L0X::MODEL_ID_REG, 0xee);
+    i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
 
     p_io_thread_ = std::make_unique<std::thread>([this]() {
         using namespace std::chrono_literals;
@@ -220,7 +221,7 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
         i2c_write_reg16(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10),
             static_cast<uint16_t>(cmd.get_cmd_data_l()));
         i2c_write_reg8(p_i2c_range_, CtBotConfig::VL53L0X_L_I2C_ADDR, VL53L0X::RESULT_INTERRUPT_STATUS_REG, 7);
-        // FIXME: handle SYSTEM_INTERRUPT_CLEAR?
+        // TODO: handle SYSTEM_INTERRUPT_CLEAR?
 
         i2c_write_reg16(p_i2c_range_, CtBotConfig::VL53L0X_R_I2C_ADDR, static_cast<uint8_t>(VL53L0X::RESULT_RANGE_STATUS_REG + 10),
             static_cast<uint16_t>(cmd.get_cmd_data_r()));
@@ -269,7 +270,7 @@ void SimConnection::handle_connect(const boost::system::error_code& ec) {
     register_cmd(CommandCodes::CMD_SENS_TRANS, [this](const CommandBase& cmd) {
         i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_RANGE_VAL_REG, cmd.get_cmd_data_l() > 0 ? 10 : 50);
         i2c_write_reg8(p_i2c_range_, CtBotConfig::VL6180X_I2C_ADDR, VL6180X::RESULT_INTERRUPT_STATUS_REG, 4);
-        // FIXME: handle SYSTEM__INTERRUPT_CLEAR?
+        // TODO: handle SYSTEM__INTERRUPT_CLEAR?
         return true;
     });
     register_cmd(CommandCodes::CMD_SENS_DOOR, [](const CommandBase&) {

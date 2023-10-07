@@ -228,7 +228,11 @@ public:
 
     uint16_t get_priority() const;
 
-    void wait();
+    void wait() {
+        wait(0);
+    }
+
+    void wait(uint32_t timeout_ms);
 
     const std::string& get_name() const {
         return name_;

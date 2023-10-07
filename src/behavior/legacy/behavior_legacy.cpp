@@ -380,7 +380,7 @@ BehaviorLegacy::~BehaviorLegacy() {
     debug_print<DEBUG_>(PSTR("BehaviorLegacy::~BehaviorLegacy().\r\n"));
 
     abort_beh();
-    wait();
+    wait(300);
 
     auto ptr { behavior_ };
     while (ptr) {

@@ -45,7 +45,7 @@
 #include <type_traits>
 
 
-namespace arduino {
+namespace freertos {
 class SerialIO;
 }
 
@@ -94,7 +94,7 @@ protected:
     static const std::string_view log_prefix_;
     static const std::string_view log_postfix_;
 
-    arduino::SerialIO& io_;
+    freertos::SerialIO& io_;
     bool echo_;
     bool viewer_enabled_;
     int error_;
@@ -140,7 +140,7 @@ public:
      * @param[in] io_connection: Reference to SerialIO to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    FLASHMEM CommInterface(arduino::SerialIO& io_connection, bool enable_echo = false);
+    FLASHMEM CommInterface(freertos::SerialIO& io_connection, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterface object
@@ -257,7 +257,11 @@ public:
      */
     template <bool BLOCK = false>
     FLASHMEM_T size_t debug_printf(const char* format, logger::PrintfArg auto... args) {
-        return debug_print(LoggerTarget::string_format(format, args...), BLOCK);
+        if (const auto str { LoggerTarget::string_format(format, args...) }; str.has_value()) {
+            return debug_print(*str, BLOCK);
+        } else {
+            return 0;
+        }
     }
 
     // FLASHMEM size_t debug_print(const arduino::String& str, bool block);
@@ -279,6 +283,8 @@ public:
  * @enduml
  */
 class CommInterfaceCmdParser : public CommInterface {
+    friend class CtBotCli;
+
 protected:
     CmdParser& cmd_parser_;
     size_t history_view_;
@@ -291,7 +297,12 @@ protected:
     FLASHMEM virtual void run_input() override;
 
     FLASHMEM void clear_line();
+
     FLASHMEM void update_line(const std::string_view& line);
+
+    auto& get_io() const {
+        return io_;
+    }
 
 public:
     /**
@@ -300,7 +311,7 @@ public:
      * @param[in] parser: Reference to CmdParser to use
      * @param[in] enable_echo: character echo mode for console, defaults to false
      */
-    FLASHMEM CommInterfaceCmdParser(arduino::SerialIO& io_connection, CmdParser& parser, bool enable_echo = false);
+    FLASHMEM CommInterfaceCmdParser(freertos::SerialIO& io_connection, CmdParser& parser, bool enable_echo = false);
 
     /**
      * @brief Destroy the CommInterfaceCmdParser object

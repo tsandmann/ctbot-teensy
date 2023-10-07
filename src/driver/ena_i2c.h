@@ -100,7 +100,7 @@ class EnaI2c {
     I2C_Service* p_i2c_svc_;
     const uint8_t i2c_addr_;
 
-    uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
+    I2C_Service::I2C_Error write_reg8(uint8_t reg, uint8_t value) const {
         return p_i2c_svc_->write_reg(i2c_addr_, reg, value);
     }
 
@@ -113,17 +113,16 @@ protected:
      */
     bool update() const {
         if (init_) {
-            return write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_)) == 0;
+            return write_reg8(OUTPUT_PORT_REG, static_cast<uint8_t>(status_)) == I2C_Service::I2C_Error::SUCCESS;
         }
 
         return false;
     }
 
 public:
-    EnaI2c(I2C_Service* p_i2c_svc, const uint8_t i2c_addr)
-        : p_i2c_svc_ { p_i2c_svc }, i2c_addr_ { i2c_addr }, init_ {}, status_ {
-              CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET : EnaI2cTypes::NONE
-          } {
+    EnaI2c(I2C_Service* p_i2c_svc, uint8_t i2c_addr)
+        : p_i2c_svc_ { p_i2c_svc }, i2c_addr_ { i2c_addr }, init_ {},
+          status_ { CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET : EnaI2cTypes::NONE } {
         write_reg8(CONFIG_REG,
             static_cast<uint8_t>(CtBotConfig::MAINBOARD_REVISION == 9'000 ? EnaI2cTypes::NONE : EnaI2cTypes::EXTENSION_2 | EnaI2cTypes::MOTOR_RESET));
         init_ = true;

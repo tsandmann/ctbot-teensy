@@ -43,7 +43,9 @@
 #include "driver/mpu_6050.h"
 #include "driver/servo.h"
 #include "driver/serial_io.h"
+#include "driver/serial_t4.h"
 #include "driver/tft_display.h"
+#include "driver/fw_updater_t4.h"
 
 #ifndef sei
 #define sei() __enable_irq() // for Audio.h
@@ -71,7 +73,8 @@ const char CtBotCli::general_[] { "command subcommand [param]           explanat
                                   "watch (w) INTERVAL COMMAND           execute COMMAND every INTERVAL ms\r\n"
                                   "sleep MS                             sleep for MS milliseconds\r\n"
                                   "stack TASK_ID                        print stack of task with id TASK_ID\r\n"
-                                  "crash                                cause a crash intentionally\r\n" };
+                                  "crash                                cause a crash intentionally\r\n"
+                                  "flash SIZE CRC32                     flash new firmware from uploading binfile with SIZE and CRC32\r\n" };
 
 const char CtBotCli::config_[] { "config (c)\r\n"
                                  "\techo [1|0]                   set console echo on/off\r\n"
@@ -136,7 +139,10 @@ const char CtBotCli::audio_[] { "audio (a)\r\n"
 
 const char CtBotCli::filesystem_[] { "fs (f)\r\n"
                                      "\tls DIR                       list files of directory DIR on SD card\r\n"
-                                     "\tcat FILE                     print content of FILE on SD card\r\n" };
+                                     "\trm FILE                      delete FILE on SD card\r\n"
+                                     "\tcat FILE                     print content of FILE on SD card\r\n"
+                                     "\tcrc FILE                     print CRC32 checksum of FILE on SD card\r\n"
+                                     "\tupload SIZE [CRC32] FILE     upload file of SIZE bytes (with CRC32) to SD card\r\n" };
 
 const char CtBotCli::prog_[] { "prog (p)\r\n"
                                "\trun FILENAME                 run script FILENAME from SD card\r\n"
@@ -153,7 +159,7 @@ const char CtBotCli::i2c_[] { "i2c (i)\r\n"
                               "\tscan                         scan selected I2C bus and print found device addresses\r\n" };
 
 
-static __attribute__((noinline)) void crash() {
+static FLASHMEM __attribute__((noinline)) void crash() {
     // configASSERT(false);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
@@ -163,11 +169,11 @@ static __attribute__((noinline)) void crash() {
     portINSTR_SYNC_BARRIER();
 }
 
-void CtBotCli::add_helptext(const char* str) {
+FLASHMEM void CtBotCli::add_helptext(const char* str) {
     texts_.emplace_back(str);
 }
 
-void CtBotCli::print() const {
+FLASHMEM void CtBotCli::print() const {
     for (auto& e : texts_) {
         p_ctbot_->get_comm()->debug_print(e, true);
         using namespace std::chrono_literals;
@@ -176,7 +182,7 @@ void CtBotCli::print() const {
     }
 }
 
-CtBotCli::CtBotCli(CtBot* p_ctbot) : p_ctbot_ { p_ctbot } {
+FLASHMEM CtBotCli::CtBotCli(CtBot* p_ctbot) : p_ctbot_ { p_ctbot } {
     configASSERT(p_ctbot_);
 
     add_helptext(general_);
@@ -195,21 +201,21 @@ CtBotCli::CtBotCli(CtBot* p_ctbot) : p_ctbot_ { p_ctbot } {
     }
 }
 
-void CtBotCli::init_commands() {
+FLASHMEM void CtBotCli::init_commands() {
     auto p_parser { p_ctbot_->get_cmd_parser() };
     configASSERT(p_parser);
 
-    p_parser->register_cmd(PSTR("help"), "h", [this](const std::string_view&) {
+    p_parser->register_cmd(PSTR("help"), "h", [this](const std::string_view&) FLASHMEM {
         print();
         return true;
     });
 
-    p_parser->register_cmd(PSTR("halt"), [this](const std::string_view&) {
+    p_parser->register_cmd(PSTR("halt"), [this](const std::string_view&) FLASHMEM {
         p_ctbot_->stop();
         return true;
     });
 
-    p_parser->register_cmd(PSTR("watch"), "w", [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("watch"), "w", [this](const std::string_view& args) FLASHMEM {
         if (args.size()) {
             uint16_t interval;
             if (auto [res, ec] = std::from_chars(args.cbegin(), args.cend(), interval); ec == std::errc {}) {
@@ -245,14 +251,14 @@ void CtBotCli::init_commands() {
         return false;
     });
 
-    p_parser->register_cmd(PSTR("config"), "c", [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("config"), "c", [this](const std::string_view& args) FLASHMEM {
         if (args.find(PSTR("echo")) == 0) {
             return eval_args<bool>(
                 [this](bool value) {
                     p_ctbot_->p_comm_->set_echo(value);
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("viewer")) == 0) {
             return eval_args<bool>(
                 [this](bool value) {
@@ -264,7 +270,7 @@ void CtBotCli::init_commands() {
                     }
                     return false;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("task")) == 0) {
             const auto args2 { CmdParser::trim_to_first_arg(args) };
             const size_t end { args2.find(' ') };
@@ -281,7 +287,7 @@ void CtBotCli::init_commands() {
                         }
                         return true;
                     },
-                    args2);
+                    true, args2);
             }
         } else if (args.find(PSTR("prehook")) == 0) {
             const auto args2 { CmdParser::trim_to_first_arg(args) };
@@ -296,7 +302,7 @@ void CtBotCli::init_commands() {
                     }
                     return false;
                 },
-                args2);
+                true, args2);
         } else if (args.find(PSTR("posthook")) == 0) {
             const auto args2 { CmdParser::trim_to_first_arg(args) };
             const size_t end { args2.find(' ') };
@@ -310,7 +316,7 @@ void CtBotCli::init_commands() {
                     }
                     return false;
                 },
-                args2);
+                true, args2);
         } else if (!CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("kp")) == 0) {
             return eval_args<int16_t, int16_t>(
                 [this](int16_t left, int16_t right) {
@@ -320,7 +326,7 @@ void CtBotCli::init_commands() {
                         static_cast<float>(right), p_ctbot_->p_speedcontrols_[1]->get_ki(), p_ctbot_->p_speedcontrols_[1]->get_kd());
                     return true;
                 },
-                args);
+                true, args);
         } else if (!CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("ki")) == 0) {
             return eval_args<int16_t, int16_t>(
                 [this](int16_t left, int16_t right) {
@@ -330,7 +336,7 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_speedcontrols_[1]->get_kp(), static_cast<float>(right), p_ctbot_->p_speedcontrols_[1]->get_kd());
                     return true;
                 },
-                args);
+                true, args);
         } else if (!CtBotConfig::EXTERNAL_SPEEDCTRL && args.find(PSTR("kd")) == 0) {
             return eval_args<int16_t, int16_t>(
                 [this](int16_t left, int16_t right) {
@@ -340,7 +346,7 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_speedcontrols_[1]->get_kp(), p_ctbot_->p_speedcontrols_[1]->get_ki(), static_cast<float>(right));
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("sctrl")) == 0) {
             return eval_args<bool>(
                 [this](bool enable) {
@@ -348,7 +354,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_speedcontrols_[1]->set_enable(enable);
                     return true;
                 },
-                args);
+                true, args);
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdout")) != args.npos) {
             const size_t s { args.find(' ') + 1 };
             const size_t e { args.find(' ', s) };
@@ -365,7 +371,7 @@ void CtBotCli::init_commands() {
                     }
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("enapwm")) == 0) {
             return eval_args<uint8_t, uint8_t>(
                 [this](uint8_t mask, uint8_t pwm) {
@@ -377,12 +383,12 @@ void CtBotCli::init_commands() {
                     }
                     return true;
                 },
-                args);
+                true, args);
         }
         return false;
     });
 
-    p_parser->register_cmd(PSTR("get"), "g", [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("get"), "g", [this](const std::string_view& args) FLASHMEM {
         if (args.find(PSTR("dist")) == 0) {
             p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("{} {}", p_ctbot_->p_sensors_->get_distance_l(), p_ctbot_->p_sensors_->get_distance_r()));
         } else if (args.find(PSTR("enc")) == 0) {
@@ -459,10 +465,11 @@ void CtBotCli::init_commands() {
             ++s;
             const size_t e { args.find(' ', s) };
             const std::string_view param { args.substr(s, e - s) };
-            float x;
-            if (p_ctbot_->p_parameter_->get(param, x)) {
-                p_ctbot_->p_comm_->debug_printf<true>(PSTR("paramf \"%.*s\"=%f"), param.size(), param.data(), x);
+            const auto res { p_ctbot_->p_parameter_->get<float>(param) };
+            if (res.has_value()) {
+                p_ctbot_->p_comm_->debug_printf<true>(PSTR("paramf \"%.*s\"=%f"), param.size(), param.data(), *res);
             } else {
+                p_ctbot_->p_comm_->debug_printf<true>(PSTR("paramf \"%.*s\": error %u\r\n"), param.size(), param.data(), static_cast<uint8_t>(res.error()));
                 return false;
             }
         } else if (args.find(PSTR("param")) == 0) {
@@ -473,10 +480,11 @@ void CtBotCli::init_commands() {
             ++s;
             const size_t e { args.find(' ', s) };
             const std::string_view param { args.substr(s, e - s) };
-            int32_t x;
-            if (p_ctbot_->p_parameter_->get(param, x)) {
-                p_ctbot_->p_comm_->debug_printf<true>(PSTR("param \"%.*s\"=%" PRId32), param.size(), param.data(), x);
+            const auto res { p_ctbot_->p_parameter_->get<int32_t>(param) };
+            if (res.has_value()) {
+                p_ctbot_->p_comm_->debug_printf<true>(PSTR("param \"%.*s\"=%" PRId32), param.size(), param.data(), *res);
             } else {
+                p_ctbot_->p_comm_->debug_printf<true>(PSTR("param \"%.*s\": error %u\r\n"), param.size(), param.data(), static_cast<uint8_t>(res.error()));
                 return false;
             }
         } else if (args.find(PSTR("time")) == 0) {
@@ -499,7 +507,7 @@ void CtBotCli::init_commands() {
         return true;
     });
 
-    p_parser->register_cmd(PSTR("set"), "s", [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("set"), "s", [this](const std::string_view& args) FLASHMEM {
         if (args.find(PSTR("speed")) == 0) {
             if (eval_args<float, float>(
                     [this](float left, float right) {
@@ -507,7 +515,7 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_speedcontrols_[1]->set_speed(right);
                         return true;
                     },
-                    args)) {
+                    true, args)) {
                 return true;
             } else {
                 p_ctbot_->p_speedcontrols_[0]->set_speed(0.f);
@@ -521,11 +529,11 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_motors_[1]->set(right);
                         return true;
                     },
-                    args);
+                    true, args);
             }
         } else if (args.find(PSTR("servo")) == 0) {
             uint8_t servo1;
-            if (auto [args2, ec] = CmdParser::split_args(args, servo1); ec == std::errc {}) {
+            if (auto [args2, ec] = CmdParser::split_args(args, true, servo1); ec == std::errc {}) {
                 if (servo1 <= 180) {
                     p_ctbot_->p_servos_[0]->set(servo1);
                 } else {
@@ -542,7 +550,7 @@ void CtBotCli::init_commands() {
                             }
                             return true;
                         },
-                        args2);
+                        true, args2);
                     return true;
                 }
 
@@ -554,7 +562,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_sensors_->get_rc5().set_rc5(addr, cmd, !p_ctbot_->p_sensors_->get_rc5().get_toggle());
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("enapwm")) == 0) {
             return eval_args<uint8_t, bool>(
                 [this](auto pin, auto value) {
@@ -565,7 +573,7 @@ void CtBotCli::init_commands() {
                     }
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("ena")) == 0) {
             return eval_args<uint8_t, bool>(
                 [this](uint8_t pin, bool value) {
@@ -576,24 +584,24 @@ void CtBotCli::init_commands() {
                     }
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("led")) == 0) {
             return eval_args<uint8_t>(
                 [this](uint8_t led) {
                     p_ctbot_->p_leds_->set(static_cast<LedTypes>(led));
                     return true;
                 },
-                args);
+                true, args);
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcdbl")) == 0) {
             return eval_args<bool>(
                 [this](bool value) {
                     p_ctbot_->p_lcd_->set_backlight(value);
                     return true;
                 },
-                args);
+                true, args);
         } else if (CtBotConfig::LCD_AVAILABLE && args.find(PSTR("lcd")) == 0) {
             uint8_t line, column;
-            if (auto [p_text, ec] = CmdParser::split_args(args, line, column); ec == std::errc {}) {
+            if (auto [p_text, ec] = CmdParser::split_args(args, true, line, column); ec == std::errc {}) {
                 if (!line && !column) {
                     p_ctbot_->p_lcd_->clear();
                     return true;
@@ -609,7 +617,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_tft_->set_backlight(value);
                     return true;
                 },
-                args);
+                true, args);
         } else if (args.find(PSTR("paramf")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
@@ -635,7 +643,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_parameter_->flush();
                     return true;
                 },
-                val);
+                true, val);
         } else if (args.find(PSTR("param")) == 0) {
             size_t s { args.find(' ') };
             if (s == args.npos) {
@@ -661,7 +669,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_parameter_->flush();
                     return true;
                 },
-                val);
+                true, val);
         } else if (CtBotConfig::DATE_TIME_AVAILABLE && args.find(PSTR("time")) == 0) {
             if (eval_args<int64_t>(
                     [this](int64_t time) {
@@ -672,14 +680,16 @@ void CtBotCli::init_commands() {
 
                             return true;
                         }
-                        p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
-                        p_ctbot_->get_logger()->log<true>(PSTR("invalid time received: %lld\r\n"), time);
+                        if constexpr (DEBUG_) {
+                            p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
+                            p_ctbot_->get_logger()->log<true>(PSTR("invalid time received: %lld\r\n"), time);
+                        }
 
                         return false;
                     },
-                    args)) {
+                    true, args)) {
                 return true;
-            } else {
+            } else if (DEBUG_) {
                 p_ctbot_->get_logger()->begin(PSTR("CtBotCli: "));
                 p_ctbot_->get_logger()->log(PSTR("invalid time received\r\n"), true);
             }
@@ -688,7 +698,7 @@ void CtBotCli::init_commands() {
     });
 
     if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
-        p_ctbot_->p_parser_->register_cmd(PSTR("audio"), "a", [this](const std::string_view& args) {
+        p_ctbot_->p_parser_->register_cmd(PSTR("audio"), "a", [this](const std::string_view& args) FLASHMEM {
             if (CtBotConfig::SDCARD_AVAILABLE && args.find(PSTR("play")) == 0) {
                 return p_ctbot_->play_wav(CmdParser::trim_to_first_arg(args));
             } else if (CtBotConfig::SDCARD_AVAILABLE && args.find(PSTR("stop")) == 0) {
@@ -720,14 +730,14 @@ void CtBotCli::init_commands() {
                         }
                         return true;
                     },
-                    args);
+                    true, args);
             } else if (args.find(PSTR("pitch")) == 0) {
                 return eval_args<uint8_t>(
                     [this](uint8_t pitch) {
                         p_ctbot_->p_tts_->set_pitch(pitch);
                         return true;
                     },
-                    args);
+                    true, args);
             } else if (args.find(PSTR("speak")) == 0) {
                 if (p_ctbot_->p_tts_->is_playing()) {
                     return false;
@@ -743,7 +753,7 @@ void CtBotCli::init_commands() {
                         p_ctbot_->p_audio_sine_->frequency(freq);
                         return true;
                     },
-                    args);
+                    true, args);
             }
 
             return false;
@@ -751,7 +761,7 @@ void CtBotCli::init_commands() {
     }
 
     if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
-        p_parser->register_cmd(PSTR("fs"), "f", [this](const std::string_view& args) {
+        p_parser->register_cmd(PSTR("fs"), "f", [this](const std::string_view& args) FLASHMEM {
             if (args.find(PSTR("ls")) == 0) {
                 const auto s { args.find(' ') };
                 std::string dir;
@@ -789,6 +799,19 @@ void CtBotCli::init_commands() {
                 }
 
                 return true;
+            } else if (args.find(PSTR("rm")) == 0) {
+                const auto s { args.find(' ') };
+                if (s == args.npos) {
+                    return false;
+                }
+                const std::string path { args.substr(s + 1) };
+
+                if (!p_ctbot_->get_fs()->exists(path.c_str())) {
+                    p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
+                    return false;
+                }
+
+                return p_ctbot_->get_fs()->remove(path.c_str());
             } else if (args.find(PSTR("cat")) == 0) {
                 const auto s { args.find(' ') };
                 if (s == args.npos) {
@@ -799,6 +822,7 @@ void CtBotCli::init_commands() {
                     p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
                     return false;
                 }
+
                 File file { p_ctbot_->get_fs()->open(path.c_str(), FILE_READ) };
                 char buf[32];
                 while (file.available()) {
@@ -810,22 +834,58 @@ void CtBotCli::init_commands() {
                 p_ctbot_->p_comm_->debug_print(PSTR("\r\n"), true);
 
                 return true;
+            } else if (args.find(PSTR("crc")) == 0) {
+                const auto s { args.find(' ') };
+                if (s == args.npos) {
+                    return false;
+                }
+                const std::string path { args.substr(s + 1) };
+                if (!p_ctbot_->get_fs()->exists(path.c_str())) {
+                    p_ctbot_->p_comm_->debug_print(PSTR("File not found\r\n"), true);
+                    return false;
+                }
+
+                const auto crc32 { p_ctbot_->file_crc32(path) };
+                if (crc32) {
+                    p_ctbot_->p_comm_->debug_printf<true>(PSTR("0x%x\r\n"), crc32);
+                    return true;
+                }
+            } else if (args.find(PSTR("upload")) == 0) {
+                const auto s { args.find(' ') };
+                if (s == args.npos) {
+                    return false;
+                }
+                uint32_t file_size, crc32 {};
+                auto sub_args { args.substr(s + 1) };
+                if (auto [res, ec] = std::from_chars(sub_args.cbegin(), sub_args.cend(), file_size); ec == std::errc {}) {
+                    const std::string_view str { CmdParser::trim_to_first_arg({ res, sub_args.cend() }) };
+                    std::string_view file_name { str };
+                    if (auto [res2, ec2] = std::from_chars(str.cbegin(), str.cend(), crc32); ec2 == std::errc {}) {
+                        file_name = CmdParser::trim_to_first_arg({ res2, str.cend() });
+                    }
+
+                    p_ctbot_->p_comm_->debug_printf(
+                        PSTR("upload of file \"%.*s\" with %u bytes (crc32=0x%x).\r\n"), file_name.size(), file_name.data(), file_size, crc32);
+
+                    const bool textfile { file_name.rfind(PSTR(".txt")) != file_name.npos || file_name.rfind(PSTR(".hex")) != file_name.npos };
+                    return p_ctbot_->file_upload(p_ctbot_->get_comm()->get_io(), file_name, file_size, crc32, textfile);
+                }
             }
 
             return false;
         });
     }
 
-    p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("sleep"), [this](const std::string_view& args) FLASHMEM {
         return eval_args<uint32_t>(
             [this](uint32_t duration) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(duration));
                 return true;
             },
-            args);
+            false, args);
     });
 
-    p_parser->register_cmd(PSTR("crash"), [this](const std::string_view&) {
+    p_parser->register_cmd(PSTR("crash"), [this](const std::string_view&) FLASHMEM {
         p_ctbot_->get_serial_cmd()->write_direct('\r');
         p_ctbot_->get_serial_cmd()->write_direct('\n');
 
@@ -833,7 +893,7 @@ void CtBotCli::init_commands() {
         return true;
     });
 
-    p_parser->register_cmd(PSTR("stack"), [this](const std::string_view& args) {
+    p_parser->register_cmd(PSTR("stack"), [this](const std::string_view& args) FLASHMEM {
         return eval_args<uint32_t>(
             [this](uint32_t task_id) {
                 auto p_task { p_ctbot_->get_scheduler()->task_get(task_id) };
@@ -845,11 +905,27 @@ void CtBotCli::init_commands() {
                 freertos::print_stack_trace(p_task->get_handle());
                 return true;
             },
-            args);
+            false, args);
     });
 
+    if constexpr (CtBotConfig::FLASH_OVER_WIFI_AVAILABLE && CtBotConfig::UART_WIFI_FOR_CMD) {
+#ifdef ARDUINO_TEENSY41
+        p_parser->register_cmd(PSTR("flash"), [this](const std::string_view& args) FLASHMEM {
+            return eval_args<uint32_t, uint32_t>(
+                [this](uint32_t filesize, uint32_t crc) {
+                    if (!filesize || !crc) {
+                        return false;
+                    }
+
+                    return FwUpdaterT4::start_flash_firmware(*p_ctbot_, p_ctbot_->get_comm()->get_io(), filesize, crc, true);
+                },
+                false, args);
+        });
+#endif // ARDUINO_TEENSY41
+    }
+
     if constexpr (CtBotConfig::SDCARD_AVAILABLE && CtBotConfig::PROG_AVAILABLE) {
-        p_parser->register_cmd(PSTR("prog"), "p", [this](const std::string_view& args) {
+        p_parser->register_cmd(PSTR("prog"), "p", [this](const std::string_view& args) FLASHMEM {
             if (args.find(PSTR("run")) == 0) {
                 const auto args2 { CmdParser::trim_to_first_arg(args) };
                 const size_t end { args2.find(' ') };
@@ -866,7 +942,7 @@ void CtBotCli::init_commands() {
                 return p_cmd_script->print_script();
             } else if (args.find(PSTR("create")) == 0) {
                 size_t num;
-                if (auto [res, ec] = CmdParser::split_args(args, num); ec == std::errc {}) {
+                if (auto [res, ec] = CmdParser::split_args(args, true, num); ec == std::errc {}) {
                     const std::string_view str { res, args.cend() };
                     const auto args2 { CmdParser::trim_to_first_arg(str) };
                     const size_t end { args2.find(' ') };
@@ -882,7 +958,7 @@ void CtBotCli::init_commands() {
     }
 
     if constexpr (CtBotConfig::I2C_TOOLS_AVAILABLE) {
-        p_parser->register_cmd(PSTR("i2c"), "i", [this](const std::string_view& args) {
+        p_parser->register_cmd(PSTR("i2c"), "i", [this](const std::string_view& args) FLASHMEM {
             static I2C_Service* p_i2c {};
             static uint8_t dev_addr {};
             if (args.find(PSTR("select")) == 0) {
@@ -899,30 +975,31 @@ void CtBotCli::init_commands() {
                         }
                         return false;
                     },
-                    args);
+                    true, args);
             } else if (args.find(PSTR("addr")) == 0) {
-                if (auto [_, ec] = CmdParser::split_args(args, dev_addr); ec == std::errc {}) {
+                if (auto [_, ec] = CmdParser::split_args(args, true, dev_addr); ec == std::errc {}) {
                     return true;
                 }
             } else if (args.find(PSTR("read")) == 0) {
                 uint8_t width;
                 uint32_t result;
-                if (auto [args2, ec] = CmdParser::split_args(args, width); ec == std::errc {}) {
+                if (auto [args2, ec] = CmdParser::split_args(args, true, width); ec == std::errc {}) {
                     return eval_args<uint8_t>(
                         [this, width, &result](uint8_t addr) {
                             switch (width) {
                                 case 1: {
                                     uint8_t data;
-                                    if (p_i2c->read_reg(dev_addr, addr, data)) {
+                                    if (p_i2c->read_reg(dev_addr, addr, data) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     } else {
                                         result = data;
                                     }
                                     break;
                                 }
+
                                 case 2: {
                                     uint16_t data;
-                                    if (p_i2c->read_reg(dev_addr, addr, data)) {
+                                    if (p_i2c->read_reg(dev_addr, addr, data) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     } else {
                                         result = data;
@@ -932,7 +1009,7 @@ void CtBotCli::init_commands() {
 
                                 case 4: {
                                     uint32_t data;
-                                    if (p_i2c->read_reg(dev_addr, addr, data)) {
+                                    if (p_i2c->read_reg(dev_addr, addr, data) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     } else {
                                         result = data;
@@ -946,41 +1023,44 @@ void CtBotCli::init_commands() {
                                 PP_ARGS("read {}: bus {} dev {#x} addr {#x} = {#x}\r\n", width, p_i2c->get_bus(), dev_addr, addr, result));
                             return true;
                         },
-                        args2);
+                        true, args2);
                 }
             } else if (args.find(PSTR("write")) == 0) {
                 uint8_t width;
-                if (auto [args2, ec] = CmdParser::split_args(args, width); ec == std::errc {}) {
+                if (auto [args2, ec] = CmdParser::split_args(args, true, width); ec == std::errc {}) {
                     return eval_args<uint8_t, uint32_t>(
                         [this, width](uint8_t addr, uint32_t data) {
                             switch (width) {
                                 case 1:
-                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint8_t>(data))) {
+                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint8_t>(data)) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     }
                                     break;
+
                                 case 2:
-                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint16_t>(data))) {
+                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint16_t>(data)) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     }
                                     break;
+
                                 case 4:
-                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint32_t>(data))) {
+                                    if (p_i2c->write_reg(dev_addr, addr, static_cast<uint32_t>(data)) != I2C_Service::I2C_Error::SUCCESS) {
                                         return false;
                                     }
                                     break;
+
                                 default: return false;
                             }
                             p_ctbot_->p_comm_->debug_printf<true>(
                                 PP_ARGS("write {}: bus {} dev {#x} addr {#x} = {#x}\r\n", width, p_i2c->get_bus(), dev_addr, addr, data));
                             return true;
                         },
-                        args2);
+                        true, args2);
                 }
             } else if (args.find(PSTR("setbit")) == 0) {
                 return eval_args<uint8_t, uint8_t>(
                     [this](uint8_t addr, uint8_t bit) {
-                        if (p_i2c->set_bit(dev_addr, addr, bit, true)) {
+                        if (p_i2c->set_bit(dev_addr, addr, bit, true) != I2C_Service::I2C_Error::SUCCESS) {
                             return false;
                         } else {
                             uint8_t data;
@@ -989,11 +1069,11 @@ void CtBotCli::init_commands() {
                             return true;
                         }
                     },
-                    args);
+                    true, args);
             } else if (args.find(PSTR("clearbit")) == 0) {
                 return eval_args<uint8_t, uint8_t>(
                     [this](uint8_t addr, uint8_t bit) {
-                        if (p_i2c->set_bit(dev_addr, addr, bit, false)) {
+                        if (p_i2c->set_bit(dev_addr, addr, bit, false) != I2C_Service::I2C_Error::SUCCESS) {
                             return false;
                         } else {
                             uint8_t data;
@@ -1002,11 +1082,15 @@ void CtBotCli::init_commands() {
                             return true;
                         }
                     },
-                    args);
+                    true, args);
             } else if (args.find(PSTR("scan")) == 0) {
                 for (uint8_t i { 8 }; i < 120; ++i) {
-                    if (p_i2c->test(i)) {
+                    const auto res { p_i2c->test(i) };
+                    if (res == I2C_Service::I2C_Error::SUCCESS) {
                         p_ctbot_->p_comm_->debug_printf<true>(PP_ARGS("bus {}: dev {#x} found.\r\n", p_i2c->get_bus(), i));
+                    } else if (res != I2C_Service::I2C_Error::END_TRANSMISSION_1_FAILURE) {
+                        p_ctbot_->p_comm_->debug_printf<true>(
+                            PP_ARGS("bus {}: test({#x}) failed with {}.\r\n", p_i2c->get_bus(), i, static_cast<uint8_t>(res)));
                     }
                 }
                 return true;

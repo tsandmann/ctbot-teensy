@@ -27,6 +27,7 @@
 #include "arduino_freertos.h"
 
 #include <string>
+#include <string_view>
 #include <functional>
 #include <atomic>
 #include <variant>
@@ -78,7 +79,7 @@ protected:
 
     bool schedule_operation(queue_t operation, bool custom_callback, TickType_t timeout_ticks) const;
 
-    File open(SDClass* p_fs, const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper = nullptr) const;
+    File open(SDClass* p_fs, const std::string_view& filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper = nullptr) const;
 
     File open_next(FsFile& file, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper) const;
 
@@ -252,33 +253,33 @@ public:
 
     bool begin(SdioConfig&& sdio_config) const;
 
-    File open(const char* filepath) const {
+    File open(const std::string_view filepath) const {
         return open(filepath, FILE_READ, 0, nullptr, nullptr);
     }
 
-    File open(const char* filepath, uint8_t mode) const {
+    File open(const std::string_view filepath, uint8_t mode) const {
         return open(filepath, mode, 0, nullptr, nullptr);
     }
 
-    File open(const char* filepath, uint8_t mode, uint32_t op_timeout_us) const {
+    File open(const std::string_view filepath, uint8_t mode, uint32_t op_timeout_us) const {
         return open(filepath, mode, op_timeout_us, nullptr, nullptr);
     }
 
-    File open(const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper) const {
+    File open(const std::string_view filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper) const {
         return open(filepath, mode, op_timeout_us, p_file_wrapper, nullptr);
     }
 
-    File open(const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper, fs_callback_t callback) const;
+    File open(const std::string_view filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper, fs_callback_t callback) const;
 
-    bool exists(const char* filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
+    bool exists(const std::string_view filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 
-    bool mkdir(const char* filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
+    bool mkdir(const std::string_view filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 
-    bool rename(const char* oldfilepath, const char* newfilepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
+    bool rename(const std::string_view oldfilepath, const std::string_view newfilepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 
-    bool remove(const char* filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
+    bool remove(const std::string_view filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 
-    bool rmdir(const char* filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
+    bool rmdir(const std::string_view filepath, uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 
     uint64_t usedSize(uint32_t op_timeout_us = 0, fs_callback_t callback = nullptr) const;
 

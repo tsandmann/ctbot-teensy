@@ -17,7 +17,7 @@
 
 /**
  * @file    serial_io.h
- * @brief   Teensy serialport abstraction
+ * @brief   Teensy serialport abstraction layer for FreeRTOS driver
  * @author  Timo Sandmann
  * @date    16.10.2021
  */
@@ -31,11 +31,11 @@
 #include <string_view>
 
 
-namespace arduino {
+namespace freertos {
 
 class SerialIO {
 public:
-    SerialIO() = default;
+    constexpr SerialIO() = default;
     virtual ~SerialIO() = default;
 
     bool begin(uint32_t baud) {
@@ -109,6 +109,8 @@ public:
     virtual void clear() = 0;
 
     virtual Stream& get_stream() = 0;
+
+    virtual bool get_rx_overflow(bool clear) = 0;
 };
 
 
@@ -175,5 +177,9 @@ public:
     virtual Stream& get_stream() override {
         return stream_;
     }
+
+    bool get_rx_overflow(bool) override {
+        return false;
+    }
 };
-} // namespace arduino
+} // namespace freertos

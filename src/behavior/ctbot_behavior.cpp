@@ -73,7 +73,7 @@ CtBotBehavior::~CtBotBehavior() {
     delete p_heading_filter_;
 }
 
-void CtBotBehavior::setup(const bool set_ready) {
+FLASHMEM void CtBotBehavior::setup(const bool set_ready) {
     if (DEBUG_LEVEL_ >= 4) {
         ::serialport_puts(PSTR("CtBotBehavior::setup()...\r\n"));
     }
@@ -81,7 +81,7 @@ void CtBotBehavior::setup(const bool set_ready) {
 
     p_cli_->add_helptext(usage_text_beh_);
 
-    p_parser_->register_cmd(PSTR("beh"), "b", [this](const std::string_view& args) {
+    p_parser_->register_cmd(PSTR("beh"), "b", [this](const std::string_view& args) FLASHMEM {
         if (args.find(PSTR("start")) == 0) {
             if (p_beh_) {
                 return false;
@@ -119,7 +119,7 @@ void CtBotBehavior::setup(const bool set_ready) {
 
                     case 1: {
                         int32_t v;
-                        if (auto [_, ec] = CmdParser::split_args(args2, v); ec == std::errc {}) {
+                        if (CmdParser::split_args(args2, true, v).ec == std::errc {}) {
                             p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t)>>(std::get<1>(beh))(v);
                             if (DEBUG_LEVEL_ >= 4) {
                                 log_begin();
@@ -133,7 +133,7 @@ void CtBotBehavior::setup(const bool set_ready) {
 
                     case 2: {
                         int32_t v1, v2;
-                        if (auto [_, ec] = CmdParser::split_args(args2, v1, v2); ec == std::errc {}) {
+                        if (CmdParser::split_args(args2, true, v1, v2).ec == std::errc {}) {
                             p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t)>>(std::get<1>(beh))(v1, v2);
                             if (DEBUG_LEVEL_ >= 4) {
                                 log_begin();
@@ -147,7 +147,7 @@ void CtBotBehavior::setup(const bool set_ready) {
 
                     case 3: {
                         int32_t v1, v2, v3;
-                        if (auto [_, ec] = CmdParser::split_args(args2, v1, v2, v3); ec == std::errc {}) {
+                        if (CmdParser::split_args(args2, true, v1, v2, v3).ec == std::errc {}) {
                             p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t)>>(std::get<1>(beh))(
                                 v1, v2, v3);
                             if (DEBUG_LEVEL_ >= 4) {
@@ -162,7 +162,7 @@ void CtBotBehavior::setup(const bool set_ready) {
 
                     case 4: {
                         int32_t v1, v2, v3, v4;
-                        if (auto [_, ec] = CmdParser::split_args(args2, v1, v2, v3, v4); ec == std::errc {}) {
+                        if (CmdParser::split_args(args2, true, v1, v2, v3, v4).ec == std::errc {}) {
                             p_beh_ = std::any_cast<std::function<std::unique_ptr<Behavior>(const int32_t, const int32_t, const int32_t, const int32_t)>>(
                                 std::get<1>(beh))(v1, v2, v3, v4);
                             if (DEBUG_LEVEL_ >= 4) {
@@ -197,9 +197,9 @@ void CtBotBehavior::setup(const bool set_ready) {
             return true;
         } else if (args.find(PSTR("pose")) == 0) {
             get_data()->get_res_ptr<Pose>(PSTR("model.pose_enc"))->print(*get_comm());
-            auto acc_x { get_sensors()->get_accel()->get_acc_x() };
-            auto acc_y { get_sensors()->get_accel()->get_acc_y() };
-            auto acc_z { get_sensors()->get_accel()->get_acc_z() };
+            auto acc_x { get_sensors()->get_accel() ? get_sensors()->get_accel()->get_acc_x() : 0 };
+            auto acc_y { get_sensors()->get_accel() ? get_sensors()->get_accel()->get_acc_y() : 0 };
+            auto acc_z { get_sensors()->get_accel() ? get_sensors()->get_accel()->get_acc_z() : 0 };
 
             if (CtBotConfig::FXA_FXO_AVAILABLE && CtBotConfig::ACCEL_AVAILABLE
                 && (std::fabs(acc_x) > 0.1f || std::fabs(acc_y) > 0.1f || std::fabs(acc_z) > 0.1f)) {
@@ -545,14 +545,14 @@ bool CtBotBehavior::update_gyro(const Pose& pose) {
     return true;
 }
 
-void CtBotBehavior::shutdown() {
+FLASHMEM void CtBotBehavior::shutdown() {
+    ready_ = false;
+    create_shutdown_timer(12'000);
+
     if (DEBUG_LEVEL_ >= 3) {
         log_begin();
         get_logger()->log(PSTR("shutdown()\r\n"), true);
-        get_logger()->flush();
     }
-
-    ready_ = false;
 
     p_beh_.reset();
     if (CtBotConfig::BEHAVIOR_LEGACY_SUPPORT_AVAILABLE) {
@@ -566,6 +566,11 @@ void CtBotBehavior::shutdown() {
 
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(200ms);
+
+    if (DEBUG_LEVEL_ >= 3) {
+        log_begin();
+        get_logger()->log(PSTR("shutdown() done.\r\n"), true);
+    }
 
     CtBot::shutdown();
 }

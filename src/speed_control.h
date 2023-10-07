@@ -35,7 +35,7 @@
 
 class Pid;
 
-namespace arduino {
+namespace freertos {
 class SerialIO;
 }
 
@@ -187,7 +187,6 @@ class SpeedControlPico : public SpeedControlBase {
     static constexpr bool DEBUG_ { false };
 
     static std::list<SpeedControlPico*> controller_list_;
-    static arduino::SerialIO& serial_;
     static uint16_t motor_current_;
     static uint32_t crc_errors_;
 
@@ -195,6 +194,8 @@ class SpeedControlPico : public SpeedControlBase {
     int32_t enc_counts_;
     int32_t last_counts_;
     bool reset_;
+
+    static freertos::SerialIO& get_serial();
 
 protected:
     struct EncData {

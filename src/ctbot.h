@@ -51,7 +51,7 @@ class LuaWrapper;
 class I2C_Service;
 class FS_Service;
 
-namespace arduino {
+namespace freertos {
 class SerialIO;
 }
 
@@ -78,7 +78,7 @@ class LoggerTargetFile;
  * @brief Main class of ct-Bot teensy framework, responsible for initialization and control loop execution
  */
 class CtBot {
-    static constexpr uint8_t DEBUG_LEVEL_ { 1 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose
+    static constexpr uint8_t DEBUG_LEVEL_ { 2 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose
 
     static consteval auto calc_flexspi2_divider(uint32_t freq_mhz) {
         return (freq_mhz <= 132 && freq_mhz >= 66) ? (528 + (freq_mhz - 1)) / freq_mhz - 1 : (freq_mhz < 66 ? 7 : 3);
@@ -110,9 +110,9 @@ protected:
     LCDisplay* p_lcd_; /**< Pointer to LC display instance */
     TFTDisplay* p_tft_; /**< Pointer to TFT display instance */
     CtBotCli* p_cli_;
-    arduino::SerialIO* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
-    arduino::SerialIO* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
-    CommInterface* p_comm_; /**< Pointer to (serial) communication interface instance */
+    freertos::SerialIO* p_serial_usb_; /**< Pointer to serial connection abstraction layer instance for USB serial port*/
+    freertos::SerialIO* p_serial_wifi_; /**< Pointer to serial connection abstraction layer instance for uart 5 (used for WiFi) */
+    CommInterfaceCmdParser* p_comm_; /**< Pointer to (serial) communication interface instance */
     CmdParser* p_parser_; /**< Pointer to cmd parser instance */
     Logger* p_logger_;
     FS_Service* p_fs_;
@@ -135,6 +135,7 @@ protected:
     uint32_t last_taskstat_timestamp_;
     SchedulerStatContext* p_taskstat_context_;
     SchedulerStatContext* p_viewer_tasks_context_;
+    TimerHandle_t shutdown_timer_;
 
 
     /**
@@ -163,7 +164,13 @@ protected:
 
     FLASHMEM void update_clock();
 
+    bool create_shutdown_timer(uint32_t ms);
+
     bool publish_viewerdata(uint32_t now);
+
+    FLASHMEM bool file_upload(freertos::SerialIO& io, const std::string_view& file_name, uint32_t file_size, bool textmode) const {
+        return file_upload(io, file_name, file_size, 0, textmode);
+    }
 
 public:
     /**
@@ -310,6 +317,10 @@ public:
     void add_pre_hook(const std::string& name, std::function<void()>&& hook, bool active = true);
 
     void add_post_hook(const std::string& name, std::function<void()>&& hook, bool active = true);
+
+    FLASHMEM bool file_upload(freertos::SerialIO& io, const std::string_view& file_name, uint32_t file_size, uint32_t crc32, bool textmode) const;
+
+    FLASHMEM uint32_t file_crc32(const std::string_view& file_name) const;
 };
 
 } // namespace ctbot

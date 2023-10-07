@@ -34,20 +34,20 @@
 struct QueueDefinition;
 typedef struct QueueDefinition* QueueHandle_t;
 
-namespace arduino {
+namespace freertos {
 class I2CT4;
-} // namespace arduino
+} // namespace freertos
 
 class I2C_Service {
     static constexpr bool DEBUG_ { false };
 
 #if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-    using I2C_t = arduino::I2CT4;
+    using I2C_t = freertos::I2CT4;
 #else
     using I2C_t = arduino::TwoWire;
 #endif
 
-    static constexpr uint8_t NUM_BUSSES {
+    static constexpr uint8_t NUM_BUSSES_ {
 #ifdef WIRE_IMPLEMENT_WIRE3
         4
 #else
@@ -56,6 +56,20 @@ class I2C_Service {
     };
 
 public:
+    enum class I2C_Error : uint8_t {
+        SUCCESS = 0,
+        QUEUE_FULL,
+        TIMEOUT,
+        WRITE_1_FAILURE,
+        WRITE_2_FAILURE,
+        END_TRANSMISSION_1_FAILURE,
+        END_TRANSMISSION_2_FAILURE,
+        REQUEST_FROM_FAILURE,
+        READ_FAILURE,
+        INVALID_PARAMETERS,
+        NOT_IMPLEMENTED,
+    };
+
     struct I2C_Transfer {
         uint16_t addr;
         uint8_t size1 : 7;
@@ -70,7 +84,7 @@ public:
             uint32_t data;
             uint8_t* ptr;
         } data2;
-        uint8_t error;
+        I2C_Error error;
         TaskHandle_t caller;
         std::function<void(const bool, I2C_Transfer**)> callback;
 
@@ -80,26 +94,30 @@ public:
     };
 
 protected:
-    static std::array<TaskHandle_t, NUM_BUSSES> i2c_task_;
-    static std::array<QueueHandle_t, NUM_BUSSES> i2c_queue_;
-    static std::array<I2C_t*, NUM_BUSSES> p_i2c_;
-    static std::array<bool, NUM_BUSSES> init_;
-    static std::array<uint32_t, NUM_BUSSES> freq_;
+    static constexpr size_t TRANSFER_QUEUE_SIZE_ { 16 };
+    static constexpr uint32_t TRANSFER_QUEUE_TIMEOUT_MS_ { 200 };
+    static constexpr uint32_t DEFAULT_CALLBACK_TIMEOUT_MS_ { 20 };
+    static constexpr uint32_t READ_BYTES_TIMEOUT_MS_PER_BYTE_ { 10 };
+    static constexpr uint32_t WRITE_BYTES_TIMEOUT_MS_PER_BYTE_ { 10 };
+    static constexpr uint32_t TEST_TIMEOUT_MS_ { 50 };
+
+    static std::array<TaskHandle_t, NUM_BUSSES_> i2c_task_;
+    static std::array<QueueHandle_t, NUM_BUSSES_> i2c_queue_;
+    static std::array<I2C_t*, NUM_BUSSES_> p_i2c_;
+    static std::array<bool, NUM_BUSSES_> init_;
+    static std::array<uint32_t, NUM_BUSSES_> freq_;
 
     static void finish_transfer(bool success, I2C_Transfer* transfer);
-    static void finish_transfer(bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id) {
-        if (DEBUG_ && transfer->callback) {
-            printf_debug(PSTR("I2C_Service::finish_transfer(): callback for transfer %u addr=0x%x, err=%u\r\n"), id, transfer->addr, transfer->error);
-        }
-        finish_transfer(success, transfer);
-    }
+    static void finish_transfer(bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id);
+
+    static void reset(uint8_t bus);
 
     static void run(void* param);
 
     const uint8_t bus_;
 
     template <typename DATA>
-    uint8_t set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
+    I2C_Error set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
 
 public:
     static bool init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_scl);
@@ -114,19 +132,23 @@ public:
         return freq_[bus_];
     }
 
-    uint8_t read_reg(
+    void reset() const {
+        reset(bus_);
+    }
+
+    I2C_Error read_reg(
         uint16_t addr, std::unsigned_integral auto reg, std::integral auto& data, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
-    uint8_t read_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, uint8_t* p_data, uint8_t length,
+    I2C_Error read_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, uint8_t* p_data, uint8_t length,
         std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 
-    uint8_t write_reg(
+    I2C_Error write_reg(
         uint16_t addr, std::unsigned_integral auto reg, std::integral auto data, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
-    uint8_t write_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, const uint8_t* p_data, uint8_t length,
+    I2C_Error write_bytes(uint16_t addr, std::unsigned_integral auto reg_addr, const uint8_t* p_data, uint8_t length,
         std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 
-    uint8_t set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const;
+    I2C_Error set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const;
 
-    uint8_t set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
+    I2C_Error set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const;
 
-    bool test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
+    I2C_Error test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback = nullptr) const;
 };

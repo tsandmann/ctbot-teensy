@@ -24,15 +24,16 @@
 
 #include "ili9486.h"
 
+#include "spi_t4.h"
+
 #include "arduino_freertos.h"
-#include "SPI.h"
 
 
-ILI9486::ILI9486(uint8_t cs, uint8_t dc) : ILI9486 { &SPI, cs, dc, -1 } {}
+ILI9486::ILI9486(uint8_t cs, uint8_t dc) : ILI9486 { freertos::get_spi<0>(), cs, dc, -1 } {}
 
-ILI9486::ILI9486(uint8_t cs, uint8_t dc, uint8_t rst) : ILI9486 { &SPI, cs, dc, static_cast<int8_t>(rst) } {}
+ILI9486::ILI9486(uint8_t cs, uint8_t dc, uint8_t rst) : ILI9486 { freertos::get_spi<0>(), cs, dc, static_cast<int8_t>(rst) } {}
 
-ILI9486::ILI9486(SPIClass* p_spi, uint8_t cs, uint8_t dc, int8_t rst) : TFT_SPI(p_spi, cs, dc, rst) {}
+ILI9486::ILI9486(freertos::SpiT4* p_spi, uint8_t cs, uint8_t dc, int8_t rst) : TFT_SPI(p_spi, cs, dc, rst) {}
 
 const uint8_t ILI9486::init_cmds_[] = {
     Commands::INTERFACE_PX_FMT, 1, 0x55, // Interface Pixel Format: 16 bit color interface

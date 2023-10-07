@@ -44,7 +44,6 @@
 #include "driver/mpu_6050.h"
 #include "driver/servo.h"
 #include "driver/serial_io.h"
-#include "driver/serial_t3.h"
 #include "driver/serial_t4.h"
 #include "driver/tft_display.h"
 
@@ -54,6 +53,7 @@
 #include "lua_wrapper.h"
 #include "pprintpp.hpp"
 #include "timers.h"
+#include "crc32.h"
 
 #include <array>
 #include <charconv>
@@ -117,9 +117,9 @@ FLASHMEM CtBot::CtBot()
     // initializes serial connection here for debug purpose
     : shutdown_ {}, ready_ {}, task_id_ {}, p_scheduler_ {}, p_sensors_ {}, p_motors_ { nullptr, nullptr }, p_speedcontrols_ { nullptr, nullptr },
       p_servos_ { nullptr, nullptr }, p_i2c_1_svc_ {}, p_ena_ {}, p_ena_pwm_ {}, p_leds_ {}, p_lcd_ {}, p_tft_ {}, p_cli_ {},
-      p_serial_usb_ { &arduino::get_serial(0) }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {},
-      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {},
-      clock_update_done_ {}, p_lua_ {}, last_viewer_timestamp_ {}, last_taskstat_timestamp_ {}, p_taskstat_context_ {}, p_viewer_tasks_context_ {} {}
+      p_serial_usb_ { &freertos::get_serial<0>() }, p_serial_wifi_ {}, p_comm_ {}, p_parser_ {}, p_logger_ {}, p_fs_ {}, p_logger_file_ {}, p_parameter_ {},
+      p_audio_output_dac_ {}, p_audio_output_i2s_ {}, p_audio_sine_ {}, p_play_wav_ {}, p_tts_ {}, p_watch_timer_ {}, p_clock_timer_ {}, clock_update_done_ {},
+      p_lua_ {}, last_viewer_timestamp_ {}, last_taskstat_timestamp_ {}, p_taskstat_context_ {}, p_viewer_tasks_context_ {}, shutdown_timer_ {} {}
 
 CtBot::~CtBot() {
     if constexpr (DEBUG_LEVEL_ > 1) {
@@ -158,11 +158,12 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         Scheduler::stop();
     });
 
-#if defined ARDUINO_TEENSY41 && !defined TEENSY_NO_EXTRAM // TODO: abstraction
+#if defined ARDUINO_TEENSY41 && !defined TEENSY_NO_EXTRAM // TODO: abstraction?
     if (external_psram_size) {
         constexpr auto divider { calc_flexspi2_divider(CtBotConfig::PSRAM_FREQUENCY_MHZ) };
         CCM_CBCMR =
             (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(divider) | CCM_CBCMR_FLEXSPI2_CLK_SEL(3);
+        FLEXSPI2_FLSHA1CR1 = FLEXSPI_FLSHCR1_CSINTERVAL(0) | FLEXSPI_FLSHCR1_TCSH(0) | FLEXSPI_FLSHCR1_TCSS(0); // reduce CS hold and setup times
     }
 #endif // ARDUINO_TEENSY41
 
@@ -189,16 +190,20 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     p_parser_ = new CmdParser;
     configASSERT(p_parser_);
     if constexpr (CtBotConfig::UART_WIFI_FOR_CMD) {
-        p_serial_wifi_ = &arduino::get_serial(CtBotConfig::UART_WIFI);
+        p_serial_wifi_ = &freertos::get_serial<CtBotConfig::UART_WIFI>();
         configASSERT(p_serial_wifi_);
         p_serial_wifi_->setRX(CtBotConfig::UART_WIFI_PIN_RX);
         p_serial_wifi_->setTX(CtBotConfig::UART_WIFI_PIN_TX);
-        if (!p_serial_wifi_->begin(CtBotConfig::UART_WIFI_BAUDRATE, 0, 64, 256)) {
+        if (!p_serial_wifi_->begin(CtBotConfig::UART_WIFI_BAUDRATE, 0, 12'288, 1'024)) {
             ::serialport_puts(PSTR("CtBot::setup(): p_serial_wifi_->begin() failed.\r\n"));
         }
 
         p_comm_ = new CommInterfaceCmdParser { *p_serial_wifi_, *p_parser_, true };
         if (CrashReport) {
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+            p_serial_wifi_->get_stream().print(PSTR("SRC_SRSR=0x"));
+            p_serial_wifi_->get_stream().println(SRC_SRSR, 16);
+#endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41
             p_serial_wifi_->get_stream().print(CrashReport);
             p_serial_wifi_->write('\r');
             p_serial_wifi_->write('\n');
@@ -225,6 +230,10 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
     } else {
         p_comm_ = new CommInterfaceCmdParser { *p_serial_usb_, *p_parser_, true };
         if (CrashReport) {
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+            p_serial_usb_->get_stream().print(PSTR("SRC_SRSR=0x"));
+            p_serial_usb_->get_stream().println(SRC_SRSR, 16);
+#endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41
             p_serial_usb_->get_stream().print(CrashReport);
             p_serial_usb_->write('\r');
             p_serial_usb_->write('\n');
@@ -356,6 +365,16 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         configASSERT(p_tft_);
         p_tft_->set_backlight(CtBotConfig::TFT_BACKLIGHT_LEVEL);
         p_scheduler_->task_register(PSTR("TFT Svc"), true);
+    } else {
+        if constexpr (CtBotConfig::MAINBOARD_REVISION >= 9'002) {
+            p_ena_pwm_->off(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL));
+            if constexpr (CtBotConfig::TFT_CONTROLLER_TYPE == 9341) {
+                p_ena_pwm_->set_pwm(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL), static_cast<int>(0.f));
+            } else {
+                p_ena_pwm_->set_pwm(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL), static_cast<int>(255.f));
+            }
+            p_ena_pwm_->on(static_cast<LedTypesEna<CtBotConfig::MAINBOARD_REVISION>>(LedTypesEna<9'002>::TFT_BACKL));
+        }
     }
 
     if constexpr (CtBotConfig::DATE_TIME_AVAILABLE) {
@@ -383,9 +402,6 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         configASSERT(p_tts_);
         if constexpr (CtBotConfig::AUDIO_I2S_AVAILABLE) {
             if constexpr (CtBotConfig::MAINBOARD_REVISION > 9'000) {
-#if defined ARDUINO_TEENSY35 || defined ARDUINO_TEENSY36
-                using AudioOutputI2S2 = AudioOutputI2S;
-#endif
                 p_audio_output_i2s_ = new AudioOutputI2S2;
             } else {
                 p_audio_output_i2s_ = new AudioOutputI2S;
@@ -514,13 +530,21 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         },
         false);
 
-    if constexpr (DEBUG_LEVEL_ > 1) {
+    if constexpr (DEBUG_LEVEL_ > 2) {
         log_begin();
         p_logger_->log(PSTR("ct-Bot init done.\r\n"), true);
     }
     p_logger_->log(PSTR("\r\n"));
     p_logger_->begin();
-    p_logger_->log(PSTR("*** Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ " on " __DATE__ ". ***\r\n"), true);
+    p_logger_->log(
+        PSTR("*** Running FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ " (newlib " _NEWLIB_VERSION ") on " __DATE__ ". ***\r\n"),
+        true);
+    if constexpr (DEBUG_LEVEL_ > 3) {
+#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
+        log_begin();
+        p_logger_->log("SRC_SRSR=0x%x\r\n", SRC_SRSR);
+#endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41
+    }
     p_logger_->flush();
     p_comm_->debug_print(PSTR("\r\nType \"help\" (or \"h\") to print help message.\r\n\n"), true);
     p_comm_->flush();
@@ -683,10 +707,135 @@ FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
     }
 }
 
+FLASHMEM bool CtBot::file_upload(freertos::SerialIO& io, const std::string_view& file_name, uint32_t file_size, uint32_t crc32, bool textmode) const {
+    FS_Service::FileWrapper* p_file_wrapper;
+    File file { get_fs()->open(std::string(file_name).c_str(), static_cast<uint8_t>(FILE_WRITE), 0, &p_file_wrapper) };
+    if (!file) {
+        return false;
+    }
+
+    if (!file_size) {
+        file_size = std::numeric_limits<uint32_t>::max();
+    }
+    const bool hexfile { file_name.rfind(PSTR(".hex")) != file_name.npos };
+
+    while (DEBUG_LEVEL_ > 2 && !io.available()) {
+        ::vTaskDelay(1);
+    }
+    io.get_rx_overflow(true);
+    const auto start { Timer::get_ms() };
+
+    std::string last_line;
+    last_line.reserve(46);
+    uint32_t len {};
+    uint32_t feedback_points {};
+    for (; len < file_size;) {
+        while (!io.available()) {
+            ::vTaskDelay(1);
+            if (Timer::get_ms() - start > (file_size / 10 + 1)) { // timeout for less than 10 kB/s
+                file.close();
+                std::string tmp { file_name.data(), file_name.size() };
+                get_fs()->remove(tmp.c_str());
+                return false;
+            }
+        }
+
+        if (textmode) {
+            const auto bytes_avail { io.available() };
+            const auto n { last_line.size() };
+            last_line.resize(last_line.size() + bytes_avail);
+            len += io.read(last_line.data() + n, bytes_avail);
+
+            if (last_line.back() == '\n') {
+                p_file_wrapper->write(last_line.data(), last_line.size());
+                if (hexfile && last_line.find(PSTR(":00000001FF")) != last_line.npos) {
+                    break;
+                }
+                last_line.clear();
+            }
+        } else {
+            const uint8_t tmp = io.read(true);
+            ++len;
+            p_file_wrapper->write(&tmp, 1);
+        }
+
+        if (io.get_rx_overflow(true)) {
+            get_logger()->begin("CtBot::file_upload(): ");
+            get_logger()->log<true>(PSTR("ERROR: RX overflow\r\n"));
+            file.close();
+            std::string tmp { file_name.data(), file_name.size() };
+            get_fs()->remove(tmp.c_str());
+            return false;
+        }
+
+        if (len * 100 / file_size >= feedback_points) {
+            get_comm()->debug_print('*', false);
+            ++feedback_points;
+        }
+    }
+    file.close();
+    get_comm()->debug_print(PSTR("\r\n"), true);
+
+    if constexpr (DEBUG_LEVEL_ > 2) {
+        const auto dt { Timer::get_ms() - start };
+        get_comm()->debug_printf<true>(
+            PSTR("upload of %u bytes took %u ms (%.2f kB/s).\r\n"), len, dt, static_cast<float>(len) / 1.024f / static_cast<float>(dt));
+    }
+
+    if (crc32) {
+        const auto file_crc { file_crc32(file_name) };
+        if (file_crc != crc32) {
+            get_comm()->debug_printf<true>(PSTR("CRC32 of file: 0x%x\r\nCRC32 requsted: 0x%x\r\n"), file_crc, crc32);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+FLASHMEM uint32_t CtBot::file_crc32(const std::string_view& file_name) const {
+    FS_Service::FileWrapper* p_file_wrapper;
+    File file { get_fs()->open(std::string(file_name).c_str(), static_cast<uint8_t>(FILE_READ), 0, &p_file_wrapper) };
+    if (!file) {
+        return 0;
+    }
+
+    CRC32 crc;
+    char buf[32];
+    while (file.available()) { // TODO: timeout
+        const auto n { file.read(buf, sizeof(buf)) }; // TODO: timeout
+        if (n) {
+            crc.update(buf, n);
+        }
+    }
+    file.close();
+    const auto crc32 { crc.finalize() };
+
+    return crc32;
+}
+
+bool CtBot::create_shutdown_timer(uint32_t ms) {
+    shutdown_timer_ = ::xTimerCreate(PSTR("shutdown_t"), pdMS_TO_TICKS(ms), false, nullptr, [](TimerHandle_t) {
+        if constexpr (DEBUG_LEVEL_ > 1) {
+            ::serialport_puts(PSTR("Shutdown timer expired.\r\n"));
+        }
+
+        std::exit(1);
+    });
+    configASSERT(shutdown_timer_);
+    ::xTimerStart(shutdown_timer_, portMAX_DELAY);
+
+    return shutdown_timer_ != nullptr;
+}
+
 FLASHMEM void CtBot::shutdown() {
     extern tests::ButtonTest* g_button_test;
 
     ready_ = false;
+
+    if (!shutdown_timer_) {
+        create_shutdown_timer(10'000);
+    }
 
     if constexpr (CtBotConfig::LUA_AVAILABLE) {
         delete p_lua_;
@@ -705,7 +854,7 @@ FLASHMEM void CtBot::shutdown() {
 
     p_logger_->begin();
     p_logger_->log(PSTR("System shutting down...\r\n"), false);
-    p_logger_->flush();
+
     p_comm_->flush();
     if (p_serial_wifi_) {
         p_serial_wifi_->flush();
@@ -722,6 +871,7 @@ FLASHMEM void CtBot::shutdown() {
     if (p_servos_[1]) {
         p_servos_[1]->disable();
     }
+
     if constexpr (CtBotConfig::BUTTON_TEST_AVAILABLE || CtBotConfig::TFT_TEST_AVAILABLE) {
         p_scheduler_->task_remove(p_scheduler_->task_get(PSTR("TFT-Test")));
     }
@@ -739,11 +889,11 @@ FLASHMEM void CtBot::shutdown() {
     }
 
     if (p_clock_timer_) {
-        xTimerStop(p_clock_timer_, portMAX_DELAY);
-        xTimerDelete(p_clock_timer_, portMAX_DELAY);
+        xTimerStop(p_clock_timer_, 0);
+        xTimerDelete(p_clock_timer_, 0);
     }
 
-    ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 1);
+    ::vTaskPrioritySet(nullptr, configMAX_PRIORITIES - 2);
 
     if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
         if constexpr (CtBotConfig::AUDIO_TEST_AVAILABLE) {
@@ -861,7 +1011,16 @@ FLASHMEM void CtBot::shutdown() {
     }
 
     ::vTaskPrioritySet(nullptr, 2);
-    xTaskCreate([](void*) { std::exit(0); }, PSTR("EXIT"), 512, nullptr, 1, nullptr);
+    ::xTaskCreate(
+        [](void* shtd_timer) {
+            auto timer { reinterpret_cast<TimerHandle_t>(shtd_timer) };
+            configASSERT(timer);
+            xTimerStop(timer, 0);
+            xTimerDelete(timer, 0);
+
+            std::exit(0);
+        },
+        PSTR("EXIT"), 512, shutdown_timer_, 1, nullptr);
 
     ::vTaskDelete(nullptr);
 }
@@ -892,8 +1051,10 @@ FLASHMEM void CtBot::update_clock() {
                 p_logger_->log(PSTR("timer disabled\r\n"), false);
             }
         }
-        p_logger_->begin(PSTR("CtBot::update_clock(): "));
-        p_logger_->log(PSTR("System time updated.\r\n"), false);
+        if constexpr (DEBUG_LEVEL_ >= 3) {
+            p_logger_->begin(PSTR("CtBot::update_clock(): "));
+            p_logger_->log(PSTR("System time updated.\r\n"), false);
+        }
         return;
     }
 

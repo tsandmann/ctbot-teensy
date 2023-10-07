@@ -104,7 +104,7 @@ static FLASHMEM void init_task(void*) {
     /* wait for USB device enumeration, terminal program connection, etc. */
     ::vTaskDelay(pdMS_TO_TICKS(CtBotConfig::BOOT_DELAY_MS));
 
-    EXC_PRINTF(PSTR("\r\nRunning FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ".\r\n"));
+    EXC_PRINTF(PSTR("\r\nBooting FreeRTOS kernel " tskKERNEL_VERSION_NUMBER ". Built by gcc " __VERSION__ ".\r\n"));
 
     if constexpr (DEBUG) {
         EXC_PRINTF(PSTR("init_task():\r\n"));
@@ -198,7 +198,6 @@ extern "C" {
 FLASHMEM __attribute__((noinline)) void setup() {
     using namespace ctbot;
     arduino::digitalWriteFast(arduino::LED_BUILTIN, false); // turn onboard LED off
-    arduino::pinMode(arduino::LED_BUILTIN, arduino::INPUT_DISABLE);
 
     arduino::pinMode(CtBotConfig::DEBUG_LED_PIN, arduino::OUTPUT);
     arduino::digitalWriteFast(CtBotConfig::DEBUG_LED_PIN, true); // turn debug LED on
@@ -227,7 +226,7 @@ FLASHMEM void abort() {
 }
 
 #if defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
-void startup_early_hook() __attribute__((section(".startup") /*, optimize("no-tree-loop-distribute-patterns")*/));
+void startup_early_hook() __attribute__((section(".startup")));
 
 void startup_early_hook() {
     // pin 13 - if startup crashes, use this to turn on the LED early for troubleshooting
@@ -252,7 +251,7 @@ FLASHMEM int _write(int, char* ptr, int len) {
     using namespace ctbot;
 
     CtBot& ctbot { CtBot::get_instance() };
-    arduino::SerialIO* p_serial { ctbot.get_serial_usb() };
+    freertos::SerialIO* p_serial { ctbot.get_serial_usb() };
 
     if (p_serial) {
         const auto n { p_serial->write(ptr, len) };
@@ -273,7 +272,7 @@ FLASHMEM void serialport_put(const char c) {
     using namespace ctbot;
 
     CtBot& ctbot { CtBot::get_instance() };
-    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
+    freertos::SerialIO* p_serial { ctbot.get_serial_cmd() };
 
     if (p_serial) {
         p_serial->write_direct(c);
@@ -286,7 +285,7 @@ FLASHMEM void serialport_puts(const char* str) {
     using namespace ctbot;
 
     CtBot& ctbot { CtBot::get_instance() };
-    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
+    freertos::SerialIO* p_serial { ctbot.get_serial_cmd() };
 
     const auto length { std::strlen(str) };
     if (p_serial) {
@@ -300,7 +299,7 @@ FLASHMEM void serialport_flush() {
     using namespace ctbot;
 
     CtBot& ctbot { CtBot::get_instance() };
-    arduino::SerialIO* p_serial { ctbot.get_serial_cmd() };
+    freertos::SerialIO* p_serial { ctbot.get_serial_cmd() };
 
     if (p_serial) {
         p_serial->flush_direct();
@@ -313,18 +312,18 @@ FLASHMEM void serialport_flush() {
 extern volatile uint32_t systick_millis_count;
 FLASHMEM void startup_middle_hook() {
 #if defined ARDUINO_TEENSY41 || defined ARDUINO_TEENSY40
-    SNVS_HPCR = SNVS_HPCR_BTN_MASK | SNVS_HPCR_BTN_CONFIG(0b001);
-    SNVS_LPSR |= 1 << 18;
-    SNVS_HPSR |= 1 << 7;
+    SNVS_HPCR = SNVS_HPCR_BTN_MASK | SNVS_HPCR_BTN_CONFIG(0b001); // SNVS_HP control register: enable ipi_snvs_btn_int_b and configure button signal active low
+    SNVS_LPSR |= 1 << 18; // SNVS_LP status register: set power off
+    SNVS_HPSR |= 1 << 7; // SNVS_HP status register: clear button interrupt
     NVIC_CLEAR_PENDING(IRQ_SNVS_ONOFF);
     NVIC_SET_PRIORITY(IRQ_SNVS_ONOFF, 0);
     ::attachInterruptVector(IRQ_SNVS_ONOFF, []() {
-        if (SNVS_HPSR & 1 << 7) {
+        if (SNVS_HPSR & 1 << 7) { // check button interrupt, if signal ipi_snvs_btn_int_b was asserted
             __disable_irq();
-            SRC_SRSR = 0xff; // clear SRC Reset Status Register
+            SRC_SRSR = SRC_SRSR; // clear SRC reset status register
 
             /* reset with watchdog */
-            IOMUXC_GPR_GPR16 = 0x200003; // reset IOMUXC_GPR_GPR16
+            IOMUXC_GPR_GPR16 = 0x0020'0007; // enable ITCM initialization, enable DTCM initialization, use FLEXRAM_BANK_CFG, reset VTOR to ROM vector table
             WDOG1_WCR = WDOG_WCR_WDA | WDOG_WCR_SRS | WDOG_WCR_WDE;
             while (true) {
             }

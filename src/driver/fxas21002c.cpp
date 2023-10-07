@@ -24,6 +24,7 @@
 
 #include "fxas21002c.h"
 #include "timer.h"
+#include "ctbot.h"
 
 #include <array>
 
@@ -34,9 +35,10 @@ FXAS21002C::FXAS21002C(I2C_Service* p_i2c_svc, uint8_t dev_addr)
 
 bool FXAS21002C::begin() {
     uint8_t id {};
-    if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_WHO_AM_I_), id) || id != DEVICE_ID_) {
+    if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_WHO_AM_I_), id) != I2C_Service::I2C_Error::SUCCESS || id != DEVICE_ID_) {
         if constexpr (DEBUG_) {
-            arduino::Serial.printf(PSTR("FXAS21002C::begin(): ID read failed, id=0x%x\r\n"), id);
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log<true>(PSTR("begin(): ID read failed, id=0x%x\r\n"), id);
         }
         return false;
     }
@@ -48,9 +50,10 @@ bool FXAS21002C::begin() {
     std::apply([](auto&&... elem) { ((elem = 0.f), ...); }, last_rate_);
 
     /* reset */
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b1111111, 0b1000000)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b1111111, 0b1000000) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            arduino::Serial.println(PSTR("FXAS21002C::begin(): set_bits() 1 failed."));
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log(PSTR("begin(): set_bits() 1 failed\r\n"), true);
         }
         return false;
     }
@@ -61,7 +64,8 @@ bool FXAS21002C::begin() {
     }
 
     if constexpr (DEBUG_) {
-        arduino::Serial.println(PSTR("FXAS21002C::begin() done."));
+        CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+        CtBot::get_instance().get_logger()->log(PSTR("begin() done.\r\n"), true);
     }
 
     return true;
@@ -96,7 +100,8 @@ bool FXAS21002C::calibrate() {
     cal_z = static_cast<int16_t>(z);
 
     if constexpr (DEBUG_) {
-        arduino::Serial.printf(PSTR("FXAS21002C::calibrate(): cal={%d, %d, %d}\r\n"), cal_x, cal_y, cal_z);
+        CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+        CtBot::get_instance().get_logger()->log<true>(PSTR("calibrate(): cal={%d, %d, %d}\r\n"), cal_x, cal_y, cal_z);
     }
 
     return true;
@@ -105,9 +110,10 @@ bool FXAS21002C::calibrate() {
 bool FXAS21002C::update() {
     const auto now { Timer::get_us() };
     std::array<uint8_t, 7> buf;
-    if (p_i2c_svc_->read_bytes(dev_addr_, static_cast<uint8_t>(REGISTER_STATUS_), buf.data(), buf.size())) {
+    if (p_i2c_svc_->read_bytes(dev_addr_, static_cast<uint8_t>(REGISTER_STATUS_), buf.data(), buf.size()) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            arduino::Serial.println(PSTR("FXAS21002C::update(): read_bytes() failed."));
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log(PSTR("update(): read_bytes() failed.\r\n"), true);
         }
         return false;
     }
@@ -134,9 +140,10 @@ bool FXAS21002C::update() {
 
 bool FXAS21002C::standby(bool standby) const {
     const uint8_t mask { static_cast<uint8_t>(standby ? 0 : 0b11) };
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b11, mask)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b11, mask) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            arduino::Serial.printf(PSTR("FXAS21002C::standby(%u): set_bits() failed.\r\n"), standby);
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log<true>(PSTR("standby(%u): set_bits() failed.\r\n"), standby);
         }
         return false;
     }
@@ -161,9 +168,10 @@ bool FXAS21002C::set_range(Range range) {
         case Range::DPS_2000: mask = 0b00; break;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG0_), 0b11, mask)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG0_), 0b11, mask) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            arduino::Serial.println(PSTR("FXAS21002C::set_range(): set_bits() failed."));
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log(PSTR("set_range(): set_bits() failed\r\n"), true);
         }
         standby(false);
         return false;
@@ -197,9 +205,10 @@ bool FXAS21002C::set_odr(float odr) {
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b11100, mask)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b11100, mask) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            Serial.println(PSTR("FXAS21002C::set_odr(): set_bits() failed."));
+            CtBot::get_instance().get_logger()->begin(PSTR("FXAS21002C::"));
+            CtBot::get_instance().get_logger()->log(PSTR("set_odr(): set_bits() failed\r\n"), true);
         }
         standby(false);
         return false;

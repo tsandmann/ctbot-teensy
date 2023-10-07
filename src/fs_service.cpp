@@ -461,13 +461,14 @@ bool FS_Service::set_modify_time(FileWrapper& file, const DateTimeFields& tm, fi
     return result;
 }
 
-File FS_Service::open(SDClass* p_fs, const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper) const {
+File FS_Service::open(SDClass* p_fs, const std::string_view& filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper) const {
     File f;
     if constexpr (DEBUG_) {
         Serial.print(PSTR("FS_Service::open()\r\n"));
     }
 
-    auto file { p_fs->sdfs.open(filepath, mode == FILE_READ ? O_READ : (mode == FILE_WRITE ? O_RDWR | O_CREAT | O_AT_END : O_RDWR | O_CREAT)) };
+    const std::string file_str { filepath };
+    auto file { p_fs->sdfs.open(file_str.c_str(), mode == FILE_READ ? O_READ : (mode == FILE_WRITE ? O_RDWR | O_CREAT | O_AT_END : O_RDWR | O_CREAT)) };
     if (file) {
         auto p_fwrapper { new FileWrapper { *this, file, op_timeout_us } };
         configASSERT(p_fwrapper);
@@ -509,7 +510,7 @@ File FS_Service::open_next(FsFile& file, uint8_t mode, uint32_t op_timeout_us, F
     return File {};
 }
 
-File FS_Service::open(const char* filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper, fs_callback_t callback) const {
+File FS_Service::open(const std::string_view filepath, uint8_t mode, uint32_t op_timeout_us, FileWrapper** p_file_wrapper, fs_callback_t callback) const {
     File f {};
 
     auto p_operation { new FSOperation { [filepath, mode, op_timeout_us, p_file_wrapper, this](SDClass* p_fs) {
@@ -530,14 +531,15 @@ File FS_Service::open(const char* filepath, uint8_t mode, uint32_t op_timeout_us
     return f;
 }
 
-bool FS_Service::exists(const char* filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
+bool FS_Service::exists(const std::string_view filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FSOperation { [filepath](SDClass* p_fs) {
                                             if constexpr (DEBUG_) {
                                                 Serial.printf(PSTR("EXISTS operation: p_fs=0x%x\r\n"), p_fs);
                                             }
-                                            return p_fs->exists(filepath);
+                                            const std::string file_str { filepath };
+                                            return p_fs->exists(file_str.c_str());
                                         },
         callback ? callback :
                    [&result](FSOperation* p_operation) {
@@ -553,14 +555,15 @@ bool FS_Service::exists(const char* filepath, uint32_t op_timeout_us, fs_callbac
     return result;
 }
 
-bool FS_Service::mkdir(const char* filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
+bool FS_Service::mkdir(const std::string_view filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FSOperation { [filepath](SDClass* p_fs) {
                                             if constexpr (DEBUG_) {
                                                 Serial.printf(PSTR("MKDIR operation: p_fs=0x%x\r\n"), p_fs);
                                             }
-                                            return p_fs->mkdir(filepath);
+                                            const std::string file_str { filepath };
+                                            return p_fs->mkdir(file_str.c_str());
                                         },
         callback ? callback :
                    [&result](FSOperation* p_operation) {
@@ -576,14 +579,16 @@ bool FS_Service::mkdir(const char* filepath, uint32_t op_timeout_us, fs_callback
     return result;
 }
 
-bool FS_Service::rename(const char* oldfilepath, const char* newfilepath, uint32_t op_timeout_us, fs_callback_t callback) const {
+bool FS_Service::rename(const std::string_view oldfilepath, const std::string_view newfilepath, uint32_t op_timeout_us, fs_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FSOperation { [oldfilepath, newfilepath](SDClass* p_fs) {
                                             if constexpr (DEBUG_) {
                                                 Serial.printf(PSTR("RENAME operation: p_fs=0x%x\r\n"), p_fs);
                                             }
-                                            return p_fs->rename(oldfilepath, newfilepath);
+                                            const std::string old_file_str { oldfilepath };
+                                            const std::string new_file_str { newfilepath };
+                                            return p_fs->rename(old_file_str.c_str(), new_file_str.c_str());
                                         },
         callback ? callback :
                    [&result](FSOperation* p_operation) {
@@ -599,14 +604,15 @@ bool FS_Service::rename(const char* oldfilepath, const char* newfilepath, uint32
     return result;
 }
 
-bool FS_Service::remove(const char* filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
+bool FS_Service::remove(const std::string_view filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FSOperation { [filepath](SDClass* p_fs) {
                                             if constexpr (DEBUG_) {
                                                 Serial.printf(PSTR("REMOVE operation: p_fs=0x%x\r\n"), p_fs);
                                             }
-                                            return p_fs->remove(filepath);
+                                            const std::string file_str { filepath };
+                                            return p_fs->remove(file_str.c_str());
                                         },
         callback ? callback :
                    [&result](FSOperation* p_operation) {
@@ -622,14 +628,15 @@ bool FS_Service::remove(const char* filepath, uint32_t op_timeout_us, fs_callbac
     return result;
 }
 
-bool FS_Service::rmdir(const char* filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
+bool FS_Service::rmdir(const std::string_view filepath, uint32_t op_timeout_us, fs_callback_t callback) const {
     bool result { true };
 
     auto p_operation { new FSOperation { [filepath](SDClass* p_fs) {
                                             if constexpr (DEBUG_) {
                                                 Serial.printf(PSTR("RMDIR operation: p_fs=0x%x\r\n"), p_fs);
                                             }
-                                            return p_fs->rmdir(filepath);
+                                            const std::string file_str { filepath };
+                                            return p_fs->rmdir(file_str.c_str());
                                         },
         callback ? callback :
                    [&result](FSOperation* p_operation) {
@@ -734,7 +741,7 @@ bool FS_Service::schedule_operation(queue_t operation, bool custom_callback, Tic
         return true;
     }
 
-    if (::ulTaskNotifyTakeIndexed(TASK_NOTIFY_INDEX_, pdTRUE, timeout_ticks) == 0) {
+    if (::ulTaskNotifyTakeIndexed(TASK_NOTIFY_INDEX_, pdTRUE, timeout_ticks) != 1) {
         if (auto p_file_op = std::get_if<FileOperation*>(p_operation)) {
             auto p_file_operation { *p_file_op };
             p_file_operation->canceled_ = true;

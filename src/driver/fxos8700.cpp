@@ -36,7 +36,7 @@ FXOS8700::FXOS8700(I2C_Service* p_i2c_svc, uint8_t dev_addr)
 
 bool FXOS8700::begin() {
     uint8_t id {};
-    if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_WHO_AM_I_), id) || id != DEVICE_ID_) {
+    if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_WHO_AM_I_), id) != I2C_Service::I2C_Error::SUCCESS || id != DEVICE_ID_) {
         if constexpr (DEBUG_) {
             arduino::Serial.printf(PSTR("FXOS8700::begin(): ID read failed, id=0x%x\r\n"), id);
         }
@@ -50,21 +50,21 @@ bool FXOS8700::begin() {
     if (!standby(true)) {
         return false;
     }
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b100, 0b100)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b100, 0b100) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::begin(): set_bits 1 failed"));
         }
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG2_), 0b11, 0b10)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG2_), 0b11, 0b10) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::begin(): set_bits 2 failed"));
         }
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b10000000, 0b10000000)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b10000000, 0b10000000) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::begin(): set_bits 3 failed"));
         }
@@ -141,7 +141,7 @@ bool FXOS8700::calibrate() {
 bool FXOS8700::update() {
     const auto now { Timer::get_us() };
     std::array<uint8_t, 13> buf;
-    if (p_i2c_svc_->read_bytes(dev_addr_, static_cast<uint8_t>(REGISTER_STATUS_), buf.data(), buf.size())) {
+    if (p_i2c_svc_->read_bytes(dev_addr_, static_cast<uint8_t>(REGISTER_STATUS_), buf.data(), buf.size()) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::getEvent(): read_bytes() failed."));
         }
@@ -191,7 +191,7 @@ bool FXOS8700::update() {
 
 bool FXOS8700::standby(bool standby) const {
     const uint8_t mask { static_cast<uint8_t>(standby ? 0 : 0b1) };
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b1, mask)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b1, mask) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::standby(): set_bits 1 failed"));
         }
@@ -200,7 +200,7 @@ bool FXOS8700::standby(bool standby) const {
 
     uint8_t tmp;
     do {
-        if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_SYSMOD_), tmp)) {
+        if (p_i2c_svc_->read_reg(dev_addr_, static_cast<uint8_t>(REGISTER_SYSMOD_), tmp) != I2C_Service::I2C_Error::SUCCESS) {
             if constexpr (DEBUG_) {
                 arduino::Serial.println(PSTR("FXOS8700::standby(): read_reg 1 failed"));
             }
@@ -216,7 +216,7 @@ bool FXOS8700::set_sensor_mode(sensor_mode_t mode) {
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b11, static_cast<uint8_t>(mode))) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b11, static_cast<uint8_t>(mode)) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::set_sensor_mode(): set_bits 1 failed"));
         }
@@ -224,7 +224,8 @@ bool FXOS8700::set_sensor_mode(sensor_mode_t mode) {
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG2_), 0b10000, mode == sensor_mode_t::HYBRID_MODE ? 0b10000 : 0b00000)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG2_), 0b10000, mode == sensor_mode_t::HYBRID_MODE ? 0b10000 : 0b00000)
+        != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::set_sensor_mode(): set_bits 2 failed"));
         }
@@ -241,7 +242,7 @@ bool FXOS8700::set_accel_range(accel_range_t range) {
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_XYZ_DATA_CFG_), 0b11, static_cast<uint8_t>(range))) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_XYZ_DATA_CFG_), 0b11, static_cast<uint8_t>(range)) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::set_accel_range(): set_bits 1 failed"));
         }
@@ -250,7 +251,7 @@ bool FXOS8700::set_accel_range(accel_range_t range) {
     }
 
     if (range == accel_range_t::ACCEL_RANGE_8G) {
-        if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b100, 0b00)) {
+        if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), 0b100, 0b00) != I2C_Service::I2C_Error::SUCCESS) {
             if constexpr (DEBUG_) {
                 arduino::Serial.println(PSTR("FXOS8700::set_accel_range(): set_bits 2 failed"));
             }
@@ -302,7 +303,7 @@ bool FXOS8700::set_output_data_rate(odr_t rate) {
         return false;
     }
 
-    if (p_i2c_svc_->write_reg(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), odr)) {
+    if (p_i2c_svc_->write_reg(dev_addr_, static_cast<uint8_t>(REGISTER_CTRL_REG1_), odr) != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::set_output_data_rate(): write_reg failed"));
         }
@@ -319,7 +320,8 @@ bool FXOS8700::set_mag_oversampling_ratio(mag_osr_t ratio) {
         return false;
     }
 
-    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b11100, static_cast<uint8_t>(ratio) << 2)) {
+    if (p_i2c_svc_->set_bits(dev_addr_, static_cast<uint8_t>(REGISTER_MCTRL_REG1_), 0b11100, static_cast<uint8_t>(ratio) << 2)
+        != I2C_Service::I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
             arduino::Serial.println(PSTR("FXOS8700::set_mag_oversampling_ratio(): set_bits 1 failed"));
         }

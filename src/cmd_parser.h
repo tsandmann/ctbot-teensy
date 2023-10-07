@@ -139,8 +139,8 @@ public:
      * @param[out] b: Reference to first output argument of type bool
      * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static auto split_args(const std::string_view& args, bool& b) {
-        auto str { trim_to_first_arg(args) };
+    static auto split_args(const std::string_view& args, bool trim, bool& b) {
+        auto str { trim ? trim_to_first_arg(args) : args };
         uint8_t x1;
         auto res { std::from_chars(str.cbegin(), str.cend(), x1) };
         if (res.ec == std::errc {}) {
@@ -156,8 +156,8 @@ public:
      * @param[out] x1: Reference to first output argument
      * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static auto split_args(const std::string_view& args, detail::NumberArg auto& x1) {
-        auto str { trim_to_first_arg(args) };
+    static auto split_args(const std::string_view& args, bool trim, detail::NumberArg auto& x1) {
+        auto str { trim ? trim_to_first_arg(args) : args };
         return std::from_chars(str.cbegin(), str.cend(), x1);
     }
 
@@ -168,8 +168,8 @@ public:
      * @param[out] x1: Reference to first output argument
      * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static auto split_args(const std::string_view& args, std::floating_point auto& x1) {
-        auto str { trim_to_first_arg(args) };
+    static auto split_args(const std::string_view& args, bool trim, std::floating_point auto& x1) {
+        auto str { trim ? trim_to_first_arg(args) : args };
 
         char* p_end;
         const auto tmp { std::strtof(str.cbegin(), &p_end) };
@@ -192,19 +192,19 @@ public:
      * @param[out] xn: Parameter pack of references to next arguments
      * @return Value of type std::from_chars_result such that ptr points at the first character not matching the pattern
      */
-    static auto split_args(const std::string_view& args, detail::Number auto& x1, detail::Number auto&... xn) {
-        auto res { split_args(args, x1) };
+    static auto split_args(const std::string_view& args, bool trim, detail::Number auto& x1, detail::Number auto&... xn) {
+        auto res { split_args(args, trim, x1) };
 
         if (res.ec != std::errc {}) {
             return res;
         }
 
-        return split_args(std::string_view(res.ptr, args.cend()), xn...);
+        return split_args(std::string_view(res.ptr, args.cend()), true, xn...);
     }
 
     template <typename... Ts>
-    static auto split_args(const std::string_view& args, std::tuple<Ts...>& x) {
-        return std::apply([&args](Ts&... values) { return split_args(args, values...); }, x);
+    static auto split_args(const std::string_view& args, bool trim, std::tuple<Ts...>& x) {
+        return std::apply([&args, trim](Ts&... values) { return split_args(args, trim, values...); }, x);
     }
 };
 

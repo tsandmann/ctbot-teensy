@@ -93,13 +93,21 @@ uint16_t Behavior::get_priority() const {
     return p_task->get_priority();
 }
 
-void Behavior::wait() {
-    debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): waiting for exit of \"{s}\"...\r\n", get_name().c_str()));
+void Behavior::wait(uint32_t timeout_ms) {
+    debug_printf<DEBUG_>(PP_ARGS("Behavior::wait({}): waiting for exit of \"{s}\"...\r\n", timeout_ms, get_name().c_str()));
 
     while (!finished_) {
         {
             std::unique_lock<std::mutex> lk(caller_mutex_);
-            caller_cv_.wait(lk);
+            if (!timeout_ms) {
+                caller_cv_.wait(lk);
+            } else {
+                using namespace std::chrono_literals;
+                caller_cv_.wait_for(lk, timeout_ms * 1ms);
+
+                debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" timeout.\r\n", get_name().c_str()));
+                return;
+            }
         }
         if (!finished_) {
             debug_printf<DEBUG_>(PP_ARGS("Behavior::wait(): \"{s}\" woke up, but not finished. Probably a BUG.\r\n", get_name().c_str()));

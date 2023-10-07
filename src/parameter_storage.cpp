@@ -29,7 +29,7 @@
 
 
 namespace ctbot {
-ParameterStorage::ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, const size_t buffer_size)
+ParameterStorage::ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, size_t buffer_size)
     : fs_svc_ { fs_svc }, config_file_ { config_file }, p_parameter_doc_ {} {
     if (!fs_svc_.exists(config_file_.c_str())) {
         auto f { fs_svc_.open(config_file_.c_str(), static_cast<uint8_t>(FILE_WRITE)) };
@@ -63,136 +63,74 @@ ParameterStorage::~ParameterStorage() {
     delete p_parameter_doc_;
 }
 
-bool ParameterStorage::get_parameter(const std::string_view& key, uint32_t& value) const noexcept {
+template <typename T>
+std::expected<T, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key) const noexcept {
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "invalid type");
+
     const auto data { p_parameter_doc_->getMember(key) };
 
-    if (data.isNull()) {
-        return false;
+    if (data.isNull()) [[unlikely]] {
+        return std::unexpected { Error::NOT_AVAILABLE };
     }
-    if (!data.is<uint32_t>()) {
-        return false;
+    if (!data.is<T>()) [[unlikely]] {
+        return std::unexpected { Error::INVALID_TYPE };
     }
 
-    value = data.as<uint32_t>();
-    return true;
+    return data.as<T>();
 }
 
-bool ParameterStorage::get_parameter(const std::string_view& key, int32_t& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(key) };
+template std::expected<uint32_t, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key) const noexcept;
+template std::expected<int32_t, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key) const noexcept;
+template std::expected<float, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key) const noexcept;
 
-    if (data.isNull()) {
-        return false;
-    }
-    if (!data.is<int32_t>()) {
-        return false;
-    }
+template <typename T>
+std::expected<T, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key, size_t index) const noexcept {
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "invalid type");
 
-    value = data.as<int32_t>();
-    return true;
-}
-
-bool ParameterStorage::get_parameter(const std::string_view& key, float& value) const noexcept {
-    const auto data { p_parameter_doc_->getMember(key) };
-
-    if (data.isNull()) {
-        return false;
-    }
-    if (!data.is<float>()) {
-        return false;
-    }
-
-    value = data.as<float>();
-    return true;
-}
-
-bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, uint32_t& value) const noexcept {
     const auto array { p_parameter_doc_->getMember(key) };
 
-    if (array.isNull()) {
+    if (array.isNull()) [[unlikely]] {
         if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
         }
-        return false;
+        return std::unexpected { Error::NOT_AVAILABLE };
     }
 
     const auto data { array.getElement(index) };
-    if (data.is<uint32_t>()) {
-        value = data.as<uint32_t>();
+    if (data.is<T>()) [[likely]] {
         if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%u\r\n"), key.data(), value);
+            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%u\r\n"), key.data(), data.as<T>());
         }
-        return true;
+        return data.as<T>();
     }
     if constexpr (DEBUG_) {
         CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
     }
-    return false;
+    return std::unexpected { Error::INVALID_TYPE };
 }
 
-bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, int32_t& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
+template std::expected<uint32_t, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key, size_t index) const noexcept;
+template std::expected<int32_t, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key, size_t index) const noexcept;
+template std::expected<float, ParameterStorage::Error> ParameterStorage::get(const std::string_view& key, size_t index) const noexcept;
 
-    if (array.isNull()) {
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
-        }
-        return false;
-    }
+template <typename T>
+void ParameterStorage::set(const std::string_view& key, T value) noexcept {
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "invalid type");
 
-    const auto data { array.getElement(index) };
-    if (data.is<int32_t>()) {
-        value = data.as<int32_t>();
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%d\r\n"), value);
-        }
-        return true;
-    }
-    if constexpr (DEBUG_) {
-        CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
-    }
-    return false;
-}
-
-bool ParameterStorage::get_parameter(const std::string_view& key, const size_t index, float& value) const noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
-
-    if (array.isNull()) {
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" not found.\r\n"), key.data());
-        }
-        return false;
-    }
-
-    const auto data { array.getElement(index) };
-    if (data.is<float>()) {
-        value = data.as<float>();
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, val=%f\r\n"), value);
-        }
-        return true;
-    }
-    if constexpr (DEBUG_) {
-        CtBot::get_instance().get_comm()->debug_printf<true>(PSTR("PS::get_parameter(): key \"%s\" found, index or type invalid.\r\n"), key.data());
-    }
-    return false;
-}
-
-void ParameterStorage::set_parameter(const std::string_view& key, const uint32_t value) noexcept {
     (*p_parameter_doc_)[key] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string_view& key, const int32_t value) noexcept {
-    (*p_parameter_doc_)[key] = value;
-}
+template void ParameterStorage::set(const std::string_view& key, uint32_t value) noexcept;
+template void ParameterStorage::set(const std::string_view& key, int32_t value) noexcept;
+template void ParameterStorage::set(const std::string_view& key, float value) noexcept;
 
-void ParameterStorage::set_parameter(const std::string_view& key, const float value) noexcept {
-    (*p_parameter_doc_)[key] = value;
-}
+template <typename T>
+void ParameterStorage::set(const std::string_view& key, size_t index, T value) noexcept {
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "invalid type");
 
-void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const uint32_t value) noexcept {
     const auto array { p_parameter_doc_->getMember(key) };
 
-    if (array.isNull()) {
+    if (array.isNull()) [[unlikely]] {
         p_parameter_doc_->createNestedArray(key);
         if constexpr (DEBUG_) {
             CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
@@ -202,31 +140,9 @@ void ParameterStorage::set_parameter(const std::string_view& key, const size_t i
     array[index] = value;
 }
 
-void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const int32_t value) noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
-
-    if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(key);
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
-        }
-    }
-    // TODO: add zero-padding?
-    array[index] = value;
-}
-
-void ParameterStorage::set_parameter(const std::string_view& key, const size_t index, const float value) noexcept {
-    const auto array { p_parameter_doc_->getMember(key) };
-
-    if (array.isNull()) {
-        p_parameter_doc_->createNestedArray(key);
-        if constexpr (DEBUG_) {
-            CtBot::get_instance().get_comm()->debug_print(PSTR("PS::set_parameter(): array created.\r\n"), true);
-        }
-    }
-    // TODO: add zero-padding?
-    array[index] = value;
-}
+template void ParameterStorage::set(const std::string_view& key, size_t index, uint32_t value) noexcept;
+template void ParameterStorage::set(const std::string_view& key, size_t index, int32_t value) noexcept;
+template void ParameterStorage::set(const std::string_view& key, size_t index, float value) noexcept;
 
 std::unique_ptr<std::string> ParameterStorage::dump() const {
     auto str { std::make_unique<std::string>() };

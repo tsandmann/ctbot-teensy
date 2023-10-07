@@ -29,12 +29,12 @@
 #include <atomic>
 
 
-// #undef printf_debug
-// #define printf_debug arduino::Serial.printf
+#undef printf_debug
+#define printf_debug arduino::Serial.printf
 
 #if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
 #include "driver/i2c_t4.h"
-namespace I2C_NS = arduino::teensy4;
+namespace I2C_NS = freertos;
 #else
 namespace I2C_NS = arduino;
 #endif
@@ -57,29 +57,34 @@ bool I2C_Service::init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_
         return true;
     }
 
+    if (init_[bus]) {
+        p_i2c_[bus]->setClock(freq);
+        return true;
+    }
+
     if constexpr (DEBUG_) {
         printf_debug(PSTR("I2C_Service::init(%u, %u, %u, %u)...\r\n"), bus, freq, pin_sda, pin_scl);
     }
 
     switch (bus) {
         case 0: {
-            p_i2c_[bus] = &I2C_NS::Wire;
+            p_i2c_[0] = I2C_NS::get_wire<0>();
             break;
         }
 
         case 1: {
-            p_i2c_[bus] = &I2C_NS::Wire1;
+            p_i2c_[1] = I2C_NS::get_wire<1>();
             break;
         }
 
         case 2: {
-            p_i2c_[bus] = &I2C_NS::Wire2;
+            p_i2c_[2] = I2C_NS::get_wire<2>();
             break;
         }
 
 #ifdef WIRE_IMPLEMENT_WIRE3
         case 3: {
-            p_i2c_[bus] = &I2C_NS::Wire3;
+            p_i2c_[3] = I2C_NS::get_wire<3>();
             break;
         }
 #endif // WIRE_IMPLEMENT_WIRE3
@@ -89,17 +94,18 @@ bool I2C_Service::init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_
         }
     }
 
-    p_i2c_[bus]->begin();
     if (pin_sda != 255) {
         p_i2c_[bus]->setSDA(pin_sda);
     }
     if (pin_scl != 255) {
         p_i2c_[bus]->setSCL(pin_scl);
     }
-    p_i2c_[bus]->setClock(freq);
+
+    freq_[bus] = freq;
+    reset(bus);
 
     if (!i2c_task_[bus]) {
-        i2c_queue_[bus] = ::xQueueCreate(8, sizeof(I2C_Transfer*));
+        i2c_queue_[bus] = ::xQueueCreate(TRANSFER_QUEUE_SIZE_, sizeof(I2C_Transfer*));
         if (!i2c_queue_[bus]) {
             init_[bus] = false;
             return false;
@@ -121,7 +127,6 @@ bool I2C_Service::init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_
         }
     }
 
-    freq_[bus] = freq;
     init_[bus] = true;
 
     if constexpr (DEBUG_) {
@@ -131,12 +136,24 @@ bool I2C_Service::init(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pin_
     return true;
 }
 
+void I2C_Service::reset(uint8_t bus) {
+    p_i2c_[bus]->begin();
+    p_i2c_[bus]->setClock(freq_[bus]);
+}
+
 void I2C_Service::finish_transfer(bool success, I2C_Transfer* transfer) {
     auto p_data { transfer };
     if (p_data->callback) {
         p_data->callback(success, &p_data);
     }
     delete p_data;
+}
+
+void I2C_Service::finish_transfer(bool success, I2C_Transfer* transfer, [[maybe_unused]] const uint32_t id) {
+    if (DEBUG_ && transfer->callback) {
+        printf_debug(PSTR("I2C_Service::finish_transfer(): callback for transfer %u addr=0x%x, err=%u\r\n"), id, transfer->addr, transfer->error);
+    }
+    finish_transfer(success, transfer);
 }
 
 void I2C_Service::run(void* param) {
@@ -186,7 +203,7 @@ void I2C_Service::run(void* param) {
                     if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): write() 1 FAILED\r\n"));
                     }
-                    transfer->error = 1;
+                    transfer->error = I2C_Error::WRITE_1_FAILURE;
                     finish_transfer(false, transfer, id);
                     continue;
                 }
@@ -197,7 +214,7 @@ void I2C_Service::run(void* param) {
                         if constexpr (DEBUG_) {
                             printf_debug(PSTR("I2C_Service::run(): endTransmission() FAILED: %u\r\n"), status);
                         }
-                        transfer->error = 2;
+                        transfer->error = I2C_Error::END_TRANSMISSION_1_FAILURE;
                         finish_transfer(false, transfer, id);
                         continue;
                     }
@@ -205,13 +222,13 @@ void I2C_Service::run(void* param) {
             } else if (!transfer->size1) {
                 /* just scan for address */
                 if (p_i2c_[bus]->endTransmission(1)) {
-                    transfer->error = 2;
+                    transfer->error = I2C_Error::END_TRANSMISSION_1_FAILURE;
                     finish_transfer(false, transfer, id);
                     continue;
                 }
             } else {
                 /* 1st transfer read with size > 0 */
-                transfer->error = 255;
+                transfer->error = I2C_Error::NOT_IMPLEMENTED;
                 configASSERT(false); // TODO: not implemented
             }
 
@@ -234,7 +251,7 @@ void I2C_Service::run(void* param) {
                     if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): write() 2 FAILED\r\n"));
                     }
-                    transfer->error = 3;
+                    transfer->error = I2C_Error::WRITE_2_FAILURE;
                     finish_transfer(false, transfer, id);
                     continue;
                 }
@@ -244,7 +261,7 @@ void I2C_Service::run(void* param) {
                     if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): endTransmission() FAILED: %u\r\n"), status);
                     }
-                    transfer->error = 4;
+                    transfer->error = I2C_Error::END_TRANSMISSION_2_FAILURE;
                     finish_transfer(false, transfer, id);
                     continue;
                 }
@@ -255,14 +272,14 @@ void I2C_Service::run(void* param) {
                     if constexpr (DEBUG_) {
                         printf_debug(PSTR("I2C_Service::run(): requestFrom() FAILED\r\n"));
                     }
-                    transfer->error = 5;
+                    transfer->error = I2C_Error::REQUEST_FROM_FAILURE;
                     finish_transfer(false, transfer, id);
                     continue;
                 }
 
                 if (to_read <= sizeof(I2C_Transfer::data2.data)) {
                     if (p_i2c_[bus]->readBytes(buffer, to_read) != to_read) {
-                        transfer->error = 6;
+                        transfer->error = I2C_Error::READ_FAILURE;
                         finish_transfer(false, transfer, id);
                         continue;
                     }
@@ -285,7 +302,7 @@ void I2C_Service::run(void* param) {
                         if constexpr (DEBUG_) {
                             printf_debug(PSTR("I2C_Service::run(): readBytes() FAILED\r\n"));
                         }
-                        transfer->error = 7;
+                        transfer->error = I2C_Error::READ_FAILURE;
                         finish_transfer(false, transfer, id);
                         continue;
                     }
@@ -304,7 +321,7 @@ I2C_Service::I2C_Service(uint8_t bus, uint32_t freq, uint8_t pin_sda, uint8_t pi
     init(bus, freq, pin_sda, pin_scl);
 }
 
-uint8_t I2C_Service::read_reg(
+I2C_Service::I2C_Error I2C_Service::read_reg(
     uint16_t addr, std::unsigned_integral auto reg, std::integral auto& data, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::read_reg<>(): invalid reg size");
     static_assert(sizeof(data) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::read_reg<>(): invalid data size");
@@ -313,10 +330,10 @@ uint8_t I2C_Service::read_reg(
     I2C_Transfer* transfer { new I2C_Transfer { addr, sizeof(reg), false, sizeof(data), true } };
     transfer->data1.data = reg;
 
-    uint8_t ret;
+    I2C_Error ret;
     if (callback) {
         transfer->callback = callback;
-        ret = 0;
+        ret = I2C_Error::SUCCESS;
     } else {
         transfer_done = false;
         transfer->callback = [&data, &transfer_done, &ret](bool done, I2C_Transfer** p_transfer) {
@@ -331,15 +348,15 @@ uint8_t I2C_Service::read_reg(
         };
     }
 
-    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) { // FIXME: timeout?
-        return 100;
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, pdMS_TO_TICKS(TRANSFER_QUEUE_TIMEOUT_MS_)) != pdTRUE) {
+        return I2C_Error::QUEUE_FULL;
     }
 
     if (!callback) {
         const auto start { ::xTaskGetTickCount() };
         while (!transfer_done) {
-            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
-                return 20;
+            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(DEFAULT_CALLBACK_TIMEOUT_MS_)) {
+                return I2C_Error::TIMEOUT;
             }
             ::vTaskDelay(1);
         }
@@ -351,24 +368,24 @@ uint8_t I2C_Service::read_reg(
     return ret;
 }
 
-template uint8_t I2C_Service::read_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t&, std::function<void(bool, I2C_Transfer**)>) const;
 
-uint8_t I2C_Service::read_bytes(
+I2C_Service::I2C_Error I2C_Service::read_bytes(
     uint16_t addr, std::unsigned_integral auto reg_addr, uint8_t* p_data, uint8_t length, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg_addr) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::read_bytes<>(): invalid reg_addr size");
 
     if (length > 32) {
-        return 1;
+        return I2C_Error::INVALID_PARAMETERS;
     }
 
     switch (length) {
         case 0: {
-            return 0;
+            return I2C_Error::SUCCESS;
         }
         case 1: {
             uint8_t tmp;
@@ -384,7 +401,7 @@ uint8_t I2C_Service::read_bytes(
             return ret;
         }
         case 3: {
-            return 2; // TODO: not implemented
+            return I2C_Error::NOT_IMPLEMENTED; // TODO: not implemented
         }
         case 4: {
             uint32_t tmp;
@@ -401,7 +418,7 @@ uint8_t I2C_Service::read_bytes(
     transfer->data1.data = reg_addr;
     transfer->data2.ptr = p_data;
 
-    uint8_t ret {};
+    I2C_Error ret {};
     if (callback) {
         transfer->callback = callback;
     } else {
@@ -409,32 +426,33 @@ uint8_t I2C_Service::read_bytes(
         transfer->callback = [&ret]([[maybe_unused]] bool done, I2C_Transfer** p_transfer) {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, ret);
+                printf_debug(PSTR("I2C_Service::read_bytes(): callback, done=%u, err=%u\r\n"), done, static_cast<uint8_t>(ret));
             }
             ::xTaskNotifyGive((*p_transfer)->caller);
         };
     }
 
-    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) { // FIXME: timeout?
-        return 100;
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, pdMS_TO_TICKS(TRANSFER_QUEUE_TIMEOUT_MS_)) != pdTRUE) {
+        return I2C_Error::QUEUE_FULL;
     }
 
     if (callback) {
-        return 0;
+        return I2C_Error::SUCCESS;
     }
 
-    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
+    ::ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(READ_BYTES_TIMEOUT_MS_PER_BYTE_));
+
     if constexpr (DEBUG_) {
-        // printf_debug(PSTR("I2C_Service::read_bytes(): done, err=%u\r\n"), ret);
+        // printf_debug(PSTR("I2C_Service::read_bytes(): done, err=%u\r\n"), static_cast<uint8_t>(ret));
     }
 
     return ret;
 }
 
-template uint8_t I2C_Service::read_bytes<uint8_t>(uint16_t, uint8_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::read_bytes<uint16_t>(uint16_t, uint16_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_bytes<uint8_t>(uint16_t, uint8_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::read_bytes<uint16_t>(uint16_t, uint16_t, uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
 
-uint8_t I2C_Service::write_reg(
+I2C_Service::I2C_Error I2C_Service::write_reg(
     uint16_t addr, std::unsigned_integral auto reg, std::integral auto data, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::write_reg<>(): invalid reg size");
     static_assert(sizeof(data) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::write_reg<>(): invalid data size");
@@ -444,7 +462,7 @@ uint8_t I2C_Service::write_reg(
     transfer->data1.data = reg;
     transfer->data2.data = data;
 
-    uint8_t ret {};
+    I2C_Error ret {};
     if (callback) {
         transfer->callback = callback;
     } else {
@@ -458,19 +476,18 @@ uint8_t I2C_Service::write_reg(
         };
     }
 
-    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) {
-        // FIXME: timeout?
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, pdMS_TO_TICKS(TRANSFER_QUEUE_TIMEOUT_MS_)) != pdTRUE) {
         if constexpr (DEBUG_) {
             printf_debug(PSTR("I2C_Service::write_reg<%u, %u>() transfer queueing FAILED\r\n"), sizeof(reg), sizeof(data));
         }
-        return 100;
+        return I2C_Error::QUEUE_FULL;
     }
 
     if (!callback) {
         const auto start { ::xTaskGetTickCount() };
         while (!transfer_done) {
-            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
-                return 20;
+            if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(DEFAULT_CALLBACK_TIMEOUT_MS_)) {
+                return I2C_Error::TIMEOUT;
             }
             ::vTaskDelay(1);
         }
@@ -482,24 +499,24 @@ uint8_t I2C_Service::write_reg(
     return ret;
 }
 
-template uint8_t I2C_Service::write_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint8_t, uint8_t>(uint16_t, uint8_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint16_t, uint8_t>(uint16_t, uint16_t, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint8_t, uint16_t>(uint16_t, uint8_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint16_t, uint16_t>(uint16_t, uint16_t, uint16_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint8_t, uint32_t>(uint16_t, uint8_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_reg<uint16_t, uint32_t>(uint16_t, uint16_t, uint32_t, std::function<void(bool, I2C_Transfer**)>) const;
 
-uint8_t I2C_Service::write_bytes(
+I2C_Service::I2C_Error I2C_Service::write_bytes(
     uint16_t addr, std::unsigned_integral auto reg_addr, const uint8_t* p_data, uint8_t length, std::function<void(bool, I2C_Transfer**)> callback) const {
     static_assert(sizeof(reg_addr) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::write_bytes<>(): invalid reg_addr size");
 
     if (length > 32) {
-        return 1;
+        return I2C_Error::INVALID_PARAMETERS;
     }
 
     switch (length) {
         case 0: {
-            return 0;
+            return I2C_Error::SUCCESS;
         }
         case 1: {
             uint8_t tmp { *p_data };
@@ -511,7 +528,7 @@ uint8_t I2C_Service::write_bytes(
             return write_reg(addr, reg_addr, tmp);
         }
         case 3: {
-            return 2; // TODO: not implemented
+            return I2C_Error::NOT_IMPLEMENTED; // TODO: not implemented
         }
         case 4: {
             uint32_t tmp { p_data[3] };
@@ -526,7 +543,7 @@ uint8_t I2C_Service::write_bytes(
     transfer->data1.data = reg_addr;
     transfer->data2.ptr = const_cast<uint8_t*>(p_data);
 
-    uint8_t ret {};
+    I2C_Error ret {};
     if (callback) {
         transfer->callback = callback;
     } else {
@@ -540,29 +557,30 @@ uint8_t I2C_Service::write_bytes(
         };
     }
 
-    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) {
-        // FIXME: timeout?
-        return 100;
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, pdMS_TO_TICKS(TRANSFER_QUEUE_TIMEOUT_MS_)) != pdTRUE) {
+        return I2C_Error::QUEUE_FULL;
     }
 
     if (callback) {
-        return 0;
+        return I2C_Error::SUCCESS;
     }
 
-    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
+    ::ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(WRITE_BYTES_TIMEOUT_MS_PER_BYTE_ * length));
+
     if constexpr (DEBUG_) {
-        // printf_debug(PSTR("I2C_Service::write_bytes<%u>(): done, ret=%u\r\n"), ret, sizeof(reg));
+        // printf_debug(PSTR("I2C_Service::write_bytes<%u>(): done, ret=%u\r\n"), static_cast<uint8_t>(ret), sizeof(reg));
     }
 
     return ret;
 }
 
-template uint8_t I2C_Service::write_bytes<uint8_t>(uint16_t, uint8_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
-template uint8_t I2C_Service::write_bytes<uint16_t>(uint16_t, uint16_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_bytes<uint8_t>(uint16_t, uint8_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
+template I2C_Service::I2C_Error I2C_Service::write_bytes<uint16_t>(
+    uint16_t, uint16_t, const uint8_t*, uint8_t, std::function<void(bool, I2C_Transfer**)>) const;
 
 
 template <typename DATA>
-uint8_t I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
+I2C_Service::I2C_Error I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bits_internal<>(): invalid reg size");
     static_assert(sizeof(DATA) <= sizeof(I2C_Transfer::data2.data), "I2C_Service::set_bits_internal<>(): invalid DATA size");
 
@@ -571,7 +589,7 @@ uint8_t I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral aut
     }
 
     DATA data;
-    uint8_t ret;
+    I2C_Error ret;
     std::atomic<bool> transfer_done {};
     auto read_callback { [&data, &ret, &transfer_done, this, addr, reg, bit_mask, values](bool done, I2C_Transfer** p_transfer) {
         if (done) {
@@ -593,28 +611,30 @@ uint8_t I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral aut
         } else {
             ret = (*p_transfer)->error;
             if constexpr (DEBUG_) {
-                printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), ret);
+                printf_debug(
+                    PSTR("I2C_Service::set_bits_internal<%u, %u>() read_reg<>() FAILED, err=%u\r\n"), sizeof(reg), sizeof(DATA), static_cast<uint8_t>(ret));
             }
         }
     } };
 
-    if (read_reg(addr, reg, data, read_callback)) {
+    if (read_reg(addr, reg, data, read_callback) != I2C_Error::SUCCESS) {
         if constexpr (DEBUG_) {
-            printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(): read_reg<>() FAILED\r\n"), sizeof(reg), sizeof(DATA));
+            printf_debug(
+                PSTR("I2C_Service::set_bits_internal<%u, %u>(): read_reg<>() FAILED, ret=%u\r\n"), sizeof(reg), sizeof(DATA), static_cast<uint8_t>(ret));
         }
-        return 10;
+        return I2C_Error::READ_FAILURE;
     }
 
     const auto start { ::xTaskGetTickCount() };
     while (!transfer_done) {
-        if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(20)) { // FIXME: timeout value?
-            return 20;
+        if (::xTaskGetTickCount() - start > pdMS_TO_TICKS(DEFAULT_CALLBACK_TIMEOUT_MS_)) {
+            return I2C_Error::TIMEOUT;
         }
         ::vTaskDelay(1);
     }
     if constexpr (DEBUG_) {
-        if (ret) {
-            // printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), ret);
+        if (ret != I2C_Error::SUCCESS) {
+            // printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(): ret=%u\r\n"), sizeof(REG), sizeof(DATA), static_cast<uint8_t>(ret));
         }
         printf_debug(PSTR("I2C_Service::set_bits_internal<%u, %u>(0x%x, 0x%x, %u, %u) done\r\n"), sizeof(reg), sizeof(DATA), addr, reg, bit_mask, values);
     }
@@ -622,7 +642,7 @@ uint8_t I2C_Service::set_bits_internal(uint16_t addr, std::unsigned_integral aut
     return ret;
 }
 
-uint8_t I2C_Service::set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const {
+I2C_Service::I2C_Error I2C_Service::set_bit(uint16_t addr, std::unsigned_integral auto reg, uint8_t bit, bool value) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bit<>(): invalid reg size");
 
     if (bit < 8) {
@@ -631,18 +651,16 @@ uint8_t I2C_Service::set_bit(uint16_t addr, std::unsigned_integral auto reg, uin
         return set_bits_internal<uint16_t>(addr, reg, 1 << bit, static_cast<uint16_t>(value) << bit);
     } else if (bit < 32) {
         return set_bits_internal<uint32_t>(addr, reg, 1 << bit, static_cast<uint32_t>(value) << bit);
-    } else {
-        return 4;
     }
 
-    return 0;
+    return I2C_Error::INVALID_PARAMETERS;
 }
 
-template uint8_t I2C_Service::set_bit<uint8_t>(uint16_t, uint8_t, uint8_t, bool) const;
-template uint8_t I2C_Service::set_bit<uint16_t>(uint16_t, uint16_t, uint8_t, bool) const;
+template I2C_Service::I2C_Error I2C_Service::set_bit<uint8_t>(uint16_t, uint8_t, uint8_t, bool) const;
+template I2C_Service::I2C_Error I2C_Service::set_bit<uint16_t>(uint16_t, uint16_t, uint8_t, bool) const;
 
 
-uint8_t I2C_Service::set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
+I2C_Service::I2C_Error I2C_Service::set_bits(uint16_t addr, std::unsigned_integral auto reg, uint32_t bit_mask, uint32_t values) const {
     static_assert(sizeof(reg) <= sizeof(I2C_Transfer::data1.data), "I2C_Service::set_bits<>(): invalid reg size");
 
     if (bit_mask < (1 << 8)) {
@@ -653,41 +671,41 @@ uint8_t I2C_Service::set_bits(uint16_t addr, std::unsigned_integral auto reg, ui
         return set_bits_internal<uint32_t>(addr, reg, bit_mask, values);
     }
 
-    return 0;
+    return I2C_Error::INVALID_PARAMETERS;
 }
 
-template uint8_t I2C_Service::set_bits<uint8_t>(uint16_t, uint8_t, uint32_t, uint32_t) const;
-template uint8_t I2C_Service::set_bits<uint16_t>(uint16_t, uint16_t, uint32_t, uint32_t) const;
+template I2C_Service::I2C_Error I2C_Service::set_bits<uint8_t>(uint16_t, uint8_t, uint32_t, uint32_t) const;
+template I2C_Service::I2C_Error I2C_Service::set_bits<uint16_t>(uint16_t, uint16_t, uint32_t, uint32_t) const;
 
 
-bool I2C_Service::test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback) const {
+I2C_Service::I2C_Error I2C_Service::test(uint16_t addr, std::function<void(bool, I2C_Transfer**)> callback) const {
     I2C_Transfer* transfer { new I2C_Transfer { addr } };
-    transfer->callback = callback;
 
-    bool success {};
+    I2C_Error ret {};
     if (callback) {
         transfer->callback = callback;
     } else {
         transfer->caller = ::xTaskGetCurrentTaskHandle();
-        transfer->callback = [&success](bool done, I2C_Transfer** p_transfer) {
-            success = done;
+        transfer->callback = [&ret]([[maybe_unused]] bool done, I2C_Transfer** p_transfer) {
+            ret = (*p_transfer)->error;
 
             if constexpr (DEBUG_) {
                 printf_debug(PSTR("I2C_Service::test(): callback, done=%u\r\n"), done);
             }
+
             ::xTaskNotifyGive((*p_transfer)->caller);
         };
     }
 
-    if (::xQueueSend(i2c_queue_[bus_], &transfer, portMAX_DELAY) != pdTRUE) { // FIXME: timeout?
-        return 100;
+    if (::xQueueSend(i2c_queue_[bus_], &transfer, pdMS_TO_TICKS(TRANSFER_QUEUE_TIMEOUT_MS_)) != pdTRUE) {
+        return I2C_Error::QUEUE_FULL;
     }
 
     if (callback) {
-        return 0;
+        return I2C_Error::SUCCESS;
     }
 
-    ::ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // FIXME: timeout?
+    ::ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(TEST_TIMEOUT_MS_));
 
-    return success;
+    return ret;
 }

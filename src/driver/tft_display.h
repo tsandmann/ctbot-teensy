@@ -200,7 +200,11 @@ public:
      */
     template <typename... Args>
     FLASHMEM uint8_t printf(const char* format, const Args&... args) const {
-        return print(LoggerTarget::string_format(format, args...));
+        if (const auto str { LoggerTarget::string_format(format, args...) }; str.has_value()) {
+            return print(*str);
+        } else {
+            return 0;
+        }
     }
 
     int16_t get_cursor_x() const;

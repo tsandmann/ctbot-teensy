@@ -202,26 +202,28 @@ class LedsI2cBase {
     T status_;
     bool init_;
 
-    uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
+    I2C_Service::I2C_Error write_reg8(uint8_t reg, uint8_t value) const {
         return p_i2c_svc_->write_reg(i2c_addr_, reg, value);
     }
 
 protected:
     std::array<uint8_t, 8> pwm_dt_;
 
-    FLASHMEM LedsI2cBase(I2C_Service* p_i2c_svc, const uint8_t i2c_addr)
+    FLASHMEM LedsI2cBase(I2C_Service* p_i2c_svc, uint8_t i2c_addr)
         : p_i2c_svc_ { p_i2c_svc }, i2c_addr_ { i2c_addr }, status_ { static_cast<T>(LedTypesEna<>::NONE) }, init_ {} {
         // FIXME: read initial status from device
-        if (write_reg8(MODE1_REG, 0)) {
+        if (write_reg8(MODE1_REG, 0) != I2C_Service::I2C_Error::SUCCESS) {
             return;
         }
-        if (write_reg8(MODE2_REG, 5)) { // OUTDRV | OUTNE1
+        if (write_reg8(MODE2_REG, 5) != I2C_Service::I2C_Error::SUCCESS) { // OUTDRV | OUTNE1
             return;
         }
-        if (write_reg8(LEDOUT0_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
+        /* LED driver x individual brightness can be controlled through its PWMx register */
+        if (write_reg8(LEDOUT0_REG, 0b10101010) != I2C_Service::I2C_Error::SUCCESS) {
             return;
         }
-        if (write_reg8(LEDOUT1_REG, 0b10101010)) { // LED driver x individual brightness can be controlled through its PWMx register
+        /* LED driver x individual brightness can be controlled through its PWMx register */
+        if (write_reg8(LEDOUT1_REG, 0b10101010) != I2C_Service::I2C_Error::SUCCESS) {
             return;
         }
 
@@ -232,12 +234,12 @@ protected:
         init_ = true;
     }
 
-    bool update(const uint8_t led, const uint8_t value) const {
+    bool update(uint8_t led, uint8_t value) const {
         if (!init_ || led > 8) {
             return false;
         }
 
-        return write_reg8(led + 2, value) == 0;
+        return write_reg8(led + 2, value) == I2C_Service ::I2C_Error::SUCCESS;
     }
 
 public:
@@ -252,7 +254,7 @@ public:
         return init_;
     }
 
-    void set_pwm(const T leds, const uint8_t pwm) {
+    void set_pwm(T leds, uint8_t pwm) {
         uint8_t i { 1 };
         for (auto& e : pwm_dt_) {
             if (static_cast<uint8_t>(leds) & i) {
@@ -266,7 +268,7 @@ public:
      * @brief Activate and deactivate LEDs as given by a bitmask
      * @param[in] leds: Bitmask for LEDs to set
      */
-    bool set(const T leds) {
+    bool set(T leds) {
         if (!init_) {
             return false;
         }
@@ -292,7 +294,7 @@ public:
      * @brief Activate additional LEDs as given by an enable bitmask
      * @param[in] leds: Bitmask for LEDs to activate (others are not affected)
      */
-    bool on(const T leds) {
+    bool on(T leds) {
         return set(status_ | leds);
     }
 
@@ -300,7 +302,7 @@ public:
      * @brief Deactivate LEDs as given by a disable bitmask
      * @param[in] leds: Bitmask for LEDs to deactivate (others are not affected)
      */
-    bool off(const T leds) {
+    bool off(T leds) {
         return set(status_ & ~leds);
     }
 };
@@ -319,7 +321,7 @@ public:
     /**
      * @brief Construct a new Leds object
      */
-    LedsI2c(I2C_Service* p_i2c_svc, const uint8_t i2c_addr) : LedsI2cBase { p_i2c_svc, i2c_addr } {}
+    LedsI2c(I2C_Service* p_i2c_svc, uint8_t i2c_addr) : LedsI2cBase { p_i2c_svc, i2c_addr } {}
 };
 
 /**
@@ -337,7 +339,7 @@ public:
     /**
      * @brief Construct a new Leds object
      */
-    LedsI2cEna(I2C_Service* p_i2c_svc, const uint8_t i2c_addr) : LedsI2cBase<LedTypesEna<HW_REV>> { p_i2c_svc, i2c_addr } {}
+    LedsI2cEna(I2C_Service* p_i2c_svc, uint8_t i2c_addr) : LedsI2cBase<LedTypesEna<HW_REV>> { p_i2c_svc, i2c_addr } {}
 };
 
 } // namespace ctbot

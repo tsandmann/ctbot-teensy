@@ -44,7 +44,7 @@ bool I2Cdev::init(const uint8_t bus_id, const uint32_t freq) {
 
 int8_t I2Cdev::readBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t* data, uint16_t) {
     uint8_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp)) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return 0;
     }
     *data = tmp & (1 << bitNum);
@@ -53,7 +53,7 @@ int8_t I2Cdev::readBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t
 
 int8_t I2Cdev::readBitW(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint16_t* data, uint16_t) {
     uint16_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp)) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return 0;
     }
     *data = tmp & (1 << bitNum);
@@ -62,7 +62,7 @@ int8_t I2Cdev::readBitW(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint16
 
 int8_t I2Cdev::readBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t* data, uint16_t) {
     uint8_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp) == 0) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) == I2C_Service::I2C_Error::SUCCESS) {
         uint8_t mask = ((1 << length) - 1) << (bitStart - length + 1);
         tmp &= mask;
         tmp >>= (bitStart - length + 1);
@@ -74,7 +74,7 @@ int8_t I2Cdev::readBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint
 
 int8_t I2Cdev::readBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint16_t* data, uint16_t) {
     uint16_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp) == 0) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) == I2C_Service::I2C_Error::SUCCESS) {
         uint16_t mask = ((1 << length) - 1) << (bitStart - length + 1);
         tmp &= mask;
         tmp >>= (bitStart - length + 1);
@@ -86,7 +86,7 @@ int8_t I2Cdev::readBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uin
 
 int8_t I2Cdev::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t* data, uint16_t) {
     uint8_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp)) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return 0;
     }
     *data = tmp;
@@ -95,7 +95,7 @@ int8_t I2Cdev::readByte(uint8_t devAddr, uint8_t regAddr, uint8_t* data, uint16_
 
 int8_t I2Cdev::readWord(uint8_t devAddr, uint8_t regAddr, uint16_t* data, uint16_t) {
     uint16_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp)) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return 0;
     }
     *data = tmp;
@@ -105,7 +105,7 @@ int8_t I2Cdev::readWord(uint8_t devAddr, uint8_t regAddr, uint16_t* data, uint16
 int8_t I2Cdev::readBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t* data, uint16_t) {
     configASSERT(length != 3);
 
-    return i2c_->read_bytes(devAddr, regAddr, data, length) == 0;
+    return i2c_->read_bytes(devAddr, regAddr, data, length) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 int8_t I2Cdev::readWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16_t* data, uint16_t) {
@@ -120,7 +120,7 @@ int8_t I2Cdev::readWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint1
 }
 
 bool I2Cdev::writeBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t data) {
-    return i2c_->set_bit(devAddr, regAddr, bitNum, data) == 0;
+    return i2c_->set_bit(devAddr, regAddr, bitNum, data) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeBitW(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint16_t data) {
@@ -134,7 +134,7 @@ bool I2Cdev::writeBitW(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint16_
 
 bool I2Cdev::writeBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data) {
     uint8_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp) != 0) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return false;
     }
     uint8_t mask = ((1 << length) - 1) << (bitStart - length + 1);
@@ -142,12 +142,12 @@ bool I2Cdev::writeBits(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8
     data &= mask; // zero all non-important bits in data
     tmp &= ~(mask); // zero all important bits in existing byte
     tmp |= data; // combine data with existing byte
-    return i2c_->write_reg(devAddr, regAddr, tmp) == 0;
+    return i2c_->write_reg(devAddr, regAddr, tmp) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint16_t data) {
     uint16_t tmp;
-    if (i2c_->read_reg(devAddr, regAddr, tmp) != 0) {
+    if (i2c_->read_reg(devAddr, regAddr, tmp) != I2C_Service::I2C_Error::SUCCESS) {
         return false;
     }
     uint16_t mask = ((1 << length) - 1) << (bitStart - length + 1);
@@ -155,20 +155,20 @@ bool I2Cdev::writeBitsW(uint8_t devAddr, uint8_t regAddr, uint8_t bitStart, uint
     data &= mask; // zero all non-important bits in data
     tmp &= ~(mask); // zero all important bits in existing word
     tmp |= data; // combine data with existing word
-    return i2c_->write_reg(devAddr, regAddr, tmp) == 0;
+    return i2c_->write_reg(devAddr, regAddr, tmp) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeByte(uint8_t devAddr, uint8_t regAddr, uint8_t data) {
-    return i2c_->write_reg(devAddr, regAddr, data) == 0;
+    return i2c_->write_reg(devAddr, regAddr, data) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeWord(uint8_t devAddr, uint8_t regAddr, uint16_t data) {
-    return i2c_->write_reg(devAddr, regAddr, data) == 0;
+    return i2c_->write_reg(devAddr, regAddr, data) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t* data) {
     configASSERT(length != 3);
-    return i2c_->write_bytes(devAddr, regAddr, data, length) == 0;
+    return i2c_->write_bytes(devAddr, regAddr, data, length) == I2C_Service::I2C_Error::SUCCESS;
 }
 
 bool I2Cdev::writeWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16_t* data) {

@@ -38,6 +38,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <expected>
 
 
 class FS_Service;
@@ -56,70 +57,36 @@ namespace ctbot {
 class ParameterStorage { // FIXME: add documentation
     static constexpr bool DEBUG_ { false };
 
+public:
+    enum class Error : uint8_t {
+        SUCCESS = 0,
+        NOT_AVAILABLE,
+        INVALID_TYPE,
+    };
+
 protected:
     FS_Service& fs_svc_;
     const std::string config_file_;
     DynamicJsonDocument* p_parameter_doc_;
 
-    bool get_parameter(const std::string_view& key, uint32_t& value) const noexcept;
-    bool get_parameter(const std::string_view& key, int32_t& value) const noexcept;
-    bool get_parameter(const std::string_view& key, float& value) const noexcept;
-    bool get_parameter(const std::string_view& key, const size_t index, uint32_t& value) const noexcept;
-    bool get_parameter(const std::string_view& key, const size_t index, int32_t& value) const noexcept;
-    bool get_parameter(const std::string_view& key, const size_t index, float& value) const noexcept;
-
-    void set_parameter(const std::string_view& key, const uint32_t value) noexcept;
-    void set_parameter(const std::string_view& key, const int32_t value) noexcept;
-    void set_parameter(const std::string_view& key, const float value) noexcept;
-    void set_parameter(const std::string_view& key, const size_t index, const uint32_t value) noexcept;
-    void set_parameter(const std::string_view& key, const size_t index, const int32_t value) noexcept;
-    void set_parameter(const std::string_view& key, const size_t index, const float value) noexcept;
-
 public:
-    FLASHMEM ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, const size_t buffer_size = 512);
+    FLASHMEM ParameterStorage(FS_Service& fs_svc, const std::string_view& config_file, size_t buffer_size = 512);
     FLASHMEM ~ParameterStorage();
 
     std::unique_ptr<std::string> dump() const;
 
     bool flush() const;
 
-    bool get(const std::string_view& key, std::unsigned_integral auto& value) const noexcept {
-        uint32_t v;
-        const bool res { get_parameter(key, v) };
-        if (res) {
-            value = static_cast<std::remove_reference<decltype(value)>::type>(v);
-        }
-        return res;
-    }
+    template <typename T>
+    std::expected<T, Error> get(const std::string_view& key) const noexcept;
 
-    bool get(const std::string_view& key, std::signed_integral auto& value) const noexcept {
-        int32_t v;
-        const bool res { get_parameter(key, v) };
-        if (res) {
-            value = static_cast<std::remove_reference<decltype(value)>::type>(v);
-        }
-        return res;
-    }
+    template <typename T>
+    std::expected<T, Error> get(const std::string_view& key, size_t index) const noexcept;
 
-    bool get(const std::string_view& key, std::floating_point auto& value) const noexcept {
-        float v;
-        const bool res { get_parameter(key, v) };
-        if (res) {
-            value = static_cast<float>(v);
-        }
-        return res;
-    }
+    template <typename T>
+    void set(const std::string_view& key, T value) noexcept;
 
-    void set(const std::string_view& key, std::unsigned_integral auto const value) noexcept {
-        set_parameter(key, static_cast<uint32_t>(value));
-    }
-
-    void set(const std::string_view& key, std::signed_integral auto const value) noexcept {
-        set_parameter(key, static_cast<int32_t>(value));
-    }
-
-    void set(const std::string_view& key, std::floating_point auto const value) noexcept {
-        set_parameter(key, static_cast<float>(value));
-    }
+    template <typename T>
+    void set(const std::string_view& key, size_t index, T value) noexcept;
 };
 } // namespace ctbot

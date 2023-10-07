@@ -1,18 +1,32 @@
-/*
- * This file is part of the ct-Bot teensy framework.
- * Copyright (c) 2021 Timo Sandmann
+/* Teensyduino Core Library
+ * http://www.pjrc.com/teensy/
+ * Copyright (c) 2019 PJRC.COM, LLC.
+ * Copyright (c) 2023, Timo Sandmann (Teensy 4.x serialport FreeRTOS driver)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
+ * 1. The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * 2. If the Software is incorporated into a build system that allows
+ * selection among a list of target devices, then similar target
+ * devices manufactured by PJRC.COM must be included in the list of
+ * target devices and selectable in the same manner.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 /**
@@ -32,27 +46,23 @@
 #include "imxrt.h"
 
 
-namespace arduino {
-class SerialT4;
-
+namespace freertos {
 namespace teensy4 {
-#if defined ARDUINO_TEENSY40 || defined ARDUINO_TEENSY41
-extern SerialT4 Serial1;
-extern SerialT4 Serial2;
-extern SerialT4 Serial3;
-extern SerialT4 Serial4;
-extern SerialT4 Serial5;
-extern SerialT4 Serial6;
-extern SerialT4 Serial7;
-#ifdef ARDUINO_TEENSY41
-extern SerialT4 Serial8;
-#endif
-extern SerialIOStreamAdapter Serial;
-#endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41
+template <class T, uint8_t>
+void get_serial(T**);
 } // namespace teensy4
 
 
 class SerialT4 : public SerialIO {
+public:
+    static constexpr uint8_t MAX_PORTS_ {
+#ifdef ARDUINO_TEENSY41
+        8
+#else
+        7
+#endif // ARDUINO_TEENSY41
+    };
+
     static constexpr uint8_t DEBUG_LEVEL_ { 3 }; // 0: off; 1: errors; 2: warnings; 3: info; 4: verbose
 
 protected:
@@ -82,45 +92,37 @@ protected:
         SerialIO& io_;
     };
 
+    struct pin_info_t {
+        uint32_t mux_val;
+        volatile uint32_t* select_in_reg;
+        uint32_t select_val;
+        uint8_t pin;
+    } __attribute__((packed));
+
     struct hardware_t {
         uint8_t index; // 0-based
-        IRQ_NUMBER_t irq;
+        uint8_t irq;
+        uint16_t irq_priority;
+        uintptr_t port_addr;
         void (*irq_handler)();
-        volatile uint32_t& ccm_register;
-        const uint32_t ccm_value;
-        HardwareSerial::pin_info_t rx_pins[CNT_RX_PINS_];
-        HardwareSerial::pin_info_t tx_pins[CNT_TX_PINS_];
-        const uint16_t irq_priority;
-        const uint8_t xbar_out_lpuartX_trig_input;
-    };
+        volatile uint32_t* ccm_register;
+        uint32_t ccm_value;
+        uint8_t xbar_out_trig;
+        pin_info_t rx_pins[CNT_RX_PINS_];
+        pin_info_t tx_pins[CNT_TX_PINS_];
+    } __attribute__((packed));
 
-    static constexpr const hardware_t* get_hardware(const uint8_t index) {
+    static constexpr const hardware_t* get_hardware(uint8_t index) {
         switch (index) {
-            case 0: return &Serial1_hw; // Serial1
-            case 1: return &Serial2_hw; // Serial2
-            case 2: return &Serial3_hw; // Serial3
-            case 3: return &Serial4_hw; // Serial4
-            case 4: return &Serial5_hw; // Serial5
-            case 5: return &Serial6_hw; // Serial6
-            case 6: return &Serial7_hw; // Serial7
+            case 0: return &serial1_hw_;
+            case 1: return &serial2_hw_;
+            case 2: return &serial3_hw_;
+            case 3: return &serial4_hw_;
+            case 4: return &serial5_hw_;
+            case 5: return &serial6_hw_;
+            case 6: return &serial7_hw_;
 #ifdef ARDUINO_TEENSY41
-            case 7: return &Serial8_hw; // Serial8
-#endif
-        }
-        return nullptr;
-    }
-
-    static constexpr IMXRT_LPUART_t* get_port(const uint8_t index) {
-        switch (index) {
-            case 0: return (IMXRT_LPUART_t*) IMXRT_LPUART6_ADDRESS; // Serial1
-            case 1: return (IMXRT_LPUART_t*) IMXRT_LPUART4_ADDRESS; // Serial2
-            case 2: return (IMXRT_LPUART_t*) IMXRT_LPUART2_ADDRESS; // Serial3
-            case 3: return (IMXRT_LPUART_t*) IMXRT_LPUART3_ADDRESS; // Serial4
-            case 4: return (IMXRT_LPUART_t*) IMXRT_LPUART8_ADDRESS; // Serial5
-            case 5: return (IMXRT_LPUART_t*) IMXRT_LPUART1_ADDRESS; // Serial6
-            case 6: return (IMXRT_LPUART_t*) IMXRT_LPUART7_ADDRESS; // Serial7
-#ifdef ARDUINO_TEENSY41
-            case 7: return (IMXRT_LPUART_t*) IMXRT_LPUART5_ADDRESS; // Serial8
+            case 7: return &serial8_hw_;
 #endif
         }
         return nullptr;
@@ -134,40 +136,26 @@ protected:
     //     return tmp;
     // }
 
-    PROGMEM static const SerialT4::hardware_t Serial1_hw;
-    static void isr_Serial1() {
-        teensy4::Serial1.isr();
+    static SerialT4* p_instances_[MAX_PORTS_];
+
+    template <uint8_t PORT>
+    FASTRUN static void isr_serial() {
+        static_assert(PORT > 0 && PORT <= MAX_PORTS_, "invalid PORT.");
+
+        SerialT4* p_serial { p_instances_[PORT - 1] };
+        p_serial->isr();
     }
-    PROGMEM static const SerialT4::hardware_t Serial2_hw;
-    static void isr_Serial2() {
-        teensy4::Serial2.isr();
-    }
-    PROGMEM static const SerialT4::hardware_t Serial3_hw;
-    static void isr_Serial3() {
-        teensy4::Serial3.isr();
-    }
-    PROGMEM static const SerialT4::hardware_t Serial4_hw;
-    static void isr_Serial4() {
-        teensy4::Serial4.isr();
-    }
-    PROGMEM static const SerialT4::hardware_t Serial5_hw;
-    static void isr_Serial5() {
-        teensy4::Serial5.isr();
-    }
-    PROGMEM static const SerialT4::hardware_t Serial6_hw;
-    static void isr_Serial6() {
-        teensy4::Serial6.isr();
-    }
-    PROGMEM static const SerialT4::hardware_t Serial7_hw;
-    static void isr_Serial7() {
-        teensy4::Serial7.isr();
-    }
+
+    static const hardware_t serial1_hw_;
+    static const hardware_t serial2_hw_;
+    static const hardware_t serial3_hw_;
+    static const hardware_t serial4_hw_;
+    static const hardware_t serial5_hw_;
+    static const hardware_t serial6_hw_;
+    static const hardware_t serial7_hw_;
 #ifdef ARDUINO_TEENSY41
-    PROGMEM static const SerialT4::hardware_t Serial8_hw;
-    static void isr_Serial8() {
-        teensy4::Serial8.isr();
-    }
-#endif
+    static const hardware_t serial8_hw_;
+#endif // ARDUINO_TEENSY41
 
     const hardware_t* const p_hardware_;
     IMXRT_LPUART_t* const p_port_;
@@ -212,7 +200,7 @@ public:
 
     virtual size_t read(void* p_data, size_t length, bool blocking) const override;
 
-    bool get_rx_overflow(bool clear) {
+    bool get_rx_overflow(bool clear) override {
         const auto overflow { rx_overflow_ };
         if (clear) {
             rx_overflow_ = false;
@@ -237,34 +225,47 @@ public:
     }
 };
 
+namespace teensy4 {
+template <class T, uint8_t PORT>
+void get_serial(T** p_serial) {
+    static_assert(PORT <= SerialT4::MAX_PORTS_, "invalid PORT.");
+
+    if constexpr (PORT == 0) {
+        static SerialIOStreamAdapter instance { arduino::Serial };
+        *p_serial = &instance;
+    } else {
+        static SerialT4 instance { PORT - 1 };
+        *p_serial = &instance;
+    }
+};
+} // namespace teensy4
+
 /**
  * @brief Get the serial port object
- * @param[in] port: Number of serial port
+ * @tparam PORT: Number of serial port
  * @return Reference to SerialIO
  */
-static inline constexpr SerialIO& get_serial(const uint8_t port) {
-    if (port == 1) {
-        return arduino::teensy4::Serial1;
-    } else if (port == 2) {
-        return arduino::teensy4::Serial2;
-    } else if (port == 3) {
-        return arduino::teensy4::Serial3;
-    } else if (port == 4) {
-        return arduino::teensy4::Serial4;
-    } else if (port == 5) {
-        return arduino::teensy4::Serial5;
-    } else if (port == 6) {
-        return arduino::teensy4::Serial6;
-    } else if (port == 7) {
-        return arduino::teensy4::Serial7;
-#ifdef ARDUINO_TEENSY41
-    } else if (port == 8) {
-        return arduino::teensy4::Serial8;
-#endif
+template <uint8_t PORT>
+static constexpr SerialIO& get_serial() {
+    SerialIO* p_serial;
+    if constexpr (PORT == 0) {
+        teensy4::get_serial<SerialIOStreamAdapter, PORT>(reinterpret_cast<SerialIOStreamAdapter**>(&p_serial));
     } else {
-        return arduino::teensy4::Serial;
+        teensy4::get_serial<SerialT4, PORT>(reinterpret_cast<SerialT4**>(&p_serial));
     }
+    return *p_serial;
 }
-} // namespace arduino
+} // namespace freertos
+
+typedef struct _pin_to_xbar_info {
+    const uint8_t pin;
+    const uint8_t xbar_in_index;
+    const uint32_t mux_val;
+    volatile uint32_t* select_input_register;
+    const uint32_t select_val;
+} pin_to_xbar_info_t;
+
+extern const pin_to_xbar_info_t pin_to_xbar_info[];
+extern const uint8_t count_pin_to_xbar_info;
 
 #endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41

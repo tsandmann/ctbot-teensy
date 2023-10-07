@@ -30,6 +30,7 @@
 #include "ctbot.h"
 #include "scheduler.h"
 #include "timer.h"
+#include "spi_t4.h"
 
 #include "Adafruit_GFX.h"
 #include "XPT2046_Touchscreen.h"
@@ -43,14 +44,12 @@ decltype(TFTDisplay::framebuffer_pool_) TFTDisplay::framebuffer_pool_;
 
 TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
     : framebuffer_mem_ { init_memory() }, p_display_ { CtBotConfig::TFT_CONTROLLER_TYPE == 9486 ?
-              static_cast<TFT_SPI*>(new ILI9486 {
-                  CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN }) :
-              (CtBotConfig::TFT_CONTROLLER_TYPE == 9341 ? static_cast<TFT_SPI*>(new ILI9341 {
-                   CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN, -1 }) :
+              static_cast<TFT_SPI*>(new ILI9486 { freertos::get_spi<CtBotConfig::TFT_SPI - 1>(), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN }) :
+              (CtBotConfig::TFT_CONTROLLER_TYPE == 9341 ? static_cast<TFT_SPI*>(
+                   new ILI9341 { freertos::get_spi<CtBotConfig::TFT_SPI - 1>(), CtBotConfig::TFT_CS_PIN, CtBotConfig::TFT_DC_PIN, -1 }) :
                                                           nullptr) },
       p_framebuffer_ { new GFXcanvas16 { WIDTH_, HEIGHT_, framebuffer_mem_->data() } },
-      p_touch_ { new XPT2046_Touchscreen {
-          TOUCH_THRESHOLD_, CtBotConfig::TFT_TOUCH_CS_PIN, CtBotConfig::TFT_SPI == 1 ? &SPI : (CtBotConfig::TFT_SPI == 2 ? &SPI1 : nullptr) } },
+      p_touch_ { new XPT2046_Touchscreen { TOUCH_THRESHOLD_, CtBotConfig::TFT_TOUCH_CS_PIN, freertos::get_spi<CtBotConfig::TFT_SPI - 1>() } },
       service_running_ {}, updated_ {}, p_backl_pwm_ { &backl_pwm }, touch_counter_ {}, p_touch_point_ { new TS_Point {} } {
     static_assert(CtBotConfig::TFT_CONTROLLER_TYPE == 9486 || CtBotConfig::TFT_CONTROLLER_TYPE == 9341, "Unknown TFT controller selected in CtBotConfig");
 
@@ -87,15 +86,15 @@ TFTDisplay::TFTDisplay(LedsI2cEna<>& backl_pwm)
     }
 
     if (CtBotConfig::TFT_SPI == 1) {
-        arduino::SPI.setMOSI(CtBotConfig::SPI1_PIN_MOSI);
-        arduino::SPI.setMISO(CtBotConfig::SPI1_PIN_MISO);
-        arduino::SPI.setSCK(CtBotConfig::SPI1_PIN_SCK);
-        arduino::SPI.setCS(CtBotConfig::TFT_CS_PIN);
+        (*freertos::get_spi<0>()).setMOSI(CtBotConfig::SPI1_PIN_MOSI);
+        (*freertos::get_spi<0>()).setMISO(CtBotConfig::SPI1_PIN_MISO);
+        (*freertos::get_spi<0>()).setSCK(CtBotConfig::SPI1_PIN_SCK);
+        (*freertos::get_spi<0>()).setCS(CtBotConfig::TFT_CS_PIN);
     } else if (CtBotConfig::TFT_SPI == 2) {
-        arduino::SPI1.setMOSI(CtBotConfig::SPI2_PIN_MOSI);
-        arduino::SPI1.setMISO(CtBotConfig::SPI2_PIN_MISO);
-        arduino::SPI1.setSCK(CtBotConfig::SPI2_PIN_SCK);
-        arduino::SPI1.setCS(CtBotConfig::TFT_CS_PIN);
+        (*freertos::get_spi<1>()).setMOSI(CtBotConfig::SPI2_PIN_MOSI);
+        (*freertos::get_spi<1>()).setMISO(CtBotConfig::SPI2_PIN_MISO);
+        (*freertos::get_spi<1>()).setSCK(CtBotConfig::SPI2_PIN_SCK);
+        (*freertos::get_spi<1>()).setCS(CtBotConfig::TFT_CS_PIN);
     }
 
     p_touch_->begin();

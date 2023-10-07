@@ -34,6 +34,7 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+#include <expected>
 
 
 namespace ctbot {
@@ -53,18 +54,18 @@ public:
     FLASHMEM LoggerTarget();
     FLASHMEM virtual ~LoggerTarget();
 
-    FLASHMEM static size_t get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
+    FLASHMEM static int get_format_size(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
-    FLASHMEM static std::string create_formatted_string(size_t size, const char* format, ...);
+    FLASHMEM static std::expected<std::string, int> create_formatted_string(size_t size, const char* format, ...);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
-    FLASHMEM static std::string string_format(const char* format, logger::PrintfArg auto... args) {
+    FLASHMEM static std::expected<std::string, int> string_format(const char* format, logger::PrintfArg auto... args) {
         const auto size { get_format_size(format, args...) + 1 };
-        if (size > 0) {
+        if (size > 0) [[likely]] {
             return create_formatted_string(size, format, args...);
         } else {
-            return nullptr;
+            return std::unexpected { size - 1 };
         }
     }
 #pragma GCC diagnostic pop
@@ -122,7 +123,11 @@ public:
 
     template <bool BLOCK = false>
     FLASHMEM_T size_t log(const char* format, logger::PrintfArg auto... args) {
-        return log(LoggerTarget::string_format(format, args...), BLOCK);
+        if (const auto str { LoggerTarget::string_format(format, args...) }; str.has_value()) {
+            return log(*str, BLOCK);
+        } else {
+            return 0;
+        }
     }
 
     void flush();

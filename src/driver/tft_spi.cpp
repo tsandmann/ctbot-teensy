@@ -24,12 +24,10 @@
 
 #include "tft_spi.h"
 
+#include "spi_t4.h"
+
 #include "arduino_freertos.h"
-#include "SPI.h"
 
-
-TFT_SPI::TFT_SPI(SPIClass* p_spi, uint8_t cs, uint8_t dc, int8_t rst)
-    : cs_pin_ { cs }, dc_pin_ { dc }, rst_pin_ { rst }, width_ {}, height_ {}, rotation_ {}, p_spi_ { p_spi } {}
 
 TFT_SPI::~TFT_SPI() {
     delete p_spi_settings_;
@@ -42,8 +40,7 @@ void TFT_SPI::spi_init(uint32_t freq) {
     arduino::pinMode(dc_pin_, arduino::OUTPUT);
     arduino::digitalWriteFast(dc_pin_, arduino::HIGH); // data mode
 
-    using namespace arduino;
-    p_spi_settings_ = new SPISettings { freq, arduino::MSBFIRST, SPI_MODE0 };
+    p_spi_settings_ = new freertos::SpiT4Settings { freq, freertos::SpiT4Settings::MSB_FIRST, freertos::SpiT4Settings::MODE_0 };
     configASSERT(p_spi_settings_);
     p_spi_->begin();
 

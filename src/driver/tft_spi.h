@@ -28,13 +28,16 @@
 #include <type_traits>
 
 
-class SPIClass;
-class SPISettings;
+namespace freertos {
+class SpiT4;
+class SpiT4Settings;
+} // namespace freertos
 
 
 class TFT_SPI {
 public:
-    TFT_SPI(SPIClass* p_spi, uint8_t cs, uint8_t dc, int8_t rst);
+    constexpr TFT_SPI(freertos::SpiT4* p_spi, uint8_t cs, uint8_t dc, int8_t rst)
+        : cs_pin_ { cs }, dc_pin_ { dc }, rst_pin_ { rst }, width_ {}, height_ {}, rotation_ {}, p_spi_ { p_spi } {}
 
     virtual ~TFT_SPI();
 
@@ -60,8 +63,8 @@ protected:
     uint16_t width_;
     uint16_t height_;
     uint8_t rotation_;
-    SPIClass* p_spi_;
-    SPISettings* p_spi_settings_;
+    freertos::SpiT4* p_spi_;
+    freertos::SpiT4Settings* p_spi_settings_;
 
     void dc_low() const;
 

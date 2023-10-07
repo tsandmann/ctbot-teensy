@@ -32,6 +32,7 @@
 #include "driver/lc_display.h"
 #include "driver/leds_i2c.h"
 #include "driver/tft_display.h"
+#include "driver/spi_t4.h"
 
 #include "XPT2046_Touchscreen.h"
 
@@ -505,7 +506,7 @@ TftTest::~TftTest() {}
 
 TouchTest::TouchTest(CtBot& ctbot) : ctbot_(ctbot), p_touch_ {} {
     Scheduler::enter_critical_section();
-    p_touch_ = new XPT2046_Touchscreen { CtBotConfig::TFT_TOUCH_CS_PIN, CtBotConfig::TFT_SPI == 0 ? &SPI : CtBotConfig::TFT_SPI == 1 ? &SPI1 : &SPI2 };
+    p_touch_ = new XPT2046_Touchscreen { CtBotConfig::TFT_TOUCH_CS_PIN, freertos::get_spi<CtBotConfig::TFT_SPI - 1>() };
     if (!p_touch_) {
         Scheduler::exit_critical_section();
         return;

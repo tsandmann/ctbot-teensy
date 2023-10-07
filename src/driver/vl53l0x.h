@@ -154,35 +154,35 @@ class VL53L0X {
     FLASHMEM bool set_signal_rate_limit(const float limit_mcps) const;
 
     uint8_t read_reg8(const uint8_t reg, uint8_t& data) const {
-        return i2c_.read_reg(i2c_addr_, reg, data);
+        return static_cast<uint8_t>(i2c_.read_reg(i2c_addr_, reg, data));
     }
 
     uint8_t read_reg16(const uint8_t reg, uint16_t& data) const {
-        return i2c_.read_reg(i2c_addr_, reg, data);
+        return static_cast<uint8_t>(i2c_.read_reg(i2c_addr_, reg, data));
     }
 
     uint8_t read_bytes(const uint8_t addr, uint8_t* p_data, const uint8_t length) const {
-        return i2c_.read_bytes(i2c_addr_, addr, p_data, length);
+        return static_cast<uint8_t>(i2c_.read_bytes(i2c_addr_, addr, p_data, length));
     }
 
     uint8_t write_reg8(const uint8_t reg, const uint8_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return static_cast<uint8_t>(i2c_.write_reg(i2c_addr_, reg, value));
     }
 
     uint8_t write_reg16(const uint8_t reg, const uint16_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return static_cast<uint8_t>(i2c_.write_reg(i2c_addr_, reg, value));
     }
 
     uint8_t write_reg32(const uint8_t reg, const uint32_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return static_cast<uint8_t>(i2c_.write_reg(i2c_addr_, reg, value));
     }
 
     uint8_t write_bytes(const uint8_t addr, const uint8_t* p_data, const uint8_t length) const {
-        return i2c_.write_bytes(i2c_addr_, addr, p_data, length);
+        return static_cast<uint8_t>(i2c_.write_bytes(i2c_addr_, addr, p_data, length));
     }
 
     uint8_t set_bit(const uint8_t reg, const uint8_t bit, const bool value) const {
-        return i2c_.set_bit(i2c_addr_, reg, bit, value);
+        return static_cast<uint8_t>(i2c_.set_bit(i2c_addr_, reg, bit, value));
     }
 
 public:

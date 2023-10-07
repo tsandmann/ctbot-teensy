@@ -1,6 +1,6 @@
 # ct-Bot Teensy framework
 
-This is a very basic framework for the [ct-Bot][ctBot] with a [Teensy 3.5][Teensy], [Teensy 3.6][Teensy], [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
+This is a very basic framework for the [ct-Bot][ctBot] with a [Teensy 4.0][Teensy] or [Teensy 4.1][Teensy] controller. It is licensed under the terms of the [GPLv3 license](LICENSE.md).
 
 [![Chat on Matrix](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#ctbot:matrix.org)
 
@@ -31,13 +31,13 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 ## Usage
 
 1. Build project
-    * Commandline: `platformio run -e teensy36`
+    * Commandline: `platformio run -e teensy41`
     * VS Code: use “Build” button on the PlatformIO toolbar or shortcut (`ctrl/cmd+alt+b`)
     * Eclipse CDT: `Project` -> `Build Project` or shortcut (`ctrl/cmd+b`)
     * Atom: Select project folder in sidebar -> Menu `PlatformIO` -> `Build` or shortcut (`Alt+Ctrl+B`)
 1. Upload firmware image
     * Connect USB cable to teensy board
-    * Commandline: `platformio run -v -e teensy36 -t upload`
+    * Commandline: `platformio run -v -e teensy41 -t upload`
     * VS Code: use “Upload” button on the PlatformIO toolbar or shortcut (`ctrl/cmd+alt+t`) and select "PlatformIO: Upload"
     * Atom: Select project folder in sidebar -> Menu `PlatformIO` -> `Upload` or shortcut (`Alt+Ctrl+U`)
 1. Use a terminal program (e.g. minicom) to connect to the USB serial device
@@ -90,5 +90,3 @@ _Note for Atom IDE users:_ When installed via Atom package, Bash (Shell) used in
 [CppCon2015Stroustrup]: https://youtu.be/1OEu9C51K2A
 [CppCon2015Sutter]: https://youtu.be/hEx5DNLWGgA
 [Doxygen style 1]: https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html#cppblock
-[TeensyLibCore]: https://github.com/tsandmann/teensy-cores.git
-[TeensyLibWire]: https://github.com/tsandmann/teensy-wire.git

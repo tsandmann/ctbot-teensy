@@ -86,7 +86,7 @@ protected:
      * @brief Constructor of main class
      * @note Constructor is protected to enforce singleton pattern
      */
-    CtBotBehavior();
+    FLASHMEM CtBotBehavior();
 
     /* enforce singleton */
     CtBotBehavior(const CtBotBehavior&) = delete;
@@ -98,7 +98,7 @@ protected:
      */
     virtual void run() override;
 
-    virtual void shutdown() override;
+    FLASHMEM virtual void shutdown() override;
 
     /**
      * @brief Update pose and speed based on new wheel encoder data

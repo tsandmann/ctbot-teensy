@@ -1,18 +1,32 @@
-/*
- * This file is part of the ct-Bot teensy framework.
- * Copyright (c) 2021 Timo Sandmann
+/* Teensyduino Core Library
+ * http://www.pjrc.com/teensy/
+ * Copyright (c) 2019 PJRC.COM, LLC.
+ * Copyright (c) 2023, Timo Sandmann (Teensy 4.x serialport FreeRTOS driver)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
+ * 1. The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * 2. If the Software is incorporated into a build system that allows
+ * selection among a list of target devices, then similar target
+ * devices manufactured by PJRC.COM must be included in the list of
+ * target devices and selectable in the same manner.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 /**
@@ -29,72 +43,158 @@
 extern "C" void xbar_connect(unsigned int input, unsigned int output);
 
 
-namespace arduino {
-namespace teensy4 {
-SerialT4 Serial1 { 0 };
-SerialT4 Serial2 { 1 };
-SerialT4 Serial3 { 2 };
-SerialT4 Serial4 { 3 };
-SerialT4 Serial5 { 4 };
-SerialT4 Serial6 { 5 };
-SerialT4 Serial7 { 6 };
-#ifdef ARDUINO_TEENSY41
-SerialT4 Serial8 { 7 };
-#endif
-SerialIOStreamAdapter Serial { arduino::Serial };
-} // namespace teensy4
+namespace freertos {
 
+SerialT4* SerialT4::p_instances_[SerialT4::MAX_PORTS_] {};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial1_hw = { 0, IRQ_LPUART6, isr_Serial1, CCM_CCGR3, CCM_CCGR3_LPUART6(CCM_CCGR_ON),
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial1_hw_ = {
+    .index = 0,
+    .irq = IRQ_LPUART6,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART6_ADDRESS,
+    .irq_handler = isr_serial<1>,
+    .ccm_register = &CCM_CCGR3,
+    .ccm_value = CCM_CCGR3_LPUART6(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART6_TRG_INPUT,
 #ifdef ARDUINO_TEENSY41
-    { { 0, 2, &IOMUXC_LPUART6_RX_SELECT_INPUT, 1 }, { 52, 2, &IOMUXC_LPUART6_RX_SELECT_INPUT, 0 } },
-    { { 1, 2, &IOMUXC_LPUART6_TX_SELECT_INPUT, 1 }, { 53, 2, &IOMUXC_LPUART6_TX_SELECT_INPUT, 0 } },
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_RX_SELECT_INPUT, .select_val = 1, .pin = 0 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_RX_SELECT_INPUT, .select_val = 0, .pin = 52 } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_TX_SELECT_INPUT, .select_val = 1, .pin = 1 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_TX_SELECT_INPUT, .select_val = 0, .pin = 53 } },
 #else
-    { { 0, 2, &IOMUXC_LPUART6_RX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } }, { { 1, 2, &IOMUXC_LPUART6_TX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } },
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_RX_SELECT_INPUT, .select_val = 1, .pin = 0 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART6_TX_SELECT_INPUT, .select_val = 1, .pin = 1 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
 #endif // ARDUINO_TEENSY41
-    IRQ_PRIORITY_, XBARA1_OUT_LPUART6_TRG_INPUT };
+};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial2_hw = { 1, IRQ_LPUART4, isr_Serial2, CCM_CCGR1, CCM_CCGR1_LPUART4(CCM_CCGR_ON),
-    { { 7, 2, &IOMUXC_LPUART4_RX_SELECT_INPUT, 2 }, { 0xff, 0xff, nullptr, 0 } }, { { 8, 2, &IOMUXC_LPUART4_TX_SELECT_INPUT, 2 }, { 0xff, 0xff, nullptr, 0 } },
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial2_hw_ = {
+    .index = 1,
+    .irq = IRQ_LPUART4,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART4_ADDRESS,
+    .irq_handler = isr_serial<2>,
+    .ccm_register = &CCM_CCGR1,
+    .ccm_value = CCM_CCGR1_LPUART4(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART4_TRG_INPUT,
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART4_RX_SELECT_INPUT, .select_val = 2, .pin = 7 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART4_TX_SELECT_INPUT, .select_val = 2, .pin = 8 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 
-    IRQ_PRIORITY_, XBARA1_OUT_LPUART4_TRG_INPUT };
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial3_hw_ = {
+    .index = 2,
+    .irq = IRQ_LPUART2,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART2_ADDRESS,
+    .irq_handler = isr_serial<3>,
+    .ccm_register = &CCM_CCGR0,
+    .ccm_value = CCM_CCGR0_LPUART2(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART2_TRG_INPUT,
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART2_RX_SELECT_INPUT, .select_val = 1, .pin = 15 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART2_TX_SELECT_INPUT, .select_val = 1, .pin = 14 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial3_hw = { 2, IRQ_LPUART2, isr_Serial3, CCM_CCGR0, CCM_CCGR0_LPUART2(CCM_CCGR_ON),
-    { { 15, 2, &IOMUXC_LPUART2_RX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } },
-    { { 14, 2, &IOMUXC_LPUART2_TX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART2_TRG_INPUT };
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial4_hw_ = {
+    .index = 3,
+    .irq = IRQ_LPUART3,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART3_ADDRESS,
+    .irq_handler = isr_serial<4>,
+    .ccm_register = &CCM_CCGR0,
+    .ccm_value = CCM_CCGR0_LPUART3(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART3_TRG_INPUT,
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART3_RX_SELECT_INPUT, .select_val = 0, .pin = 16 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART3_TX_SELECT_INPUT, .select_val = 0, .pin = 17 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial4_hw = { 3, IRQ_LPUART3, isr_Serial4, CCM_CCGR0, CCM_CCGR0_LPUART3(CCM_CCGR_ON),
-    { { 16, 2, &IOMUXC_LPUART3_RX_SELECT_INPUT, 0 }, { 0xff, 0xff, nullptr, 0 } },
-    { { 17, 2, &IOMUXC_LPUART3_TX_SELECT_INPUT, 0 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART3_TRG_INPUT };
-
-PROGMEM const SerialT4::hardware_t SerialT4::Serial5_hw = { 4, IRQ_LPUART8, isr_Serial5, CCM_CCGR6, CCM_CCGR6_LPUART8(CCM_CCGR_ON),
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial5_hw_ = {
+    .index = 4,
+    .irq = IRQ_LPUART8,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART8_ADDRESS,
+    .irq_handler = isr_serial<5>,
+    .ccm_register = &CCM_CCGR6,
+    .ccm_value = CCM_CCGR6_LPUART8(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART8_TRG_INPUT,
 #ifdef ARDUINO_TEENSY41
-    { { 21, 2, &IOMUXC_LPUART8_RX_SELECT_INPUT, 1 }, { 46, 2, &IOMUXC_LPUART8_RX_SELECT_INPUT, 0 } },
-    { { 20, 2, &IOMUXC_LPUART8_TX_SELECT_INPUT, 1 }, { 47, 2, &IOMUXC_LPUART8_TX_SELECT_INPUT, 0 } },
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_RX_SELECT_INPUT, .select_val = 1, .pin = 21 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_RX_SELECT_INPUT, .select_val = 0, .pin = 46 } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_TX_SELECT_INPUT, .select_val = 1, .pin = 20 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_TX_SELECT_INPUT, .select_val = 0, .pin = 47 } },
 #else
-    { { 21, 2, &IOMUXC_LPUART8_RX_SELECT_INPUT, 1 }, { 38, 2, &IOMUXC_LPUART8_RX_SELECT_INPUT, 0 } },
-    { { 20, 2, &IOMUXC_LPUART8_TX_SELECT_INPUT, 1 }, { 39, 2, &IOMUXC_LPUART8_TX_SELECT_INPUT, 0 } },
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_RX_SELECT_INPUT, .select_val = 1, .pin = 21 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_RX_SELECT_INPUT, .select_val = 0, .pin = 38 } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_TX_SELECT_INPUT, .select_val = 1, .pin = 20 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART8_TX_SELECT_INPUT, .select_val = 0, .pin = 39 } },
 #endif // ARDUINO_TEENSY41
-    IRQ_PRIORITY_, XBARA1_OUT_LPUART8_TRG_INPUT };
+};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial6_hw = { 5, IRQ_LPUART1, isr_Serial6, CCM_CCGR5, CCM_CCGR5_LPUART1(CCM_CCGR_ON),
-    { { 25, 2, nullptr, 0 }, { 0xff, 0xff, nullptr, 0 } }, { { 24, 2, nullptr, 0 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART1_TRG_INPUT };
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial6_hw_ = {
+    .index = 5,
+    .irq = IRQ_LPUART1,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART1_ADDRESS,
+    .irq_handler = isr_serial<6>,
+    .ccm_register = &CCM_CCGR5,
+    .ccm_value = CCM_CCGR5_LPUART1(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART1_TRG_INPUT,
+    .rx_pins = { { .mux_val = 2, .select_in_reg = nullptr, .select_val = 0, .pin = 25 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = nullptr, .select_val = 0, .pin = 24 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 
-PROGMEM const SerialT4::hardware_t SerialT4::Serial7_hw = { 6, IRQ_LPUART7, isr_Serial7, CCM_CCGR5, CCM_CCGR5_LPUART7(CCM_CCGR_ON),
-    { { 28, 2, &IOMUXC_LPUART7_RX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } },
-    { { 29, 2, &IOMUXC_LPUART7_TX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART7_TRG_INPUT };
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial7_hw_ = {
+    .index = 6,
+    .irq = IRQ_LPUART7,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART7_ADDRESS,
+    .irq_handler = isr_serial<7>,
+    .ccm_register = &CCM_CCGR5,
+    .ccm_value = CCM_CCGR5_LPUART7(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART7_TRG_INPUT,
+    .rx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART7_RX_SELECT_INPUT, .select_val = 1, .pin = 28 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+    .tx_pins = { { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART7_TX_SELECT_INPUT, .select_val = 1, .pin = 29 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 
 #ifdef ARDUINO_TEENSY41
-PROGMEM const SerialT4::hardware_t SerialT4::Serial8_hw = { 7, IRQ_LPUART5, isr_Serial8, CCM_CCGR3, CCM_CCGR3_LPUART5(CCM_CCGR_ON),
-    { { 34, 1, &IOMUXC_LPUART5_RX_SELECT_INPUT, 1 }, { 48, 2, &IOMUXC_LPUART5_RX_SELECT_INPUT, 0 } },
-    { { 35, 1, &IOMUXC_LPUART5_TX_SELECT_INPUT, 1 }, { 0xff, 0xff, nullptr, 0 } }, IRQ_PRIORITY_, XBARA1_OUT_LPUART5_TRG_INPUT };
+PROGMEM constinit const SerialT4::hardware_t SerialT4::serial8_hw_ = {
+    .index = 7,
+    .irq = IRQ_LPUART5,
+    .irq_priority = IRQ_PRIORITY_,
+    .port_addr = IMXRT_LPUART5_ADDRESS,
+    .irq_handler = isr_serial<8>,
+    .ccm_register = &CCM_CCGR3,
+    .ccm_value = CCM_CCGR3_LPUART5(CCM_CCGR_ON),
+    .xbar_out_trig = XBARA1_OUT_LPUART5_TRG_INPUT,
+    .rx_pins = { { .mux_val = 1, .select_in_reg = &IOMUXC_LPUART5_RX_SELECT_INPUT, .select_val = 1, .pin = 34 },
+        { .mux_val = 2, .select_in_reg = &IOMUXC_LPUART5_RX_SELECT_INPUT, .select_val = 0, .pin = 48 } },
+    .tx_pins = { { .mux_val = 1, .select_in_reg = &IOMUXC_LPUART5_TX_SELECT_INPUT, .select_val = 1, .pin = 35 },
+        { .mux_val = 0xff, .select_in_reg = nullptr, .select_val = 0, .pin = 0xff } },
+};
 #endif // ARDUINO_TEENSY41
+
 
 FLASHMEM SerialT4::SerialT4(uint8_t index)
-    : p_hardware_ { get_hardware(index) }, p_port_ { get_port(index) }, transmitting_ {}, rx_pin_index_ {}, tx_pin_index_ {}, rx_buffer_ {}, tx_buffer_ {},
-      rx_overflow_ {}, rx_last_caller_ {}, tx_last_caller_ {}, stream_helper_ { *this } {
+    : p_hardware_ { get_hardware(index) }, p_port_ { reinterpret_cast<IMXRT_LPUART_t*>(p_hardware_->port_addr) }, transmitting_ {}, rx_pin_index_ {},
+      tx_pin_index_ {}, rx_buffer_ {}, tx_buffer_ {}, rx_overflow_ {}, rx_last_caller_ {}, tx_last_caller_ {}, stream_helper_ { *this } {
     configASSERT(p_hardware_);
     configASSERT(p_port_);
+
+    p_instances_[index] = this;
+
+    if (DEBUG_LEVEL_ >= 4) {
+        arduino::Serial.printf(PSTR("SerialT4::SerialT4(%u)\r\n"), p_hardware_->index);
+    }
 }
 
 FLASHMEM SerialT4::~SerialT4() {
@@ -179,18 +279,18 @@ FLASHMEM bool SerialT4::begin(uint32_t baud, uint16_t format, size_t rx_buf_size
 
     transmitting_ = false;
 
-    p_hardware_->ccm_register = p_hardware_->ccm_register | p_hardware_->ccm_value;
+    *p_hardware_->ccm_register = *p_hardware_->ccm_register | p_hardware_->ccm_value;
 
     *(portControlRegister(p_hardware_->rx_pins[rx_pin_index_].pin)) = IOMUXC_PAD_DSE(7) | IOMUXC_PAD_PKE | IOMUXC_PAD_PUE | IOMUXC_PAD_PUS(3) | IOMUXC_PAD_HYS;
     *(portConfigRegister(p_hardware_->rx_pins[rx_pin_index_].pin)) = p_hardware_->rx_pins[rx_pin_index_].mux_val;
-    if (p_hardware_->rx_pins[rx_pin_index_].select_input_register) {
-        *(p_hardware_->rx_pins[rx_pin_index_].select_input_register) = p_hardware_->rx_pins[rx_pin_index_].select_val;
+    if (p_hardware_->rx_pins[rx_pin_index_].select_in_reg) {
+        *(p_hardware_->rx_pins[rx_pin_index_].select_in_reg) = p_hardware_->rx_pins[rx_pin_index_].select_val;
     }
 
     *(portControlRegister(p_hardware_->tx_pins[tx_pin_index_].pin)) = IOMUXC_PAD_SRE | IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
     *(portConfigRegister(p_hardware_->tx_pins[tx_pin_index_].pin)) = p_hardware_->tx_pins[tx_pin_index_].mux_val;
-    if (p_hardware_->tx_pins[tx_pin_index_].select_input_register) {
-        *(p_hardware_->tx_pins[tx_pin_index_].select_input_register) = p_hardware_->tx_pins[tx_pin_index_].select_val;
+    if (p_hardware_->tx_pins[tx_pin_index_].select_in_reg) {
+        *(p_hardware_->tx_pins[tx_pin_index_].select_in_reg) = p_hardware_->tx_pins[tx_pin_index_].select_val;
     }
 
     p_port_->BAUD = LPUART_BAUD_OSR(bestosr - 1) | LPUART_BAUD_SBR(bestdiv) | (bestosr <= 8 ? LPUART_BAUD_BOTHEDGE : 0);
@@ -200,7 +300,7 @@ FLASHMEM bool SerialT4::begin(uint32_t baud, uint16_t format, size_t rx_buf_size
 
     /* Enable the transmitter, receiver and enable receiver interrupt */
     NVIC_CLEAR_PENDING(p_hardware_->irq);
-    ::attachInterruptVector(p_hardware_->irq, p_hardware_->irq_handler);
+    ::attachInterruptVector(static_cast<IRQ_NUMBER_t>(p_hardware_->irq), p_hardware_->irq_handler);
     NVIC_SET_PRIORITY(p_hardware_->irq, p_hardware_->irq_priority);
     NVIC_ENABLE_IRQ(p_hardware_->irq);
 
@@ -290,15 +390,15 @@ FLASHMEM bool SerialT4::setRX(uint8_t pin) {
         if (pin == p_hardware_->rx_pins[rx_pin_new_index].pin) {
             // new pin - so lets maybe reset the old pin to INPUT? and then set new pin parameters
             // only change IO pins if done after begin has been called.
-            if ((p_hardware_->ccm_register & p_hardware_->ccm_value)) {
+            if ((*p_hardware_->ccm_register & p_hardware_->ccm_value)) {
                 *(portConfigRegister(p_hardware_->rx_pins[rx_pin_index_].pin)) = 5;
 
                 /* Now set new pin info */
                 *(portControlRegister(p_hardware_->rx_pins[rx_pin_new_index].pin)) =
                     IOMUXC_PAD_DSE(7) | IOMUXC_PAD_PKE | IOMUXC_PAD_PUE | IOMUXC_PAD_PUS(3) | IOMUXC_PAD_HYS;
                 *(portConfigRegister(p_hardware_->rx_pins[rx_pin_new_index].pin)) = p_hardware_->rx_pins[rx_pin_new_index].mux_val;
-                if (p_hardware_->rx_pins[rx_pin_new_index].select_input_register) {
-                    *(p_hardware_->rx_pins[rx_pin_new_index].select_input_register) = p_hardware_->rx_pins[rx_pin_new_index].select_val;
+                if (p_hardware_->rx_pins[rx_pin_new_index].select_in_reg) {
+                    *(p_hardware_->rx_pins[rx_pin_new_index].select_in_reg) = p_hardware_->rx_pins[rx_pin_new_index].select_val;
                 }
             }
             rx_pin_index_ = rx_pin_new_index;
@@ -313,10 +413,10 @@ FLASHMEM bool SerialT4::setRX(uint8_t pin) {
             /* So it is an XBAR pin set the XBAR */
             if (DEBUG_LEVEL_ >= 4) {
                 arduino::Serial.printf(PSTR("SerialT4(%u)::setRX(): ACTS XB(%d), X(%u %u), MUX:%x\r\n"), p_hardware_->index, i,
-                    pin_to_xbar_info[i].xbar_in_index, p_hardware_->xbar_out_lpuartX_trig_input, pin_to_xbar_info[i].mux_val);
+                    pin_to_xbar_info[i].xbar_in_index, p_hardware_->xbar_out_trig, pin_to_xbar_info[i].mux_val);
             }
             CCM_CCGR2 = CCM_CCGR2 | CCM_CCGR2_XBAR1(CCM_CCGR_ON);
-            xbar_connect(pin_to_xbar_info[i].xbar_in_index, p_hardware_->xbar_out_lpuartX_trig_input);
+            xbar_connect(pin_to_xbar_info[i].xbar_in_index, p_hardware_->xbar_out_trig);
 
             /* We need to update port register to use this as the trigger */
             p_port_->PINCFG = LPUART_PINCFG_TRGSEL(1); // Trigger select as alternate RX
@@ -357,7 +457,7 @@ FLASHMEM bool SerialT4::setTX(uint8_t pin, bool opendrain) {
 
     // turn on or off opendrain mode.
     // new pin - so lets maybe reset the old pin to INPUT? and then set new pin parameters
-    if ((p_hardware_->ccm_register & p_hardware_->ccm_value)) { // only do if we are already active.
+    if ((*p_hardware_->ccm_register & p_hardware_->ccm_value)) { // only do if we are already active.
         if (tx_pin_new_index != tx_pin_index_) {
             *(portConfigRegister(p_hardware_->tx_pins[tx_pin_index_].pin)) = 5;
             *(portConfigRegister(p_hardware_->tx_pins[tx_pin_new_index].pin)) = p_hardware_->tx_pins[tx_pin_new_index].mux_val;
@@ -540,6 +640,6 @@ size_t SerialT4::StreamHelper::write(uint8_t b) {
     return res;
 }
 
-} // namespace arduino
+} // namespace freertos
 
 #endif // ARDUINO_TEENSY40 || ARDUINO_TEENSY41

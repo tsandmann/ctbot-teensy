@@ -28,7 +28,8 @@
 #include "Stream.h"
 #include "Wire.h"
 #include "WString.h"
-#include "serial_posix.h"
+
+#include "driver/serial_io.h"
 
 #include <atomic>
 #include <cstdint>
@@ -141,6 +142,8 @@ static constexpr uint8_t BUILTIN_SDCARD { 254 };
 
 static constexpr uint8_t IRQ_SOFTWARE { 70 };
 
+static constexpr uint32_t SRC_SRSR { 0 };
+
 static constexpr bool digitalPinHasPWM(uint8_t p) {
     return (((p) >= 2 && (p) <= 10) || (p) == 14 || ((p) >= 20 && (p) <= 23) || (p) == 29 || (p) == 30 || ((p) >= 35 && (p) <= 38));
 }
@@ -182,12 +185,88 @@ using ::Wire;
 using ::Wire1;
 using ::Wire2;
 using ::Wire3;
+
+
+namespace posix {
+template <class T, uint8_t PORT>
+void get_serial(T** p_serial) {
+    static_assert(PORT <= 8, "invalid PORT specified.");
+
+    switch (PORT) {
+        case 0: [[fallthrough]];
+        case 8: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial };
+            *p_serial = &instance;
+            break;
+        }
+        case 1: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial1 };
+            *p_serial = &instance;
+            break;
+        }
+        case 2: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial2 };
+            *p_serial = &instance;
+            break;
+        }
+        case 3: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial3 };
+            *p_serial = &instance;
+            break;
+        }
+        case 4: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial4 };
+            *p_serial = &instance;
+            break;
+        }
+        case 5: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial5 };
+            *p_serial = &instance;
+            break;
+        }
+        case 6: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial6 };
+            *p_serial = &instance;
+            break;
+        }
+        case 7: {
+            static freertos::SerialIOStreamAdapter instance { arduino::Serial7 };
+            *p_serial = &instance;
+            break;
+        }
+    }
+};
+
+} // namespace posix
 } // namespace arduino
+
+
+namespace freertos {
+/**
+ * @brief Get the serial port object
+ * @tparam PORT: Number of serial port
+ * @return Reference to SerialIO
+ */
+template <uint8_t PORT>
+static constexpr SerialIO& get_serial() {
+    SerialIO* p_serial;
+    ::arduino::posix::get_serial<SerialIOStreamAdapter, PORT>(reinterpret_cast<SerialIOStreamAdapter**>(&p_serial));
+    return *p_serial;
+}
+} // namespace freertos
+
 
 static inline void __disable_irq() {}
 static inline void __enable_irq() {}
 
+#ifndef _NEWLIB_VERSION
+#define _NEWLIB_VERSION "0.0.0"
+#endif
+
 #define FILE_USE_MOVE
+
+class EventResponder;
+using EventResponderRef = EventResponder&;
 
 typedef struct {
     uint8_t sec; // 0-59

@@ -25,6 +25,7 @@
 #pragma once
 
 #include "cmd_parser.h"
+#include "fs_service.h"
 
 #include "avr/pgmspace.h"
 
@@ -37,7 +38,7 @@
 namespace ctbot {
 
 class CtBot;
-class CommInterface;
+class CommInterfaceCmdParser;
 
 
 class CtBotCli {
@@ -63,9 +64,9 @@ protected:
     std::vector<std::string_view> texts_;
 
     template <typename... Ts>
-    bool eval_args(ArgsHelper<Ts...>::func&& func, const std::string_view& args) {
+    bool eval_args(ArgsHelper<Ts...>::func&& func, bool trim, const std::string_view& args) {
         typename ArgsHelper<Ts...>::types values;
-        if (auto [_, ec] = CmdParser::split_args(args, values); ec == std::errc {}) {
+        if (CmdParser::split_args(args, trim, values).ec == std::errc {}) {
             return std::apply(func, values);
         }
 

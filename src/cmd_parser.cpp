@@ -78,6 +78,16 @@ bool CmdParser::execute_cmd(const std::string_view& cmd, CommInterface& comm) {
         comm.debug_printf<true>(PSTR("arg_pos=%u cmd_str=\"%s\"\r\n"), arg_pos, std::string { cmd_str }.c_str());
     }
 
+    if (commands_.empty()) {
+        comm.set_color(CommInterface::Color::RED, CommInterface::Color::BLACK);
+        comm.set_attribute(CommInterface::Attribute::BOLD);
+        comm.debug_print(PSTR("ERROR"), true);
+        comm.set_color(CommInterface::Color::WHITE, CommInterface::Color::BLACK);
+        comm.debug_print(PSTR(": commands not yet initialized.\r\n"), true);
+        comm.set_attribute(CommInterface::Attribute::NORMAL);
+        return false;
+    }
+
     const auto it { commands_.find(cmd_str) };
     if (it == commands_.end()) {
         if (echo_) {

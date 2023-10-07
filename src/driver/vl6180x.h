@@ -95,19 +95,19 @@ class VL6180X {
     FLASHMEM bool set_scaling(const uint8_t scaling);
 
     uint8_t read_reg8(const uint16_t reg, uint8_t& data) const {
-        return i2c_.read_reg(i2c_addr_, reg, data);
+        return static_cast<uint8_t>(i2c_.read_reg(i2c_addr_, reg, data));
     }
 
     uint8_t read_reg16(const uint16_t reg, uint16_t& data) const {
-        return i2c_.read_reg(i2c_addr_, reg, data);
+        return static_cast<uint8_t>(i2c_.read_reg(i2c_addr_, reg, data));
     }
 
     uint8_t write_reg8(const uint16_t reg, const uint8_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return static_cast<uint8_t>(i2c_.write_reg(i2c_addr_, reg, value));
     }
 
     uint8_t write_reg16(const uint16_t reg, const uint16_t value) const {
-        return i2c_.write_reg(i2c_addr_, reg, value);
+        return static_cast<uint8_t>(i2c_.write_reg(i2c_addr_, reg, value));
     }
 
 public:

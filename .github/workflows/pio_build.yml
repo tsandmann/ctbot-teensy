@@ -33,4 +33,4 @@ jobs:
     - name: Update PlatformIO
       run: pio pkg update
     - name: Run PlatformIO
-      run: pio run -e teensy35 -e teensy36 -e teensy40 -e teensy41 -e linux
+      run: pio run -e teensy40 -e teensy41 -e linux

@@ -47,7 +47,7 @@ DMAMEM alignas(8) static memory::static_allocator_storage<256 * sizeof(void*)> g
 const std::string_view CommInterface::log_prefix_ { _log_prefix_ };
 const std::string_view CommInterface::log_postfix_ { _log_postfix_ };
 
-FLASHMEM CommInterface::CommInterface(arduino::SerialIO& io_connection, bool enable_echo)
+FLASHMEM CommInterface::CommInterface(freertos::SerialIO& io_connection, bool enable_echo)
     : io_ { io_connection }, echo_ { enable_echo }, viewer_enabled_ { false }, error_ {}, p_input_ {}, p_output_queue_ {}, p_input_buffer_ {}, p_clear_str_ {} {
     if constexpr (DEBUG_) {
         io_.write(PSTR("CommInterface::CommInterface()\r\n"));
@@ -241,7 +241,7 @@ void CommInterface::run_output() {
     }
 }
 
-CommInterfaceCmdParser::CommInterfaceCmdParser(arduino::SerialIO& io_connection, CmdParser& parser, bool enable_echo)
+CommInterfaceCmdParser::CommInterfaceCmdParser(freertos::SerialIO& io_connection, CmdParser& parser, bool enable_echo)
     : CommInterface { io_connection, enable_echo }, cmd_parser_ { parser }, history_view_ {} {
     cmd_parser_.set_echo(enable_echo);
 }

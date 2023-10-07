@@ -29,7 +29,6 @@
 #include "timer.h"
 
 #include "driver/serial_io.h"
-#include "driver/serial_t3.h"
 #include "driver/serial_t4.h"
 
 #include "crc32.h"
@@ -109,17 +108,21 @@ void SpeedControl::controller() {
 
 
 std::list<SpeedControlPico*> SpeedControlPico::controller_list_;
-arduino::SerialIO& SpeedControlPico::serial_ { arduino::get_serial(CtBotConfig::UART_MOTOR_CTL) };
 uint16_t SpeedControlPico::motor_current_;
 uint32_t SpeedControlPico::crc_errors_;
+
+freertos::SerialIO& SpeedControlPico::get_serial() {
+    static freertos::SerialIO& instance { freertos::get_serial<CtBotConfig::UART_MOTOR_CTL>() };
+    return instance;
+}
 
 SpeedControlPico::SpeedControlPico() : enc_speed_ {}, enc_counts_ {}, last_counts_ {}, reset_ { true } {
     controller_list_.push_back(this);
 
     if (controller_list_.size() == 1) {
-        serial_.setRX(CtBotConfig::UART_MOTOR_CTL_PIN_RX);
-        serial_.setTX(CtBotConfig::UART_MOTOR_CTL_PIN_TX);
-        serial_.begin(CtBotConfig::UART_MOTOR_CTL_BAUDRATE, 0, RX_BUF_SIZE_, TX_BUF_SIZE_);
+        get_serial().setRX(CtBotConfig::UART_MOTOR_CTL_PIN_RX);
+        get_serial().setTX(CtBotConfig::UART_MOTOR_CTL_PIN_TX);
+        get_serial().begin(CtBotConfig::UART_MOTOR_CTL_BAUDRATE, 0, RX_BUF_SIZE_, TX_BUF_SIZE_);
         CtBot::get_instance().get_scheduler()->task_add(PSTR("sctrl"), TASK_PERIOD_MS_, TASK_PRIORITY_, TASK_STACK_SIZE_, &controller);
     }
 }
@@ -162,18 +165,18 @@ void SpeedControlPico::controller() {
         auto ptr { reinterpret_cast<const uint8_t*>(&speed_data) };
         speed_data.crc = CRC32::calculate(ptr, sizeof(speed_data) - sizeof(speed_data.crc));
 
-        serial_.write(&speed_data, sizeof(speed_data));
+        get_serial().write(&speed_data, sizeof(speed_data));
     }
 
-    while (serial_.available() >= sizeof(EncData)) {
-        if (serial_.peek() != 0xaa) {
+    while (get_serial().available() >= sizeof(EncData)) {
+        if (get_serial().peek() != 0xaa) {
             uint8_t tmp;
-            serial_.read(&tmp, 1);
+            get_serial().read(&tmp, 1);
             continue;
         }
 
         EncData enc_data;
-        serial_.read(&enc_data, sizeof(EncData));
+        get_serial().read(&enc_data, sizeof(EncData));
         auto ptr { reinterpret_cast<const uint8_t*>(&enc_data) };
         const auto checksum { CRC32::calculate(ptr, sizeof(EncData) - sizeof(enc_data.crc)) };
         if (checksum == enc_data.crc) {

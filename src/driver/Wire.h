@@ -16,26 +16,13 @@
  */
 
 /**
- * @file    serial_t3.cpp
- * @brief   Teensy 3.5/3.6 serialport FreeRTOS driver
+ * @file    Wire.h
+ * @brief   Teensy 4.x I2C FreeRTOS driver
  * @author  Timo Sandmann
- * @date    16.10.2021
+ * @date    25.03.2021
  */
 
-#if defined ARDUINO_TEENSY35 || defined ARDUINO_TEENSY36
-#include "serial_t3.h"
+#pragma once
 
-
-namespace arduino {
-namespace teensy3 {
-SerialIOStreamAdapter Serial1 { arduino::Serial1 };
-SerialIOStreamAdapter Serial2 { arduino::Serial2 };
-SerialIOStreamAdapter Serial3 { arduino::Serial3 };
-SerialIOStreamAdapter Serial4 { arduino::Serial4 };
-SerialIOStreamAdapter Serial5 { arduino::Serial5 };
-SerialIOStreamAdapter Serial6 { arduino::Serial6 };
-SerialIOStreamAdapter Serial { arduino::Serial };
-} // namespace teensy3
-} // namespace arduino
-
-#endif // ARDUINO_TEENSY35 || ARDUINO_TEENSY36
+#define TwoWire_h
+#define DISABLE_ARDUINO_WIRE

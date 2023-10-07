@@ -31,22 +31,6 @@
 #include <iostream>
 
 
-typedef struct {
-    volatile uint8_t A1;
-    volatile uint8_t F;
-    volatile uint8_t C1;
-    volatile uint8_t S;
-    volatile uint8_t D;
-    volatile uint8_t C2;
-    volatile uint8_t FLT;
-    volatile uint8_t RA;
-    volatile uint8_t SMB;
-    volatile uint8_t A2;
-    volatile uint8_t SLTH;
-    volatile uint8_t SLTL;
-} KINETIS_I2C_t;
-
-
 class TwoWire {
     static constexpr bool DEBUG_ { false };
 
@@ -233,10 +217,17 @@ extern TwoWire Wire2;
 extern TwoWire Wire3;
 
 namespace arduino {
-extern KINETIS_I2C_t i2c_dummy;
-}
+template <uint8_t BUS>
+TwoWire* get_wire() {
+    static_assert(BUS <= 3, "invalid BUS.");
 
-#define KINETIS_I2C0 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
-#define KINETIS_I2C1 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
-#define KINETIS_I2C2 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
-#define KINETIS_I2C3 (*(KINETIS_I2C_t*) &arduino::i2c_dummy)
+    switch (BUS) {
+        case 0: return &Wire;
+        case 1: return &Wire1;
+        case 2: return &Wire2;
+        case 3: return &Wire3;
+    }
+
+    return nullptr;
+}
+} // namespace arduino

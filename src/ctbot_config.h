@@ -41,6 +41,14 @@ struct CtBotConfigBase {
         false
 #endif
     };
+
+    static constexpr uint8_t UART_WIFI_ID {
+#ifdef ARDUINO_TEENSY41
+        8
+#else
+        7
+#endif
+    };
 };
 
 /**
@@ -76,14 +84,15 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr bool ACCEL_AVAILABLE { false };
     static constexpr bool MPU6050_AVAILABLE { false };
     static constexpr bool AUDIO_ANALOG_AVAILABLE { false }; /**< Statically activate or deactivate analog audio output */
-    static constexpr bool AUDIO_I2S_AVAILABLE { false }; /**< Statically activate or deactivate I2S audio output */
-    static constexpr bool SDCARD_AVAILABLE { false };
-    static constexpr bool LOG_TO_SDCARD_AVAILABLE { false };
-    static constexpr bool CLI_HISTORY_ON_SDCARD_AVAILABLE { false };
+    static constexpr bool AUDIO_I2S_AVAILABLE { true }; /**< Statically activate or deactivate I2S audio output */
+    static constexpr bool SDCARD_AVAILABLE { true };
+    static constexpr bool LOG_TO_SDCARD_AVAILABLE { true };
+    static constexpr bool CLI_HISTORY_ON_SDCARD_AVAILABLE { true };
     static constexpr bool PROG_AVAILABLE { true }; /**< Statically activate or deactivate script execution features */
     static constexpr bool LUA_AVAILABLE { false }; /**< Statically activate or deactivate LUA interpreter */
     static constexpr bool I2C_TOOLS_AVAILABLE { true }; /**< Statically activate or deactivate i2c console commands */
     static constexpr bool DATE_TIME_AVAILABLE { true };
+    static constexpr bool FLASH_OVER_WIFI_AVAILABLE { false };
 
     static constexpr uint32_t BOOT_DELAY_MS { 2'000 };
 
@@ -95,7 +104,7 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
     static constexpr uint32_t UART_WIFI_BAUDRATE { 1'000'000 }; /**< Baud rate used for Uart to WiFi */
     static constexpr uint32_t UART_MOTOR_CTL_BAUDRATE { 1'000'000 }; /**< Baud rate used for motor Uart */
-    static constexpr bool UART_WIFI_FOR_CMD { false }; /**< Use wifi for command line interface? */
+    static constexpr bool UART_WIFI_FOR_CMD { true }; /**< Use wifi for command line interface? */
 
     /* i2c */
     static constexpr uint32_t I2C1_FREQ { 400'000 };
@@ -219,7 +228,7 @@ struct CtBotConfigHardware<9'000> {
     static constexpr uint8_t LCD_I2C_BUS { 1 }; /**< ID of I2C bus to use for lcd controller */
 
     /* tft */
-    static constexpr uint8_t TFT_SPI { 1 }; /**< ID of SPI port to use for tft controller */
+    static constexpr uint8_t TFT_SPI { 1 }; /**< ID of SPI port to use for tft controller [1; 2] */
     static constexpr uint8_t TFT_CS_PIN { SPI1_PIN_CS1 }; /**< Pin number of SPI chip select signal to use for tft controller */
     static constexpr uint8_t TFT_DC_PIN { SPI1_PIN_CS3 }; /**< Pin number of data/control signal to use for tft controller */
     static constexpr uint8_t TFT_BACKLIGHT_PIN { PWM_ERW_2_PIN }; /**< Pin number of backlight PWM control signal to use for tft display */
@@ -256,7 +265,7 @@ struct CtBotConfigHardware<9'002> {
     static constexpr uint8_t DEBUG_LED_PIN { 9 }; /**< Pin number of debug LED */
 
     /* uart */
-    static constexpr uint8_t UART_WIFI { 8 }; /**< ID of UART to use for WiFi interface */
+    static constexpr uint8_t UART_WIFI { CtBotConfigBase::UART_WIFI_ID }; /**< ID of UART to use for WiFi interface */
     static constexpr uint8_t UART_WIFI_PIN_RX { 34 }; /**< Number of pin to use for RX line for Uart to WiFi */
     static constexpr uint8_t UART_WIFI_PIN_TX { 35 }; /**< Number of pin to use for TX line for Uart to WiFi */
 
@@ -325,7 +334,7 @@ struct CtBotConfigHardware<9'002> {
     static constexpr uint8_t LCD_I2C_BUS { 1 }; /**< ID of I2C bus to use for lcd controller */
 
     /* tft */
-    static constexpr uint8_t TFT_SPI { 1 }; /**< ID of SPI port to use for tft controller */
+    static constexpr uint8_t TFT_SPI { 1 }; /**< ID of SPI port to use for tft controller [1; 2] */
     static constexpr uint8_t TFT_CS_PIN { SPI1_PIN_CS1 }; /**< Pin number of SPI chip select signal to use for tft controller */
     static constexpr uint8_t TFT_DC_PIN { SPI1_PIN_CS3 }; /**< Pin number of data/control signal to use for tft controller */
     static constexpr uint8_t TFT_BACKLIGHT_PIN { 255 }; /**< Pin number of backlight PWM control signal to use for tft display */ // FIXME: DRV_DISPLAY
