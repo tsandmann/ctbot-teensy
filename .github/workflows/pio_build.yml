@@ -33,4 +33,7 @@ jobs:
     - name: Update PlatformIO
       run: pio pkg update
     - name: Run PlatformIO
-      run: pio run -e teensy40 -e teensy41 -e linux
+      run: |
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10
+        pio run -e teensy40 -e teensy41 -e linux
