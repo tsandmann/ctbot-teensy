@@ -237,7 +237,7 @@ FLASHMEM void CtBotCli::init_commands() {
                     delete p_cmd;
                     return false;
                 }
-                ::xTimerStart(p_ctbot_->p_watch_timer_, 0);
+                xTimerStart(p_ctbot_->p_watch_timer_, 0);
                 return true;
             }
         } else if (p_ctbot_->p_watch_timer_) {
@@ -762,6 +762,10 @@ FLASHMEM void CtBotCli::init_commands() {
 
     if constexpr (CtBotConfig::SDCARD_AVAILABLE) {
         p_parser->register_cmd(PSTR("fs"), "f", [this](const std::string_view& args) FLASHMEM {
+            if (!p_ctbot_->get_fs()) {
+                return false;
+            }
+
             if (args.find(PSTR("ls")) == 0) {
                 const auto s { args.find(' ') };
                 std::string dir;

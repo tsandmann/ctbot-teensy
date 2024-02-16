@@ -275,6 +275,8 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
                 p_logger_->add_target(p_logger_file_);
             }
         } else {
+            delete p_fs_;
+            p_fs_ = nullptr;
             log_begin();
             p_logger_->log(PSTR("p_fs_->begin() failed.\r\n"), true);
         }
@@ -284,7 +286,9 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
         }
 
         if constexpr (CtBotConfig::CLI_HISTORY_ON_SDCARD_AVAILABLE) {
-            p_parser_->enable_nv_history(*p_fs_, PSTR("history.txt"));
+            if (p_fs_) {
+                p_parser_->enable_nv_history(*p_fs_, PSTR("history.txt"));
+            }
         }
     }
 
@@ -383,11 +387,11 @@ FLASHMEM void CtBot::setup(const bool set_ready) {
             auto p_ctbot { static_cast<CtBot*>(::pvTimerGetTimerID(handle)) };
             configASSERT(p_ctbot);
 
-            ::xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
+            xTimerChangePeriod(handle, pdMS_TO_TICKS(60'000UL), 0);
 
             p_ctbot->update_clock();
         });
-        ::xTimerStart(p_clock_timer_, 0);
+        xTimerStart(p_clock_timer_, 0);
     }
 
     if constexpr (CtBotConfig::AUDIO_AVAILABLE) {
@@ -677,6 +681,10 @@ void CtBot::run() {
 
 FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
     if constexpr (CtBotConfig::AUDIO_AVAILABLE && CtBotConfig::SDCARD_AVAILABLE) {
+        if (!p_fs_) {
+            return false;
+        }
+
         if (p_play_wav_->isPlaying()) {
             p_logger_->log(PSTR("CtBot::play_wav(): Still playing, abort.\r\n"), false);
             return false;
@@ -709,6 +717,11 @@ FLASHMEM bool CtBot::play_wav(const std::string_view& filename) {
 
 FLASHMEM bool CtBot::file_upload(freertos::SerialIO& io, const std::string_view& file_name, uint32_t file_size, uint32_t crc32, bool textmode) const {
     FS_Service::FileWrapper* p_file_wrapper;
+
+    if (!get_fs()) {
+        return false;
+    }
+
     File file { get_fs()->open(std::string(file_name).c_str(), static_cast<uint8_t>(FILE_WRITE), 0, &p_file_wrapper) };
     if (!file) {
         return false;
@@ -795,6 +808,11 @@ FLASHMEM bool CtBot::file_upload(freertos::SerialIO& io, const std::string_view&
 
 FLASHMEM uint32_t CtBot::file_crc32(const std::string_view& file_name) const {
     FS_Service::FileWrapper* p_file_wrapper;
+
+    if (!get_fs()) {
+        return 0;
+    }
+
     File file { get_fs()->open(std::string(file_name).c_str(), static_cast<uint8_t>(FILE_READ), 0, &p_file_wrapper) };
     if (!file) {
         return 0;
@@ -823,7 +841,7 @@ bool CtBot::create_shutdown_timer(uint32_t ms) {
         std::exit(1);
     });
     configASSERT(shutdown_timer_);
-    ::xTimerStart(shutdown_timer_, portMAX_DELAY);
+    xTimerStart(shutdown_timer_, portMAX_DELAY);
 
     return shutdown_timer_ != nullptr;
 }

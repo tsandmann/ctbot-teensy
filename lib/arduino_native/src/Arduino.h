@@ -260,7 +260,7 @@ static inline void __disable_irq() {}
 static inline void __enable_irq() {}
 
 #ifndef _NEWLIB_VERSION
-#define _NEWLIB_VERSION "0.0.0"
+#define _NEWLIB_VERSION "N/A"
 #endif
 
 #define FILE_USE_MOVE

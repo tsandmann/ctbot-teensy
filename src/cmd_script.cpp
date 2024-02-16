@@ -90,6 +90,10 @@ bool CmdScript::print_script() {
 }
 
 bool CmdScript::process_script(std::function<bool(const std::string_view&)> func) {
+    if (!CtBot::get_instance().get_fs()) {
+        return false;
+    }
+
     if (!CtBot::get_instance().get_fs()->exists(filename_.c_str())) {
         comm_interface_.debug_printf<true>(PP_ARGS("CmdScript::process_script(): file \"{s}\" not found.\r\n", filename_.c_str()));
         return false;
@@ -152,6 +156,10 @@ bool CmdScript::process_script(std::function<bool(const std::string_view&)> func
 }
 
 bool CmdScript::create_script(const size_t history_depth) {
+    if (!CtBot::get_instance().get_fs()) {
+        return false;
+    }
+
     if (filename_.size() > 8U + 1U + 3U) {
         return false;
     }

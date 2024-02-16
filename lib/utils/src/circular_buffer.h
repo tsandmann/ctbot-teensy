@@ -20,7 +20,7 @@
  * @brief   Circular buffer class
  * @author  Timo Sandmann
  * @date    22.12.2018
- * @note    based on https://github.com/embeddedartistry/embedded-resources/blob/master/examples/cpp/circular_buffer.cpp
+ * @note    based on https://github.com/embeddedartistry/embedded-resources/blob/master/examples/cpp/circular_buffer/circular_buffer.hpp
  */
 
 #pragma once
@@ -35,15 +35,15 @@ template <typename T, size_t SIZE>
 class CircularBuffer {
     size_t head_;
     size_t tail_;
-    bool full_;
     std::array<T, SIZE>* p_buf_;
+    bool full_;
+    bool mem_allocated_;
     std::mutex mutex_;
     std::condition_variable cond_in_;
     std::condition_variable cond_out_;
-    bool mem_allocated_;
 
 public:
-    explicit CircularBuffer(void* p_buffer) : head_ {}, tail_ {}, full_ {}, p_buf_ {}, mem_allocated_ {} {
+    explicit CircularBuffer(void* p_buffer) : head_ {}, tail_ {}, p_buf_ {}, full_ {}, mem_allocated_ {} {
         if (p_buffer) {
             p_buf_ = new (p_buffer) std::array<T, SIZE>;
         } else {
@@ -69,10 +69,6 @@ public:
 
         (*p_buf_)[head_] = item;
 
-        if (full_) {
-            tail_ = (tail_ + 1) % SIZE;
-        }
-
         head_ = (head_ + 1) % SIZE;
         full_ = head_ == tail_;
 
@@ -80,18 +76,14 @@ public:
         cond_in_.notify_one();
     }
 
-    void push(T&& item) {
+    void push(const T&& item) {
         std::unique_lock<std::mutex> mlock(mutex_);
 
         while (full_) {
             cond_out_.wait(mlock);
         }
 
-        (*p_buf_)[head_] = std::move(item);
-
-        if (full_) {
-            tail_ = (tail_ + 1) % SIZE;
-        }
+        (*p_buf_)[head_] = item;
 
         head_ = (head_ + 1) % SIZE;
         full_ = head_ == tail_;
@@ -108,10 +100,6 @@ public:
 
         (*p_buf_)[head_] = item;
 
-        if (full_) {
-            tail_ = (tail_ + 1) % SIZE;
-        }
-
         head_ = (head_ + 1) % SIZE;
         full_ = head_ == tail_;
 
@@ -120,17 +108,13 @@ public:
         return true;
     }
 
-    bool try_push(T&& item) {
+    bool try_push(const T&& item) {
         std::unique_lock<std::mutex> mlock(mutex_);
         if (full_) {
             return false;
         }
 
-        (*p_buf_)[head_] = std::move(item);
-
-        if (full_) {
-            tail_ = (tail_ + 1) % SIZE;
-        }
+        (*p_buf_)[head_] = item;
 
         head_ = (head_ + 1) % SIZE;
         full_ = head_ == tail_;
@@ -146,7 +130,7 @@ public:
             cond_in_.wait(mlock);
         }
 
-        // Read data and advance the tail (we now have a free space)
+        // read data and advance the tail
         item = (*p_buf_)[tail_];
         full_ = false;
         tail_ = (tail_ + 1) % SIZE;
@@ -161,8 +145,8 @@ public:
             return false;
         }
 
-        // Read data and advance the tail (we now have a free space)
-        item = std::move((*p_buf_)[tail_]);
+        // read data and advance the tail
+        item = (*p_buf_)[tail_];
         full_ = false;
         tail_ = (tail_ + 1) % SIZE;
 
@@ -184,7 +168,6 @@ public:
     }
 
     bool full() const {
-        // If tail is ahead the head by 1, we are full
         return full_;
     }
 

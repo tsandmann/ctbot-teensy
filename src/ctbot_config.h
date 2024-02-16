@@ -104,7 +104,7 @@ struct CtBotConfigUser : public CtBotConfigBase {
     static constexpr uint32_t UART0_BAUDRATE { 4'000'000 }; /**< Baud rate used for Uart 0 (USB) */
     static constexpr uint32_t UART_WIFI_BAUDRATE { 1'000'000 }; /**< Baud rate used for Uart to WiFi */
     static constexpr uint32_t UART_MOTOR_CTL_BAUDRATE { 1'000'000 }; /**< Baud rate used for motor Uart */
-    static constexpr bool UART_WIFI_FOR_CMD { true }; /**< Use wifi for command line interface? */
+    static constexpr bool UART_WIFI_FOR_CMD { false }; /**< Use wifi for command line interface? */
 
     /* i2c */
     static constexpr uint32_t I2C1_FREQ { 400'000 };
